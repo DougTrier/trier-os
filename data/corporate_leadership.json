@@ -1,0 +1,30 @@
+[
+  {
+    "ID": 101,
+    "Name": "Jane Doe",
+    "Title": "Senior Vice President Operations",
+    "Email": "svp@trier-os.local",
+    "Phone": "555-010-0001"
+  },
+  {
+    "ID": 102,
+    "Name": "John Smith",
+    "Position": "Vice President Engineering",
+    "Email": "vp@trier-os.local",
+    "Phone": "555-010-0002"
+  },
+  {
+    "ID": 103,
+    "Name": "Alice Roe",
+    "Position": "Corporate Engineer",
+    "Email": "c_eng1@trier-os.local",
+    "Phone": "555-010-0003"
+  },
+  {
+    "ID": 104,
+    "Name": "Bob Trent",
+    "Position": "Project Engineer",
+    "Email": "p_eng2@trier-os.local",
+    "Phone": "555-010-0004"
+  }
+]

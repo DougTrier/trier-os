@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Grundfos",
+    "category": "Pumps",
+    "website": "https://www.grundfos.com",
+    "lookup_pattern": "https://product-selection.grundfos.com/search?q={partNumber}",
+    "model_pattern": "^[0-9]{8}$"
+  },
+  {
+    "name": "Alfa Laval",
+    "category": "Centrifugal Pumps / Valves / Heat Exchangers",
+    "website": "https://www.alfalaval.com",
+    "lookup_pattern": "https://www.alfalaval.com/search-results/?query={partNumber}",
+    "model_pattern": "^[0-9]{10}$"
+  },
+  {
+    "name": "SPX Flow",
+    "category": "Valves / Pumps / Homogenizers",
+    "website": "https://www.spxflow.com",
+    "lookup_pattern": "https://www.spxflow.com/search?q={partNumber}",
+    "model_pattern": "^WCB-[A-Z0-9]+$"
+  },
+  {
+    "name": "Tetra Pak",
+    "category": "Homogenizers / Separators / Fillers",
+    "website": "https://www.tetrapak.com",
+    "lookup_pattern": "https://www.tetrapak.com/search?q={partNumber}",
+    "model_pattern": "^TP-[0-9]{6,10}$"
+  },
+  {
+    "name": "Allen-Bradley",
+    "category": "Automation / PLCs / Motors",
+    "website": "https://www.rockwellautomation.com",
+    "lookup_pattern": "https://www.rockwellautomation.com/en-us/products/details.{partNumber}.html",
+    "model_pattern": "^[0-9]{4}-[A-Z0-9]+$"
+  },
+  {
+    "name": "Endress+Hauser",
+    "category": "Flow Meters / Sensors",
+    "website": "https://www.endress.com",
+    "lookup_pattern": "https://www.endress.com/en/product-search?q={partNumber}",
+    "model_pattern": "^[A-Z0-9-]{10,20}$"
+  },
+  {
+    "name": "Festo",
+    "category": "Pneumatics",
+    "website": "https://www.festo.com",
+    "lookup_pattern": "https://www.festo.com/us/en/search/?text={partNumber}",
+    "model_pattern": "^[0-9]{6,8}$"
+  },
+  {
+    "name": "Krones",
+    "category": "Blow Mold / Filling",
+    "website": "https://www.krones.com",
+    "lookup_pattern": "https://www.krones.com/en/search.php?q={partNumber}",
+    "model_pattern": "^0-[0-9]{3,}-[0-9]{3,}$"
+  }
+]

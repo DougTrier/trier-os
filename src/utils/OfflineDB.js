@@ -1,0 +1,488 @@
+// Copyright © 2026 Trier OS. All Rights Reserved.
+
+/**
+ * © 2026 Doug Trier. All Rights Reserved.
+ * Trier OS is proprietary software. Unauthorized copying,
+ * distribution, or reverse engineering is strictly prohibited.
+ */
+/**
+ * Trier OS — Offline Database (IndexedDB Wrapper)
+ * ====================================================
+ * Provides persistent client-side storage for offline operation.
+ * Caches work orders, assets, parts, PM schedules, and contacts.
+ * Manages a sync queue for offline writes.
+ */
+
+const DB_NAME = 'TrierCMMS_Offline';
+const DB_VERSION = 2;
+
+// Store names
+const STORES = {
+    WORK_ORDERS: 'work_orders',
+    ASSETS: 'assets',
+    PARTS: 'parts',
+    PM_SCHEDULES: 'pm_schedules',
+    CONTACTS: 'contacts',
+    SYNC_QUEUE: 'sync_queue',
+    META: 'meta'
+};
+
+let dbInstance = null;
+
+/**
+ * Open or create the IndexedDB database
+ */
+function openDB() {
+    if (dbInstance) return Promise.resolve(dbInstance);
+
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onerror = () => reject(request.error);
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+
+            // Work Orders store
+            if (!db.objectStoreNames.contains(STORES.WORK_ORDERS)) {
+                const woStore = db.createObjectStore(STORES.WORK_ORDERS, { keyPath: '_id' });
+                woStore.createIndex('status', 'StatusID', { unique: false });
+                woStore.createIndex('priority', 'Priority', { unique: false });
+            }
+
+            // Assets store
+            if (!db.objectStoreNames.contains(STORES.ASSETS)) {
+                db.createObjectStore(STORES.ASSETS, { keyPath: '_id' });
+            }
+
+            // Parts store
+            if (!db.objectStoreNames.contains(STORES.PARTS)) {
+                db.createObjectStore(STORES.PARTS, { keyPath: '_id' });
+            }
+
+            // PM Schedules store
+            if (!db.objectStoreNames.contains(STORES.PM_SCHEDULES)) {
+                db.createObjectStore(STORES.PM_SCHEDULES, { keyPath: '_id' });
+            }
+
+            // Contacts/Vendors store
+            if (!db.objectStoreNames.contains(STORES.CONTACTS)) {
+                db.createObjectStore(STORES.CONTACTS, { keyPath: '_id' });
+            }
+
+            // Sync Queue — offline writes waiting to replay
+            if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
+                const syncStore = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id' });
+                syncStore.createIndex('synced', 'synced', { unique: false });
+                syncStore.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+
+            // Meta store — timestamps, user info
+            if (!db.objectStoreNames.contains(STORES.META)) {
+                db.createObjectStore(STORES.META, { keyPath: 'key' });
+            }
+        };
+
+        request.onsuccess = () => {
+            dbInstance = request.result;
+            resolve(dbInstance);
+        };
+    });
+}
+
+/**
+ * Generic: Put multiple records into a store (bulk upsert)
+ */
+async function putAll(storeName, records) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        let count = 0;
+        records.forEach(record => {
+            store.put(record);
+            count++;
+        });
+        tx.oncomplete = () => resolve(count);
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+/**
+ * Generic: Get all records from a store
+ */
+async function getAll(storeName) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/**
+ * Generic: Get a single record by key
+ */
+async function getByKey(storeName, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const request = tx.objectStore(storeName).get(key);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/**
+ * Generic: Delete a record by key
+ */
+async function deleteByKey(storeName, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+/**
+ * Clear all records from a store
+ */
+async function clearStore(storeName) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Data Caching — Fetch from server and store in IndexedDB
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Cache work orders from the server
+ */
+async function cacheWorkOrders() {
+    try {
+        const res = await fetch('/api/work-orders');
+        if (!res.ok) return { cached: 0 };
+        const data = await res.json();
+        const records = (Array.isArray(data) ? data : data.workOrders || [])
+            .map(r => ({ ...r, _id: r.ID || r.WorkOrderNumber || r.id || String(Math.random()) }));
+        const count = await putAll(STORES.WORK_ORDERS, records);
+        return { cached: count };
+    } catch (e) {
+        console.warn('[OfflineDB] Failed to cache work orders:', e.message);
+        return { cached: 0, error: e.message };
+    }
+}
+
+/**
+ * Cache assets from the server
+ */
+async function cacheAssets() {
+    try {
+        const res = await fetch('/api/assets');
+        if (!res.ok) return { cached: 0 };
+        const data = await res.json();
+        const records = (Array.isArray(data) ? data : [])
+            .map(r => ({ ...r, _id: r.ID || r.id || String(Math.random()) }));
+        const count = await putAll(STORES.ASSETS, records);
+        return { cached: count };
+    } catch (e) {
+        console.warn('[OfflineDB] Failed to cache assets:', e.message);
+        return { cached: 0, error: e.message };
+    }
+}
+
+/**
+ * Cache parts/inventory from the server
+ */
+async function cacheParts() {
+    try {
+        const res = await fetch('/api/parts');
+        if (!res.ok) return { cached: 0 };
+        const data = await res.json();
+        const records = (Array.isArray(data) ? data : [])
+            .map(r => ({ ...r, _id: r.ID || r.PartNumber || r.id || String(Math.random()) }));
+        const count = await putAll(STORES.PARTS, records);
+        return { cached: count };
+    } catch (e) {
+        console.warn('[OfflineDB] Failed to cache parts:', e.message);
+        return { cached: 0, error: e.message };
+    }
+}
+
+/**
+ * Cache PM schedules from the server
+ */
+async function cachePMSchedules() {
+    try {
+        const res = await fetch('/api/pm-schedules');
+        if (!res.ok) return { cached: 0 };
+        const data = await res.json();
+        const records = (Array.isArray(data) ? data : [])
+            .map(r => ({ ...r, _id: r.ID || r.id || String(Math.random()) }));
+        const count = await putAll(STORES.PM_SCHEDULES, records);
+        return { cached: count };
+    } catch (e) {
+        console.warn('[OfflineDB] Failed to cache PM schedules:', e.message);
+        return { cached: 0, error: e.message };
+    }
+}
+
+/**
+ * Cache contacts/vendors from the server
+ */
+async function cacheContacts() {
+    try {
+        const res = await fetch('/api/contacts');
+        if (!res.ok) return { cached: 0 };
+        const data = await res.json();
+        const records = (Array.isArray(data) ? data : [])
+            .map(r => ({ ...r, _id: r.ID || r.id || String(Math.random()) }));
+        const count = await putAll(STORES.CONTACTS, records);
+        return { cached: count };
+    } catch (e) {
+        console.warn('[OfflineDB] Failed to cache contacts:', e.message);
+        return { cached: 0, error: e.message };
+    }
+}
+
+/**
+ * Full cache refresh — runs on login and every 15 minutes
+ * @param {function} onProgress - Optional callback(percent, message)
+ */
+async function fullCacheRefresh(onProgress) {
+    const steps = [
+        { fn: cacheWorkOrders, label: 'Work Orders', store: STORES.WORK_ORDERS },
+        { fn: cacheAssets, label: 'Assets', store: STORES.ASSETS },
+        { fn: cacheParts, label: 'Parts & Inventory', store: STORES.PARTS },
+        { fn: cachePMSchedules, label: 'PM Schedules', store: STORES.PM_SCHEDULES },
+        { fn: cacheContacts, label: 'Contacts', store: STORES.CONTACTS },
+    ];
+
+    const results = {};
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const pct = Math.round(((i) / steps.length) * 100);
+        if (onProgress) onProgress(pct, `Caching ${step.label}...`);
+
+        try {
+            const result = await step.fn();
+            results[step.store] = result;
+        } catch (e) {
+            results[step.store] = { cached: 0, error: e.message };
+        }
+    }
+
+    // Save sync timestamp
+    await setMeta('lastSync', new Date().toISOString());
+    await setMeta('plantId', localStorage.getItem('selectedPlantId') || 'unknown');
+    await setMeta('user', localStorage.getItem('currentUser') || 'unknown');
+
+    if (onProgress) onProgress(100, 'Cache complete');
+    console.log('[OfflineDB] Full cache refresh complete:', results);
+    return results;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sync Queue — Store offline writes for later replay
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Add a write operation to the sync queue
+ */
+async function queueWrite(method, endpoint, payload) {
+    const entry = {
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        method,
+        endpoint,
+        payload,
+        timestamp: new Date().toISOString(),
+        synced: false,
+        syncResult: null,
+        retries: 0
+    };
+    await putAll(STORES.SYNC_QUEUE, [entry]);
+    console.log('[OfflineDB] Queued offline write:', method, endpoint);
+    return entry;
+}
+
+/**
+ * Get all pending (unsynced) writes
+ */
+async function getPendingWrites() {
+    const all = await getAll(STORES.SYNC_QUEUE);
+    return all.filter(e => !e.synced).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+/**
+ * Get pending write count
+ */
+async function getPendingCount() {
+    const pending = await getPendingWrites();
+    return pending.length;
+}
+
+/**
+ * Replay all pending writes to the server
+ * @returns {{ sent: number, failed: number, conflicts: number }}
+ */
+async function replayQueue(onProgress) {
+    const pending = await getPendingWrites();
+    if (pending.length === 0) return { sent: 0, failed: 0, conflicts: 0 };
+
+    let sent = 0, failed = 0, conflicts = 0;
+
+    for (let i = 0; i < pending.length; i++) {
+        const entry = pending[i];
+        if (onProgress) onProgress(i + 1, pending.length, entry);
+
+        try {
+            const res = await fetch(entry.endpoint, {
+                method: entry.method,
+                headers: { 'Content-Type': 'application/json' },
+                body: entry.payload ? JSON.stringify(entry.payload) : undefined
+            });
+
+            if (res.ok) {
+                entry.synced = true;
+                entry.syncResult = 'success';
+                sent++;
+            } else if (res.status === 409) {
+                entry.syncResult = 'conflict';
+                conflicts++;
+            } else {
+                entry.retries++;
+                entry.syncResult = `error-${res.status}`;
+                if (entry.retries >= 3) {
+                    entry.syncResult = 'failed-permanently';
+                }
+                failed++;
+            }
+        } catch (e) {
+            entry.retries++;
+            entry.syncResult = 'network-error';
+            failed++;
+        }
+
+        await putAll(STORES.SYNC_QUEUE, [entry]);
+    }
+
+    // Clean up successful syncs
+    const all = await getAll(STORES.SYNC_QUEUE);
+    for (const entry of all) {
+        if (entry.synced) {
+            await deleteByKey(STORES.SYNC_QUEUE, entry.id);
+        }
+    }
+
+    return { sent, failed, conflicts, total: pending.length };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Meta Store — Timestamps, user info
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function setMeta(key, value) {
+    await putAll(STORES.META, [{ key, value }]);
+}
+
+async function getMeta(key) {
+    const record = await getByKey(STORES.META, key);
+    return record ? record.value : null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Connectivity Monitoring
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let isOnline = navigator.onLine;
+let onStatusChange = null;
+
+/**
+ * Start monitoring connectivity
+ * @param {function} callback - Called with (isOnline: boolean)
+ */
+function startConnectivityMonitor(callback) {
+    onStatusChange = callback;
+
+    window.addEventListener('online', () => {
+        isOnline = true;
+        console.log('[OfflineDB] 🟢 Back online');
+        if (onStatusChange) onStatusChange(true);
+    });
+
+    window.addEventListener('offline', () => {
+        isOnline = false;
+        console.log('[OfflineDB] 🔴 Gone offline');
+        if (onStatusChange) onStatusChange(false);
+    });
+
+    // Also poll the server every 30 seconds as a fallback
+    setInterval(async () => {
+        try {
+            const res = await fetch('/api/ping', { 
+                method: 'GET',
+                cache: 'no-store',
+                signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
+            });
+            const wasOffline = !isOnline;
+            isOnline = res.ok;
+            if (wasOffline && isOnline && onStatusChange) {
+                onStatusChange(true);
+            }
+        } catch {
+            const wasOnline = isOnline;
+            isOnline = false;
+            if (wasOnline && onStatusChange) {
+                onStatusChange(false);
+            }
+        }
+    }, 30000);
+
+    return () => isOnline;
+}
+
+function getOnlineStatus() {
+    return isOnline;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Export
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default {
+    STORES,
+    openDB,
+    putAll,
+    getAll,
+    getByKey,
+    deleteByKey,
+    clearStore,
+    // Data caching
+    fullCacheRefresh,
+    cacheWorkOrders,
+    cacheAssets,
+    cacheParts,
+    cachePMSchedules,
+    cacheContacts,
+    // Sync queue
+    queueWrite,
+    getPendingWrites,
+    getPendingCount,
+    replayQueue,
+    // Meta
+    setMeta,
+    getMeta,
+    // Connectivity
+    startConnectivityMonitor,
+    getOnlineStatus
+};

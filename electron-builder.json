@@ -1,0 +1,79 @@
+{
+  "appId": "com.TrierOS.app",
+  "productName": "Trier OS",
+  "copyright": "Copyright Â© 2026 Doug Trier",
+  "directories": {
+    "buildResources": "electron/icons",
+    "output": "electron-dist"
+  },
+  "afterPack": "./electron/afterPack.js",
+  "asar": false,
+  "npmRebuild": true,
+  "nodeGypRebuild": false,
+  "buildDependenciesFromSource": false,
+  "files": [
+    "dist/**/*",
+    "src/**/*",
+    "electron/**/*",
+    "server/**/*",
+    "public/assets/**/*",
+    "node_modules/**/*",
+    "package.json",
+    "!node_modules/.cache/**/*",
+    "!node_modules/.package-lock.json",
+    "!**/*.map",
+    "!**/.git/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "data",
+      "to": "data",
+      "filter": [
+        "**/*.db",
+        "**/*.json",
+        "certs/*.cert",
+        "certs/*.key",
+        "!**/*.db-shm",
+        "!**/*.db-wal",
+        "!**/*SNAP*",
+        "!backups/**/*"
+      ]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "msi",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "electron/icons/icon.ico",
+    "artifactName": "TrierOS-Setup-${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": true,
+    "include": "electron/installer.nsh",
+    "installerIcon": "electron/icons/icon.ico",
+    "uninstallerIcon": "electron/icons/icon.ico",
+    "installerHeaderIcon": "electron/icons/icon.ico",
+    "installerSidebar": "electron/icons/installerSidebar.bmp",
+    "uninstallerSidebar": "electron/icons/installerSidebar.bmp",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Trier OS",
+    "menuCategory": "Trier OS"
+  },
+  "msi": {
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "perMachine": true,
+    "shortcutName": "Trier OS"
+  },
+  "publish": null
+}

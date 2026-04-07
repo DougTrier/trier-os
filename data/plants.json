@@ -1,0 +1,18 @@
+[
+    {
+        "id":  "Corporate_Office",
+        "label":  "Corporate Office"
+    },
+    {
+        "id":  "examples",
+        "label":  "Example Location (Protected)"
+    },
+    {
+        "id":  "Plant_1",
+        "label":  "Plant 1"
+    },
+    {
+        "id":  "Plant_2",
+        "label":  "Plant 2"
+    }
+]

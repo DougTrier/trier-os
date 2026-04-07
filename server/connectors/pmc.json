@@ -1,0 +1,370 @@
+{
+    "id": "pmc",
+    "name": "PMC (Plant Manufacturing Enterprise System)",
+    "description": "Legacy PMC databases used across manufacturing plants. ACCDB format, password-protected. Use OLEDB fallback for .accdb files.",
+    "sourceType": "access",
+    "version": "2.0",
+    "passwordProtected": true,
+    "passwords": ["D3pq@76R", "At3!1734"],
+    "oledbFallback": true,
+    "notes": "PMC .accdb files require OLEDB driver (Microsoft.ACE.OLEDB.12.0) with Jet OLEDB:Database Password. mdb-reader cannot handle .accdb encryption. GFC1=training data, GMC1=production data, Master=template.",
+    "tables": {
+        "Work": {
+            "sourceTable": "Work",
+            "notes": "Work orders. PMC uses same column names as Trier.",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "UserRef": { "source": "UserRef", "type": "text", "confidence": "confirmed" },
+                "AstID": { "source": "AstID", "type": "text", "confidence": "confirmed" },
+                "ProcID": { "source": "ProcID", "type": "text", "confidence": "confirmed" },
+                "SchID": { "source": "SchID", "type": "text", "confidence": "confirmed" },
+                "MasterWOID": { "source": "MasterWOID", "type": "text", "confidence": "confirmed" },
+                "TypeID": { "source": "TypeID", "type": "text", "confidence": "confirmed" },
+                "StatusID": { "source": "StatusID", "type": "text", "confidence": "confirmed" },
+                "AddDate": { "source": "AddDate", "type": "date", "confidence": "confirmed" },
+                "SchDate": { "source": "SchDate", "type": "date", "confidence": "confirmed" },
+                "PrintDate": { "source": "PrintDate", "type": "date", "confidence": "confirmed" },
+                "StartDate": { "source": "StartDate", "type": "date", "confidence": "confirmed" },
+                "CompDate": { "source": "CompDate", "type": "date", "confidence": "confirmed" },
+                "AstShut": { "source": "AstShut", "type": "boolean", "confidence": "confirmed" },
+                "PltShut": { "source": "PltShut", "type": "boolean", "confidence": "confirmed" },
+                "RequestBy": { "source": "RequestBy", "type": "text", "confidence": "confirmed" },
+                "ReqPhone": { "source": "ReqPhone", "type": "text", "confidence": "confirmed" },
+                "AssignToID": { "source": "AssignToID", "type": "text", "confidence": "confirmed" },
+                "AssignByID": { "source": "AssignByID", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "Priority", "type": "integer", "confidence": "confirmed" },
+                "Shift": { "source": "Shift", "type": "text", "confidence": "confirmed" },
+                "LocationID": { "source": "LocationID", "type": "text", "confidence": "confirmed" },
+                "Building": { "source": "Building", "type": "text", "confidence": "confirmed" },
+                "Floor": { "source": "Floor", "type": "text", "confidence": "confirmed" },
+                "Room": { "source": "Room", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" },
+                "ProcComment": { "source": "ProcComment", "type": "text", "confidence": "confirmed" },
+                "CostID": { "source": "CostID", "type": "text", "confidence": "confirmed" },
+                "SuperID": { "source": "SuperID", "type": "text", "confidence": "confirmed" },
+                "ProjID": { "source": "ProjID", "type": "text", "confidence": "confirmed" },
+                "EstDown": { "source": "EstDown", "type": "real", "confidence": "confirmed" },
+                "ActDown": { "source": "ActDown", "type": "real", "confidence": "confirmed" },
+                "ReasonID": { "source": "ReasonID", "type": "text", "confidence": "confirmed" },
+                "UserID": { "source": "UserID", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Asset": {
+            "sourceTable": "Asset",
+            "notes": "Equipment/assets. PMC col names slightly differ (AstTypID, ManufID, VendID, etc.)",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "AssetType": { "source": "AstTypID", "type": "text", "confidence": "confirmed" },
+                "Manufacturer": { "source": "ManufID", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VendID", "type": "text", "confidence": "confirmed" },
+                "CostID": { "source": "CostID", "type": "text", "confidence": "confirmed" },
+                "SuperID": { "source": "SuperID", "type": "text", "confidence": "confirmed" },
+                "ParentID": { "source": "ParentID", "type": "text", "confidence": "confirmed" },
+                "Model": { "source": "Model", "type": "text", "confidence": "confirmed" },
+                "Serial": { "source": "Serial", "type": "text", "confidence": "confirmed" },
+                "LocationID": { "source": "LocationID", "type": "text", "confidence": "confirmed" },
+                "Building": { "source": "Building", "type": "text", "confidence": "confirmed" },
+                "Floor": { "source": "Floor", "type": "text", "confidence": "confirmed" },
+                "Room": { "source": "Room", "type": "text", "confidence": "confirmed" },
+                "DeptID": { "source": "DepartID", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "Priority", "type": "integer", "confidence": "confirmed" },
+                "InstallDate": { "source": "InstDate", "type": "date", "confidence": "confirmed" },
+                "PurchaseDate": { "source": "PurchDate", "type": "date", "confidence": "confirmed" },
+                "InstallCost": { "source": "InstCost", "type": "real", "confidence": "confirmed" },
+                "ReplacementCost": { "source": "ReplaceCst", "type": "real", "confidence": "confirmed" },
+                "AssetTag": { "source": "AssetTag", "type": "text", "confidence": "confirmed" },
+                "Active": { "source": "Active", "type": "integer", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" },
+                "WarrantyDate": { "source": "WarrDate", "type": "date", "confidence": "confirmed" }
+            }
+        },
+        "Part": {
+            "sourceTable": "Part",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Location": { "source": "Location", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VendID", "type": "text", "confidence": "confirmed" },
+                "Manufacturer": { "source": "ManufID", "type": "text", "confidence": "confirmed" },
+                "ClassID": { "source": "ClassID", "type": "text", "confidence": "confirmed" },
+                "ParentID": { "source": "ParentID", "type": "text", "confidence": "confirmed" },
+                "Model": { "source": "Model", "type": "text", "confidence": "confirmed" },
+                "CostID": { "source": "CostID", "type": "text", "confidence": "confirmed" },
+                "Reorder": { "source": "Reorder", "type": "integer", "confidence": "confirmed" },
+                "Stock": { "source": "Stock", "type": "integer", "confidence": "confirmed" },
+                "ABC": { "source": "ABC", "type": "text", "confidence": "confirmed" },
+                "UOM": { "source": "UOM", "type": "text", "confidence": "confirmed" },
+                "UnitCost": { "source": "UnitCost", "type": "real", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Schedule": {
+            "sourceTable": "Schedule",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "AstID": { "source": "AstID", "type": "text", "confidence": "confirmed" },
+                "ProcID": { "source": "ProcID", "type": "text", "confidence": "confirmed" },
+                "TypeID": { "source": "TypeID", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "Priority", "type": "integer", "confidence": "confirmed" },
+                "Active": { "source": "Active", "type": "integer", "confidence": "confirmed" },
+                "CostID": { "source": "CostID", "type": "text", "confidence": "confirmed" },
+                "SuperID": { "source": "SuperID", "type": "text", "confidence": "confirmed" },
+                "AssignToID": { "source": "AssignToID", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" },
+                "UserID": { "source": "UserID", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Vendors": {
+            "sourceTable": "AddrBook",
+            "notes": "PMC AddrBook = Vendors, Employees, Contacts all in one table.",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Vendor": { "source": "Vendor", "type": "boolean", "confidence": "confirmed" },
+                "Manufact": { "source": "Manufact", "type": "boolean", "confidence": "confirmed" },
+                "Employee": { "source": "Employee", "type": "boolean", "confidence": "confirmed" },
+                "Contractor": { "source": "Contractor", "type": "boolean", "confidence": "confirmed" },
+                "Supervisor": { "source": "Supervisor", "type": "boolean", "confidence": "confirmed" },
+                "Address": { "source": "Saddr1", "type": "text", "confidence": "confirmed" },
+                "City": { "source": "Scity", "type": "text", "confidence": "confirmed" },
+                "State": { "source": "Sstate", "type": "text", "confidence": "confirmed" },
+                "Zip": { "source": "Szip", "type": "text", "confidence": "confirmed" },
+                "Phone": { "source": "Sphone", "type": "text", "confidence": "confirmed" },
+                "Scontact": { "source": "Scontact", "type": "text", "confidence": "confirmed" },
+                "Email": { "source": "StandardEmail", "type": "text", "confidence": "confirmed" },
+                "CraftID": { "source": "CraftID", "type": "text", "confidence": "confirmed" },
+                "DeptID": { "source": "DeptID", "type": "text", "confidence": "confirmed" },
+                "Active": { "source": "Active", "type": "integer", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Procedures": {
+            "sourceTable": "Procedur",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "Priority", "type": "integer", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" },
+                "UserID": { "source": "UserID", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "WorkParts": {
+            "sourceTable": "WorkPart",
+            "columns": {
+                "WorkID": { "source": "WoID", "type": "text", "confidence": "confirmed" },
+                "PartID": { "source": "PartID", "type": "text", "confidence": "confirmed" },
+                "Quantity": { "source": "ActQty", "type": "real", "confidence": "confirmed" },
+                "UnitCost": { "source": "UnitCost", "type": "real", "confidence": "confirmed" },
+                "CostID": { "source": "CostID", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "WorkLabor": {
+            "sourceTable": "WorkLabr",
+            "columns": {
+                "WorkID": { "source": "WoID", "type": "text", "confidence": "confirmed" },
+                "CraftID": { "source": "CraftID", "type": "text", "confidence": "confirmed" },
+                "AddrID": { "source": "LaborID", "type": "text", "confidence": "confirmed" },
+                "DateRef": { "source": "WorkDate", "type": "date", "confidence": "confirmed" },
+                "RegHrs": { "source": "HrReg", "type": "real", "confidence": "confirmed" },
+                "OTHrs": { "source": "HrOver", "type": "real", "confidence": "confirmed" },
+                "CostID": { "source": "CostID", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Craft": {
+            "sourceTable": "Craft",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Locations": {
+            "sourceTable": "Location",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "AssetTypes": {
+            "sourceTable": "AstType",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PartClasses": {
+            "sourceTable": "PartCls",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PartVendors": {
+            "sourceTable": "PartVend",
+            "columns": {
+                "PartID": { "source": "PartID", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VendID", "type": "text", "confidence": "confirmed" },
+                "VendPartNum": { "source": "VendNum", "type": "text", "confidence": "confirmed" },
+                "UnitCost": { "source": "PurCost", "type": "real", "confidence": "confirmed" },
+                "LeadTime": { "source": "LeadDays", "type": "integer", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "AssetParts": {
+            "sourceTable": "AstPrt",
+            "columns": {
+                "AstID": { "source": "AstID", "type": "text", "confidence": "confirmed" },
+                "PartID": { "source": "PartID", "type": "text", "confidence": "confirmed" },
+                "Quantity": { "source": "Quantity", "type": "real", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "AssetRels": {
+            "sourceTable": "AssetRels",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PO": {
+            "sourceTable": "PO",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VendID", "type": "text", "confidence": "confirmed" },
+                "StatusID": { "source": "StatusID", "type": "text", "confidence": "confirmed" },
+                "AddDate": { "source": "AddDate", "type": "date", "confidence": "confirmed" },
+                "OrdDate": { "source": "OrdDate", "type": "date", "confidence": "confirmed" },
+                "CompDate": { "source": "CompDate", "type": "date", "confidence": "confirmed" },
+                "RequestBy": { "source": "RequestBy", "type": "text", "confidence": "confirmed" },
+                "BuyerID": { "source": "BuyerID", "type": "text", "confidence": "confirmed" },
+                "SuperID": { "source": "SuperID", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" },
+                "UserID": { "source": "UserID", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "WorkType": {
+            "sourceTable": "WorkType",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Departments": {
+            "sourceTable": "Dept",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "CostCenters": {
+            "sourceTable": "CostCntr",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Project": {
+            "sourceTable": "Project",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Crew": {
+            "sourceTable": "Crew",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Tool": {
+            "sourceTable": "Tool",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Task": {
+            "sourceTable": "Task",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Reason": {
+            "sourceTable": "Reason",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Shifts": {
+            "sourceTable": "Shift",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PartLocations": {
+            "sourceTable": "PartLoc",
+            "columns": {
+                "PartID": { "source": "PartID", "type": "text", "confidence": "confirmed" },
+                "Location": { "source": "Location", "type": "text", "confidence": "confirmed" },
+                "QtyHand": { "source": "QtyHand", "type": "integer", "confidence": "confirmed" }
+            }
+        },
+        "PartAdjustments": {
+            "sourceTable": "PartAdj",
+            "columns": {
+                "PartID": { "source": "PartID", "type": "text", "confidence": "confirmed" },
+                "UserID": { "source": "UserID", "type": "text", "confidence": "confirmed" },
+                "AdjTypID": { "source": "AdjTypID", "type": "text", "confidence": "confirmed" },
+                "Qty": { "source": "Qty", "type": "real", "confidence": "confirmed" },
+                "UnitCost": { "source": "UnitCost", "type": "real", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "WorkStatuses": {
+            "sourceTable": "zWOStat",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PurchaseStatuses": {
+            "sourceTable": "zPOStat",
+            "columns": {
+                "ID": { "source": "ID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "Descript", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "Comment", "type": "text", "confidence": "confirmed" }
+            }
+        }
+    },
+    "statusMapping": {
+        "10": "Requested",
+        "20": "Open",
+        "30": "In Progress",
+        "40": "Completed",
+        "50": "Closed",
+        "60": "On Hold",
+        "70": "Cancelled"
+    }
+}

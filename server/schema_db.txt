@@ -1,0 +1,336 @@
+[AddrAvail] (0 rows)
+  Columns: AddrID, Year, Week, Sun_ShiftID, Sun_Date, Mon_ShiftID, Mon_Date, Tues_ShiftID, Tues_Date, Wed_ShiftID, Wed_Date, Thurs_ShiftID, Thurs_Date, Fri_ShiftID, Fri_Date, Sat_ShiftID, Sat_Date
+[Vendors] (116 rows)
+  Columns: ID, Description, Manufact, Vendor, Employee, Contractor, Supervisor, Warranty, Buyer, Resource, ShipBill, Other, Title, Address, Address2, City, State, Zip, Scountry, Scontact, Phone, Sphnext, Smobile, Fax, Shphone, Baddr1, Baddr2, Bcity, Bstate, Bzip, Bcountry, Bcontact, Bphone, Bphnext, Bmobile, Bfax, Bhphone, Federal, HrsMon, HrsTue, HrsWed, HrsThu, HrsFri, HrsSat, HrsSun, AddrCostID, GradeID, PayReg, PayOver, PayDouble, PayOther, BirthDate, HireDate, ReviewDate, SeniorDate, TermDate, CraftID, Shift, DeptID, CrewID, TOSick, TOVacat, TOOther, TmBreak, TmLunch, TmOther, Sex, MinOrder, FOB, Terms, ShipTerms, ShipVia, TDpurcst, YTDpurcst, MTDpurcst, Productive, LastOrder, Active, Email, WirelessEmail, WirelessActive, Website, Comment, AltEmail, AltEmail2, CustomerNo, SEmergPhone, SEmergContact, PartNegOnOrder
+[AddrBookRels] (0 rows)
+  Columns: ID
+[AddrObj] (0 rows)
+  Columns: AddrID, ObjID, Comment
+[LaborTime] (100 rows)
+  Columns: AddrID, DateRef, AddrTimID, Hrs, Comment
+[Asset] (132 rows)
+  Columns: ID, Description, AssetType, Manufacturer, VendorID, CostID, CostLbrID, CostMiscID, SuperID, ParentID, Model, Serial, LocationID, Building, Floor, Room, WarrantyID, WarrantyDate, DeptID, Priority, InstallDate, PurchaseDate, RetirementDate, InstallCost, ReplacementCost, AssetTag, CountCur, CountRoll, CountUOM, MeterCur, MeterRoll, MeterUOM, TdDnHr, TdLbHr, TdLbCst, TdMisCst, TdPrtCst, Y2DnHr, Y2LbHr, Y2LbCst, Y2MisCst, Y2PrtCst, Y1DnHr, Y1LbHr, Y1LbCst, Y1MisCst, Y1PrtCst, YtdDnHr, YtdLbHr, YtdLbCst, YtdMisCst, YtdPrtCst, MtdDnHr, MtdLbHr, MtdLbCst, MtdMisCst, MtdPrtCst, AirArea, ElecLine, Voltage, Wattage, Amperage, ElecPhase, LifeDate, Active, Comment, SStartDate, SEndDate, IsDeleted, DeleteReason, DeleteDate, UsefulLife, Quantity, OperationalStatus, MeterType, MeterReading, MeterUnit, MeterLastUpdated, ParentAssetID, LocationPath, AssetLevel, SortOrder, WarrantyStart, WarrantyEnd, WarrantyVendor, WarrantyTerms, PartNumber, CriticalityClass, CriticalityReason, GpsLat, GpsLng, GpsSetAt, GpsSetBy, BleBeaconMac
+[AssetRels] (0 rows)
+  Columns: ID
+[AssetUsr] (0 rows)
+  Columns: EntityID, UserID, Data, DataType
+[AstGrp] (0 rows)
+  Columns: ID, Description, GrpTypeID, Active, Comment
+[AstGrpS] (0 rows)
+  Columns: AstGrpID, AstID, Position, Comment
+[AstGrpType] (0 rows)
+  Columns: ID, Description, Comment
+[AstObj] (0 rows)
+  Columns: AstID, ObjID, Comment
+[AssetParts] (23 rows)
+  Columns: AstID, PartID, Quantity, LUseDate, Comment
+[AssetTypes] (145 rows)
+  Columns: ID, Description, Comment
+[Calendar] (42 rows)
+  Columns: CalDate, Lockout, Comment
+[Code] (0 rows)
+  Columns: ID, Description, CodeTypeID, Comment
+[CodeType] (0 rows)
+  Columns: ID, Description, Comment
+[ComQueue] (0 rows)
+  Columns: ID, Action, StatusID, MethodID, AddDate, ProcDate, FromName, FromEmail, EmailTo, Subject, Body
+[Company] (0 rows)
+  Columns: ID, Description, ShipBillID, Federal, HrsMon, HrsTue, HrsWed, HrsThu, HrsFri, HrsSat, HrsSun, AddrCostID, GradeID, PayReg, PayOver, PayDouble, PayOther, TOSick, TOVacat, TOOther, TmBreak, TmLunch, TmOther, Productive, WoCtr, WoMastCtr, SchCtr, PoCtr, PartCtr, SchDate, AstPrt, PrtVnd, POIssue, WoPriority, PrtCstID, WORptID, PORptID, SchCntCent, PartCD, PartCDCmd, RenameID, ReadOnly, AskSave, AskDelete, HidePay, SeeAllCo, TransAllCo, FormHide, SpecChar, WoComment, PoComment, FormSub, AddToPO, AddToWO, Yr21Century, chk21cntry, Preview, MWOLaborApply, MWObyRange, PrtBarcode, EmailCtr, EmailSend, ReqNotifyID, ReqCtr, ViewOpenWO, OnlineWarrN, PartShortageN, EditReceiptHistory, Comment, TimecardDuplicates, ReqCopyDetail, WOPrinter, POPrinter, CursorBehavior, AutoLaunchML, WOTaskCopy, WOTaskPrt, ProcCommentCopy, HideInactive, POIssueMisc, POIssueLabor, WOAssignToFilter, LastRcptCost, WoAssignBy, CursorDefault, TimecardClose, POPartCost, POMiscCost, POLaborCost, EOQ_POCost, LbrCommentCopy, WOClose, WOSort, SchUpdateLast, PartNegOnOrder
+[CostCenters] (20 rows)
+  Columns: ID, Description, Budget, Comment
+[Craft] (13 rows)
+  Columns: ID, Description, Comment
+[Crew] (2 rows)
+  Columns: ID, Description, Comment
+[Departments] (5 rows)
+  Columns: ID, Description, Comment
+[Interface] (0 rows)
+  Columns: ID, Description, Visible, MOrder, ExeCmd, IconFile, Param, Keys, StatLine, HelpNum, Comment
+[Internet] (0 rows)
+  Columns: ID, Description, Visible, MOrder, Param, Comment
+[LaborGrd] (0 rows)
+  Columns: ID, Description, PayReg, PayOver, PayDouble, PayOther, Comment
+[Locations] (18 rows)
+  Columns: ID, Description, Comment
+[ObjType] (1 rows)
+  Columns: ID, Description, RunFile, FilePath, Ext, Keys, Comment
+[Object] (1 rows)
+  Columns: ID, Description, ObjTypID, Obj, FileName, Printable, Comment
+[PO] (120 rows)
+  Columns: ID, Description, UserRef, VendorID, VendCont, ShipBillID, FOB, StatusID, PONumber, AddDate, OrdDate, PrintDate, CompDate, RequestBy, ReqPhone, ReqExt, BuyerID, ApproveBy, ApprDate, ReasonID, Delay, SuperID, Priority, Tax, Shipping, Terms, ShipTerms, ShipVia, Comment, UserID
+[POGen] (0 rows)
+  Columns: Updated, UserID, Counter, PartID, OrdQty, OrdCost, UOM, VendorID, Taxable, DueDate, PONumber, GenPO, PoID, Comment
+[POIssue] (0 rows)
+  Columns: Updated, UserID, Counter, Priority, WorkID, IssueQty, EstQty, RemQty, AstID, SchDate, ProcID, ProjID, CostID, IssueCost, EstCost, RemCost
+[POLabor] (0 rows)
+  Columns: PoID, cc, CraftID, LaborID, OrdDate, OrdHour, OrdPay, DueDate, RecDate, RecHour, RecPay, RemHour, Taxable, AstID, CostID, ProjID, WorkID, Comment
+[POMisc] (0 rows)
+  Columns: PoID, cc, Description, OrdDate, OrdCost, DueDate, RecDate, RecCost, RemCost, Taxable, AstID, CostID, ProjID, WorkID, Comment
+[POObj] (0 rows)
+  Columns: PoID, ObjID, PoPrint, Comment
+[POPart] (0 rows)
+  Columns: PoID, cc, PartID, OrdDate, OrdQty, OrdCost, DueDate, RecDate, RecQty, RecCost, RemQty, UOM, Location, Taxable, AstID, CostID, ProjID, WorkID, Comment
+[Part] (0 rows)
+  Columns: ID, Descript, Location, VendorID, Manufacturer, ClassID, ParentID, Model, CostID, Reorder, Stock, ABC, UOM, Cycle, QtyAOrder, QtyOOrder, QtyCommit, OrdQtyID, OrdMax, OrdMin, OrdUsual, OrdDesire, OrdPoint, EOQ, CarryCost, UnitCost, Lcost1, Lcost2, Lcost3, Lcost4, Lcost5, Lqty1, Lqty2, Lqty3, Lqty4, Lqty5, LastOrder, LastIssue, LastPhy, TdPurCst, TdPurQty, TdIssCst, TdIssQty, YtdPurCst, YtdPurQty, YtdIssCst, YtdIssQty, MtdPurCst, MtdPurQty, MtdIssCst, MtdIssQty, Spec, Comment, Random, Description, NetworkCheapestPrice, NetworkCheapestPlant, NetworkLastSync, GlobalSyncStatus, VendorName, VendorAddr, VendorCity, VendorState, VendorZip, VendorPhone, VendorContact, VendorEmail, EnrichmentConflict, VendorWebsite
+[PartAdjustments] (500 rows)
+  Columns: PartID, UserID, Updated, AdjTypID, RecDate, UseDate, Location, Qty, UnitCost, VendorID, AstID, ProcID, ProjID, CostID, WorkID, PoID, Comment
+[PartClasses] (40 rows)
+  Columns: ID, Description, Comment
+[PartLocations] (16 rows)
+  Columns: PartID, Location, QtyHand
+[PartObj] (1 rows)
+  Columns: PartID, ObjID, Comment
+[PartSub] (0 rows)
+  Columns: PartID, SubID, Comment
+[PartUsr] (0 rows)
+  Columns: EntityID, UserID, Data, DataType
+[PartVendors] (328 rows)
+  Columns: PartID, VendorID, Manufacturer, ManufNum, VendNum, LeadDays, ShipVia, PurchaseDate, PurchaseCost, QuoteDate, QuoteCost, Comment, FreightCost, IsExpedited
+[ProcGrp] (0 rows)
+  Columns: ID, Description, GrpTypeID, Comment
+[ProcGrpS] (0 rows)
+  Columns: ProcGrpID, ProcID, Position, Comment
+[ProcGrpType] (0 rows)
+  Columns: ID, Description, Comment
+[ProcLabr] (0 rows)
+  Columns: ProcID, cc, CraftID, LaborID, EstHour
+[ProcMisc] (0 rows)
+  Columns: ProcID, Description, EstCost
+[ProcObj] (0 rows)
+  Columns: ProcID, ObjID, WoPrint, Comment
+[ProcedureParts] (0 rows)
+  Columns: ProcID, PartID, EstQty
+[ProcedureTasks] (0 rows)
+  Columns: ProcID, TaskID, TskOrder
+[ProcTool] (0 rows)
+  Columns: ProcID, ToolID, EstQty
+[ProcUsr] (0 rows)
+  Columns: EntityID, UserID, Data, DataType
+[Procedures] (0 rows)
+  Columns: ID, Descript, Priority, AstShut, PltShut, EstDown, Updated, Approval, Comment, UserID, Description, ProcedureCode
+[ProjObj] (0 rows)
+  Columns: ProjID, ObjID, Comment
+[Project] (2 rows)
+  Columns: ID, Description, StatusID, EstStart, EstEnd, EstLbrHr, EstLbrCst, EstPrtCst, EstMisCst, EstDnHr, ActStart, ActEnd, ActLbrHr, ActLbrCst, ActPrtCst, ActMisCst, ActDnHr, SuperID, Comment
+[Reason] (12 rows)
+  Columns: ID, Description, Wo, Po, Comment
+[SchAutoGen] (0 rows)
+  Columns: ID, ThruDays, AstID, AstGrpID, AstTypeID, ProcID, ProcGrpID, LocationID, CostID, SchID, SuperID, AssignToID, WOTypeID, ProjID, ShiftID, SortBy, PltShut
+[SchGen] (0 rows)
+  Columns: Updated, SchID, UserID, Counter, SchDate, SchTypeID, SchCount, SchMeter, GenWO, WoID, CRollOver, MRollOver, AstID, AstDescript, ProcID, ProcDescript, AutoMWO, AstGrpID, ProcGrpID, MasterWOID, Position, Comment, ProcComment
+[Schedule] (0 rows)
+  Columns: ID, Descript, AstID, ProcID, AstGrpID, ProcGrpID, AutoMWO, TypeID, SchOnce, SchComp, SchSch, SchCount, SchMeter, FreqComp, FreqSch, FreqCount, FreqMeter, OnceDue, LastComp, LastSch, LastCount, LastMeter, Dsun, Dmon, Dtue, Dwed, Dthu, Dfri, Dsat, AstShut, PltShut, DelProc, Skill, Priority, EstDown, Shift, CostID, CostLbrID, CostMiscID, ProjID, WarrantyID, WarrantyDate, SuperID, Active, WoComment, Comment, AssignToID, ProcComment, AutoGen, UserID, EveryCount, Options, RecurIndicator, Description, Freq, FreqUnit, NextDate, MeterTrigger, MeterLastTriggered, TriggerType
+[Shifts] (7 rows)
+  Columns: ID, Description, Comment
+[Task] (0 rows)
+  Columns: ID, Descript, TaskTypID, Safety, Tasks, Comment, Description, Instructions
+[TaskTypes] (2 rows)
+  Columns: ID, Description, Comment
+[TimeCard] (0 rows)
+  Columns: WoID, UserID, LaborID, CraftID, cc, HrReg, HrOver, HrDouble, HrOther, WorkDate, Comment, Complete, newEstHrs, successupdate, StartTime, StopTime, CompleteWO
+[TimeType] (0 rows)
+  Columns: ID, Description, Type, Comment
+[Tool] (25 rows)
+  Columns: ID, Description, Comment
+[UsrLbl] (0 rows)
+  Columns: ID, Description, EntityType, udDataType, udFieldSize, udDecimal, udReqd
+[WOGen] (0 rows)
+  Columns: Updated, UserID, Counter, SchID, SchDate, SchTypeID, SchCount, SchMeter, GenWO, WoID, CRollOver, MRollOver, AstID, AstDescript, ProcID, ProcDescript, AutoMWO, AstGrpID, ProcGrpID, MasterWOID, Position, Comment, ProcComment
+[WOMaster] (0 rows)
+  Columns: ID, Description, UserRef, AstID, ProcID, SchID, TypeID, StatusID, AddDate, SchDate, PrintDate, StartDate, CompDate, ReasonID, Delay, SuperID, Comment, WOType, AstGrpID, ProcGrpID
+[WOMaster_Complete_Craft] (0 rows)
+  Columns: MasterWOID, CraftID, HrReg, HrOver, HrDouble, HrOther
+[WOMaster_Complete_Part] (0 rows)
+  Columns: MasterWOID, PartID, ActQty
+[WOMaster_Complete_Work] (0 rows)
+  Columns: WoID, Complete, Cancel, DoneCount, DoneMeter, CompDate, CancelDate
+[Work] (1200 rows)
+  Columns: ID, Descript, UserRef, AstID, ProcID, SchID, MasterWOID, TypeID, StatusID, AddDate, SchDate, PrintDate, StartDate, CompDate, AstShut, PltShut, RequestBy, ReqPhone, ReqExt, AssignByID, DueCount, DueMeter, DoneCount, DoneMeter, ReasonID, Delay, CostID, CostLbrID, CostMiscID, SuperID, WarrantyID, WarrantyDate, ProjID, EstDown, ActDown, Skill, Priority, Shift, LocationID, Building, Floor, Room, ReqNotify, Comment, AssignToID, ProcComment, OpenNotStarted, UserID, ExpectedDuration, Description, WorkOrderNumber, StartLat, StartLng, CompleteLat, CompleteLng, GPSAccuracy, ActualHours, FailureMode
+[WorkCode] (0 rows)
+  Columns: WoID, cc, CodeID, WorkDate, CodeVal, Comment
+[WorkLabor] (1200 rows)
+  Columns: WoID, cc, CraftID, LaborID, WorkDate, EstHour, HrReg, HrOver, HrDouble, HrOther, PayReg, PayOver, PayDouble, PayOther, CostID, Comment, RemHour, Schdate, POID, AssignTo
+[WorkMisc] (0 rows)
+  Columns: WoID, cc, Description, WorkDate, EstCost, ActCost, CostID, POID, Comment
+[WorkObj] (0 rows)
+  Columns: WoID, ObjID, WoPrint, Comment
+[WorkParts] (0 rows)
+  Columns: WoID, cc, PartID, UseDate, Location, EstQty, ActQty, UnitCost, CostID, PoID, Comment
+[WorkRels] (0 rows)
+  Columns: ID
+[WorkReq] (0 rows)
+  Columns: ID, Description, StatusID, RequestBy, ReqPhone, ReqExt, EmailReply, SendDate, ReceiveDate, EmailSubj, EmailBody, EmailAttach, AddDate, Emergency, UserRef, AstID, ProcID, Building, Floor, Room, ReqNotify, WOID, ProcDate, ProcUserID, Comment, SchDate
+[WorkReqObj] (0 rows)
+  Columns: WoReqID, ObjID, WoPrint, Comment
+[WorkTask] (0 rows)
+  Columns: WoID, TaskID, TskOrder, Tasks
+[WorkTool] (0 rows)
+  Columns: WoID, ToolID, EstQty
+[WorkType] (10 rows)
+  Columns: ID, Description, Comment
+[WorkUsers] (0 rows)
+  Columns: EntityID, UserID, Data, DataType
+[AuditLog] (0 rows)
+  Columns: ActDate, UserID, Description, Comment
+[zAddrCst] (4 rows)
+  Columns: ID, Description, Comment
+[AdjustmentTypes] (6 rows)
+  Columns: ID, Description, Comment
+[zAssetParent1] (0 rows)
+  Columns: RptDate, CID, CDes, CLoc, CCost, CType, CYTDL, CYTDP, CYTDM, CTDL, CTDP, CTDM, CMTDL, CMTDP, CMTDM, P1ID, P1Des, P1Loc, P1Cost, P1Type, P1YTDL, P1YTDP, P1YTDM, P1TDL, P1TDP, P1TDM, P1MTDL, P1MTDP, P1MTDM, P2ID, P2Des, P2Loc, P2Cost, P2Type, P2YTDL, P2YTDP, P2YTDM, P2TDL, P2TDP, P2TDM, P2MTDL, P2MTDP, P2MTDM, P3ID, P3Des, P3Loc, P3Cost, P3Type, P3YTDL, P3YTDP, P3YTDM, P3TDL, P3TDP, P3TDM, P3MTDL, P3MTDP, P3MTDM, P4ID, P4Des, P4Loc, P4Cost, P4Type, P4YTDL, P4YTDP, P4YTDM, P4TDL, P4TDP, P4TDM, P4MTDL, P4MTDP, P4MTDM, P5ID, P5Des, P5Loc, P5Cost, P5Type, P5YTDL, P5YTDP, P5YTDM, P5TDL, P5TDP, P5TDM, P5MTDL, P5MTDP, P5MTDM, P6ID, P6Des, P6Loc, P6Cost, P6Type, P6YTDL, P6YTDP, P6YTDM, P6TDL, P6TDP, P6TDM, P6MTDL, P6MTDP, P6MTDM, P7ID, P7Des, P7Loc, P7Cost, P7Type, P7YTDL, P7YTDP, P7YTDM, P7TDL, P7TDP, P7TDM, P7MTDL, P7MTDP, P7MTDM, P8ID, P8Des, P8Loc, P8Cost, P8Type, P8YTDL, P8YTDP, P8YTDM, P8TDL, P8TDP, P8TDM, P8MTDL, P8MTDP, P8MTDM, P9ID, P9Des, P9Loc, P9Cost, P9Type, P9YTDL, P9YTDP, P9YTDM, P9TDL, P9TDP, P9TDM, P9MTDL, P9MTDP, P9MTDM
+[zAssetParent2] (0 rows)
+  Columns: RptDate, CID, CDes, CLoc, CCost, CType, CYTDL, CYTDP, CYTDM, CTDL, CTDP, CTDM, CMTDL, CMTDP, CMTDM, P1ID, P1Des, P1Loc, P1Cost, P1Type, P1YTDL, P1YTDP, P1YTDM, P1TDL, P1TDP, P1TDM, P1MTDL, P1MTDP, P1MTDM, P2ID, P2Des, P2Loc, P2Cost, P2Type, P2YTDL, P2YTDP, P2YTDM, P2TDL, P2TDP, P2TDM, P2MTDL, P2MTDP, P2MTDM, P3ID, P3Des, P3Loc, P3Cost, P3Type, P3YTDL, P3YTDP, P3YTDM, P3TDL, P3TDP, P3TDM, P3MTDL, P3MTDP, P3MTDM, P4ID, P4Des, P4Loc, P4Cost, P4Type, P4YTDL, P4YTDP, P4YTDM, P4TDL, P4TDP, P4TDM, P4MTDL, P4MTDP, P4MTDM, P5ID, P5Des, P5Loc, P5Cost, P5Type, P5YTDL, P5YTDP, P5YTDM, P5TDL, P5TDP, P5TDM, P5MTDL, P5MTDP, P5MTDM, P6ID, P6Des, P6Loc, P6Cost, P6Type, P6YTDL, P6YTDP, P6YTDM, P6TDL, P6TDP, P6TDM, P6MTDL, P6MTDP, P6MTDM, P7ID, P7Des, P7Loc, P7Cost, P7Type, P7YTDL, P7YTDP, P7YTDM, P7TDL, P7TDP, P7TDM, P7MTDL, P7MTDP, P7MTDM, P8ID, P8Des, P8Loc, P8Cost, P8Type, P8YTDL, P8YTDP, P8YTDM, P8TDL, P8TDP, P8TDM, P8MTDL, P8MTDP, P8MTDM, P9ID, P9Des, P9Loc, P9Cost, P9Type, P9YTDL, P9YTDP, P9YTDM, P9TDL, P9TDP, P9TDM, P9MTDL, P9MTDP, P9MTDM
+[zAssetParent3] (0 rows)
+  Columns: ID
+[zCapacityLabr] (0 rows)
+  Columns: ID, AddrID, CraftID, Description, RemHrs, TotHrs, LostHrs, BusyHrs, Productive, Day, WorkDate, Modified, UserID, BreakHrs
+[zCapacityLabrRpt] (0 rows)
+  Columns: ID, AddrID, CraftID, Description, RemHrs, TotHrs, LostHrs, BusyHrs, Productive, Day, WorkDate, Modified, UserID, BreakHrs
+[zCapacityWork] (0 rows)
+  Columns: ID, WoID, cc, CraftID, LaborID, Work, Priority, Status, EstHrs, RemHrs, Day, WorkDate, Modified, UserID, AstID, ProcID, TypeID, SuperID, AssignByID, AssignToID
+[zCapacityWorkRpt] (0 rows)
+  Columns: ID, WoID, cc, CraftID, LaborID, Work, Priority, Status, EstHrs, RemHrs, Day, WorkDate, Modified, UserID, AstID, ProcID, TypeID, SuperID, AssignByID, AssignToID
+[zCompanyVer] (1 rows)
+  Columns: ID, ExtVer, IntVer, CustVer, Comment, UpdateCtr
+[zErrLog] (0 rows)
+  Columns: ErrDate, UserID, UserMsg, ErrNum, ErrCode, ErrResp, ErrMsg, Subroutine, LineNum, Comment
+[zFilter] (0 rows)
+  Columns: ID, FormName, SavedFilter1, SavedFilter2, SavedFilter3, SortBy1, SortBy2, SortBy3
+[zMeanTimeFail] (0 rows)
+  Columns: AstID, AstDesc, LocationID, DeptID, AssetType, WoID, WODesc, AddDate, SchDate, CompDate, StartDate, WoTypeID, ProcID, SuperID, AssignToID, StatusID, AssignByID, ReasonID, ProjID, Active
+[zMeanTimeFailAdd] (0 rows)
+  Columns: AstID, AstDesc, LocationID, DeptID, AssetType, WoID, WODesc, AddDate, SchDate, CompDate, StartDate, WoTypeID, ProcID, SuperID, AssignToID, StatusID, AssignByID, ReasonID, ProjID, Active
+[PurchaseStatuses] (9 rows)
+  Columns: ID, Description, Comment
+[zPartCst] (7 rows)
+  Columns: ID, Description, Comment
+[PartOrderRules] (0 rows)
+  Columns: ID, Description, Comment
+[zPrjStat] (6 rows)
+  Columns: ID, Description, Comment
+[zReqNotify] (6 rows)
+  Columns: ID, Description, Comment
+[zReqStatus] (5 rows)
+  Columns: ID, Description, ServerDescript, Comment
+[zSchType] (6 rows)
+  Columns: ID, Description, Comment
+[WorkStatuses] (10 rows)
+  Columns: ID, Description, Comment
+[MsgCfgShare] (0 rows)
+  Columns: ID, BadEmailSubj, BadEmailBody, VBReqVersion
+[MsgStd] (0 rows)
+  Columns: ID, Description, Subject, Body, Comment
+[zAddOn] (1 rows)
+  Columns: ID, Description, Visible, Installed, MOrder, StatLine, FormName, DatabaseName, ExeCmd, IconFile, Param, Keys, HelpNum, MakeDate, InstallDate, IntVer, ExtVer, Comment
+[zAllComp] (3 rows)
+  Columns: ID, Description, Path, UserCount, Comment
+[zAppInfo] (1 rows)
+  Columns: ID, ExtVer, IntVer, CustVer, SubVer, MakeDate, LastUp, UpdateCtr
+[zDatabaseObjectTypePermissions] (11 rows)
+  Columns: DatabaseObjectType, PermittedPermissionTypeID
+[zDatabaseObjectTypes] (2 rows)
+  Columns: ID, Description
+[zDatabaseObjects] (697 rows)
+  Columns: ID, Description, DatabaseObjectType, CategoryID, SubCategoryID
+[zDatabaseObjectsGroups] (8349 rows)
+  Columns: DatabaseObjectsGroupID, DatabaseObjectID, GroupID, PermissionTypeID
+[zEntity] (4 rows)
+  Columns: ID, Description
+[zForm] (3 rows)
+  Columns: ID, Description, FrmName, Table, QColumn0, QLabel0, QType0, Qcolumn1, QLabel1, QType1, Qcolumn2, QLabel2, QType2, Qcolumn3, QLabel3, QType3, Qcolumn4, QLabel4, QType4, Qcolumn5, QLabel5, QType5, Qcolumn6, QLabel6, QType6, Qcolumn7, QLabel7, QType7, Qcolumn8, QLabel8, QType8, Qcolumn9, QLabel9, QType9, Qcolumn10, QLabel10, QType10, Qcolumn11, QLabel11, QType11, Qcolumn12, QLabel12, QType12, Qcolumn13, QLabel13, QType13, Qcolumn14, QLabel14, QType14, Qcolumn15, QLabel15, QType15, Qcolumn16, QLabel16, QType16, Qcolumn17, QLabel17, QType17, Qcolumn18, QLabel18, QType18, Qcolumn19, QLabel19, QType19, Comment
+[zGroups] (14 rows)
+  Columns: GroupID, ID, Description, AllowChange
+[zMC_Asset_Brief] (0 rows)
+  Columns: CoID, CoDesc, AstID, AstDesc, Manufacturer, ManufDesc, Model, LocID, LocDesc, VendorID, VendorDesc, PurchaseDate, InstallCost, RetirementDate, ReplacementCost, AssetType, AstTypDesc, Priority, Building, DeptID, Active, PartID, PartDesc, PartLoc, PartUOM, ClassID, UnitCost, Quantity, LUseDate
+[zMC_Downtime] (0 rows)
+  Columns: CoID, CoDesc, AstID, AstDesc, AstLoc, WorkID, WorkAstID, TypeID, StatusID, ProjID, ProcID, CompDate, EstDown, ActDown, AstShut, PltShut, CostID, CostDesc, Active
+[zMC_Inventory] (0 rows)
+  Columns: CoID, CoDesc, AdjPartID, UserID, Updated, AdjTypID, RecDate, UseDate, Location, Qty, UnitCost, VendorID, AstID, ProcID, ProjID, CostID, WorkID, POID, PartDesc, PartID, PartABC, Manufacturer, zAdjTypDesc, MtdPurQty, YtdPurQty, TdPurQty, MtdPurCst, YtdPurCst, TdPurCst, MtdIssQty, YtdIssQty, TdIssQty, MtdIssCst, YtdIssCst, TdIssCst, TotalQOH, Stock, Model, ParentID, ClassID, QtyOOrder, QtyCommit, VendDesc, ManufDesc, ManufNum, VendNum, LeadDays, ShipVia, QuoteDate, PurchaseDate, QuoteCost, PurchaseCost, Comment
+[zMC_PO] (0 rows)
+  Columns: CoID, CoDesc, PoID, PoDesc, VendorID, StatusID, PONumber, AddDate, OrdDate, CompDate, RequestBy, BuyerID, ApproveBy, ApprDate, ReasonID, SuperID, Priority, LaborCost, PartCost, MiscCost
+[zMC_Project] (0 rows)
+  Columns: CoID, CoDesc, ProjID, ProjDesc, StatusID, EstStart, EstEnd, EstLbrHr, EstLbrCst, EstPrtCst, EstMisCst, EstDnHr, ActStart, ActEnd, ActLbrHr, ActLbrCst, ActPrtCst, ActMisCst, ActDnHr, SuperID, Comment, SuperDesc, StatusDesc
+[zMC_Work] (0 rows)
+  Columns: CoID, CoDesc, WoID, WoDesc, StatusID, AddDate, SchDate, PrintDate, StartDate, CompDate, EstDown, ActDown, WorkTypID, WorkTypDesc, AstID, AstDesc, AstLoc, DeptID, DeptDesc, ProcID, ReasonID, Priority, LaborCost, PartCost, MiscCost
+[zMC_WorkLabor] (0 rows)
+  Columns: CoID, CoDesc, WoID, WoDesc, LaborID, LaborDesc, CraftID, CraftDesc, TotalCost, TypDesc, TypID, Year, WorkDate
+[zMessage] (1199 rows)
+  Columns: GrpID, ID, MsgText, MsgTitle, MsgType, MsgDefault, Comment
+[zPPP] (1 rows)
+  Columns: ProductID, PPPComp, InstallDate
+[zPermissionTypes] (9 rows)
+  Columns: PermissionTypeID, PermissionType
+[zReport] (285 rows)
+  Columns: ID, Description, Graph, ObjOpt, ComOpt, SortOpt, RptName, Visible, Table, ClassID, QColumn0, QLabel0, QType0, Qcolumn1, QLabel1, QType1, Qcolumn2, QLabel2, QType2, Qcolumn3, QLabel3, QType3, Qcolumn4, QLabel4, QType4, Qcolumn5, QLabel5, QType5, Qcolumn6, QLabel6, QType6, Qcolumn7, QLabel7, QType7, Qcolumn8, QLabel8, QType8, Qcolumn9, QLabel9, QType9, Qcolumn10, QLabel10, QType10, Qcolumn11, QLabel11, QType11, Qcolumn12, QLabel12, QType12, Qcolumn13, QLabel13, QType13, Qcolumn14, QLabel14, QType14, Qcolumn15, QLabel15, QType15, Qcolumn16, QLabel16, QType16, Qcolumn17, QLabel17, QType17, Qcolumn18, QLabel18, QType18, Qcolumn19, QLabel19, QType19, PrimSortFld, SecSortFld, WOFormat, POFormat, SchGen, RptCtr, Comment, Legend, PromptType, CapView, CapFilter
+[zRptcls] (65 rows)
+  Columns: ID, Description, Comment
+[zUpHist] (1 rows)
+  Columns: Updated, FromExt, FromInt, ToExt, ToInt, CustVer, AddVer, Description, Comment
+[SystemUsers] (0 rows)
+  Columns: Userkey, ID, Description, DefCoID, WORptID, PORptID, PartCD, PartCDCmd, RenameID, ReadOnly, AskSave, AskDelete, HidePay, AddToPO, AddToWO, WoComment, PoComment, FormSub, Comment, Browser, Email, UserPwd
+[zUserCo] (21 rows)
+  Columns: UserID, CoID, Comment
+[zUserGroups] (27 rows)
+  Columns: UserID, GroupID
+[zUserPOStat] (1184 rows)
+  Columns: UserID, CoID, FromStatus, ToStatus, Allow
+[zUserWOStat] (1702 rows)
+  Columns: UserID, CoID, FromStatus, ToStatus, Allow
+[Users] (0 rows)
+  Columns: ID, Description, Role, Active
+[SiteLeadership] (4 rows)
+  Columns: ID, Name, Title, Phone, Email
+[sqlite_sequence] (15 rows)
+  Columns: name, seq
+[ChatProfile] (0 rows)
+  Columns: ID, FirstName, LastName, Email, Phone, PlantId, Department, PasswordHash, CreatedAt
+[schema_version] (18 rows)
+  Columns: version, filename, applied_at
+[sqlite_stat1] (72 rows)
+  Columns: tbl, idx, stat
+[sqlite_stat4] (81 rows)
+  Columns: tbl, idx, neq, nlt, ndlt, sample
+[calendar_reminders] (2 rows)
+  Columns: id, reminder_date, note, created_by, created_at, completed, completed_at
+[MeterReadings] (0 rows)
+  Columns: id, assetId, reading, source, recordedBy, recordedAt
+[tribal_knowledge] (1 rows)
+  Columns: id, entity_type, entity_id, title, body, contributed_by, tags, upvotes, created_at, updated_at
+[tribal_knowledge_votes] (1 rows)
+  Columns: id, tip_id, username, created_at
+[sync_ledger] (20856 rows)
+  Columns: id, table_name, row_id, operation, change_data, server_id, timestamp, applied, applied_at
+[record_locks] (0 rows)
+  Columns: record_type, record_id, locked_by, locked_at, expires_at
+[failure_modes] (41 rows)
+  Columns: id, code, description, category, equipment_type, severity
+[digital_twin_schematics] (0 rows)
+  Columns: ID, AssetID, PlantID, SchematicPath, SchematicType, Label, CreatedAt, UpdatedAt
+[digital_twin_pins] (0 rows)
+  Columns: ID, SchematicID, PinLabel, PinType, XPercent, YPercent, LinkedSensorID, LinkedPartID, LinkedAssetID, HealthStatus, HealthThresholds, Notes, CreatedAt, UpdatedAt
+[Utilities] (72 rows)
+  Columns: ID, Type, SupplierName, SupplierAddress, SupplierCity, SupplierState, SupplierZip, MeterReading, CostPerUnit, BillAmount, ReadingDate, Notes
+[ProductLoss] (0 rows)
+  Columns: ID, LogDate, Shift, Area, ProductType, LossType, Quantity, Unit, UnitValue, TotalValue, MeterID, MeterReading, WoID, NotifiedMgr, Notes, EnteredBy, EnteredDate
+[LabResult] (0 rows)
+  Columns: ID, SampleDate, SampleID, SampleType, SourceTank, CryoReading, CryoWaterPct, CryoPass, CryoAction, CryoLossValue, SPC, Coliform, LPC, PI, SoMatic, Listeria, Salmonella, BactPass, FatPct, ProteinPct, LactosePct, SolidsNotFat, TotalSolids, DrugTest, OverallPass, ActionRequired, EstLossValue, Notes, TestTech, ApprovedBy, EnteredDate
+[SupplyVendor] (12 rows)
+  Columns: ID, VendorName, Category, ContactName, Phone, Email, Website, AccountNum, LeadDays, ActiveFlag, Notes, CreatedAt
+[SupplyItem] (38 rows)
+  Columns: ID, ItemCode, Description, Category, SubCategory, VendorID, VendorPartNo, UOM, PackSize, UnitCost, OnHand, MinStock, MaxStock, ReorderPt, StorageArea, HazMat, ActiveFlag, Notes, CreatedAt
+[SupplyPO] (207 rows)
+  Columns: ID, PONumber, VendorID, OrderDate, ExpectedDate, ReceivedDate, Status, TotalValue, Notes, OrderedBy, CreatedAt, Tax, Shipping, Discount
+[SupplyPOLine] (659 rows)
+  Columns: ID, POID, ItemID, ItemDesc, Qty, QtyRcvd, UOM, UnitCost, LineTotal
+[SupplyTransaction] (2619 rows)
+  Columns: ID, ItemID, TxDate, TxType, Qty, UOM, UnitCost, TotalCost, POID, Reference, Notes, EnteredBy, CreatedAt
+[FailureCodes] (0 rows)
+  Columns: id, woId, failureCode, failureDesc, causeCode, causeDesc, remedyCode, remedyDesc, severity, createdAt, createdBy
+[FailureCodeLibrary] (40 rows)
+  Columns: id, codeType, code, description, category, active
+[WarrantyClaims] (0 rows)
+  Columns: ID, AssetID, AssetDescription, WorkOrderID, WorkOrderNumber, VendorName, ClaimDate, ClaimAmount, AmountRecovered, Status, ClaimReference, Notes, SubmittedBy, StatusUpdatedAt, StatusUpdatedBy, CreatedAt
+[UtilityThresholds] (0 rows)
+  Columns: ID, Type, PercentIncreaseAlert, BaselineWindowDays, AbsoluteMaxReading, Active, UpdatedAt
+[UtilityAnomalies] (0 rows)
+  Columns: ID, Type, AnomalyType, Severity, MeterReading, ThresholdValue, PercentageOver, Message, DetectedAt, AcknowledgedAt, AcknowledgedBy

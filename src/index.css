@@ -1,0 +1,1917 @@
+/* Copyright © 2026 Trier OS. All Rights Reserved. */
+
+/*
+ * © 2026 Doug Trier. All Rights Reserved.
+ * Trier CMMS is proprietary software. Unauthorized copying,
+ * distribution, or reverse engineering is strictly prohibited.
+ */
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --bg-dark: #020617;
+  --bg-card: rgba(15, 23, 42, 0.6);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  --accent-glow: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15), transparent);
+
+  /* Fluid Tokens */
+  --spacing-base: clamp(0.5rem, 1.5vh, 1.5rem);
+  --card-padding: clamp(0.5rem, 2vh, 1.25rem);
+  --header-height: clamp(40px, 8vh, 80px);
+
+  /* Standard 6 - Status Color System */
+  --status-open: #3b82f6;
+  --status-active: #f59e0b;
+  --status-complete: #22c55e;
+  --status-overdue: #ef4444;
+  --status-hold: #a855f7;
+  --status-cancelled: #6b7280;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  background: radial-gradient(circle at top right, #1e1b4b, #020617),
+    radial-gradient(circle at bottom left, #0f172a, #020617);
+  background-attachment: fixed;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto; 
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Base App Layout */
+.container {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 4px var(--spacing-base);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing-base) * 0.8);
+}
+
+.brand-logo {
+  height: calc(var(--header-height) * 3.11);
+  width: auto;
+}
+
+.brand-title {
+  font-size: clamp(0.8rem, 2.8vh, 2rem);
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  color: var(--text-muted);
+  font-size: clamp(0.75rem, 1.8vh, 1rem);
+}
+
+.nav-container-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  align-items: flex-end;
+}
+
+.nav-row {
+  display: grid;
+  grid-template-columns: repeat(6, 130px);
+  gap: 10px;
+  justify-content: end;
+}
+
+/* Specific class for header grid buttons to avoid leaking into components */
+.btn-header-grid {
+  width: 100%;
+  height: 42px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border-radius: 10px !important;
+}
+
+.btn-header-grid.btn-nav-alt {
+  background: linear-gradient(135deg, #4338ca, #6366f1) !important;
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25) !important;
+}
+
+.nav-pills {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-nav {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.btn-nav:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.btn-nav.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.nav-placeholder {
+  visibility: hidden;
+  width: 130px;
+  height: 42px;
+}
+
+/* Glass & UI Elements */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Graceful Fallback for Older Browsers */
+@supports not (backdrop-filter: blur(20px)) {
+  .glass-card {
+    background: rgba(15, 23, 42, 0.95);
+  }
+}
+
+.glass-card:hover {
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6);
+}
+
+input,
+select,
+textarea {
+  transition: all 0.2s ease;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+select option {
+  background-color: #0f172a;
+  color: white;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border: 1px solid var(--glass-border);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-danger-glass {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-danger-glass:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: translateY(-2px);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Standard 3 - Full Button Hierarchy */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+.btn-edit {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-edit:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+}
+
+.btn-save {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-save:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button size modifiers */
+.btn-sm {
+  padding: 6px 14px !important;
+  font-size: 0.8rem !important;
+  border-radius: 8px !important;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+/* Admin console launcher — red gradient */
+.btn-admin {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+  font-size: 0.8rem;
+}
+
+.btn-admin:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+}
+
+/* Purple accent variant */
+.btn-purple {
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-purple:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.btn-purple:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-view-standard {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.btn-view-standard:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+/* Status Badges */
+.badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge-blue {
+  background: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;
+}
+
+.badge-green {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+}
+
+.badge-yellow {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+
+.badge-red {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.badge-gray {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+}
+
+/* Standard 6 - Status Badge System (uses --status-* tokens) */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-open {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--status-open);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.status-active {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--status-active);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.status-complete {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--status-complete);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.status-overdue {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--status-overdue);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.status-hold {
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--status-hold);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.status-cancelled {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--status-cancelled);
+  border: 1px solid rgba(107, 114, 128, 0.25);
+}
+
+/* Standard 4 - Data Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.data-table th {
+  padding: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--bg-card, rgba(15, 23, 42, 0.6));
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.data-table th.sortable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.data-table th.sortable:hover {
+  color: #e2e8f0;
+}
+
+.data-table th .sort-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.65rem;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.data-table th .sort-arrow.active {
+  opacity: 1;
+  color: var(--primary);
+}
+
+.data-table td {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s ease;
+}
+
+/* Row hover */
+.data-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Alternating row banding */
+.data-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.data-table tbody tr:nth-child(even):hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+/* Selected row highlight */
+.data-table tbody tr.selected,
+.data-table tbody tr.active-row {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border-left: 3px solid var(--primary);
+}
+
+/* Empty state inside tables */
+.data-table .table-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.data-table .table-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+/* Print-only brand logo */
+.brand-logo-print {
+  display: none;
+}
+
+
+/* UI Styles (Non-Print) */
+.scrollable-box {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* Hide print-only elements by default in the web UI */
+.print-only { display: none !important; }
+.print-header { display: none !important; }
+
+/* Unified Print Engine Isolation Styles */
+.print-only-wrapper {
+  display: none !important;
+}
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+
+  /* Hide ALL UI — only the PrintEngine wrapper should print */
+  #root, .container, .modal-overlay, .print-exclude, .no-print, .portal-widget, button, .nav-pills, input, select, textarea, .scroll-area::after {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Show the portalled print wrapper (direct child of body) */
+  .print-only-wrapper {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    font-family: 'Inter', Helvetica, Arial, sans-serif !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+  }
+  /* UNIFIED PRINT ENGINE STYLING */
+  .print-engine-wrapper {
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    zoom: 1 !important;
+  }
+
+
+
+
+  .print-header-unified {
+    margin-bottom: 12px !important;
+    border-bottom: 4px solid #1e1b4b !important;
+    padding-bottom: 8px !important;
+  }
+
+
+  .print-brand-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+  }
+
+  .print-logo-main {
+    height: 60px !important;
+    width: auto !important;
+  }
+
+
+  .print-ribbon {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    background: #1e1b4b !important;
+    color: white !important;
+    padding: 8px 15px !important;
+    border-radius: 4px !important;
+  }
+
+  .ribbon-text {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 8pt !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.1em !important;
+  }
+
+  .print-title-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+  }
+
+  .print-doc-title {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 18pt !important;
+    font-weight: 900 !important;
+    color: #1e1b4b !important;
+    margin: 0 !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-doc-meta {
+    text-align: right !important;
+    font-size: 8.5pt !important;
+    color: #475569 !important;
+  }
+
+  .print-section-header {
+    background: #f8fafc !important;
+    border-left: 5px solid #1e1b4b !important;
+    padding: 8px 12px !important;
+    margin: 12px 0 6px 0 !important;
+  }
+
+  .print-section-header h3 {
+    margin: 0 !important;
+    font-size: 11pt !important;
+    font-family: 'Outfit', sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .print-panel {
+    border: 1px solid #e2e8f0 !important;
+    padding: 15px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .print-grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+  }
+
+  .print-detail-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    border-bottom: 1px dotted #cbd5e1 !important;
+    padding: 4px 0 !important;
+    font-size: 9pt !important;
+  }
+
+  .print-label {
+    font-weight: 700 !important;
+    color: #1e1b4b !important;
+  }
+
+  .print-data-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 15px 0 !important;
+  }
+
+  .print-data-table th {
+    background: #f1f5f9 !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 8px !important;
+    font-size: 8.5pt !important;
+    text-align: left !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-data-table td {
+    border: 1px solid #e2e8f0 !important;
+    padding: 8px !important;
+    font-size: 8.5pt !important;
+  }
+
+  .print-signature-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 40px !important;
+    margin-top: 40px !important;
+  }
+
+  .print-signature-box {
+    text-align: center !important;
+  }
+
+  .signature-line {
+    border-top: 1.5px solid #000 !important;
+    margin-bottom: 5px !important;
+  }
+
+  .signature-label {
+    font-size: 8pt !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+  }
+
+  /* Clean-page section breaks — prevent orphaned rows in evidence packets and reports */
+  .print-section-header,
+  .print-panel,
+  .print-signature-grid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-data-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Force a new page before major section blocks when flagged */
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Keep the signature block on its own page if near end */
+  .print-signature-grid {
+    page-break-before: auto !important;
+  }
+
+  * {
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* 📱 RESPONSIVE ADAPTATIONS (One and Done Strategy) */
+
+/* Tablet & Smaller (< 1200px) */
+@media screen and (max-width: 1200px) {
+  .nav-row {
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .nav-placeholder {
+    display: none;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .nav-container-main {
+    align-items: stretch;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Phones & Very Small Tablets (<768px) — TECHNICIAN MOBILE OVERHAUL */
+@media screen and (max-width: 768px) {
+  /* ── VIEWPORT FIX ── */
+  html, body {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── NUCLEAR WIDTH CONTAINMENT ── */
+  /* React inline styles render as JS properties, NOT style="..." attributes.
+     So [style*="..."] selectors DO NOT WORK. Use universal approach instead. */
+
+  /* 0. Utility: hide-mobile class */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* 0b. Auto-hide middle columns in data tables (3rd, 4th, 5th columns) */
+  .data-table th:nth-child(3),
+  .data-table td:nth-child(3),
+  .data-table th:nth-child(4),
+  .data-table td:nth-child(4),
+  .data-table th:nth-child(5),
+  .data-table td:nth-child(5) {
+    display: none !important;
+  }
+
+  /* 0c. Compact table cells on mobile */
+  .data-table th, .data-table td {
+    padding: 8px 6px !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* 0d. Compact description column */
+  .data-table td:nth-child(2) {
+    max-width: 35vw !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* 1. Lock the viewport — nothing escapes */
+  #root, .container, main, header, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Every element: kill min-width, enforce max-width, box-sizing */
+  main *, header * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* 2b. Exempt the fixed bottom nav — it spans the full viewport, not the header */
+  .nav-container-main, .nav-container-main * {
+    max-width: none !important;
+  }
+
+  /* 3. Tables: keep as table (not block!) so nth-child selectors work */
+  table, .data-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  thead, tbody, tr {
+    max-width: 100% !important;
+  }
+
+  /* 4. Table containers — always scrollable */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+  }
+
+  /* 5. Nav pills — wrap on mobile */
+  .nav-pills {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* 6. Glass cards — contained + scroll if needed */
+  .glass-card {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* 7. Inputs — prevent 250px/300px fixed widths from breaking layout */
+  main input, main select, main textarea {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* 8. Code/pre blocks — wrap text */
+  code, pre {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* 9. Detail grids (2-col) always collapse to 1 col on mobile */
+  .detail-grid, .panel-box .detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 10. Header plant selector — don't stretch past half screen */
+  header select {
+    max-width: 45vw !important;
+    width: auto !important;
+  }
+
+  /* 11. Button groups in headers — wrap and fill width */
+  .nav-pills .btn-nav, .nav-pills .btn-primary {
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 12. Modal content headers — wrap btn groups */
+  .modal-footer {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* 13. NUCLEAR — Force ALL divs to respect viewport width.
+     React inline styles set style.width as JS property, but CSS !important wins. */
+  main div, main section, main form {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 14. Force ALL grids to collapse — catches React gridTemplateColumns inline styles */
+  main div {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 15. Force ALL flex containers to wrap */
+  main div {
+    flex-wrap: wrap !important;
+  }
+
+  /* 16. Kill any explicit width on inputs set by React */
+  main input, main select, main textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 17. Override inline width on search boxes, panels, etc. */
+  main div, main span, main p, main h1, main h2, main h3, main h4 {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+  }
+
+  /* 18. Table cells — allow text wrapping */
+  main td, main th {
+    white-space: normal !important;
+    word-break: break-word !important;
+    max-width: 40vw !important;
+  }
+
+  /* 19. Dashboard-specific grid overrides (named classes for reliable override) */
+  .dashboard-kpi-grid {
+    grid-template-columns: 1fr 1fr !important; /* 2x2 grid for KPI cards on mobile */
+    gap: 8px !important;
+  }
+
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr !important; /* Stack WO table + contacts vertically */
+    gap: 12px !important;
+  }
+
+  /* ── 20. CALENDAR — Exempt from nuclear grid rule ── */
+  .cal-day-headers {
+    grid-template-columns: repeat(7, 1fr) !important; /* MUST stay 7 columns */
+  }
+  .cal-grid {
+    grid-template-columns: repeat(7, 1fr) !important; /* MUST stay 7 columns */
+    grid-template-rows: repeat(6, 1fr) !important;
+    /* Override absolute positioning — use relative flow on mobile */
+    position: relative !important;
+    min-height: 50vh !important;
+  }
+  .cal-container {
+    flex-direction: column !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* Calendar main card — needs explicit height for the grid */
+  .cal-container > .glass-card:first-child {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .cal-sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-height: 300px !important;
+  }
+  /* Calendar header — compact for mobile */
+  .cal-container .glass-card > div:first-child {
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+  }
+  /* Calendar stats bar — scroll horizontally */
+  .cal-container .glass-card > div:nth-child(2) {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 8px !important;
+    padding: 4px 10px !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* ── 21. CHAT — Mobile Redesign ── */
+  .chat-wrapper {
+    height: calc(100vh - 260px) !important; /* Account for header + bottom nav (90px) */
+    gap: 8px !important;
+  }
+  .chat-header {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .chat-header h2 {
+    font-size: 1.1rem !important;
+  }
+  /* Search bar full-width */
+  .chat-header form {
+    width: 100% !important;
+  }
+  .chat-header form input {
+    width: 100% !important;
+    flex: 1 !important;
+  }
+  /* Hide the user name/location on mobile header to save space */
+  .chat-header > div:last-child > div:last-child {
+    display: none !important;
+  }
+
+  .chat-layout {
+    flex-direction: column !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Channels: horizontal scrolling strip instead of sidebar */
+  .chat-channels {
+    width: 100% !important;
+    flex-direction: row !important;
+    padding: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    flex-shrink: 0 !important;
+    gap: 0 !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+  /* Hide the "Groups" heading on mobile */
+  .chat-channels > h3 {
+    display: none !important;
+  }
+  /* New topic form — hide on mobile (use desktop to create) */
+  .chat-channels > form {
+    display: none !important;
+  }
+  /* Channel list → horizontal pills */
+  .chat-channels > div {
+    flex-direction: row !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+  }
+  .chat-channels > div > div {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 0.8rem !important;
+    border-radius: 20px !important;
+  }
+
+  /* Thread — full width, takes remaining space */
+  .chat-thread {
+    flex: 1 !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+  }
+  /* Keep chat input bar above bottom nav */
+  .chat-thread > form {
+    padding-bottom: 10px !important;
+  }
+  /* Chat input row — MUST stay as horizontal flex row, NOT wrap */
+  .chat-thread > form > div {
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+  }
+  /* Chat text input — flex child, NOT 100% width */
+  .chat-thread > form > div > input {
+    width: auto !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+  }
+  /* Push-to-talk — HIDE on mobile (iOS reprompts mic every time, steals input focus).
+     Users can use the phone keyboard's built-in dictation mic instead. */
+  .btn-ptt {
+    display: none !important;
+  }
+  /* Send button — compact */
+  .chat-thread > form > div > button[type="submit"] {
+    padding: 0 12px !important;
+    flex-shrink: 0 !important;
+  }
+  /* Image upload label — compact */
+  .chat-thread > form > div > label {
+    padding: 0 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Global chat — hide on mobile, forum is primary */
+  .chat-global {
+    display: none !important;
+  }
+
+  .container {
+    padding: 8px 10px 90px 10px !important; /* bottom padding for bottom nav */
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* ── HEADER: Collapse to single compact row ── */
+  header {
+    flex-direction: column !important;
+    gap: 4px !important;
+    padding: 6px 8px !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* The inner grid container — collapse from 3-col to stacked */
+  header > div {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    /* Override the inline grid-template-columns */
+    grid-template-columns: none !important;
+  }
+
+  /* Left brand section — compact horizontal layout */
+  header > div > div:first-child {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Logo — shrink dramatically for mobile */
+  header > div > div:first-child > img {
+    height: 60px !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Text block next to logo — compact */
+  header > div > div:first-child > div {
+    gap: 0 !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* "Trier OS" title — smaller on mobile */
+  header > div > div:first-child > div > h1 {
+    font-size: 1.1rem !important;
+    margin: 0 !important;
+  }
+
+  /* "Enterprise Operations Platform" — hide on mobile */
+  header > div > div:first-child > div > span {
+    display: none !important;
+  }
+
+  /* "Select Plant Location" label — hide */
+  header > div > div:first-child > div > p {
+    display: none !important;
+  }
+
+  /* Plant selector — compact, fits remaining space */
+  header > div > div:first-child > div > select {
+    font-size: 0.7rem !important;
+    padding: 2px 6px !important;
+    max-width: 50vw !important;
+    width: auto !important;
+  }
+
+  /* Center section (SCAN + bell + SHOP FLOOR) — compact row */
+  header > div > div:nth-child(2) {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    width: auto !important;
+    justify-content: flex-start !important;
+    order: 2 !important;
+  }
+
+  /* SCAN and SHOP FLOOR buttons — smaller on mobile */
+  header > div > div:nth-child(2) > button {
+    height: 30px !important;
+    padding: 0 10px !important;
+    font-size: 0.7rem !important;
+    border-radius: 16px !important;
+  }
+
+  /* Hide button text labels on very small screens, keep icons */
+  header > div > div:nth-child(2) > button > span {
+    display: none !important;
+  }
+
+  /* SCAN button (first button) — keep prominent, it's the primary mobile action */
+  header > div > div:nth-child(2) > button:first-child {
+    height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 0.75rem !important;
+  }
+  /* Keep SCAN button text visible */
+  header > div > div:nth-child(2) > button:first-child > span {
+    display: inline !important;
+  }
+
+  /* SHOP FLOOR button text — hide (icon-only) to save space */
+  header > div > div:nth-child(2) > button:last-child > span {
+    display: none !important;
+  }
+
+  /* Right utility icons section — compact, wraps to next line */
+  header > div > div:nth-child(3) {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    order: 3 !important;
+    margin-left: auto !important;
+  }
+
+  /* Utility icon buttons — smaller */
+  header > div > div:nth-child(3) > button {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+  }
+
+  /* Hide icon labels (MANUAL, CATALOG text under icons) */
+  header > div > div:nth-child(3) > button > span {
+    display: none !important;
+  }
+
+  /* Language button — compact */
+  header > div > div:nth-child(3) > button:last-child {
+    width: auto !important;
+    padding: 0 8px !important;
+    font-size: 0.65rem !important;
+    border-radius: 16px !important;
+  }
+
+  /* ── NAVIGATION: Convert to sticky bottom tab bar ── */
+  /* CRITICAL: Kill all transforms/filters on ancestors so fixed positioning works.
+     CSS spec: position:fixed is relative to the viewport UNLESS an ancestor
+     has transform, filter, or perspective — then it acts like position:absolute. */
+  header, header > div {
+    transform: none !important;
+    -webkit-transform: none !important;
+    filter: none !important;
+    perspective: none !important;
+    will-change: auto !important;
+  }
+
+  .nav-container-main {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9990 !important;
+    background: rgba(2, 6, 23, 0.97) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid var(--glass-border) !important;
+    padding: 6px 8px env(safe-area-inset-bottom, 8px) 8px !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    align-items: stretch !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5) !important;
+    /* Override nuclear header * rules that break fixed positioning */
+    max-width: none !important;
+    width: 100% !important;
+    min-width: 100vw !important;
+    pointer-events: auto !important;
+    contain: layout !important;
+  }
+
+  /* Bell + Language row — compact centered strip in bottom nav */
+  .nav-row-utils {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-top: 2px !important;
+    padding: 2px 0 !important;
+  }
+  .nav-row-utils button {
+    min-height: 36px !important;
+    font-size: 0.75rem !important;
+    padding: 4px 10px !important;
+  }
+
+  .nav-row {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 4px !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+  }
+
+  .nav-placeholder {
+    display: none !important;
+  }
+
+  .btn-header-grid {
+    flex: 1 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    font-size: 0.7rem !important;
+    padding: 0 4px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* ── GLASS CARDS: Reduce padding, tighter border radius ── */
+  .glass-card {
+    border-radius: 12px !important;
+    padding: 12px !important;
+  }
+
+  /* ── TOUCH TARGETS: 48px minimum for glove-friendly operation ── */
+  input, select, textarea {
+    min-height: 48px !important;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  button, .btn-primary, .btn-secondary, .btn-nav {
+    min-height: 44px !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* ── DATA TABLES: Responsive with horizontal scroll ── */
+  .scroll-area {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .data-table th, .data-table td {
+    padding: 10px 8px !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* ── MODALS: Full-screen on mobile ── */
+  .modal-overlay {
+    align-items: flex-end !important; /* Slide up from bottom */
+  }
+
+  .modal-content-standard {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border-bottom: none !important;
+  }
+
+  .modal-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 10 !important;
+    background: var(--glass-bg, rgba(15, 23, 42, 0.98)) !important;
+    border-top: 1px solid var(--glass-border) !important;
+    padding: 12px 16px env(safe-area-inset-bottom, 12px) 16px !important;
+  }
+
+  /* ── DETAIL GRIDS: Stack to single column ── */
+  .detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .detail-row {
+    flex-direction: column !important;
+    gap: 4px !important;
+    padding: 8px 0 !important;
+  }
+
+  .detail-label {
+    font-size: 0.7rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  /* ── PANEL BOXES: Compact on mobile ── */
+  .panel-box {
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .panel-box h3 {
+    font-size: 0.95rem !important;
+  }
+
+  /* ── BADGES: Slightly larger for readability ── */
+  .badge {
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* ── SCAN & SHOP FLOOR buttons: Reposition for mobile ── */
+  /* On mobile, the scan/shop floor buttons should be part of the header */
+  .btn-primary[title*="Global Smart Scan"],
+  .btn-primary[title*="Shop Floor Mode"] {
+    min-width: unset !important;
+    padding: 8px 16px !important;
+    font-size: 0.8rem !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── SCROLLBAR: Hide on mobile (use natural swipe) ── */
+  .scroll-area::-webkit-scrollbar {
+    display: none !important;
+  }
+  .scroll-area {
+    scrollbar-width: none !important;
+  }
+
+
+  /* ── 22. ANDROID TEXT SIZE FIX ── */
+  /* Android Chrome renders at higher DPI than iOS Safari, making text smaller.
+     Enforce minimum readable sizes for key UI elements. */
+  :root {
+    font-size: 16px !important;
+  }
+  
+  h2 {
+    font-size: 1.1rem !important;
+  }
+  
+  h3 {
+    font-size: 0.95rem !important;
+  }
+
+  /* ── 23. DASHBOARD HEADER — Compact for mobile ── */
+  /* Prevent header buttons from creating horizontal overflow */
+  .glass-card > div:first-child {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Enterprise Intelligence cards — always single column on mobile */
+  .enterprise-intel-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Predictive + Shift Handoff — stack on mobile */
+  .predictive-shift-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ── ADMIN CONSOLE: Keep 2x2 grid on mobile ── */
+  .admin-hub-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  /* Admin console overlay header — wrap on mobile */
+  .admin-hub-grid ~ div, /* unused but safe */
+  div[style*="position: fixed"] > div:first-child {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+}
+
+/* ── EXTRA SMALL PHONES (<400px) ── */
+@media screen and (max-width: 400px) {
+  .btn-header-grid {
+    font-size: 0.6rem !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .brand-logo {
+    height: 36px !important;
+  }
+
+  .brand-title {
+    font-size: 0.85rem !important;
+  }
+}
+
+/* 🚀 FORCED MOBILE MODE (Manual Toggle Support — mirrors the 768px breakpoint) */
+.container.mobile-mode-force {
+  padding: 8px 10px 90px 10px !important;
+}
+
+.container.mobile-mode-force main {
+  padding-bottom: 10px !important;
+}
+
+.container.mobile-mode-force header {
+  gap: 8px !important;
+  padding: 8px 0 !important;
+  margin-bottom: 2px !important;
+}
+
+.container.mobile-mode-force .brand-section {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.container.mobile-mode-force .brand-logo {
+  height: 48px !important;
+}
+
+.container.mobile-mode-force .nav-container-main {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9990 !important;
+  background: rgba(2, 6, 23, 0.97) !important;
+  backdrop-filter: blur(20px) !important;
+  border-top: 1px solid var(--glass-border) !important;
+  padding: 6px 8px 8px 8px !important;
+  transform: none !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.5) !important;
+}
+
+.container.mobile-mode-force .nav-row-utils {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin-top: 2px !important;
+  padding: 2px 0 !important;
+}
+.container.mobile-mode-force .nav-row-utils button {
+  min-height: 36px !important;
+  font-size: 0.75rem !important;
+  padding: 4px 10px !important;
+}
+
+.container.mobile-mode-force .nav-row {
+  display: flex !important;
+  grid-template-columns: none !important;
+  gap: 4px !important;
+  width: 100% !important;
+  margin-top: 0 !important;
+}
+
+.container.mobile-mode-force .nav-placeholder {
+  display: none !important;
+}
+
+.container.mobile-mode-force .btn-header-grid {
+  flex: 1 !important;
+  height: 44px !important;
+  font-size: 0.7rem !important;
+  padding: 0 4px !important;
+  border-radius: 8px !important;
+}
+
+.container.mobile-mode-force .detail-grid {
+  grid-template-columns: 1fr !important;
+}
+
+.container.mobile-mode-force .glass-card {
+  border-radius: 12px !important;
+  padding: 12px !important;
+}
+
+/* Global Modal & Detail Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.panel-box {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+
+.panel-box h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 15px;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+
+.scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.modal-content-standard {
+  width: 95%;
+  max-width: 1250px;
+  height: 92vh;
+  max-height: 92vh;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+  position: relative;
+}
+
+.modal-footer {
+  padding: 15px 25px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  background: #0f172a !important; /* Solid dark background */
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+@media screen and (max-width: 1024px) {
+  .tablet-hide { display: none !important; }
+}
+
+/* 🏭 SHOP FLOOR MODE (High Contrast) */
+body.shop-floor-mode {
+  --primary: #fbbf24; /* Safety Yellow */
+  --primary-hover: #f59e0b;
+  --bg-dark: #000000;
+  --bg-card: #000000;
+  --text-main: #ffffff;
+  --text-muted: #cbd5e1;
+  --glass-border: #ffffff;
+  background: #000000 !important;
+}
+
+body.shop-floor-mode .glass-card {
+  background: #000000 !important;
+  border: 2px solid #ffffff !important;
+  backdrop-filter: none !important;
+}
+
+body.shop-floor-mode .btn-primary {
+  background: #fbbf24 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #000000 !important;
+}
+
+body.shop-floor-mode .data-table th {
+  color: #fbbf24 !important;
+  border-bottom: 2px solid #ffffff !important;
+  font-size: 0.9rem !important;
+}
+
+body.shop-floor-mode .data-table td {
+  border-bottom: 1px solid #444 !important;
+  font-size: 1rem !important; /* Larger text for readability */
+}
+
+body.shop-floor-mode input, 
+body.shop-floor-mode select, 
+body.shop-floor-mode textarea {
+  background: #111 !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+body.shop-floor-mode .badge-gray {
+  background: rgba(255,255,255,0.2) !important;
+  color: #fff !important;
+  border: 1px solid #fff;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Pulsing dot on the header Scan button — shows scanner is always listening */
+@keyframes scannerPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  60%  { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────
+   ⌨️ KEYBOARD NAVIGATION — Focus-visible ring for Tab navigation
+   Only shows when user is keyboard-navigating (not on mouse click)
+   ───────────────────────────────────────────────────────────────── */
+.mc-tile-grid > div > div:focus-visible {
+  outline: 2px solid #6366f1 !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   ♿ ACCESSIBILITY — Respect user motion preferences
+   Users with vestibular disorders / motion sensitivity can enable
+   "Reduce motion" in their OS settings. This disables ALL animations
+   and transitions app-wide in one shot.
+   ───────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* ── Weather & Intelligence Animations ── */
+.glitter-marker {
+  animation: glitter-pulse 2s infinite ease-in-out;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+@keyframes glitter-pulse {
+  0% { fill-opacity: 0.6; filter: drop-shadow(0 0 2px #f87171); }
+  50% { fill-opacity: 0.9; filter: drop-shadow(0 0 6px #f87171); }
+  100% { fill-opacity: 0.6; filter: drop-shadow(0 0 2px #f87171); }
+}
+
+.natural-event-marker {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto !important;
+}

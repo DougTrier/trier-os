@@ -1,0 +1,29 @@
+��"�"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"
+�"                    �a�️  DO NOT DELETE  �a�️                        �"
+�"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�
+�"                                                                  �"
+�"  mfg_master.db is PROTECTED and MUST ship with every build.   �"
+�"                                                                  �"
+�"  It contains the Manufacturing Industry Master Data Catalog:            �"
+�"    ⬢ 215 Equipment Types (with specs, failure modes, MTBF)      �"
+�"    ⬢ 505 Parts (with cross-references and pricing)              �"
+�"    ⬢ 48 Warranty Templates                                       �"
+�"    ⬢ 50 Vendors                                                  �"
+�"    ⬢ 20 Cross-References                                         �"
+�"                                                                  �"
+�"  This data took weeks to build and represents irreplaceable     �"
+�"  industry knowledge. It is the competitive moat of this app.    �"
+�"                                                                  �"
+�"  RULES:                                                          �"
+�"    �xa� NEVER delete mfg_master.db                               �"
+�"    �xa� NEVER add mfg_master.db to .gitignore                    �"
+�"    �xa� NEVER include it in sanitize/reset/clean scripts          �"
+�"    �xa� NEVER drop its tables                                      �"
+�"    �S& It is READ-ONLY at runtime                                 �"
+�"    �S& Only seed scripts may write to it                          �"
+�"    �S& It MUST be included in production builds                   �"
+�"                                                                  �"
+�"  If accidentally deleted, restore with:                          �"
+�"    git checkout -- data/mfg_master.db                          �"
+�"                                                                  �"
+�"a�"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�

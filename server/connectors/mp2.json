@@ -1,0 +1,276 @@
+{
+    "id": "mp2",
+    "name": "MP2 / Datastream / Infor EAM",
+    "sourceType": "access",
+    "notes": "Column mappings verified against O'Fallon tutdb.mdb. Trier column names verified against OFallon_IL.db schema.",
+    "discoveredFrom": "Legacy Databases/Ofallon/Access Databases/tutdb.mdb",
+    "passwordProtected": false,
+    "tables": {
+        "Work": {
+            "sourceTable": "WO",
+            "notes": "WO table stores work orders. AstID comes from WOEQLIST child. Trier uses Descript not Description.",
+            "columns": {
+                "ID": { "source": "WONUM", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "TASKDESC", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "PRIORITY", "type": "integer", "confidence": "confirmed" },
+                "StatusID": { "source": "STATUS", "type": "text", "confidence": "confirmed" },
+                "AssignToID": { "source": "ASSIGNEDTO", "type": "text", "confidence": "confirmed" },
+                "AddDate": { "source": "REQUESTDATE", "type": "date", "confidence": "confirmed" },
+                "CompDate": { "source": "COMPLETIONDATE", "type": "date", "confidence": "confirmed" },
+                "SchDate": { "source": "SCHEDFINISHDATE", "type": "date", "confidence": "confirmed" },
+                "StartDate": { "source": "SCHEDSTARTDATE", "type": "date", "confidence": "confirmed" },
+                "Comment": { "source": "DELAYDESC", "type": "text", "confidence": "confirmed" },
+                "TypeID": { "source": "WOTYPE", "type": "text", "confidence": "confirmed" },
+                "RequestBy": { "source": "ORIGINATOR", "type": "text", "confidence": "confirmed" },
+                "ProcID": { "source": "TASKNUM", "type": "text", "confidence": "confirmed" },
+                "ActDown": { "source": "ACTUALDURATION", "type": "real", "confidence": "confirmed" },
+                "ReqPhone": { "source": "PHONE", "type": "text", "confidence": "confirmed" },
+                "ProjID": { "source": "PROJECTID", "type": "text", "confidence": "confirmed" },
+                "LocationID": { "source": "LOCATION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Asset": {
+            "sourceTable": "EQUIP",
+            "notes": "EQUIP table. Trier uses Description not Descript for Asset table.",
+            "columns": {
+                "ID": { "source": "EQNUM", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" },
+                "LocationID": { "source": "LOCATION", "type": "text", "confidence": "confirmed" },
+                "Building": { "source": "SUBLOCATION1", "type": "text", "confidence": "confirmed" },
+                "DeptID": { "source": "DEPT", "type": "text", "confidence": "confirmed" },
+                "Serial": { "source": "SERIALNUM", "type": "text", "confidence": "confirmed" },
+                "Model": { "source": "MODELNUM", "type": "text", "confidence": "confirmed" },
+                "Manufacturer": { "source": "MANUFACTURER", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VENDORID", "type": "text", "confidence": "confirmed" },
+                "InstallDate": { "source": "STARTUPDATE", "type": "date", "confidence": "confirmed" },
+                "PurchaseDate": { "source": "PURCHDATE", "type": "date", "confidence": "confirmed" },
+                "Active": { "source": "OPERATINGSTATUS", "type": "text", "confidence": "confirmed" },
+                "AssetTag": { "source": "ASSETNUM", "type": "text", "confidence": "confirmed" },
+                "InstallCost": { "source": "ORIGINALCOST", "type": "real", "confidence": "confirmed" },
+                "ReplacementCost": { "source": "REPLACEMENTCOST", "type": "real", "confidence": "confirmed" },
+                "AssetType": { "source": "EQTYPE", "type": "text", "confidence": "confirmed" },
+                "WarrantyDate": { "source": "WARRANTYDATE", "type": "date", "confidence": "confirmed" },
+                "Priority": { "source": "PRIORITY", "type": "integer", "confidence": "confirmed" },
+                "Comment": { "source": "SAFETYNOTE", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Part": {
+            "sourceTable": "INVY",
+            "notes": "INVY has item master data. Trier uses Descript not Description.",
+            "columns": {
+                "ID": { "source": "ITEMNUM", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" },
+                "ClassID": { "source": "TYPE", "type": "text", "confidence": "confirmed" },
+                "UOM": { "source": "UOM", "type": "text", "confidence": "confirmed" },
+                "Manufacturer": { "source": "OEMMFG", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "NOTES", "type": "text", "confidence": "confirmed" },
+                "Model": { "source": "MODEL", "type": "text", "confidence": "confirmed" },
+                "CostID": { "source": "COSTCENTER", "type": "text", "confidence": "confirmed" }
+            },
+            "childTables": {
+                "STOCK": {
+                    "linkKey": "ITEMNUM",
+                    "parentKey": "ITEMNUM",
+                    "notes": "Warehouse-level stock quantities. Join to get QTYONHAND.",
+                    "columns": {
+                        "Stock": { "source": "QTYONHAND", "type": "integer", "confidence": "confirmed" },
+                        "Location": { "source": "WAREHOUSEID", "type": "text", "confidence": "confirmed" }
+                    }
+                },
+                "INVCOST": {
+                    "linkKey": "ITEMNUM",
+                    "parentKey": "ITEMNUM",
+                    "notes": "Cost and available quantity records.",
+                    "columns": {
+                        "UnitCost": { "source": "UNITCOST", "type": "real", "confidence": "confirmed" }
+                    }
+                }
+            }
+        },
+        "Schedule": {
+            "sourceTable": "SCHEDWO",
+            "notes": "SCHEDWO stores scheduled/PM work orders.",
+            "columns": {
+                "ID": { "source": "WONUM", "type": "text", "confidence": "confirmed" },
+                "ProcID": { "source": "TASKNUM", "type": "text", "confidence": "confirmed" },
+                "AstID": { "source": "EQNUM", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "TASKDESC", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "PRIORITY", "type": "integer", "confidence": "confirmed" },
+                "TypeID": { "source": "WOTYPE", "type": "text", "confidence": "confirmed" },
+                "AssignToID": { "source": "ASSIGNEDTO", "type": "text", "confidence": "confirmed" },
+                "LocationID": { "source": "LOCATION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Vendors": {
+            "sourceTable": "VENDOR",
+            "notes": "VENDOR table. Maps to Trier Vendors schema.",
+            "columns": {
+                "ID": { "source": "VENDORID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "NAME", "type": "text", "confidence": "confirmed" },
+                "Address": { "source": "ADDR1", "type": "text", "confidence": "confirmed" },
+                "Address2": { "source": "ADDR2", "type": "text", "confidence": "confirmed" },
+                "City": { "source": "CITY", "type": "text", "confidence": "confirmed" },
+                "State": { "source": "STATE", "type": "text", "confidence": "confirmed" },
+                "Zip": { "source": "ZIP", "type": "text", "confidence": "confirmed" },
+                "Phone": { "source": "PHONE", "type": "text", "confidence": "confirmed" },
+                "Scontact": { "source": "REP", "type": "text", "confidence": "confirmed" },
+                "Fax": { "source": "TELEXFAX", "type": "text", "confidence": "confirmed" },
+                "Email": { "source": "EMAIL", "type": "text", "confidence": "confirmed" },
+                "Comment": { "source": "NOTES", "type": "text", "confidence": "confirmed" },
+                "Terms": { "source": "TERMS", "type": "text", "confidence": "confirmed" },
+                "ShipTerms": { "source": "FREIGHTTERMS", "type": "text", "confidence": "confirmed" },
+                "ShipVia": { "source": "SHIPVIA", "type": "text", "confidence": "confirmed" },
+                "FOB": { "source": "FOB", "type": "text", "confidence": "confirmed" },
+                "Vendor": { "source": null, "default": true, "type": "boolean", "confidence": "confirmed" }
+            }
+        },
+        "Procedures": {
+            "sourceTable": "TASK",
+            "notes": "TASK table stores PM procedure masters.",
+            "columns": {
+                "ID": { "source": "TASKNUM", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "PRIORITY", "type": "integer", "confidence": "confirmed" },
+                "UserID": { "source": "ASSIGNEDTO", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "WorkParts": {
+            "sourceTable": "WOP",
+            "notes": "Parts used on work orders. Links WO to Part with qty and cost.",
+            "columns": {
+                "WorkID": { "source": "WONUM", "type": "text", "confidence": "confirmed" },
+                "AstID": { "source": "EQNUM", "type": "text", "confidence": "confirmed" },
+                "PartID": { "source": "ITEMNUM", "type": "text", "confidence": "confirmed" },
+                "Descript": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" },
+                "Quantity": { "source": "QTYUSED", "type": "real", "confidence": "confirmed" },
+                "UnitCost": { "source": "TOTALUNITCOST", "type": "real", "confidence": "confirmed" }
+            }
+        },
+        "WorkLabor": {
+            "sourceTable": "WOE",
+            "notes": "Employee labor entries on work orders. Each row = one person's time on one WO.",
+            "columns": {
+                "WorkID": { "source": "WONUM", "type": "text", "confidence": "confirmed" },
+                "AddrID": { "source": "EMPCODE", "type": "text", "confidence": "confirmed" },
+                "CraftID": { "source": "CRAFT", "type": "text", "confidence": "confirmed" },
+                "DateRef": { "source": "WODATE", "type": "date", "confidence": "confirmed" },
+                "RegHrs": { "source": "REGHRS", "type": "real", "confidence": "confirmed" },
+                "OTHrs": { "source": "OTHRS", "type": "real", "confidence": "confirmed" },
+                "PayRate": { "source": "RATE", "type": "real", "confidence": "confirmed" }
+            }
+        },
+        "Craft": {
+            "sourceTable": "CRAFTS",
+            "notes": "Craft/trade definitions (Electrician, Mechanic, etc.)",
+            "columns": {
+                "ID": { "source": "CRAFT", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Locations": {
+            "sourceTable": "LOCATION",
+            "notes": "Physical location hierarchy.",
+            "columns": {
+                "ID": { "source": "LOCATION", "type": "text", "confidence": "confirmed" },
+                "Building": { "source": "SUBLOCATION1", "type": "text", "confidence": "confirmed" },
+                "Floor": { "source": "SUBLOCATION2", "type": "text", "confidence": "confirmed" },
+                "Room": { "source": "SUBLOCATION3", "type": "text", "confidence": "confirmed" },
+                "CostID": { "source": "COSTCENTER", "type": "text", "confidence": "confirmed" },
+                "DeptID": { "source": "DEPARTMENT", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "AssetTypes": {
+            "sourceTable": "EQTYPE",
+            "notes": "Equipment type definitions.",
+            "columns": {
+                "ID": { "source": "EQTYPE", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PartClasses": {
+            "sourceTable": "INVTYPE",
+            "notes": "Inventory part type/class definitions.",
+            "columns": {
+                "ID": { "source": "TYPE", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PartVendors": {
+            "sourceTable": "INVVEND",
+            "notes": "Part-to-vendor cross-reference. Who supplies which parts.",
+            "columns": {
+                "PartID": { "source": "ITEMNUM", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VENDORID", "type": "text", "confidence": "confirmed" },
+                "VendPartNum": { "source": "VENDORITEMNUM", "type": "text", "confidence": "confirmed" },
+                "UnitCost": { "source": "UNITCOST", "type": "real", "confidence": "confirmed" },
+                "LeadTime": { "source": "LEADTIME", "type": "integer", "confidence": "confirmed" },
+                "ContractNum": { "source": "CONTRACTNUM", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "MeterReadings": {
+            "sourceTable": "MTRHIST",
+            "notes": "Meter/runtime history for meter-based PMs.",
+            "columns": {
+                "assetId": { "source": "EQNUM", "type": "text", "confidence": "confirmed" },
+                "reading": { "source": "MTRVALUE", "type": "real", "confidence": "confirmed" },
+                "recordedAt": { "source": "EQDATE", "type": "date", "confidence": "confirmed" },
+                "source": { "source": null, "default": "MP2 Import", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "AssetRels": {
+            "sourceTable": "EQXREF",
+            "notes": "Equipment parent-child hierarchy. SUBUNIT is child, UNIT is parent.",
+            "columns": {
+                "ID": { "source": "SUBUNIT", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "PO": {
+            "sourceTable": "POHEADER",
+            "notes": "Purchase order headers.",
+            "columns": {
+                "ID": { "source": "PONUM", "type": "text", "confidence": "confirmed" },
+                "VendorID": { "source": "VENDORID", "type": "text", "confidence": "confirmed" },
+                "StatusID": { "source": "STATUS", "type": "text", "confidence": "confirmed" },
+                "OrdDate": { "source": "ORDERDATE", "type": "date", "confidence": "confirmed" },
+                "Comment": { "source": "NOTES", "type": "text", "confidence": "confirmed" },
+                "Terms": { "source": "TERMS", "type": "text", "confidence": "confirmed" },
+                "ShipVia": { "source": "SHIPVIA", "type": "text", "confidence": "confirmed" },
+                "FOB": { "source": "FOB", "type": "text", "confidence": "confirmed" },
+                "Tax": { "source": "TAXCHARGE", "type": "real", "confidence": "confirmed" },
+                "Shipping": { "source": "TOTALSHIPPINGCHARGE", "type": "real", "confidence": "confirmed" }
+            }
+        },
+        "WorkType": {
+            "sourceTable": "WOTYPE",
+            "notes": "Work order type definitions (PM, Corrective, Emergency, etc.)",
+            "columns": {
+                "ID": { "source": "WOTYPE", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Departments": {
+            "sourceTable": "DEPT",
+            "notes": "Department definitions.",
+            "columns": {
+                "ID": { "source": "DEPARTMENT", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "CostCenters": {
+            "sourceTable": "COSTCTR",
+            "notes": "Cost center definitions for financial tracking.",
+            "columns": {
+                "ID": { "source": "COSTCENTER", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Project": {
+            "sourceTable": "PROJECT",
+            "notes": "Project tracking records.",
+            "columns": {
+                "ID": { "source": "PROJECTID", "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION", "type": "text", "confidence": "confirmed" }
+            }
+        }
+    }
+}

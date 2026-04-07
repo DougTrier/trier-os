@@ -1,0 +1,125 @@
+{
+  "Anderson_IN": {
+    "address": "722 Broadway Street, Anderson, IN 46012"
+  },
+  "Battle_Creek_MI": {
+    "address": "126 N Brady Rd, Battle Creek, MI 49037"
+  },
+  "Carbondale_IL": {
+    "address": "300 E Walnut St, Carbondale, IL 62901"
+  },
+  "Carlinville_IL": {
+    "address": "1100 Broadway, Carlinville, IL 62626"
+  },
+  "Chandler_OK": {
+    "address": "1100 W Thunderbird Rd, Chandler, OK 74834"
+  },
+  "Conroe_TX": {
+    "address": "900 E Semands St, Conroe, TX 77301"
+  },
+  "Dallas_TX": {
+    "address": "5327 Botham Jean Blvd, Dallas, TX 75215"
+  },
+  "Dayton_OH": {
+    "address": "967 Senate Drive, Dayton, OH 45459"
+  },
+  "Dubuque_IA": {
+    "address": "3510 Central Avenue, Dubuque, IA 52001"
+  },
+  "Faribault_MN": {
+    "address": "222 3rd St NE, Faribault, MN 55021"
+  },
+  "Fort_Wayne_IN": {
+    "address": "3400 Lima Road, Fort Wayne, IN 46852"
+  },
+  "Granite_City_IL": {
+    "address": "1800 Adams St., Granite City, IL 62040"
+  },
+  "Hammond_LA": {
+    "address": "4001 Hwy 190 West, Hammond, LA 70401"
+  },
+  "Holland_IN": {
+    "address": "304 Main Street, Holland, IN 47541"
+  },
+  "Demo_Plant_1": {
+    "address": "610 Madison Street, Demo Plant 1, MO 65101"
+  },
+  "Kansas_City_Brooklyn_MO": {
+    "address": "3805 Emanuel Cleaver II Blvd, Kansas City, MO 64128"
+  },
+  "Kansas_City_Cleaver_MO": {
+    "address": "3805 Emanuel Cleaver II Blvd, Kansas City, MO 64128"
+  },
+  "Kosciusko_MS": {
+    "address": "926 Hwy 35 Bypass, Kosciusko, MS 39090"
+  },
+  "Little_Rock_I30_AR": {
+    "address": "6901 I-30, Little Rock, AR 72209"
+  },
+  "Luana_IA": {
+    "address": "11744 Edgewood Ave, Luana, IA 52159"
+  },
+  "Norfolk_NE": {
+    "address": "700 East Omaha Ave., Norfolk, NE 68701"
+  },
+  "Norman_OK": {
+    "address": "302 S Porter Ave, Norman, OK 73071"
+  },
+  "OFallon_IL": {
+    "address": "610 E State Street, O'Fallon, IL 62269"
+  },
+  "Olney_IL": {
+    "address": "217 W. Main, Olney, IL 62450"
+  },
+  "Orrville_Dairy_OH": {
+    "address": "230 N Vine St, Orrville, OH 44667"
+  },
+  "Orrville_Vine_OH": {
+    "address": "230 N Vine St, Orrville, OH 44667"
+  },
+  "Quincy_IL": {
+    "address": "2640 S 12th St, Quincy, IL 62301"
+  },
+  "Rochester_MN": {
+    "address": "4219 N Frontage Rd, Rochester, MN 55901"
+  },
+  "Rockford_IL": {
+    "address": "2110 Ogilby Road, Rockford, IL 61102"
+  },
+  "Shullsburg_Miner_WI": {
+    "address": "110 Miner Way, Shullsburg, WI 53586"
+  },
+  "Shullsburg_Water_WI": {
+    "address": "110 Miner Way, Shullsburg, WI 53586"
+  },
+  "Sioux_Falls_SD": {
+    "address": "1200 W. Russell St., Sioux Falls, SD 57104"
+  },
+  "Somerset_KY": {
+    "address": "607 East Bourne Avenue, Somerset, KY 42502"
+  },
+  "Springfield_IL": {
+    "address": "830 E Primrose St, Springfield, IL 62703"
+  },
+  "Springfield_MO": {
+    "address": "830 E Primrose St, Springfield, MO 65807"
+  },
+  "Tyler_Fuller_TX": {
+    "address": "200 North Fuller, Tyler, TX 75702"
+  },
+  "Tyler_HWY271_TX": {
+    "address": "200 North Fuller, Tyler, TX 75702"
+  },
+  "Tyler_Jacksonville_TX": {
+    "address": "200 North Fuller, Tyler, TX 75702"
+  },
+  "Wichita_KS": {
+    "address": "700 E. Central, Wichita, KS 67201"
+  },
+  "Woodbury_MN": {
+    "address": "1930 Wooddale Dr., Woodbury, MN 55125"
+  },
+  "all_sites": {
+    "address": "1 Corporate Drive, Your City, ST 00000"
+  }
+}

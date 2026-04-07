@@ -1,0 +1,101 @@
+{
+  "name": "trier-os",
+  "version": "3.3.0",
+  "description": "Trier OS — Enterprise Maintenance Management System",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "start:cluster": "node server/cluster.js",
+    "start:prod": "set NODE_ENV=production && node server/cluster.js",
+    "dev": "node --watch server/index.js",
+    "dev:frontend": "npx vite --port 5173 --host",
+    "dev:full": "concurrently -k -n \"API,UI\" -c \"cyan,magenta\" \"npm run dev\" \"npm run dev:frontend\"",
+    "build": "vite build",
+    "seed": "node server/seeders.js",
+    "test": "npx playwright test",
+    "electron:dev": "set ELECTRON_DEV=true && electron electron/main.js",
+    "electron:start": "electron electron/main.js",
+    "electron:build": "vite build && electron-builder --config electron-builder.json"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+      "node_modules/better-sqlite3/build/Release/*.node",
+      "server/migrations/**/*",
+      "server/plant_addresses.json"
+    ],
+    "targets": [
+      "node22-win-x64"
+    ]
+  },
+  "keywords": [
+    "maintenance",
+    "Enterprise System",
+    "work-orders",
+    "enterprise",
+    "industrial",
+    "asset-management",
+    "logistics",
+    "gis",
+    "open-source"
+  ],
+  "author": "Doug Trier",
+  "license": "MIT",
+  "homepage": "https://github.com/DougTrier/trier-os#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DougTrier/trier-os.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DougTrier/trier-os/issues"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@vitejs/plugin-basic-ssl": "^2.2.0",
+    "@zxing/library": "^0.21.3",
+    "accessdb-parser": "^1.0.1",
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^11.9.1",
+    "cesium": "^1.139.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "dxf-parser": "^1.1.2",
+    "exifr": "^7.1.3",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.3.1",
+    "google-translate-api-x": "^10.7.2",
+    "helmet": "^8.1.0",
+    "html5-qrcode": "^2.3.8",
+    "jimp": "^0.22.12",
+    "jsonwebtoken": "^9.0.2",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.577.0",
+    "mdb-reader": "^3.2.0",
+    "multer": "^2.1.1",
+    "node-adodb": "^5.0.3",
+    "otpauth": "^9.5.0",
+    "papaparse": "^5.5.3",
+    "pdf-parse": "^2.4.5",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.13.1",
+    "tesseract.js": "^7.0.0",
+    "three": "^0.183.2",
+    "vite-plugin-cesium": "^1.2.23"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@vitejs/plugin-react": "^5.2.0",
+    "concurrently": "^9.2.1",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
+    "vite": "^7.3.1",
+    "vite-plugin-mkcert": "^1.17.10"
+  },
+  "bin": "server/index.js"
+}
