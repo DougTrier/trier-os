@@ -21,7 +21,27 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [Docs](./docs/ARCHITECTURE.md)
 </div>
 
-<br/>
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+| Mission Control | Assets & Machinery |
+|---|---|
+| ![Mission Control](./docs/screenshots/mission-control.jpg) | ![Assets](./docs/screenshots/assets.jpg) |
+
+| Corporate Analytics | Floor Plans |
+|---|---|
+| ![Analytics](./docs/screenshots/analytics.jpg) | ![Floor Plans](./docs/screenshots/floor-plans.jpg) |
+
+<img src="./docs/screenshots/live-studio.jpg" alt="Live Studio IDE" width="100%">
+
+*Live Studio — Embedded Monaco IDE with deploy pipeline, blast-radius mapper, and deterministic simulation engine*
+
+</div>
+
+---
 
 ## 📖 Overview
 
