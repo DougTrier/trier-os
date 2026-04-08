@@ -25,7 +25,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
 ## 🎬 Demo
 
-https://github.com/DougTrier/trier-os/releases/download/v3.3.0/Trier-OS-onboard.mp4
+[![Trier OS — First-Time Onboarding](https://img.youtube.com/vi/cOxjyI-GKOo/maxresdefault.jpg)](https://www.youtube.com/watch?v=cOxjyI-GKOo)
 
 ## 📸 Screenshots
 
