@@ -1,14 +1,14 @@
-�# Trier OS � Portable Demo Build Script (Full Data)
+�# Trier OS � Portable Build Script
 $ErrorActionPreference = "Continue"
 
 $SOURCE   = "G:\Trier OS"
 $BUILD    = $args[0]
-if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.3.0-Demo" }
+if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.3.0" }
 $NODE_EXE = (Get-Command node).Source
 
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Cyan
-Write-Host "  Trier OS - Portable Demo Build" -ForegroundColor Cyan
+Write-Host "  Trier OS - Portable Build" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host "  Source:  $SOURCE"
 Write-Host "  Output:  $BUILD"
@@ -26,10 +26,23 @@ Set-Location $SOURCE
 & npx vite build 2>&1 | Select-String "built in" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  OK" -ForegroundColor Green
 
+# Step 2b: Bundle Monaco editor for self-hosted IDE (no CDN, works air-gapped)
+Write-Host "[2b] Bundling Monaco editor..." -ForegroundColor Yellow
+$monacoSrc = "$SOURCE\node_modules\monaco-editor\min\vs"
+$monacoDst = "$SOURCE\dist\monaco-vs"
+if (Test-Path $monacoSrc) {
+    robocopy $monacoSrc $monacoDst /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+    Write-Host "  Monaco bundled into dist/monaco-vs/" -ForegroundColor Green
+} else {
+    Write-Host "  WARNING: monaco-editor not found in node_modules" -ForegroundColor Red
+}
+
 # Step 3: Copy app files
 Write-Host "[3/7] Copying application files..." -ForegroundColor Yellow
 robocopy "$SOURCE\server" "$BUILD\server" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 Write-Host "  server/"
+robocopy "$SOURCE\src" "$BUILD\src" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+Write-Host "  src/"
 robocopy "$SOURCE\dist" "$BUILD\dist" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 Write-Host "  dist/"
 robocopy "$SOURCE\public" "$BUILD\public" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
@@ -132,7 +145,7 @@ $fileCount = (Get-ChildItem $BUILD -Recurse -File).Count
 
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Green
-Write-Host "  DEMO BUILD COMPLETE" -ForegroundColor Green
+Write-Host "  BUILD COMPLETE" -ForegroundColor Green
 Write-Host "================================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Location:   $BUILD"

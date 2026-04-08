@@ -62,6 +62,13 @@ import { X, Code, FolderOpen, Rocket, ClipboardList, Save, GitBranch, RefreshCw,
 
 // Monaco is lazy-loaded — it only downloads when the Studio modal is actually opened.
 // The RBAC gate in App.jsx ensures this never loads for technician sessions.
+// In production builds, serve Monaco from /monaco-vs (self-hosted, no CDN, CSP-safe).
+// In dev, the Vite dev server has no CSP so the default CDN path works fine.
+import('@monaco-editor/react').then(({ loader }) => {
+    if (import.meta.env.PROD) {
+        loader.config({ paths: { vs: '/monaco-vs' } });
+    }
+});
 const MonacoEditor = lazy(() => import('@monaco-editor/react').then(m => ({ default: m.default })));
 
 // ── API helper ───────────────────────────────────────────────────────────────

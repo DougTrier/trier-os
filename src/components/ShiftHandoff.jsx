@@ -70,6 +70,7 @@ const ShiftHandoff = ({ selectedPlant }) => {
 
     const currentUser = localStorage.getItem('currentUser') || 'Unknown';
     const userRole = localStorage.getItem('userRole') || 'technician';
+    const isCreator = localStorage.getItem('PF_USER_IS_CREATOR') === 'true';
     const isAdmin = userRole === 'it_admin' || userRole === 'creator';
 
     const getHeaders = useCallback(() => ({
