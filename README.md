@@ -23,6 +23,10 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
 ---
 
+## 🎬 Demo
+
+https://github.com/DougTrier/trier-os/releases/download/v3.3.0/Trier-OS-onboard.mp4
+
 ## 📸 Screenshots
 
 <div align="center">
