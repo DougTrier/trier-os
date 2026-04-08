@@ -978,7 +978,7 @@ function App() {
                                 fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8',
                                 transition: 'all 0.2s', userSelect: 'none'
                             }}>
-                                <span>{LANGUAGES.find(l => l.code === lang)?.flag || 'ðŸ‡ºðŸ‡¸'}</span>
+                                <span>{LANGUAGES.find(l => l.code === lang)?.flag || '🇺🇸'}</span>
                                 <span>{lang.toUpperCase()}</span>
                             </button>
                         </div>
@@ -1218,7 +1218,7 @@ function App() {
                             background: 'rgba(245, 158, 11, 0.1)', border: '2px solid rgba(245, 158, 11, 0.3)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             margin: '0 auto 20px', fontSize: '2rem'
-                        }}>ðŸ”’</div>
+                        }}>🔑</div>
                         <h2 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', color: '#f59e0b' }}>
                             Security Notice
                         </h2>
