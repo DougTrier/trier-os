@@ -362,7 +362,7 @@ function MissionTile({ tileKey, metric, urgencyData, onClick, index, dragIndex, 
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>{t(`mc.tile.${tileKey}.desc`, tile.desc)}</p>
             {metric && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{metric}</div>}
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {tile.pills.map(p => <span key={p} style={{ background: `${tile.accent}20`, color: tile.accent, fontSize: '0.6rem', padding: '2px 8px', borderRadius: 8 }}>{t(`mc.tile.${tileKey}.pill.${p}`, p)}</span>)}
             </div>
         </div>
