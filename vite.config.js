@@ -56,7 +56,20 @@ if (!httpsConfig) {
     console.log('[Vite] Running on HTTP (dev mode) — SW and crypto.subtle work on localhost');
 }
 
-const activePlugins = [react(), cesium()];
+// Copy Monaco editor files into dist/monaco-vs so production builds can load
+// the editor without a CDN dependency. In dev the default CDN path is used.
+const copyMonaco = {
+    name: 'copy-monaco-vs',
+    writeBundle() {
+        const src = path.resolve(__dirname, 'node_modules/monaco-editor/min/vs');
+        const dest = path.resolve(__dirname, 'dist/monaco-vs');
+        if (fs.existsSync(src)) {
+            fs.cpSync(src, dest, { recursive: true });
+        }
+    }
+};
+
+const activePlugins = [react(), cesium(), copyMonaco];
 
 // https://vitejs.dev/config/
 export default defineConfig({

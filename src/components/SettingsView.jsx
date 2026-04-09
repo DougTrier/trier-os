@@ -27,7 +27,7 @@
  * tab routing and passes shared auth context as props.
  */
 import React, { useState, useEffect } from 'react';
-import { Settings, Database as DatabaseIcon, Download, Shield, Globe, RefreshCw, ClipboardList, Monitor, Trash2, Zap, Wind, Bell, Send, ToggleLeft, ToggleRight, Plus, X, Lock, Users, Key, Copy, Save, Wifi, Check, ImageIcon } from 'lucide-react';
+import { Settings, Database as DatabaseIcon, Download, Shield, Globe, RefreshCw, ClipboardList, Monitor, Trash2, Zap, Wind, Bell, Send, ToggleLeft, ToggleRight, Plus, X, Lock, Users, Key, Copy, Save, Wifi, Check, ImageIcon, Server } from 'lucide-react';
 import PasswordChangeView from './PasswordChangeView';
 import ImportWizard from './ImportWizard';
 import UserAccountsView from './UserAccountsView';
@@ -84,14 +84,14 @@ function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
             });
             const data = await res.json();
             if (res.ok && data.success) {
-                setResetResult({ success: true, message: `Plant "${targetPlantId}" reset successfully. Snapshot saved: ${data.snapshotFile}` });
+                setResetResult({ success: true, message: `${t('settings.plantResetSuccess', 'Plant')} "${targetPlantId}" ${t('settings.plantResetSuccessMsg', 'reset successfully. Snapshot saved:')} ${data.snapshotFile}` });
                 setResetConfirmName('');
                 setResetConfirmCode('');
             } else {
-                setResetResult({ success: false, message: data.error || 'Reset failed' });
+                setResetResult({ success: false, message: data.error || t('settings.resetFailed', 'Reset failed') });
             }
         } catch (err) {
-            setResetResult({ success: false, message: 'Request failed: ' + err.message });
+            setResetResult({ success: false, message: t('settings.requestFailed', 'Request failed') + ': ' + err.message });
         }
         setIsResetting(false);
     };
@@ -109,7 +109,7 @@ function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
                             <Trash2 size={18} /> {t('settings.dangerZone')}
                         </h3>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                            Reset all data for a plant node. This clears all work orders, assets, parts, and vendors.
+                            {t('settings.resetAllDataDesc', 'Reset all data for a plant node. This clears all work orders, assets, parts, and vendors.')}
                         </p>
                     </div>
                     <button 
@@ -132,13 +132,13 @@ function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px', lineHeight: 1.5 }}>
                 {t('settings.thisWill')} <strong>{t('settings.permanentlyDeleteAllData')}</strong> {t('settings.for')} <strong>{currentPlant?.label}</strong> and replace it with a fresh schema.
-                A snapshot will be created automatically before the reset.
+                {t('settings.snapshotCreatedBeforeReset', 'A snapshot will be created automatically before the reset.')}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                        {t('settings.type')} <strong>"{currentPlant?.label}"</strong> to confirm
+                        {t('settings.type')} <strong>"{currentPlant?.label}"</strong> {t('settings.toConfirm', 'to confirm')}
                     </label>
                     <input
                         type="text"
@@ -151,7 +151,7 @@ function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
                 </div>
                 <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                        {t('settings.type')} <strong>"RESET-CONFIRMED"</strong> to proceed
+                        {t('settings.type')} <strong>"RESET-CONFIRMED"</strong> {t('settings.toProceed', 'to proceed')}
                     </label>
                     <input
                         type="text"
@@ -190,6 +190,7 @@ function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
 
 // ── Desktop Download Section (end-user friendly) ──
 function DesktopDownloadSection({ platform }) {
+    const { t } = useTranslation();
     const [status, setStatus] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [downloading, setDownloading] = React.useState(false);
@@ -210,7 +211,7 @@ function DesktopDownloadSection({ platform }) {
             const res = await fetch(`/api/desktop/download/${platform.os}`);
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Download failed' }));
-                window.trierToast?.error(err.error || 'Download failed');
+                window.trierToast?.error(err.error || t('settings.downloadFailed', 'Download failed'));
                 setDownloading(false);
                 return;
             }
@@ -229,7 +230,7 @@ function DesktopDownloadSection({ platform }) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (err) {
-            window.trierToast?.error('Download failed: ' + err.message);
+            window.trierToast?.error(t('settings.downloadFailed', 'Download failed') + ': ' + err.message);
         }
         setDownloading(false);
     };
@@ -238,7 +239,7 @@ function DesktopDownloadSection({ platform }) {
         return (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 <RefreshCw size={16} className="spinning" style={{ marginRight: '8px' }} />
-                Checking for available installers…
+                {t('settings.checkingForInstallers', 'Checking for available installers…')}
             </div>
         );
     }
@@ -250,8 +251,7 @@ function DesktopDownloadSection({ platform }) {
         return (
             <>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px', lineHeight: 1.6 }}>
-                    The standalone desktop app for <strong>{platform.label}</strong> is ready to download. 
-                    It includes offline database support, zero-downtime operation, and automatic background sync.
+                    {t('settings.desktopAppReadyDesc', 'The standalone desktop app for')} <strong>{platform.label}</strong> {t('settings.desktopAppReadyDesc2', 'is ready to download. It includes offline database support, zero-downtime operation, and automatic background sync.')}
                 </p>
 
                 <div style={{
@@ -270,12 +270,12 @@ function DesktopDownloadSection({ platform }) {
                     </div>
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#e2e8f0', marginBottom: '4px' }}>
-                            Trier OS for {platform.label}
+                            {t('settings.trierOsFor', 'Trier OS for')} {platform.label}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                             {installerInfo.filename} • {installerInfo.sizeLabel}
                             {installerInfo.modified && (
-                                <> • Built {formatDate(installerInfo.modified)}</>
+                                <> • {t('settings.built', 'Built')} {formatDate(installerInfo.modified)}</>
                             )}
                         </div>
                     </div>
@@ -283,7 +283,7 @@ function DesktopDownloadSection({ platform }) {
                         className="btn-primary"
                         onClick={handleDownload}
                         disabled={downloading}
-                        title={`Download ${installerInfo.filename}`}
+                        title={`${t('settings.download', 'Download')} ${installerInfo.filename}`}
                         style={{
                             padding: '10px 24px', fontSize: '0.85rem', fontWeight: 700,
                             background: downloading
@@ -298,9 +298,9 @@ function DesktopDownloadSection({ platform }) {
                         }}
                     >
                         {downloading ? (
-                            <><RefreshCw size={16} className="spinning" /> Downloading…</>
+                            <><RefreshCw size={16} className="spinning" /> {t('settings.downloading', 'Downloading…')}</>
                         ) : (
-                            <><Download size={16} /> Download</>
+                            <><Download size={16} /> {t('settings.download', 'Download')}</>
                         )}
                     </button>
                 </div>
@@ -310,9 +310,9 @@ function DesktopDownloadSection({ platform }) {
                     gap: '10px', marginTop: '14px'
                 }}>
                     {[
-                        { icon: '💾', label: 'Full SQLite DB', desc: 'Local database replica' },
-                        { icon: '📡', label: 'Auto Sync', desc: '30-second intervals' },
-                        { icon: '🔌', label: 'Zero Downtime', desc: 'Works fully offline' }
+                        { icon: '💾', label: t('settings.fullSqliteDb', 'Full SQLite DB'), desc: t('settings.localDatabaseReplica', 'Local database replica') },
+                        { icon: '📡', label: t('settings.autoSync', 'Auto Sync'), desc: t('settings.thirtySecondIntervals', '30-second intervals') },
+                        { icon: '🔌', label: t('settings.zeroDowntime', 'Zero Downtime'), desc: t('settings.worksFullyOffline', 'Works fully offline') }
                     ].map(f => (
                         <div key={f.label} style={{
                             background: 'rgba(255,255,255,0.02)', padding: '12px',
@@ -346,11 +346,10 @@ function DesktopDownloadSection({ platform }) {
             </div>
             <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#94a3b8', marginBottom: '6px' }}>
-                    Desktop Installer Not Yet Available
+                    {t('settings.desktopInstallerNotAvailable', 'Desktop Installer Not Yet Available')}
                 </div>
                 <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', lineHeight: 1.6 }}>
-                    The <strong>{platform.label}</strong> desktop installer has not been published to this server yet. 
-                    Contact your system administrator to make it available for download.
+                    {t('settings.desktopInstallerNotPublished', 'The')} <strong>{platform.label}</strong> {t('settings.desktopInstallerNotPublished2', 'desktop installer has not been published to this server yet. Contact your system administrator to make it available for download.')}
                 </p>
             </div>
         </div>
@@ -403,7 +402,7 @@ function DesktopClientPanel() {
                 gap: '10px'
             }}>
                 <Monitor size={20} color={platform.supported ? '#6366f1' : '#64748b'} />
-                Desktop Client
+                {t('settings.desktopClient', 'Desktop Client')}
             </h3>
 
             {/* Branch 1: Running inside Electron */}
@@ -422,10 +421,10 @@ function DesktopClientPanel() {
                     }}>{'✅'}</div>
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#10b981', marginBottom: '4px' }}>
-                            Running in Desktop Mode
+                            {t('settings.runningInDesktopMode', 'Running in Desktop Mode')}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            Full offline SQLite database active on {platform.label} • Auto-sync enabled
+                            {t('settings.fullOfflineSqliteActive', 'Full offline SQLite database active on')} {platform.label} • {t('settings.autoSyncEnabled', 'Auto-sync enabled')}
                         </div>
                     </div>
                 </div>
@@ -454,12 +453,12 @@ function DesktopClientPanel() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#94a3b8', marginBottom: '6px' }}>
-                                Desktop Client — Not Available for {platform.label}
+                                {t('settings.desktopClientNotAvailableFor', 'Desktop Client — Not Available for')} {platform.label}
                             </div>
                             <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', lineHeight: 1.6 }}>
-                                The Desktop Client is for <strong>{t('settings.windows')}</strong>, <strong>{t('settings.mac')}</strong>{t('settings.and')} <strong>{t('settings.linux')}</strong> only. 
-                                Your {platform.type === 'tablet' ? 'tablet' : 'device'} already has offline mode through the web app — 
-                                use the <strong>{t('settings.quotinstallTrierOsquot')}</strong> banner to add it to your home screen for the best experience.
+                                {t('settings.desktopClientIsFor', 'The Desktop Client is for')} <strong>{t('settings.windows')}</strong>, <strong>{t('settings.mac')}</strong>{t('settings.and')} <strong>{t('settings.linux')}</strong> {t('settings.only', 'only')}.
+                                {t('settings.yourDevice', 'Your')} {platform.type === 'tablet' ? t('settings.tablet', 'tablet') : t('settings.device', 'device')} {t('settings.alreadyHasOfflineMode', 'already has offline mode through the web app —')}
+                                {t('settings.useTheBannerToAddHome', 'use the')} <strong>{t('settings.quotinstallTrierOsquot')}</strong> {t('settings.bannerToAddHomeScreen', 'banner to add it to your home screen for the best experience.')}
                             </p>
                         </div>
                     </div>
@@ -467,7 +466,11 @@ function DesktopClientPanel() {
                     <div style={{
                         marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'center'
                     }}>
-                        {['🪟 Windows', '🍎 macOS', '🐧 Linux'].map(p => (
+                        {[
+                            t('settings.windowsPill', '🪟 Windows'),
+                            t('settings.macosPill', '🍎 macOS'),
+                            t('settings.linuxPill', '🐧 Linux')
+                        ].map(p => (
                             <span key={p} style={{
                                 padding: '4px 12px', borderRadius: '16px',
                                 background: 'rgba(255,255,255,0.04)',
@@ -490,6 +493,17 @@ function NetworkConfigPanel() {
     const [overrideAddr, setOverrideAddr] = useState('');
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState(null);
+    // Adapter config state
+    const [showNetInfo, setShowNetInfo] = useState(false);
+    const [staticMode, setStaticMode] = useState('dhcp');
+    const [staticIface, setStaticIface] = useState('');
+    const [staticIp, setStaticIp] = useState('');
+    const [staticSubnet, setStaticSubnet] = useState('255.255.255.0');
+    const [staticGateway, setStaticGateway] = useState('');
+    const [staticDns1, setStaticDns1] = useState('');
+    const [staticDns2, setStaticDns2] = useState('');
+    const [applyingStatic, setApplyingStatic] = useState(false);
+    const [staticMsg, setStaticMsg] = useState(null);
 
     const fetchNetInfo = async () => {
         setLoading(true);
@@ -523,15 +537,39 @@ function NetworkConfigPanel() {
             });
             const data = await res.json();
             if (data.success) {
-                setSaveMsg({ ok: true, text: `Saved! Server URL: ${data.url}` });
+                setSaveMsg({ ok: true, text: `${t('settings.savedServerUrl', 'Saved! Server URL:')} ${data.url}` });
                 fetchNetInfo();
             } else {
-                setSaveMsg({ ok: false, text: data.error || 'Failed to save' });
+                setSaveMsg({ ok: false, text: data.error || t('settings.failedToSave', 'Failed to save') });
             }
         } catch (e) {
-            setSaveMsg({ ok: false, text: 'Request failed' });
+            setSaveMsg({ ok: false, text: t('settings.requestFailed', 'Request failed') });
         }
         setSaving(false);
+    };
+
+    const handleApplyStaticIp = async () => {
+        if (!staticIface) return;
+        if (staticMode === 'static' && (!staticIp.trim() || !staticSubnet.trim())) return;
+        setApplyingStatic(true);
+        setStaticMsg(null);
+        try {
+            const res = await fetch('/api/network-config/static-ip', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                body: JSON.stringify({ interface: staticIface, mode: staticMode, ip: staticIp.trim(), subnet: staticSubnet.trim(), gateway: staticGateway.trim(), dns1: staticDns1.trim(), dns2: staticDns2.trim() })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setStaticMsg({ ok: true, text: data.message || t('settings.staticIpApplied', 'Applied. Reconnect at the new address if connection drops.') });
+                fetchNetInfo();
+            } else {
+                setStaticMsg({ ok: false, text: data.error || t('settings.failedToApplyStaticIp', 'Failed to apply — administrator privileges may be required.') });
+            }
+        } catch {
+            setStaticMsg({ ok: false, text: t('settings.requestFailed', 'Request failed') });
+        }
+        setApplyingStatic(false);
     };
 
     const handleClearOverride = async () => {
@@ -545,157 +583,229 @@ function NetworkConfigPanel() {
             const data = await res.json();
             if (data.success) {
                 setOverrideAddr('');
-                setSaveMsg({ ok: true, text: 'Override cleared. Using auto-detection.' });
+                setSaveMsg({ ok: true, text: t('settings.overrideCleared', 'Override cleared. Using auto-detection.') });
                 fetchNetInfo();
             }
         } catch (e) {
-            setSaveMsg({ ok: false, text: 'Failed to clear override' });
+            setSaveMsg({ ok: false, text: t('settings.failedToClearOverride', 'Failed to clear override') });
         }
         setSaving(false);
     };
 
+    const inputStyle = (accent = '#10b981') => ({
+        width: '100%', padding: '10px 12px', fontSize: '0.85rem',
+        background: 'rgba(0,0,0,0.3)', border: `1px solid ${accent}44`,
+        borderRadius: '8px', color: '#fff', fontFamily: 'monospace', boxSizing: 'border-box'
+    });
+
+    const fieldLabel = (text) => (
+        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{text}</div>
+    );
+
     return (
         <div className="panel-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Wifi size={20} color="#3b82f6" /> Network Configuration
+                    <Wifi size={20} color="#3b82f6" /> {t('settings.networkConfiguration', 'Network Configuration')}
                 </h3>
                 <button onClick={fetchNetInfo} disabled={loading} className="btn-primary"
-                    style={{ padding: '6px 14px', fontSize: '0.75rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    title={t('settings.refreshNetworkInformationTip')}>
-                    <RefreshCw size={12} className={loading ? 'spinning' : ''} /> Refresh
+                    style={{ padding: '6px 14px', fontSize: '0.75rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <RefreshCw size={12} className={loading ? 'spinning' : ''} /> {t('settings.refresh', 'Refresh')}
                 </button>
             </div>
 
             {loading ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    <RefreshCw size={16} className="spinning" style={{ marginRight: '8px' }} /> Detecting network...
+                    <RefreshCw size={16} className="spinning" style={{ marginRight: '8px' }} /> {t('settings.detectingNetwork', 'Detecting network...')}
                 </div>
-            ) : netInfo ? (
+            ) : !netInfo ? (
+                <div style={{ padding: '15px', textAlign: 'center', color: '#ef4444', fontSize: '0.85rem' }}>
+                    {t('settings.failedToFetchNetworkInfo', 'Failed to fetch network information')}
+                </div>
+            ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     {/* Status Row */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        {/* Current Server Address */}
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Server Address</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('settings.serverAddress')}</div>
                             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#e2e8f0', fontFamily: 'monospace' }}>{netInfo.lanIp}</div>
                             <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>
-                                {netInfo.source === 'admin_override' && <span style={{ color: '#f59e0b' }}>✏️ Manual override</span>}
-                                {netInfo.source === 'auto_detected' && <span style={{ color: '#10b981' }}>🔍 Auto-detected</span>}
-                                {netInfo.source === 'fallback' && <span style={{ color: '#ef4444' }}>⚠️ Fallback (no network?)</span>}
+                                {netInfo.source === 'admin_override' && <span style={{ color: '#f59e0b' }}>{t('settings.manualOverride', '✏️ Manual override')}</span>}
+                                {netInfo.source === 'auto_detected' && <span style={{ color: '#10b981' }}>{t('settings.autodetected', '🔍 Auto-detected')}</span>}
+                                {netInfo.source === 'fallback' && <span style={{ color: '#ef4444' }}>{t('settings.fallbackNoNetwork', '⚠️ Fallback (no network?)')}</span>}
                             </div>
                         </div>
-
-                        {/* Internet Connectivity */}
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Internet Status</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('settings.internetStatus')}</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{
-                                    width: '14px', height: '14px', borderRadius: '50%',
-                                    background: netInfo.internetConnected ? '#10b981' : '#ef4444',
-                                    boxShadow: netInfo.internetConnected ? '0 0 10px rgba(16,185,129,0.5)' : '0 0 10px rgba(239,68,68,0.5)'
-                                }} />
+                                <div style={{ width: 14, height: 14, borderRadius: '50%', background: netInfo.internetConnected ? '#10b981' : '#ef4444', boxShadow: netInfo.internetConnected ? '0 0 10px rgba(16,185,129,0.5)' : '0 0 10px rgba(239,68,68,0.5)' }} />
                                 <span style={{ fontSize: '1.1rem', fontWeight: 700, color: netInfo.internetConnected ? '#10b981' : '#ef4444' }}>
-                                    {netInfo.internetConnected ? 'Connected' : 'No Internet'}
+                                    {netInfo.internetConnected ? t('settings.connected', 'Connected') : t('settings.noInternet', 'No Internet')}
                                 </span>
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>
-                                DNS resolve: google.com
                             </div>
                         </div>
                     </div>
-
                     {/* Full URL */}
                     <div style={{ background: 'rgba(59,130,246,0.06)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Other devices should connect to:</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('settings.otherDevicesShouldConnectTo')}</div>
                             <div style={{ fontSize: '1rem', fontWeight: 700, color: '#60a5fa', fontFamily: 'monospace' }}>{netInfo.url}</div>
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(netInfo.url); }}
-                            className="btn-primary" title={t('settings.copyUrlToClipboardTip')}
+                        <button onClick={() => navigator.clipboard.writeText(netInfo.url)} className="btn-primary"
                             style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Copy size={12} /> Copy
+                            <Copy size={12} /> {t('settings.copy')}
                         </button>
                     </div>
-
-                    {/* Network Interfaces */}
-                    {netInfo.allInterfaces && netInfo.allInterfaces.length > 0 && (
+                    {/* All Interfaces */}
+                    {netInfo.allInterfaces?.length > 0 && (
                         <div style={{ background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>All Network Interfaces</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('settings.allNetworkInterfaces')}</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {netInfo.allInterfaces.map((iface, i) => (
-                                    <div key={i} style={{
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '6px 10px', borderRadius: '6px',
-                                        background: iface.address === netInfo.lanIp ? 'rgba(59,130,246,0.1)' : 'transparent',
-                                        border: iface.address === netInfo.lanIp ? '1px solid rgba(59,130,246,0.3)' : '1px solid transparent'
-                                    }}>
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', borderRadius: '6px', background: iface.address === netInfo.lanIp ? 'rgba(59,130,246,0.1)' : 'transparent', border: iface.address === netInfo.lanIp ? '1px solid rgba(59,130,246,0.3)' : '1px solid transparent' }}>
                                         <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{iface.name}</span>
-                                        <span style={{
-                                            fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 600,
-                                            color: iface.address === netInfo.lanIp ? '#60a5fa' : (iface.address.startsWith('169.254.') ? '#ef4444' : '#e2e8f0')
-                                        }}>
+                                        <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 600, color: iface.address === netInfo.lanIp ? '#60a5fa' : (iface.address.startsWith('169.254.') ? '#ef4444' : '#e2e8f0') }}>
                                             {iface.address}
-                                            {iface.address === netInfo.lanIp && <Check size={12} style={{ marginLeft: '6px', color: '#10b981' }} />}
-                                            {iface.address.startsWith('169.254.') && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: '#ef4444' }}>(APIPA)</span>}
+                                            {iface.address === netInfo.lanIp && <Check size={12} style={{ marginLeft: 6, color: '#10b981' }} />}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
-
-                    {/* Manual Override */}
-                    <div style={{ background: 'rgba(245,158,11,0.04)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Settings size={14} /> Manual Address Override
-                        </div>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: 1.5 }}>
-                            If auto-detection picks the wrong IP, set your server's correct IP or hostname here. 
-                            This overrides auto-detection for onboarding documents and QR codes.
-                        </p>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <input
-                                type="text"
-                                value={overrideAddr}
-                                onChange={e => setOverrideAddr(e.target.value)}
-                                placeholder={t('settings.eg1921681100OrMyserverlocalPlaceholder')}
-                                style={{
-                                    flex: 1, padding: '8px 12px', fontSize: '0.85rem',
-                                    background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,158,11,0.3)',
-                                    borderRadius: '6px', color: '#fff', fontFamily: 'monospace'
-                                }}
-                                title={t('settings.enterTheIpAddressOrTip')}
-                            />
-                            <button onClick={handleSaveOverride} disabled={saving || !overrideAddr.trim()}
-                                className="btn-primary" title={t('settings.saveTheManualAddressOverrideTip')}
-                                style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, opacity: (!overrideAddr.trim() || saving) ? 0.5 : 1 }}>
-                                <Save size={14} /> Save
+                    <div style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {/* Section header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Server size={15} /> {t('settings.staticIpConfig', 'Adapter Configuration')}
+                            </div>
+                            <button onClick={() => setShowNetInfo(v => !v)}
+                                style={{ padding: '3px 10px', fontSize: '0.72rem', fontWeight: 700, borderRadius: '6px', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.08)', color: '#10b981', cursor: 'pointer' }}>
+                                {showNetInfo ? '▲' : '▼'} {t('settings.staticIpInfoTip', 'How does this work?')}
                             </button>
-                            {netInfo.source === 'admin_override' && (
-                                <button onClick={handleClearOverride} disabled={saving}
-                                    className="btn-primary" title={t('settings.clearOverrideAndUseAutodetectionTip')}
-                                    style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <X size={14} /> Clear
-                                </button>
-                            )}
                         </div>
-                        {saveMsg && (
-                            <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', background: saveMsg.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: saveMsg.ok ? '#10b981' : '#ef4444' }}>
-                                {saveMsg.ok ? <Check size={14} style={{ marginRight: '6px' }} /> : null}{saveMsg.text}
+                        {showNetInfo && (
+                            <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '8px', padding: '12px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.8 }}>
+                                <div style={{ fontWeight: 700, color: '#10b981', marginBottom: '6px' }}>ℹ️ {t('settings.staticIpInfoTitle', 'How Static IP Works')}</div>
+                                <ol style={{ margin: 0, paddingLeft: '1.2em' }}>
+                                    <li>{t('settings.staticIpStep1', 'Select the network interface this server is connected to (usually Ethernet).')}</li>
+                                    <li>{t('settings.staticIpStep2', 'Choose Static, then enter the IP address you want this machine to always use.')}</li>
+                                    <li>{t('settings.staticIpStep3', 'Set the subnet mask (usually 255.255.255.0), default gateway (your router IP), and DNS servers.')}</li>
+                                    <li>{t('settings.staticIpStep4', 'Click Apply. The adapter reconfigures immediately — your browser connection may drop.')}</li>
+                                    <li>{t('settings.staticIpStep5', 'Reconnect by navigating to the new IP address shown in the confirmation message.')}</li>
+                                </ol>
+                                <div style={{ marginTop: '8px', color: '#f59e0b', fontWeight: 600 }}>⚠ {t('settings.staticIpAdminNote', 'Requires Trier OS server to be running as Administrator (Windows) or root (Linux).')}</div>
+                            </div>
+                        )}
+
+                        {/* Interface + Mode row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                            <div>
+                                {fieldLabel(t('settings.networkInterface', 'Network Interface'))}
+                                <select value={staticIface} onChange={e => setStaticIface(e.target.value)} style={{ ...inputStyle(), appearance: 'none' }}>
+                                    <option value="">{t('settings.selectInterface', '— select interface —')}</option>
+                                    {(netInfo.allInterfaces || []).map(iface => (
+                                        <option key={iface.name} value={iface.name}>{iface.name} — {iface.address}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                {fieldLabel(t('settings.addressMode', 'Address Mode'))}
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {['dhcp', 'static'].map(mode => (
+                                        <button key={mode} onClick={() => setStaticMode(mode)} style={{
+                                            flex: 1, padding: '10px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '8px', border: '2px solid', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em', transition: 'all 0.2s',
+                                            borderColor: staticMode === mode ? (mode === 'static' ? '#10b981' : '#3b82f6') : 'rgba(255,255,255,0.08)',
+                                            background: staticMode === mode ? (mode === 'static' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)') : 'rgba(255,255,255,0.03)',
+                                            color: staticMode === mode ? (mode === 'static' ? '#10b981' : '#3b82f6') : '#475569'
+                                        }}>{mode}</button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* IP + Subnet — static mode only */}
+                        {staticMode === 'static' && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                <div>
+                                    {fieldLabel(t('settings.ipAddress', 'IP Address'))}
+                                    <input type="text" value={staticIp} onChange={e => setStaticIp(e.target.value)} placeholder="192.168.1.100" style={inputStyle()} />
+                                </div>
+                                <div>
+                                    {fieldLabel(t('settings.subnetMask', 'Subnet Mask'))}
+                                    <input type="text" value={staticSubnet} onChange={e => setStaticSubnet(e.target.value)} placeholder="255.255.255.0" style={inputStyle()} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Gateway & DNS — always visible */}
+                        <div style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px', padding: '14px' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#818cf8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                {t('settings.gatewayDnsHeading', 'Gateway & DNS')}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+                                <div>
+                                    {fieldLabel(t('settings.defaultGateway', 'Default Gateway'))}
+                                    <input type="text" value={staticGateway} onChange={e => setStaticGateway(e.target.value)} placeholder="192.168.1.1" style={inputStyle('#818cf8')} />
+                                </div>
+                                <div>
+                                    {fieldLabel(t('settings.primaryDns', 'Primary DNS'))}
+                                    <input type="text" value={staticDns1} onChange={e => setStaticDns1(e.target.value)} placeholder="8.8.8.8" style={inputStyle('#818cf8')} />
+                                </div>
+                                <div>
+                                    {fieldLabel(t('settings.secondaryDns', 'Secondary DNS'))}
+                                    <input type="text" value={staticDns2} onChange={e => setStaticDns2(e.target.value)} placeholder="8.8.4.4" style={inputStyle('#818cf8')} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Apply */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button onClick={handleApplyStaticIp}
+                                disabled={applyingStatic || !staticIface || (staticMode === 'static' && (!staticIp.trim() || !staticSubnet.trim()))}
+                                style={{ padding: '10px 28px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', opacity: (applyingStatic || !staticIface || (staticMode === 'static' && (!staticIp.trim() || !staticSubnet.trim()))) ? 0.45 : 1, transition: 'opacity 0.2s' }}>
+                                {applyingStatic ? <RefreshCw size={15} className="spinning" /> : <Save size={15} />}
+                                {t('settings.applyNetworkConfig', 'Apply')}
+                            </button>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>⚠ {t('settings.staticIpWarning', 'Connection may drop — reconnect at the new IP.')}</span>
+                        </div>
+                        {staticMsg && (
+                            <div style={{ padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600, background: staticMsg.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: staticMsg.ok ? '#10b981' : '#ef4444', border: `1px solid ${staticMsg.ok ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+                                {staticMsg.text}
                             </div>
                         )}
                     </div>
 
-                    {/* Hostname */}
+                    {/* Manual Override */}
+                    <div style={{ background: 'rgba(245,158,11,0.04)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Settings size={14} /> {t('settings.manualAddressOverride', 'Manual Address Override')}
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: 1.5 }}>
+                            {t('settings.manualAddressOverrideDesc', 'If auto-detection picks the wrong IP, set your server\'s correct IP or hostname here.')}
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input type="text" value={overrideAddr} onChange={e => setOverrideAddr(e.target.value)}
+                                placeholder={t('settings.eg1921681100OrMyserverlocalPlaceholder')}
+                                style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', color: '#fff', fontFamily: 'monospace' }} />
+                            <button onClick={handleSaveOverride} disabled={saving || !overrideAddr.trim()} className="btn-primary"
+                                style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, opacity: (!overrideAddr.trim() || saving) ? 0.5 : 1 }}>
+                                <Save size={14} /> {t('settings.save')}
+                            </button>
+                            {netInfo.source === 'admin_override' && (
+                                <button onClick={handleClearOverride} disabled={saving} className="btn-primary"
+                                    style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <X size={14} /> {t('settings.clear', 'Clear')}
+                                </button>
+                            )}
+                        </div>
+                        {saveMsg && <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', background: saveMsg.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: saveMsg.ok ? '#10b981' : '#ef4444' }}>{saveMsg.text}</div>}
+                    </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '20px' }}>
                         <span>{t('settings.hostname')} <strong style={{ color: '#e2e8f0' }}>{netInfo.hostname}</strong></span>
                         <span>{t('settings.port')} <strong style={{ color: '#e2e8f0' }}>{netInfo.port}</strong></span>
                     </div>
-                </div>
-            ) : (
-                <div style={{ padding: '15px', textAlign: 'center', color: '#ef4444', fontSize: '0.85rem' }}>
-                    Failed to fetch network information
                 </div>
             )}
         </div>
@@ -781,17 +891,17 @@ function SettingsView({
                 setBranding(data.settings);
                 window.dispatchEvent(new CustomEvent('trier-branding-update', { detail: data.settings }));
             } else {
-                window.trierToast?.error(data.error || 'Failed to upload logo');
+                window.trierToast?.error(data.error || t('settings.failedToUploadLogo', 'Failed to upload logo'));
             }
         } catch (err) {
-            window.trierToast?.error('Error uploading logo');
+            window.trierToast?.error(t('settings.errorUploadingLogo', 'Error uploading logo'));
         } finally {
             setIsUploadingLogo(false);
         }
     };
 
     const resetLogo = async (logoType = 'dashboard') => {
-        if (!await confirm('Revert to default logo for this slot?')) return;
+        if (!await confirm(t('settings.revertToDefaultLogoConfirm', 'Revert to default logo for this slot?'))) return;
         try {
             const res = await fetch('/api/branding/logo/' + logoType, { method: 'DELETE' });
             const data = await res.json();
@@ -799,7 +909,7 @@ function SettingsView({
                 setBranding(data.settings);
                 window.dispatchEvent(new CustomEvent('trier-branding-update', { detail: data.settings }));
             }
-        } catch (err) { window.trierToast?.error('Failed to reset logo'); }
+        } catch (err) { window.trierToast?.error(t('settings.failedToResetLogo', 'Failed to reset logo')); }
     };
 
     const toggleShopFloorMode = () => {
@@ -818,19 +928,19 @@ function SettingsView({
         try {
             const res = await fetch('/api/maintenance/reindex', { method: 'POST' });
             const data = await res.json();
-            if (data.success) window.trierToast?.success('Master Registry successfully updated.');
-        } catch (err) { window.trierToast?.error('Re-indexing failed.'); }
+            if (data.success) window.trierToast?.success(t('settings.masterRegistryUpdated', 'Master Registry successfully updated.'));
+        } catch (err) { window.trierToast?.error(t('settings.reindexingFailed', 'Re-indexing failed.')); }
         finally { setIsReindexing(false); }
     };
 
     const handleVacuum = async () => {
-        if (!await confirm('This will perform a "Deep Clean" of the Master Registry to reclaim disk space. Continue?')) return;
+        if (!await confirm(t('settings.deepCleanConfirm', 'This will perform a "Deep Clean" of the Master Registry to reclaim disk space. Continue?'))) return;
         setIsVacuuming(true);
         try {
             const res = await fetch('/api/maintenance/vacuum', { method: 'POST' });
             const data = await res.json();
-            if (data.success) window.trierToast?.success('Database compaction complete. File size optimized.');
-        } catch (err) { window.trierToast?.error('Compaction failed.'); }
+            if (data.success) window.trierToast?.success(t('settings.databaseCompactionComplete', 'Database compaction complete. File size optimized.'));
+        } catch (err) { window.trierToast?.error(t('settings.compactionFailed', 'Compaction failed.')); }
         finally { setIsVacuuming(false); }
     };
 
@@ -851,7 +961,7 @@ function SettingsView({
             const response = await fetch(url);
             if (!response.ok) {
                 const text = await response.text();
-                window.trierToast?.error(`Export failed: ${text}`);
+                window.trierToast?.error(`${t('settings.exportFailed', 'Export failed')}: ${text}`);
                 setIsExporting(false);
                 return;
             }
@@ -868,7 +978,7 @@ function SettingsView({
             window.URL.revokeObjectURL(downloadUrl);
         } catch (err) {
             console.error('Export error:', err);
-            window.trierToast?.error('Export request failed. Check network connectivity.');
+            window.trierToast?.error(t('settings.exportRequestFailed', 'Export request failed. Check network connectivity.'));
         } finally {
             setIsExporting(false);
         }
@@ -889,10 +999,10 @@ function SettingsView({
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) window.trierToast?.success(`Node [${exportPlant}] backed up to: ${data.file}`).catch(e => console.warn('[SettingsView]', e));
-            else window.trierToast?.error(`Backup error: ${data.error}`);
+            if (data.success) window.trierToast?.success(`${t('settings.nodeBackedUpTo', 'Node')} [${exportPlant}] ${t('settings.backedUpTo', 'backed up to:')} ${data.file}`).catch(e => console.warn('[SettingsView]', e));
+            else window.trierToast?.error(`${t('settings.backupError', 'Backup error')}: ${data.error}`);
         })
-        .catch(() => window.trierToast?.error('Failed to execute backup request.'))
+        .catch(() => window.trierToast?.error(t('settings.failedToExecuteBackup', 'Failed to execute backup request.')))
         .finally(() => setIsBackingUp(false));
     };
 
@@ -914,12 +1024,12 @@ function SettingsView({
             {/* ═══ SETTINGS 4-CATEGORY HUB GRID ═══ */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'clamp(10px, 2vw, 20px)' }}>
                 {[
-                    { key: 'account', icon: <Shield size={24} color="#fff" />, title: 'My Account & Preferences', count: '3 panels', color: '#6366f1', desc: 'Change your password, set language preference, replay the onboarding tour, and configure display options.', tags: ['Password', 'Language', 'Tour', 'Shop Floor'] },
-                    { key: 'desktop', icon: <Bell size={24} color="#fff" />, title: 'Notifications & Escalation', count: '2 panels', color: '#3b82f6', desc: 'Configure notification preferences and auto-escalation rules. P1 WOs not started? Auto-escalate to management.', tags: ['Email Alerts', 'Auto-Escalation', 'Notifications'] },
-                    { key: 'monitoring', icon: <Zap size={24} color="#fff" />, title: 'Monitoring, Compliance & Safety', count: hasSensorAccess ? '4 panels' : '3 panels', color: '#10b981', desc: 'SCADA/PLC sensor gateway, regulatory compliance, energy/sustainability dashboards, and LOTO digital permits.', tags: ['SCADA', 'Compliance', 'Energy', 'LOTO', 'Sensors'] },
-                    { key: 'reports', icon: <ClipboardList size={24} color="#fff" />, title: 'Reports & Analytics', count: '1 panel', color: '#f59e0b', desc: 'Build custom reports with drag-and-drop fields, filters, and multiple output formats including PDF and CSV.', tags: ['Report Builder', 'PDF', 'CSV', 'Analytics'] }
+                    { key: 'account', icon: <Shield size={24} color="#fff" />, title: t('settings.catAccountTitle', 'My Account & Preferences'), count: t('settings.catAccount3Panels', '3 panels'), color: '#6366f1', desc: t('settings.catAccountDesc', 'Change your password, set language preference, replay the onboarding tour, and configure display options.'), tags: [t('settings.tagPassword', 'Password'), t('settings.tagLanguage', 'Language'), t('settings.tagTour', 'Tour'), t('settings.tagShopFloor', 'Shop Floor')] },
+                    { key: 'desktop', icon: <Bell size={24} color="#fff" />, title: t('settings.catNotificationsTitle', 'Notifications & Escalation'), count: t('settings.catNotifications2Panels', '2 panels'), color: '#3b82f6', desc: t('settings.catNotificationsDesc', 'Configure notification preferences and auto-escalation rules. P1 WOs not started? Auto-escalate to management.'), tags: [t('settings.tagEmailAlerts', 'Email Alerts'), t('settings.tagAutoEscalation', 'Auto-Escalation'), t('settings.tagNotifications', 'Notifications')] },
+                    { key: 'monitoring', icon: <Zap size={24} color="#fff" />, title: t('settings.catMonitoringTitle', 'Monitoring, Compliance & Safety'), count: hasSensorAccess ? t('settings.catMonitoring4Panels', '4 panels') : t('settings.catMonitoring3Panels', '3 panels'), color: '#10b981', desc: t('settings.catMonitoringDesc', 'SCADA/PLC sensor gateway, regulatory compliance, energy/sustainability dashboards, and LOTO digital permits.'), tags: [t('settings.tagScada', 'SCADA'), t('settings.tagCompliance', 'Compliance'), t('settings.tagEnergy', 'Energy'), t('settings.tagLoto', 'LOTO'), t('settings.tagSensors', 'Sensors')] },
+                    { key: 'reports', icon: <ClipboardList size={24} color="#fff" />, title: t('settings.catReportsTitle', 'Reports & Analytics'), count: t('settings.catReports1Panel', '1 panel'), color: '#f59e0b', desc: t('settings.catReportsDesc', 'Build custom reports with drag-and-drop fields, filters, and multiple output formats including PDF and CSV.'), tags: [t('settings.tagReportBuilder', 'Report Builder'), t('settings.tagPdf', 'PDF'), t('settings.tagCsv', 'CSV'), t('settings.tagAnalytics', 'Analytics')] }
                 ].map(cat => (
-                    <button key={cat.key} onClick={() => setSettingsCategory(cat.key)} title={`Open ${cat.title}`} style={{
+                    <button key={cat.key} onClick={() => setSettingsCategory(cat.key)} title={`${t('settings.openCategory', 'Open')} ${cat.title}`} style={{
                         background: `linear-gradient(135deg, ${cat.color}14 0%, ${cat.color}08 100%)`,
                         border: `1px solid ${cat.color}40`, borderRadius: '16px', padding: 'clamp(14px, 2vw, 30px)',
                         cursor: 'pointer', textAlign: 'left', transition: 'all 0.3s ease',
@@ -952,7 +1062,7 @@ function SettingsView({
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 9998, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ padding: '15px 30px', background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(79,70,229,0.04))', borderBottom: '2px solid rgba(99,102,241,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                         <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, color: '#fff' }}><div style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', padding: '8px', borderRadius: '10px' }}><Shield size={20} color="#fff" /></div> {t('settings.myAccountPreferences')}</h2>
-                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title="Return to Settings hub">← Back to Hub</button>
+                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title={t('settings.returnToSettingsHubTip')}>{t('settings.backToHub')}</button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {/* ── Profile Card with Role Avatar ── */}
@@ -978,7 +1088,7 @@ function SettingsView({
                                         </span>
                                     </div>
                                     <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '8px' }}>
-                                        Your avatar is assigned based on your role. Contact your IT admin to change your role assignment.
+                                        {t('settings.avatarAssignedByRole', 'Your avatar is assigned based on your role. Contact your IT admin to change your role assignment.')}
                                     </div>
                                 </div>
                             </div>
@@ -993,7 +1103,7 @@ function SettingsView({
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {LANGUAGES.map(l => (
                                     <button key={l.code}
-                                        onClick={() => setLang(l.code)}
+                                        onClick={() => { setLang(l.code); window.location.reload(); }}
                                         style={{
                                             padding: '8px 18px', borderRadius: '16px', border: 'none', cursor: 'pointer',
                                             fontWeight: 700, fontSize: '0.8rem',
@@ -1009,7 +1119,7 @@ function SettingsView({
                         </div>
                         {/* Replay Onboarding Tour */}
                         <div className="glass-card" style={{ padding: 'var(--card-padding)' }}>
-                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 0 15px 0', fontSize: '1.1rem' }}>🎓 Onboarding Tour</h3>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 0 15px 0', fontSize: '1.1rem' }}>🎓 {t('settings.onboardingTourHeading', 'Onboarding Tour')}</h3>
                             <ReplayTourButton />
                         </div>
                     </div>
@@ -1021,7 +1131,7 @@ function SettingsView({
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 9998, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ padding: '15px 30px', background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(37,99,235,0.04))', borderBottom: '2px solid rgba(59,130,246,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                         <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, color: '#fff' }}><div style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', padding: '8px', borderRadius: '10px' }}><Bell size={20} color="#fff" /></div> {t('settings.notifications')}</h2>
-                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title="Return to Settings hub">← Back to Hub</button>
+                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title={t('settings.returnToSettingsHubTip')}>{t('settings.backToHub')}</button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <UserNotificationsPanel />
@@ -1039,7 +1149,7 @@ function SettingsView({
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 9998, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ padding: '15px 30px', background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.04))', borderBottom: '2px solid rgba(16,185,129,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                         <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, color: '#fff' }}><div style={{ background: 'linear-gradient(135deg, #10b981, #059669)', padding: '8px', borderRadius: '10px' }}><Zap size={20} color="#fff" /></div> {t('settings.monitoringCompliance')}</h2>
-                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title="Return to Settings hub">← Back to Hub</button>
+                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title={t('settings.returnToSettingsHubTip')}>{t('settings.backToHub')}</button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {hasSensorAccess && (
@@ -1075,7 +1185,7 @@ function SettingsView({
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 9998, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ padding: '15px 30px', background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.04))', borderBottom: '2px solid rgba(245,158,11,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                         <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, color: '#fff' }}><div style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', padding: '8px', borderRadius: '10px' }}><ClipboardList size={20} color="#fff" /></div> {t('settings.reportsAnalytics')}</h2>
-                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title="Return to Settings hub">← Back to Hub</button>
+                        <button onClick={() => setSettingsCategory(null)} className="btn-nav" title={t('settings.returnToSettingsHubTip')}>{t('settings.backToHub')}</button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div className="glass-card" style={{ padding: 'var(--card-padding)' }}>
@@ -1179,10 +1289,10 @@ function WebhookIntegrationPanel() {
     const platformLabels = { slack: '🟣 Slack', teams: '🟦 Teams', discord: '🟪 Discord', custom: '🔗 Custom' };
 
     const notifyFields = [
-        { key: 'notify_critical_wo', label: '🚨 Critical WOs', color: '#ef4444' },
-        { key: 'notify_pm_due', label: '🔧 PM Due', color: '#f59e0b' },
-        { key: 'notify_completion', label: '✅ Completions', color: '#10b981' },
-        { key: 'notify_sensor', label: '🌡️ Sensors', color: '#6366f1' }
+        { key: 'notify_critical_wo', label: t('settings.notifyCriticalWos', '🚨 Critical WOs'), color: '#ef4444' },
+        { key: 'notify_pm_due', label: t('settings.notifyPmDue', '🔧 PM Due'), color: '#f59e0b' },
+        { key: 'notify_completion', label: t('settings.notifyCompletions', '✅ Completions'), color: '#10b981' },
+        { key: 'notify_sensor', label: t('settings.notifySensors', '🌡️ Sensors'), color: '#6366f1' }
     ];
 
     return (
@@ -1194,7 +1304,7 @@ function WebhookIntegrationPanel() {
                 <button 
                     onClick={() => setShowAdd(!showAdd)}
                     className="btn-primary"
-                    title={showAdd ? 'Cancel adding a new webhook' : 'Add a new webhook integration'}
+                    title={showAdd ? t('settings.cancelAddWebhook', 'Cancel adding a new webhook') : t('settings.addAWebhookIntegration', 'Add a new webhook integration')}
                     style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                     {showAdd ? <><X size={14} /> {t('settings.cancel')}</> : <><Plus size={14} /> {t('settings.addWebhook')}</>}
@@ -1202,7 +1312,7 @@ function WebhookIntegrationPanel() {
             </div>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '15px' }}>
-                Receive real-time alerts in Slack, Teams, or Discord when critical events occur.
+                {t('settings.webhookDesc', 'Receive real-time alerts in Slack, Teams, or Discord when critical events occur.')}
             </p>
 
             {/* Add New Webhook Form */}
@@ -1258,7 +1368,7 @@ function WebhookIntegrationPanel() {
                 </div>
             ) : webhooks.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    No webhooks configured. Click "Add Webhook" to connect Slack, Teams, or Discord.
+                    {t('settings.noWebhooksConfigured', 'No webhooks configured. Click "Add Webhook" to connect Slack, Teams, or Discord.')}
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1276,7 +1386,7 @@ function WebhookIntegrationPanel() {
                                     }}>
                                         {platformLabels[wh.platform] || wh.platform}
                                     </span>
-                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{wh.label || 'Unnamed'}</span>
+                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{wh.label || t('settings.unnamed', 'Unnamed')}</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                     <button 
@@ -1295,12 +1405,12 @@ function WebhookIntegrationPanel() {
                                         }}
                                     >
                                         <Send size={11} />
-                                        {testResults[wh.id] === 'sending' ? 'Testing...' : testResults[wh.id] === 'success' ? '✓ Sent!' : testResults[wh.id] === 'failed' ? '✗ Failed' : 'Test'}
+                                        {testResults[wh.id] === 'sending' ? t('settings.testing', 'Testing...') : testResults[wh.id] === 'success' ? t('settings.sent', '✓ Sent!') : testResults[wh.id] === 'failed' ? t('settings.failed', '✗ Failed') : t('settings.test', 'Test')}
                                     </button>
                                     <button 
                                         onClick={() => toggleEnabled(wh.id, wh.enabled)}
                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: wh.enabled ? '#10b981' : 'var(--text-muted)', padding: '4px' }}
-                                        title={wh.enabled ? 'Click to disable' : 'Click to enable'}
+                                        title={wh.enabled ? t('settings.clickToDisable', 'Click to disable') : t('settings.clickToEnable', 'Click to enable')}
                                     >
                                         {wh.enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
                                     </button>
@@ -1321,7 +1431,7 @@ function WebhookIntegrationPanel() {
                                     <button 
                                         key={nf.key}
                                         onClick={() => toggleNotify(wh.id, nf.key, wh[nf.key])}
-                                        title={wh[nf.key] ? `Disable ${nf.label} notifications for this webhook` : `Enable ${nf.label} notifications for this webhook`}
+                                        title={wh[nf.key] ? `${t('settings.disable', 'Disable')} ${nf.label} ${t('settings.notificationsForThisWebhook', 'notifications for this webhook')}` : `${t('settings.enable', 'Enable')} ${nf.label} ${t('settings.notificationsForThisWebhook', 'notifications for this webhook')}`}
                                         style={{
                                             padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', cursor: 'pointer',
                                             background: wh[nf.key] ? `${nf.color}15` : 'rgba(255,255,255,0.03)',
@@ -1336,7 +1446,7 @@ function WebhookIntegrationPanel() {
                             </div>
                             {wh.last_triggered && (
                                 <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '5px' }}>
-                                    Last fired: {new Date(wh.last_triggered).toLocaleString()} — {wh.last_status === 'ok' ? '✅' : '⚠️'} {wh.last_status}
+                                    {t('settings.lastFired', 'Last fired:')} {new Date(wh.last_triggered).toLocaleString()} — {wh.last_status === 'ok' ? '✅' : '⚠️'} {wh.last_status}
                                 </div>
                             )}
                         </div>
@@ -1404,7 +1514,7 @@ function AIConfigPanel() {
                 <span style={{ fontSize: '1.2rem' }}>🤖</span> {t('settings.aiServiceConfiguration')}
             </h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '15px' }}>
-                Configure your AI provider for SOP generation. API keys are stored locally, never transmitted externally except to the provider.
+                {t('settings.aiProviderDesc', 'Configure your AI provider for SOP generation. API keys are stored locally, never transmitted externally except to the provider.')}
             </p>
 
             {loading ? <div style={{ color: 'var(--text-muted)', padding: '20px', textAlign: 'center' }}>{t('settings.loading')}</div> : (
@@ -1414,7 +1524,7 @@ function AIConfigPanel() {
                         <div style={{ display: 'flex', gap: '6px' }}>
                             {['openai', 'anthropic', 'ollama'].map(p => (
                                 <button key={p} onClick={() => setConfig({ ...config, provider: p, model: models[p][0] })}
-                                    title={`Switch to ${p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic Claude' : 'Ollama (local)'} as the AI provider`}
+                                    title={`${t('settings.switchTo', 'Switch to')} ${p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic Claude' : 'Ollama (local)'} ${t('settings.asTheAiProvider', 'as the AI provider')}`}
                                     style={{
                                         flex: 1, padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
                                         background: config.provider === p ? `${providerColors[p]}15` : 'rgba(0,0,0,0.2)',
@@ -1431,17 +1541,17 @@ function AIConfigPanel() {
 
                     <div>
                         <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                            {config.provider === 'ollama' ? 'Model (local)' : 'API Key'}
+                            {config.provider === 'ollama' ? t('settings.modelLocal', 'Model (local)') : t('settings.apiKey', 'API Key')}
                         </label>
                         {config.provider !== 'ollama' ? (
-                            <input type="password" placeholder={config.api_key || 'Enter API key...'} value={newKey}
+                            <input type="password" placeholder={config.api_key || t('settings.enterApiKey', 'Enter API key...')} value={newKey}
                                 onChange={e => setNewKey(e.target.value)}
                                 style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '6px', color: '#fff' }}
                                 title={t('settings.enterYourAiProviderApiTip')}
                             />
                         ) : (
                             <div style={{ fontSize: '0.8rem', color: '#6366f1', padding: '8px', background: 'rgba(99,102,241,0.05)', borderRadius: '6px' }}>
-                                Ollama uses a local model — no API key required. Ensure Ollama is running on port 11434.
+                                {t('settings.ollamaNoKeyRequired', 'Ollama uses a local model — no API key required. Ensure Ollama is running on port 11434.')}
                             </div>
                         )}
                     </div>
@@ -1458,7 +1568,7 @@ function AIConfigPanel() {
                         <button onClick={handleSave} disabled={saving} className="btn-primary"
                             style={{ flex: 1, padding: '8px', fontSize: '0.8rem', background: saving ? 'var(--glass-border)' : '#10b981' }}
                             title={t('settings.saveTheAiProviderAndTip')}>
-                            {saving ? 'Saving...' : 'Save Configuration'}
+                            {saving ? t('settings.savingEllipsis', 'Saving...') : t('settings.saveConfiguration', 'Save Configuration')}
                         </button>
                         <button onClick={handleTest} className="btn-primary"
                             title={t('settings.testTheAiProviderConnectionTip')}
@@ -1468,7 +1578,7 @@ function AIConfigPanel() {
                                 color: testResult === 'ok' ? '#10b981' : testResult === 'fail' ? '#ef4444' : '#fff',
                                 border: `1px solid ${testResult === 'ok' ? '#10b981' : testResult === 'fail' ? '#ef4444' : 'var(--glass-border)'}`
                             }}>
-                            {testResult === 'testing' ? '⏳' : testResult === 'ok' ? '✅ Connected' : testResult === 'fail' ? '❌ Failed' : '🔌 Test'}
+                            {testResult === 'testing' ? '⏳' : testResult === 'ok' ? `✅ ${t('settings.connected', 'Connected')}` : testResult === 'fail' ? `❌ ${t('settings.failed', '✗ Failed')}` : `🔌 ${t('settings.test', 'Test')}`}
                         </button>
                     </div>
                 </div>
@@ -1483,12 +1593,12 @@ function DataExportPanel() {
     const [downloading, setDownloading] = useState(null);
 
     const exportTypes = [
-        { id: 'work-orders', label: 'Work Orders', icon: '📋', color: '#6366f1' },
-        { id: 'assets', label: 'Assets', icon: '⚙️', color: '#f59e0b' },
-        { id: 'pm-compliance', label: 'PM Compliance', icon: '🔧', color: '#10b981' },
-        { id: 'parts-inventory', label: 'Parts Inventory', icon: '📦', color: '#8b5cf6' },
-        { id: 'technician-performance', label: 'Technician Metrics', icon: '👷', color: '#ef4444' },
-        { id: 'reminder-insights', label: 'Reminder Insights', icon: '💡', color: '#fbbf24' }
+        { id: 'work-orders', label: t('settings.exportWorkOrders', 'Work Orders'), icon: '📋', color: '#6366f1' },
+        { id: 'assets', label: t('settings.exportAssets', 'Assets'), icon: '⚙️', color: '#f59e0b' },
+        { id: 'pm-compliance', label: t('settings.exportPmCompliance', 'PM Compliance'), icon: '🔧', color: '#10b981' },
+        { id: 'parts-inventory', label: t('settings.exportPartsInventory', 'Parts Inventory'), icon: '📦', color: '#8b5cf6' },
+        { id: 'technician-performance', label: t('settings.exportTechnicianMetrics', 'Technician Metrics'), icon: '👷', color: '#ef4444' },
+        { id: 'reminder-insights', label: t('settings.exportReminderInsights', 'Reminder Insights'), icon: '💡', color: '#fbbf24' }
     ];
 
     const downloadCsv = async (type) => {
@@ -1508,7 +1618,7 @@ function DataExportPanel() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (e) {
-            window.trierToast?.error('Download failed: ' + e.message);
+            window.trierToast?.error(t('settings.downloadFailed', 'Download failed') + ': ' + e.message);
         }
         setDownloading(null);
     };
@@ -1530,7 +1640,7 @@ function DataExportPanel() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (e) {
-            window.trierToast?.error('Download failed: ' + e.message);
+            window.trierToast?.error(t('settings.downloadFailed', 'Download failed') + ': ' + e.message);
         }
         setDownloading(null);
     };
@@ -1558,7 +1668,7 @@ function DataExportPanel() {
                             <button 
                                 onClick={() => downloadCsv(et.id)}
                                 disabled={downloading === et.id}
-                                title={`Download ${et.label} data as CSV`}
+                                title={`${t('settings.download', 'Download')} ${et.label} ${t('settings.dataAsCsv', 'data as CSV')}`}
                                 style={{
                                     background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
                                     color: '#10b981', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem',
@@ -1570,7 +1680,7 @@ function DataExportPanel() {
                             <button 
                                 onClick={() => downloadJson(et.id)}
                                 disabled={downloading === et.id + '-json'}
-                                title={`Download ${et.label} data as JSON`}
+                                title={`${t('settings.download', 'Download')} ${et.label} ${t('settings.dataAsJson', 'data as JSON')}`}
                                 style={{
                                     background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)',
                                     color: '#6366f1', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem',
@@ -1586,7 +1696,7 @@ function DataExportPanel() {
 
             <div style={{ background: 'rgba(99,102,241,0.05)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(99,102,241,0.15)' }}>
                 <div style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 'bold', marginBottom: '4px' }}>
-                    💡 Power BI Connection
+                    💡 {t('settings.powerBiConnection', 'Power BI Connection')}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
                     {t('settings.use')} <strong>{t('settings.webDataSource')}</strong> {t('settings.inPowerBiDesktopEnter')} <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 4px', borderRadius: '3px' }}>
@@ -1702,7 +1812,7 @@ function HAConfigPanel() {
             const res = await fetch('/api/ha/secondary-health', { headers });
             const data = await res.json();
             setSecondaryHealth(data);
-        } catch (e) { setSecondaryHealth({ online: false, error: 'Request failed' }); }
+        } catch (e) { setSecondaryHealth({ online: false, error: t('settings.requestFailed', 'Request failed') }); }
         setIsChecking(false);
     };
 
@@ -1711,15 +1821,15 @@ function HAConfigPanel() {
         try {
             const res = await fetch('/api/ha/sync-now', { method: 'POST', headers });
             const data = await res.json();
-            window.trierToast?.info(`Sync complete: ${data.pushed || 0} changes pushed, ${data.errors || 0} errors`);
-        } catch (e) { window.trierToast?.error('Sync failed — check server logs'); }
+            window.trierToast?.info(`${t('settings.syncComplete', 'Sync complete:')} ${data.pushed || 0} ${t('settings.changesPushed', 'changes pushed,')} ${data.errors || 0} ${t('settings.errors', 'errors')}`);
+        } catch (e) { window.trierToast?.error(t('settings.syncFailed', 'Sync failed — check server logs')); }
         setIsSyncing(false);
     };
 
     const isPrimary = haRole === 'primary';
     const roleColor = isPrimary ? '#10b981' : '#f59e0b';
     const roleIcon = isPrimary ? '🟢' : '🟡';
-    const roleLabel = isPrimary ? 'Primary (Master)' : 'Secondary (Replica)';
+    const roleLabel = isPrimary ? t('settings.primaryMaster', 'Primary (Master)') : t('settings.secondaryReplica', 'Secondary (Replica)');
 
     // Calculate aggregate sync stats
     const totalPending = syncStatus?.totalPending || syncStatus?.plants?.reduce((sum, p) => sum + (p.pending || 0), 0) || 0;
@@ -1733,7 +1843,7 @@ function HAConfigPanel() {
     // Format helpers
     const lastSyncDisplay = lastSyncTime
         ? new Date(lastSyncTime + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : 'Never';
+        : t('settings.never', 'Never');
     const totalDbSize = totalDbSizeBytes > 1073741824
         ? `${(totalDbSizeBytes / 1073741824).toFixed(1)} GB`
         : totalDbSizeBytes > 1048576
@@ -1742,28 +1852,28 @@ function HAConfigPanel() {
 
     if (loading) return (
         <div className="panel-box" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.04), rgba(16,185,129,0.04))', padding: '20px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)', textAlign: 'center' }}>
-            <RefreshCw size={20} className="spinning" style={{ color: '#60a5fa' }} /> Loading HA config...
+            <RefreshCw size={20} className="spinning" style={{ color: '#60a5fa' }} /> {t('settings.loadingHaConfig', 'Loading HA config...')}
         </div>
     );
 
     return (
         <div className="panel-box" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.04), rgba(16,185,129,0.04))', padding: '20px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Zap size={20} color="#3b82f6" /> High Availability Configuration
+                <Zap size={20} color="#3b82f6" /> {t('settings.highAvailabilityConfiguration', 'High Availability Configuration')}
             </h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '18px', fontSize: '0.82rem', lineHeight: 1.6 }}>
-                Configure server-to-server replication. The Primary (Master) accepts all writes and pushes changes to the Secondary (Replica) for failover protection.
+                {t('settings.haConfigDesc', 'Configure server-to-server replication. The Primary (Master) accepts all writes and pushes changes to the Secondary (Replica) for failover protection.')}
             </p>
 
             {/* ── Role Selector ── */}
             <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600 }}>SERVER ROLE</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600 }}>{t('settings.serverRole')}</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     {[
-                        { value: 'primary', label: '🟢 Primary (Master)', desc: 'Accepts writes, pushes to replica', color: '#10b981' },
-                        { value: 'secondary', label: '🟡 Secondary (Replica)', desc: 'Read-only, receives from master', color: '#f59e0b' }
+                        { value: 'primary', label: `🟢 ${t('settings.primaryMaster', 'Primary (Master)')}`, desc: t('settings.primaryDesc', 'Accepts writes, pushes to replica'), color: '#10b981' },
+                        { value: 'secondary', label: `🟡 ${t('settings.secondaryReplica', 'Secondary (Replica)')}`, desc: t('settings.secondaryDesc', 'Read-only, receives from master'), color: '#f59e0b' }
                     ].map(opt => (
-                        <button key={opt.value} onClick={() => setHaRole(opt.value)} title={`Set this server as ${opt.label}`} style={{
+                        <button key={opt.value} onClick={() => setHaRole(opt.value)} title={`${t('settings.setThisServerAs', 'Set this server as')} ${opt.label}`} style={{
                             flex: 1, padding: '14px 16px', borderRadius: '12px', cursor: 'pointer',
                             background: haRole === opt.value ? `${opt.color}12` : 'rgba(0,0,0,0.2)',
                             border: `2px solid ${haRole === opt.value ? opt.color : 'rgba(255,255,255,0.06)'}`,
@@ -1782,37 +1892,37 @@ function HAConfigPanel() {
                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: roleColor, boxShadow: `0 0 10px ${roleColor}80`, animation: 'pulse 2s infinite' }} />
                     <span style={{ fontWeight: 700, fontSize: '0.95rem', color: roleColor }}>{roleLabel}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '0.7rem', padding: '3px 10px', borderRadius: '12px', background: `${roleColor}15`, color: roleColor, fontWeight: 600 }}>
-                        {isPrimary ? 'Active — Accepting Writes' : 'Standby — Read Only'}
+                        {isPrimary ? t('settings.activeAcceptingWrites', 'Active — Accepting Writes') : t('settings.standbyReadOnly', 'Standby — Read Only')}
                     </span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                     <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#e2e8f0' }}>{syncedPlants}/{totalPlants}</div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Plants Synced</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>{t('settings.plantsSynced')}</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: totalPending > 0 ? '#f59e0b' : '#10b981' }}>{totalPending}</div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Pending Changes</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>{t('settings.pendingChanges')}</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: replicationLag > 120 ? '#ef4444' : replicationLag > 60 ? '#f59e0b' : '#10b981' }}>
                             {replicationLag > 0 ? `${replicationLag}s` : '0s'}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Replication Lag</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>{t('settings.replicationLag')}</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#e2e8f0' }}>{totalEntries}</div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Total Ledger</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>{t('settings.totalLedger')}</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0', fontFamily: 'monospace' }}>
                             {lastSyncDisplay}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Last Sync</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>{t('settings.lastSync')}</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
                         <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#e2e8f0' }}>{totalDbSize}</div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>Total DB Size</div>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px' }}>{t('settings.totalDbSize')}</div>
                     </div>
                 </div>
             </div>
@@ -1820,14 +1930,14 @@ function HAConfigPanel() {
             {/* ── Partner Server Address ── */}
             <div style={{ marginBottom: '18px' }}>
                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600 }}>
-                    {isPrimary ? 'SECONDARY SERVER ADDRESS' : 'PRIMARY SERVER ADDRESS'}
+                    {isPrimary ? t('settings.secondaryServerAddress', 'SECONDARY SERVER ADDRESS') : t('settings.primaryServerAddress', 'PRIMARY SERVER ADDRESS')}
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                         type="text"
                         value={partnerAddress}
                         onChange={e => setPartnerAddress(e.target.value)}
-                        placeholder={isPrimary ? 'http://replica-server.local:3000' : 'http://primary-server.local:3000'}
+                        placeholder={isPrimary ? t('settings.replicaServerPlaceholder', 'http://replica-server.local:3000') : t('settings.primaryServerPlaceholder', 'http://primary-server.local:3000')}
                         style={{ flex: 1, padding: '10px 14px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace' }}
                         title={t('settings.enterTheIpAddressOrTip')}
                     />
@@ -1839,12 +1949,12 @@ function HAConfigPanel() {
                         fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'
                     }}>
                         {isChecking ? <RefreshCw size={14} className="spinning" /> : secondaryHealth?.online ? <Check size={14} /> : <Wifi size={14} />}
-                        {isChecking ? 'Checking...' : secondaryHealth?.online ? `Online (${secondaryHealth.latencyMs}ms)` : 'Test'}
+                        {isChecking ? t('settings.checking', 'Checking...') : secondaryHealth?.online ? `${t('settings.online', 'Online')} (${secondaryHealth.latencyMs}ms)` : t('settings.test', 'Test')}
                     </button>
                 </div>
                 {secondaryHealth && !secondaryHealth.online && (
                     <div style={{ marginTop: '6px', fontSize: '0.72rem', color: '#ef4444' }}>
-                        ❌ Partner unreachable: {secondaryHealth.error}
+                        ❌ {t('settings.partnerUnreachable', 'Partner unreachable:')} {secondaryHealth.error}
                     </div>
                 )}
             </div>
@@ -1852,7 +1962,7 @@ function HAConfigPanel() {
             {/* ── Pairing Key Management ── */}
             <div style={{ marginBottom: '18px', padding: '16px', background: 'rgba(0,0,0,0.15)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px', fontWeight: 600 }}>
-                    🔐 PAIRING KEY — {isPrimary ? 'Generate & share with the replica server' : 'Paste the key from the master server'}
+                    🔐 {t('settings.pairingKey', 'PAIRING KEY')} — {isPrimary ? t('settings.pairingKeyGenerateShare', 'Generate & share with the replica server') : t('settings.pairingKeyPasteFromMaster', 'Paste the key from the master server')}
                 </label>
                 {isPrimary ? (
                     <>
@@ -1865,7 +1975,7 @@ function HAConfigPanel() {
                                 opacity: isGenerating ? 0.6 : 1
                             }}>
                                 {isGenerating ? <RefreshCw size={14} className="spinning" /> : <Key size={14} />}
-                                {isGenerating ? 'Generating...' : '🔑 Generate Pairing Key'}
+                                {isGenerating ? t('settings.generating', 'Generating...') : `🔑 ${t('settings.generatePairingKey', 'Generate Pairing Key')}`}
                             </button>
                         </div>
                         {pairingKey && (
@@ -1886,12 +1996,12 @@ function HAConfigPanel() {
                                     color: keyCopied ? '#10b981' : '#94a3b8',
                                     fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'
                                 }}>
-                                    {keyCopied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy</>}
+                                    {keyCopied ? <><Check size={14} /> {t('settings.copied')}</> : <><Copy size={14} /> {t('settings.copy')}</>}
                                 </button>
                             </div>
                         )}
                         <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '8px' }}>
-                            Copy this key and paste it into the Secondary server's HA configuration to establish trust.
+                            {t('settings.copyKeyToSecondaryDesc', 'Copy this key and paste it into the Secondary server\'s HA configuration to establish trust.')}
                         </div>
                     </>
                 ) : (
@@ -1915,13 +2025,13 @@ function HAConfigPanel() {
                                 color: keyImported ? '#10b981' : '#fff',
                                 fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px'
                             }}>
-                                {keyImported ? <><Check size={14} /> Imported!</> : isSaving ? <RefreshCw size={14} className="spinning" /> : <Key size={14} />}
-                                {keyImported ? '' : isSaving ? 'Saving...' : 'Import Key'}
+                                {keyImported ? <><Check size={14} /> {t('settings.imported')}</> : isSaving ? <RefreshCw size={14} className="spinning" /> : <Key size={14} />}
+                                {keyImported ? '' : isSaving ? t('settings.savingEllipsis', 'Saving...') : t('settings.importKey', 'Import Key')}
                             </button>
                         </div>
                         {pairingKey === '••••••••••••••••' && (
                             <div style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '6px' }}>
-                                ✅ Pairing key is already configured. Import a new one to replace it.
+                                ✅ {t('settings.pairingKeyAlreadyConfigured', 'Pairing key is already configured. Import a new one to replace it.')}
                             </div>
                         )}
                     </>
@@ -1936,7 +2046,7 @@ function HAConfigPanel() {
                     color: '#fff', border: 'none', borderRadius: '10px', padding: '12px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer'
                 }}>
                     {isSaving ? <RefreshCw size={16} className="spinning" /> : <Save size={16} />}
-                    {isSaving ? 'Saving...' : 'Save Configuration'}
+                    {isSaving ? t('settings.savingEllipsis', 'Saving...') : t('settings.saveConfiguration', 'Save Configuration')}
                 </button>
                 {isPrimary && (
                     <button onClick={forceSyncNow} disabled={isSyncing} title={t('settings.immediatelyPushAllPendingChangesTip')} style={{
@@ -1946,7 +2056,7 @@ function HAConfigPanel() {
                         padding: '12px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer'
                     }}>
                         {isSyncing ? <RefreshCw size={16} className="spinning" /> : <RefreshCw size={16} />}
-                        {isSyncing ? 'Syncing...' : '🔄 Force Sync Now'}
+                        {isSyncing ? t('settings.syncing', 'Syncing...') : `🔄 ${t('settings.forceSyncNow', 'Force Sync Now')}`}
                     </button>
                 )}
             </div>
@@ -1954,24 +2064,24 @@ function HAConfigPanel() {
             {/* ── Failover / Promote Button (Task 4.3) ── */}
             <div style={{ marginBottom: '14px' }}>
                 {!showFailover ? (
-                    <button onClick={() => setShowFailover(true)} title={isPrimary ? 'Demote this server to Secondary (read-only replica)' : 'Promote this server to Primary (accepts writes)'} style={{
+                    <button onClick={() => setShowFailover(true)} title={isPrimary ? t('settings.demoteToSecondaryTip', 'Demote this server to Secondary (read-only replica)') : t('settings.promoteToprimaryTip', 'Promote this server to Primary (accepts writes)')} style={{
                         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                         background: 'rgba(239,68,68,0.08)', color: '#f87171',
                         border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px',
                         padding: '10px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer'
                     }}>
-                        <Zap size={16} /> {isPrimary ? '⚠️ Demote to Secondary' : '⚠️ Promote to Primary'}
+                        <Zap size={16} /> {isPrimary ? `⚠️ ${t('settings.demoteToSecondary', 'Demote to Secondary')}` : `⚠️ ${t('settings.promoteToPrimary', 'Promote to Primary')}`}
                     </button>
                 ) : (
                     <div style={{ background: 'rgba(239,68,68,0.06)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.25)' }}>
                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f87171', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Zap size={16} /> Manual Failover — Confirm
+                            <Zap size={16} /> {t('settings.manualFailoverConfirm', 'Manual Failover — Confirm')}
                         </div>
                         <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
                             {isPrimary
-                                ? 'This will demote this server to Secondary. It will stop accepting writes and become a read-only replica. The other server must be promoted to Primary.'
-                                : 'This will promote this server to Primary. It will begin accepting writes and pushing to the other server. The other server should be demoted.'}
-                            <br /><strong style={{ color: '#f87171' }}>A server restart is required after the role change.</strong>
+                                ? t('settings.demoteDesc', 'This will demote this server to Secondary. It will stop accepting writes and become a read-only replica. The other server must be promoted to Primary.')
+                                : t('settings.promoteDesc', 'This will promote this server to Primary. It will begin accepting writes and pushing to the other server. The other server should be demoted.')}
+                            <br /><strong style={{ color: '#f87171' }}>{t('settings.aServerRestartIsRequired')}</strong>
                         </p>
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                             <input
@@ -1999,7 +2109,7 @@ function HAConfigPanel() {
                                     } else {
                                         window.trierToast?.error(data.error);
                                     }
-                                } catch (e) { window.trierToast?.error('Failover request failed'); }
+                                } catch (e) { window.trierToast?.error(t('settings.failoverRequestFailed', 'Failover request failed')); }
                                 setIsPromoting(false);
                             }} disabled={!failoverPassword || isPromoting} title={t('settings.executeTheFailoverThisWillTip')} style={{
                                 flex: 1, padding: '10px', borderRadius: '8px', cursor: failoverPassword ? 'pointer' : 'not-allowed',
@@ -2008,7 +2118,7 @@ function HAConfigPanel() {
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                             }}>
                                 {isPromoting ? <RefreshCw size={14} className="spinning" /> : <Zap size={14} />}
-                                {isPromoting ? 'Processing...' : '⚠️ Confirm Failover'}
+                                {isPromoting ? t('settings.processing', 'Processing...') : `⚠️ ${t('settings.confirmFailover', 'Confirm Failover')}`}
                             </button>
                             <button onClick={() => { setShowFailover(false); setFailoverPassword(''); }} title={t('settings.cancelTheFailoverOperationTip')} style={{
                                 padding: '10px 20px', borderRadius: '8px', cursor: 'pointer',
@@ -2025,8 +2135,8 @@ function HAConfigPanel() {
                 <span style={{ fontSize: '1rem' }}>ℹ️</span>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
                     {isPrimary
-                        ? 'As Primary, this server pushes all data changes to the Secondary every 60 seconds. Generate a pairing key above and share it with your replica server.'
-                        : 'As Secondary, this server receives changes from the Primary. Import the pairing key generated on the master, then enter the master\'s address above.'}
+                        ? t('settings.haInfoPrimary', 'As Primary, this server pushes all data changes to the Secondary every 60 seconds. Generate a pairing key above and share it with your replica server.')
+                        : t('settings.haInfoSecondary', 'As Secondary, this server receives changes from the Primary. Import the pairing key generated on the master, then enter the master\'s address above.')}
                 </span>
             </div>
         </div>

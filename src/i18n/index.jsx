@@ -49,8 +49,23 @@ const LANGUAGES = [
 
 const I18nContext = createContext();
 
+const SUPPORTED_CODES = new Set(['en', 'es', 'fr', 'de', 'zh', 'pt', 'ja', 'ko', 'ar', 'hi', 'tr']);
+
+function detectBrowserLang() {
+    // Already chosen by user — respect it
+    const saved = localStorage.getItem('PM_LANGUAGE');
+    if (saved && SUPPORTED_CODES.has(saved)) return saved;
+    // First visit — match browser/OS language to supported locales
+    const browserLangs = navigator.languages || [navigator.language || 'en'];
+    for (const bl of browserLangs) {
+        const code = bl.split('-')[0].toLowerCase(); // 'zh-CN' → 'zh'
+        if (SUPPORTED_CODES.has(code)) return code;
+    }
+    return 'en';
+}
+
 export function I18nProvider({ children }) {
-    const [lang, setLang] = useState(() => localStorage.getItem('PM_LANGUAGE') || 'en');
+    const [lang, setLang] = useState(detectBrowserLang);
 
     const changeLang = useCallback((code) => {
         setLang(code);

@@ -29,7 +29,7 @@
  *   restricted to specific roles (e.g., backup section requires BackupOperator).
  */
 import React, { useState, useEffect } from 'react';
-import { Database as DatabaseIcon, Download, Globe, RefreshCw, Trash2, Zap, Wind, X, Lock, Users, Key, Copy, Save, Wifi, Check, ImageIcon, Settings, Bell, Plus } from 'lucide-react';
+import { Database as DatabaseIcon, Download, Globe, RefreshCw, Trash2, Zap, Wind, X, Lock, Users, Key, Copy, Save, Wifi, Check, ImageIcon, Settings, Bell, Plus, Server } from 'lucide-react';
 import ImportWizard from './ImportWizard';
 import UserAccountsView from './UserAccountsView';
 import SnapshotRollbackView from './SnapshotRollbackView';
@@ -184,6 +184,17 @@ function NetworkConfigPanel() {
     const [overrideAddr, setOverrideAddr] = useState('');
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState(null);
+    // Adapter config state
+    const [showNetInfo, setShowNetInfo] = useState(false);
+    const [staticMode, setStaticMode] = useState('dhcp');
+    const [staticIface, setStaticIface] = useState('');
+    const [staticIp, setStaticIp] = useState('');
+    const [staticSubnet, setStaticSubnet] = useState('255.255.255.0');
+    const [staticGateway, setStaticGateway] = useState('');
+    const [staticDns1, setStaticDns1] = useState('');
+    const [staticDns2, setStaticDns2] = useState('');
+    const [applyingStatic, setApplyingStatic] = useState(false);
+    const [staticMsg, setStaticMsg] = useState(null);
 
     const fetchNetInfo = async () => {
         setLoading(true);
@@ -248,11 +259,45 @@ function NetworkConfigPanel() {
         setSaving(false);
     };
 
+    const handleApplyStaticIp = async () => {
+        if (!staticIface) return;
+        if (staticMode === 'static' && (!staticIp.trim() || !staticSubnet.trim())) return;
+        setApplyingStatic(true);
+        setStaticMsg(null);
+        try {
+            const res = await fetch('/api/network-config/static-ip', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                body: JSON.stringify({ interface: staticIface, mode: staticMode, ip: staticIp.trim(), subnet: staticSubnet.trim(), gateway: staticGateway.trim(), dns1: staticDns1.trim(), dns2: staticDns2.trim() })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setStaticMsg({ ok: true, text: data.message || t('settings.staticIpApplied', 'Applied. Reconnect at the new address if connection drops.') });
+                fetchNetInfo();
+            } else {
+                setStaticMsg({ ok: false, text: data.error || t('settings.failedToApplyStaticIp', 'Failed to apply — administrator privileges may be required.') });
+            }
+        } catch {
+            setStaticMsg({ ok: false, text: t('settings.requestFailed', 'Request failed') });
+        }
+        setApplyingStatic(false);
+    };
+
+    const inputStyle = (accent = '#10b981') => ({
+        width: '100%', padding: '10px 12px', fontSize: '0.85rem',
+        background: 'rgba(0,0,0,0.3)', border: `1px solid ${accent}44`,
+        borderRadius: '8px', color: '#fff', fontFamily: 'monospace', boxSizing: 'border-box'
+    });
+
+    const fieldLabel = (text) => (
+        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{text}</div>
+    );
+
     return (
         <div className="panel-box" style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Wifi size={20} color="#3b82f6" /> Network Configuration
+                    <Wifi size={20} color="#3b82f6" /> {t('settings.networkConfiguration', 'Network Configuration')}
                 </h3>
                 <button onClick={fetchNetInfo} disabled={loading} className="btn-primary"
                     style={{ padding: '6px 14px', fontSize: '0.75rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -338,6 +383,105 @@ function NetworkConfigPanel() {
                             </div>
                         </div>
                     )}
+
+                    {/* Adapter Configuration */}
+                    <div style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Server size={15} /> {t('settings.staticIpConfig', 'Adapter Configuration')}
+                            </div>
+                            <button onClick={() => setShowNetInfo(v => !v)}
+                                style={{ padding: '3px 10px', fontSize: '0.72rem', fontWeight: 700, borderRadius: '6px', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.08)', color: '#10b981', cursor: 'pointer' }}>
+                                {showNetInfo ? '▲' : '▼'} {t('settings.staticIpInfoTip', 'How does this work?')}
+                            </button>
+                        </div>
+                        {showNetInfo && (
+                            <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '8px', padding: '12px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.8 }}>
+                                <div style={{ fontWeight: 700, color: '#10b981', marginBottom: '6px' }}>ℹ️ {t('settings.staticIpInfoTitle', 'How Static IP Works')}</div>
+                                <ol style={{ margin: 0, paddingLeft: '1.2em' }}>
+                                    <li>{t('settings.staticIpStep1', 'Select the network interface this server is connected to (usually Ethernet).')}</li>
+                                    <li>{t('settings.staticIpStep2', 'Choose Static, then enter the IP address you want this machine to always use.')}</li>
+                                    <li>{t('settings.staticIpStep3', 'Set the subnet mask (usually 255.255.255.0), default gateway (your router IP), and DNS servers.')}</li>
+                                    <li>{t('settings.staticIpStep4', 'Click Apply. The adapter reconfigures immediately — your browser connection may drop.')}</li>
+                                    <li>{t('settings.staticIpStep5', 'Reconnect by navigating to the new IP address shown in the confirmation message.')}</li>
+                                </ol>
+                                <div style={{ marginTop: '8px', color: '#f59e0b', fontWeight: 600 }}>⚠ {t('settings.staticIpAdminNote', 'Requires Trier OS server to be running as Administrator (Windows) or root (Linux).')}</div>
+                            </div>
+                        )}
+                        {/* Interface + Mode */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                            <div>
+                                {fieldLabel(t('settings.networkInterface', 'Network Interface'))}
+                                <select value={staticIface} onChange={e => setStaticIface(e.target.value)} style={{ ...inputStyle(), appearance: 'none' }}>
+                                    <option value="">{t('settings.selectInterface', '— select interface —')}</option>
+                                    {(netInfo?.allInterfaces || []).map(iface => (
+                                        <option key={iface.name} value={iface.name}>{iface.name} — {iface.address}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                {fieldLabel(t('settings.addressMode', 'Address Mode'))}
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {['dhcp', 'static'].map(mode => (
+                                        <button key={mode} onClick={() => setStaticMode(mode)} style={{
+                                            flex: 1, padding: '10px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '8px', border: '2px solid', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em', transition: 'all 0.2s',
+                                            borderColor: staticMode === mode ? (mode === 'static' ? '#10b981' : '#3b82f6') : 'rgba(255,255,255,0.08)',
+                                            background: staticMode === mode ? (mode === 'static' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)') : 'rgba(255,255,255,0.03)',
+                                            color: staticMode === mode ? (mode === 'static' ? '#10b981' : '#3b82f6') : '#475569'
+                                        }}>{mode}</button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        {/* IP + Subnet — static mode only */}
+                        {staticMode === 'static' && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                <div>
+                                    {fieldLabel(t('settings.ipAddress', 'IP Address'))}
+                                    <input type="text" value={staticIp} onChange={e => setStaticIp(e.target.value)} placeholder="192.168.1.100" style={inputStyle()} />
+                                </div>
+                                <div>
+                                    {fieldLabel(t('settings.subnetMask', 'Subnet Mask'))}
+                                    <input type="text" value={staticSubnet} onChange={e => setStaticSubnet(e.target.value)} placeholder="255.255.255.0" style={inputStyle()} />
+                                </div>
+                            </div>
+                        )}
+                        {/* Gateway & DNS — always visible */}
+                        <div style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px', padding: '14px' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#818cf8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                {t('settings.gatewayDnsHeading', 'Gateway & DNS')}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+                                <div>
+                                    {fieldLabel(t('settings.defaultGateway', 'Default Gateway'))}
+                                    <input type="text" value={staticGateway} onChange={e => setStaticGateway(e.target.value)} placeholder="192.168.1.1" style={inputStyle('#818cf8')} />
+                                </div>
+                                <div>
+                                    {fieldLabel(t('settings.primaryDns', 'Primary DNS'))}
+                                    <input type="text" value={staticDns1} onChange={e => setStaticDns1(e.target.value)} placeholder="8.8.8.8" style={inputStyle('#818cf8')} />
+                                </div>
+                                <div>
+                                    {fieldLabel(t('settings.secondaryDns', 'Secondary DNS'))}
+                                    <input type="text" value={staticDns2} onChange={e => setStaticDns2(e.target.value)} placeholder="8.8.4.4" style={inputStyle('#818cf8')} />
+                                </div>
+                            </div>
+                        </div>
+                        {/* Apply */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button onClick={handleApplyStaticIp}
+                                disabled={applyingStatic || !staticIface || (staticMode === 'static' && (!staticIp.trim() || !staticSubnet.trim()))}
+                                style={{ padding: '10px 28px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', opacity: (applyingStatic || !staticIface || (staticMode === 'static' && (!staticIp.trim() || !staticSubnet.trim()))) ? 0.45 : 1, transition: 'opacity 0.2s' }}>
+                                {applyingStatic ? <RefreshCw size={15} className="spinning" /> : <Save size={15} />}
+                                {t('settings.applyNetworkConfig', 'Apply')}
+                            </button>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>⚠ {t('settings.staticIpWarning', 'Connection may drop — reconnect at the new IP.')}</span>
+                        </div>
+                        {staticMsg && (
+                            <div style={{ padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600, background: staticMsg.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: staticMsg.ok ? '#10b981' : '#ef4444', border: `1px solid ${staticMsg.ok ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+                                {staticMsg.text}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Manual Override */}
                     <div style={{ background: 'rgba(245,158,11,0.04)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
