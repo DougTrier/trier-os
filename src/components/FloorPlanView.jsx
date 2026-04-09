@@ -2004,7 +2004,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
                                 transition: 'all 0.2s',
                             }} title={`Show ${pt.label} plans`}>
-                                <span>{pt.emoji}</span> {pt.label}
+                                <span>{pt.emoji}</span> {t(`floorPlan.planType.${pt.id}`, pt.label)}
                                 {count > 0 && (
                                     <span style={{ background: `${pt.color}22`, padding: '0 5px', borderRadius: '4px', fontSize: '0.6rem' }}>{count}</span>
                                 )}
