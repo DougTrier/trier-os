@@ -109,6 +109,10 @@ logDb.exec(`
 
 // ── Access Control ───────────────────────────────────────────────────────────
 function requireStudio(req, res, next) {
+    // Production deployments compiled with DISABLE_LIVE_STUDIO=true have the IDE stripped
+    if (process.env.DISABLE_LIVE_STUDIO === 'true') {
+        return res.status(503).json({ error: 'Live Studio is not available in production deployments.' });
+    }
     const user = req.user;
     if (!user) return res.status(401).json({ error: 'Authentication required' });
     if (user.Username === 'creator' || user.globalRole === 'creator' || user.globalRole === 'it_admin') return next();

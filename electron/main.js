@@ -194,6 +194,7 @@ function startEmbeddedServer() {
             NODE_ENV: 'production',
             DEMO_MODE: 'true',
             ELECTRON_EMBEDDED: 'true',
+            DISABLE_LIVE_STUDIO: 'true',
             DATA_DIR: dataDir,
             JWT_SECRET: jwtSecret
         };
