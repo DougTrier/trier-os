@@ -34,7 +34,7 @@ Every competing platform — IBM Maximo, SAP Plant Maintenance, UpKeep, Fiix, Li
 
 ## The Numbers at 40 Plants
 
-*Conservative estimates using verified deployment data and BLS-sourced labor rates.*
+*The model plant used throughout this document is intentionally conservative — a 250-employee mid-size facility with 15 maintenance technicians. Real-world deployments at larger plants will produce proportionally higher figures across every category.*
 
 ### Layer 1 — Workflow Efficiency (Labor Hours Recovered)
 
@@ -101,6 +101,36 @@ This is money that was invisible — being lost every month — that the system 
 **What "realization" means:** Not every finding is actable immediately. Some require a procurement cycle. Some require a capital request. The 22% rate is what plants actually capture in Year 1 without any budget changes — just by acting on the action plans the system generates. The 50% rate is what disciplined operations achieve by Month 12.
 
 > **$29,920,000 per year in recovered operating costs — found automatically, with no consultants, no spreadsheets, and no additional headcount. No other platform on the market does this.**
+
+---
+
+### Layer 4 — Real Estate & Property Intelligence
+
+This capability does not exist in any CMMS, ERP, or enterprise asset management platform. It is native to Trier OS and rolls up directly into the corporate OpEx dashboard.
+
+Every plant location is entered into the system as a **GIS-mapped pin** with the following financial data attached:
+
+| Field Tracked | Detail |
+|---|---|
+| Acreage | Total site size per location |
+| Estimated Property Value | Market or assessed value per parcel |
+| Annual Property Tax | Actual tax obligation per site |
+| Parcel ID | County assessor reference number |
+| GIS Map Link | One-click to the county GIS parcel viewer |
+| Recorder of Deeds Link | One-click to official deed records |
+| Tax Records Link | One-click to county tax payment portal |
+| Property Class | Industrial / Commercial / Agricultural classification |
+
+All fields are entered by each site (the data lives with the plant, not a third-party service). Once entered, they **roll up automatically to the corporate dashboard** showing:
+
+- **Total Enterprise Acreage** across all locations
+- **Total Estimated Property Value** of the entire real estate portfolio
+- **Total Annual Property Taxes** paid enterprise-wide
+- **Tracked GIS Locations** count
+
+For a 40-plant operation with mixed industrial sites, this is a real estate portfolio overview that would otherwise require a separate property management system, a facilities management firm, or a manual spreadsheet updated by hand. Trier OS makes it a tab in the corporate analytics view — live, consolidated, and linked directly to public records.
+
+**No CMMS at any price offers this.** Most don't track the building. None track the land, the tax obligation, the parcel, and the public record links for the entire enterprise simultaneously.
 
 ---
 
