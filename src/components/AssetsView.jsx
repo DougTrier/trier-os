@@ -40,6 +40,61 @@ import ActionBar from './ActionBar';
 import { useTranslation } from '../i18n/index.jsx';
 import { formatDate } from '../utils/formatDate';
 
+const CameraCaptureModal = ({ onClose, onCapture, title }) => {
+    const videoRef = React.useRef(null);
+    React.useEffect(() => {
+        let stream = null;
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (err) {
+                console.error("Camera access denied or unavail", err);
+                window.trierToast?.error('Camera access denied or unavailable. Trying manual upload fallback.');
+                // Provide fallback by converting the component to traditional file picker
+                onClose(true); // pass true to indicate it needs fallback
+            }
+        }
+        startCamera();
+        return () => {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+        };
+    }, []);
+
+    const handleCapture = () => {
+        if (!videoRef.current) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+        canvas.toBlob(blob => {
+            if (blob) {
+                const file = new File([blob], "nameplate_capture.jpg", { type: "image/jpeg" });
+                onCapture(file);
+            }
+            onClose();
+        }, 'image/jpeg', 0.95);
+    };
+
+    return (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            {title && <h3 style={{ color: 'white', marginBottom: '15px' }}>{title}</h3>}
+            <video ref={videoRef} autoPlay playsInline style={{ maxWidth: '95%', maxHeight: '70vh', borderRadius: '8px', background: '#000' }} />
+            <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
+                <button onClick={() => onClose()} style={{ padding: '12px 24px', background: '#334155', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem' }}>Cancel</button>
+                <button onClick={handleCapture} style={{ padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1rem', fontWeight: 'bold' }}>
+                    <Camera size={20} /> Snap Photo
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
 
 export default function AssetsView({ plantId, plantLabel }) {
     const { t } = useTranslation();
@@ -53,6 +108,9 @@ export default function AssetsView({ plantId, plantLabel }) {
 
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showCameraModal, setShowCameraModal] = useState(false);
+    const [cameraMode, setCameraMode] = useState(''); // 'create' or 'view'
+    const fileFallbackRef = React.useRef(null);
     const [meta, setMeta] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
@@ -1093,30 +1151,41 @@ export default function AssetsView({ plantId, plantLabel }) {
                             }
                         ] : []}
                     >
-                        {/* Camera upload button in view or creation mode for Nameplate Capture */}
+                        {/* Camera capture button for Nameplate OCR or View Mode Upload */}
                         {(!isEditing && !isCreating || isCreating) && (
-                            <label style={{ 
-                                height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                borderRadius: '8px', cursor: 'pointer',
-                                background: uploadingPhoto ? 'rgba(255,255,255,0.05)' : '#10b981',
-                                color: '#fff', border: 'none',
-                                opacity: uploadingPhoto ? 0.6 : 1,
-                                flexShrink: 0
-                            }}
-                            title={isCreating ? 'Snap Nameplate (OCR)' : t('assets.uploadAPhotoOfThisTip')}
+                            <button 
+                                onClick={() => {
+                                    setCameraMode(isCreating ? 'create' : 'view');
+                                    setShowCameraModal(true);
+                                }}
+                                disabled={uploadingPhoto}
+                                style={{ 
+                                    height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: '8px', cursor: 'pointer',
+                                    background: uploadingPhoto ? 'rgba(255,255,255,0.05)' : '#10b981',
+                                    color: '#fff', border: 'none',
+                                    opacity: uploadingPhoto ? 0.6 : 1,
+                                    flexShrink: 0
+                                }}
+                                title={isCreating ? 'Snap Nameplate (OCR)' : t('assets.uploadAPhotoOfThisTip')}
                             >
                                 <Camera size={18} />
-                                <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    capture="environment"
-                                    onChange={isCreating ? handlePreCreateOcrUpload : handlePhotoUpload}
-                                    disabled={uploadingPhoto}
-                                    style={{ display: 'none' }} 
-                                    title={t('assets.selectOrCaptureAPhotoTip')}
-                                />
-                            </label>
+                            </button>
                         )}
+                        
+                        {/* Hidden file input for file-explorer fallback */}
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            capture="environment"
+                            ref={fileFallbackRef}
+                            onChange={(e) => {
+                                if (cameraMode === 'create') handlePreCreateOcrUpload(e);
+                                else handlePhotoUpload(e);
+                            }}
+                            disabled={uploadingPhoto}
+                            style={{ display: 'none' }} 
+                        />
                     </ActionBar>
 
                     <div className="scroll-area" style={{ padding: '30px', paddingBottom: '80px', overflowY: 'auto', flex: 1 }}>
@@ -1980,6 +2049,26 @@ function AssetTreeNode({ node, level, expandedNodes, toggleNode, onView }) {
                         />
                     ))}
                 </div>
+            )}
+            
+            {showCameraModal && (
+                <CameraCaptureModal 
+                    title={cameraMode === 'create' ? "Snap Nameplate (OCR)" : "Capture Asset Photo"}
+                    onClose={(needsFallback) => {
+                        setShowCameraModal(false);
+                        if (needsFallback === true) {
+                            fileFallbackRef.current?.click();
+                        }
+                    }}
+                    onCapture={(file) => {
+                        const event = { target: { files: [file] } };
+                        if (cameraMode === 'create') {
+                            handlePreCreateOcrUpload(event);
+                        } else {
+                            handlePhotoUpload(event);
+                        }
+                    }} 
+                />
             )}
         </div>
     );
