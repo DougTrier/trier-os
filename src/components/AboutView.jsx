@@ -24,6 +24,13 @@ const AboutView = () => {
     const [searchParams] = useSearchParams();
     const [viewingManual, setViewingManual] = useState(searchParams.get('manual') === 'true');
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(searchQuery), 350);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     const _aboutRole = localStorage.getItem('userRole');
     const _isAdminOrCreator = _aboutRole === 'it_admin' || _aboutRole === 'creator' || localStorage.getItem('PF_USER_IS_CREATOR') === 'true';
     const [editingCreator, setEditingCreator] = useState(false);
@@ -3767,9 +3774,11 @@ const AboutView = () => {
         return filtered;
     };
 
-    const filteredManual = enterpriseManual
-        .filter(item => !searchQuery || isMatch(item, searchQuery))
-        .map(item => getFilteredSection(item, searchQuery));
+    const filteredManual = React.useMemo(() => {
+        return enterpriseManual
+            .filter(item => !debouncedQuery || isMatch(item, debouncedQuery))
+            .map(item => getFilteredSection(item, debouncedQuery));
+    }, [debouncedQuery, t]);
 
     if (viewingManual) {
         return (
