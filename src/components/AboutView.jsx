@@ -3668,6 +3668,84 @@ const AboutView = () => {
             ]
         },
         {
+            section: t('manual.opexTracking.title', 'Part XXXI: OpEx Self-Healing Loop — Commitment Tracking & Outcome Validation'),
+            id: 'opex-tracking',
+            navigateTo: '/corp-analytics',
+            filePath: 'server/routes/opex_tracking.js',
+            icon: <Activity size={22} />,
+            content: t('manual.opexTracking.content', 'The OpEx Self-Healing Loop closes the gap between identifying savings and proving they happened. It tracks every action-plan commitment, automatically re-measures the underlying metric at 30, 60, and 90 days, and feeds real-world outcomes back into the prediction models — making every future forecast more accurate than the last.'),
+            subsections: [
+                {
+                    title: t('manual.opexTracking.sub1', '31.1 What Problem This Solves'),
+                    items: [
+                        t('manual.opexTracking.item1', 'The standard OpEx Intelligence engine identifies savings opportunities across 14 categories. Without a tracking layer, there is no way to know whether a plant actually acted on the recommendation — or whether the savings materialized.'),
+                        t('manual.opexTracking.item2', 'This module adds three layers on top of the existing engine: Execution Tracking (did the action happen?), Outcome Validation (did savings materialize?), and Feedback into the prediction model (how accurate was the estimate?).'),
+                        t('manual.opexTracking.item3', 'No CMMS — including Maximo, SAP PM, or any subscription platform — provides this closed loop automatically from live operational data. Trier OS generates it without manual entry beyond the initial commitment click.'),
+                    ]
+                },
+                {
+                    title: t('manual.opexTracking.sub2', '31.2 Creating a Commitment'),
+                    items: [
+                        t('manual.opexTracking.item4', '1. Navigate to Corporate Analytics → OpEx Intel tab.'),
+                        t('manual.opexTracking.item5', '2. Click any savings card (e.g., Overstock Capital Lockup — $933K).'),
+                        t('manual.opexTracking.item6', '3. In the Game Plan modal, click the green "Commit to This Action" button.'),
+                        t('manual.opexTracking.item7', 'The system immediately: snapshots the current live baseline value for that category at that plant, creates three outcome checkpoints scheduled for 30, 60, and 90 days, and records the commitment with your username, plant, and predicted savings.'),
+                        t('manual.opexTracking.item8', 'A confirmation banner appears confirming the checkpoints are set. The commitment is visible immediately in the OpEx Tracking tab.'),
+                    ]
+                },
+                {
+                    title: t('manual.opexTracking.sub3', '31.3 What the Tracking Tab Shows'),
+                    items: [
+                        t('manual.opexTracking.item9', 'Navigate to Corporate Analytics → OpEx Tracking tab to see the enterprise commitment dashboard.'),
+                        t('manual.opexTracking.item10', 'KPI Bar: Open Actions, In Progress, Completed, Missed, Overdue, Total Predicted Savings, Total Realized Savings, and Enterprise Realization Rate — all live from the database.'),
+                        t('manual.opexTracking.item11', 'Plant Realization Heatmap: A card for every plant showing its average realization rate across all validated outcomes. Green (≥80%), amber (50–79%), red (<50%). Plants that consistently follow through are immediately visible.'),
+                        t('manual.opexTracking.item12', 'Category Performance Table: Which savings categories are generating the most predicted value, and what percentage of that value is actually being realized across all plants.'),
+                        t('manual.opexTracking.item13', 'Alert Banner: If any escalation alerts (overdue, missed at 90 days, or disputed) are unresolved, a red banner shows the count.'),
+                    ]
+                },
+                {
+                    title: t('manual.opexTracking.sub4', '31.4 The Automated 30/60/90-Day Measurement Cycle'),
+                    items: [
+                        t('manual.opexTracking.item14', 'Every night at 2:00 AM, the outcome cron (Stage 5.9, server/index.js) automatically runs for every commitment marked COMPLETED whose 30, 60, or 90-day checkpoint is now due.'),
+                        t('manual.opexTracking.item15', 'The cron re-runs the exact same algorithm that generated the original prediction — against the current live plant database — and computes the delta between the current metric and the baseline snapshot captured at commit time.'),
+                        t('manual.opexTracking.item16', 'Outcome thresholds: VALIDATED (≥80% of predicted savings realized), PARTIAL (30–79%), MISSED (<30%). Each result is permanently recorded in OpExOutcomes.'),
+                        t('manual.opexTracking.item17', 'If a commitment is still OPEN or IN_PROGRESS past its TargetDate, the cron automatically generates an OVERDUE alert. If the 90-day checkpoint is MISSED, an ESCALATION alert is created and surfaced to corporate.'),
+                    ]
+                },
+                {
+                    title: t('manual.opexTracking.sub5', '31.5 Plant Manager Resolution Workflow'),
+                    items: [
+                        t('manual.opexTracking.item18', 'Plant managers see a dedicated OpEx Action Items widget on their Dashboard showing only their plant\'s commitments — not the full enterprise view.'),
+                        t('manual.opexTracking.item19', 'Each action item shows: category, description, predicted savings at stake, due date, and current status (OPEN / IN_PROGRESS / OVERDUE).'),
+                        t('manual.opexTracking.item20', '"Mark Complete" records the completion date and triggers the first 30-day outcome measurement window.'),
+                        t('manual.opexTracking.item21', 'Once an outcome is measured as VALIDATED, the item turns green and the realized savings appear in the plant\'s contribution to the corporate Tracking dashboard.'),
+                        t('manual.opexTracking.item22', 'MISSED items do not disappear — they re-surface in the next OpEx scan with a "previously committed, not realized" badge and elevated priority. The loop persists until the savings are achieved or the item is formally disputed with a written note.'),
+                    ]
+                },
+                {
+                    title: t('manual.opexTracking.sub6', '31.6 The Self-Calibrating Prediction Model'),
+                    items: [
+                        t('manual.opexTracking.item23', 'Every validated (or missed) outcome updates the OpExPlantCalibration table for that plant and category using a Bayesian rolling average: new_rate = (old_rate × N + outcome_rate) ÷ (N + 1).'),
+                        t('manual.opexTracking.item24', 'Initially, all plants use the enterprise-wide default realization rate (22%). As outcomes are recorded, each plant develops its own historical rate per category.'),
+                        t('manual.opexTracking.item25', 'Example: if Plant 3 has 8 validated Overstock outcomes averaging 67%, the next Overstock finding at Plant 3 will show a projected realized savings of 67% of the identified amount — not the generic 22%.'),
+                        t('manual.opexTracking.item26', 'A plant that consistently follows through earns a higher rate. A plant that consistently misses gets a lower rate — meaning the numbers shown to corporate are automatically conservative for that plant. The model self-corrects.'),
+                        t('manual.opexTracking.item27', 'The Calibration rates are visible in full at: GET /api/opex-tracking/calibration — showing PlantId, Category, RealizationRate, and SampleCount for every plant-category pair that has at least one outcome.'),
+                    ]
+                },
+                {
+                    title: t('manual.opexTracking.sub7', '31.7 What a CFO Can Now Show the Board'),
+                    items: [
+                        t('manual.opexTracking.item28', 'After one quarter of use, the OpEx Tracking tab generates a board-ready financial narrative automatically from live data:'),
+                        t('manual.opexTracking.item29', '   • "We committed to X actions across Y plants in Q1."'),
+                        t('manual.opexTracking.item30', '   • "Z were completed on time. W were validated by algorithm remeasurement."'),
+                        t('manual.opexTracking.item31', '   • "Total realized savings: $X.XM — YY% of the $Z.ZM identified."'),
+                        t('manual.opexTracking.item32', '   • "Plant 3 is our highest realizer at 94%. Plant 7 has missed 3 consecutive actions — escalation in progress."'),
+                        t('manual.opexTracking.item33', 'This report is generated from live operational data with zero manual entry beyond the initial commitment click. No consulting firm, no CMMS, and no ERP produces this automatically.'),
+                    ]
+                },
+            ]
+        },
+        {
             section: t('manual.s6.title', 'Part VI: Integration & Enterprise Automation'),
             id: 'integration-enterprise-automation',
             navigateTo: '/settings',

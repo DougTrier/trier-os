@@ -1,34 +1,52 @@
 // Copyright © 2026 Trier OS. All Rights Reserved.
 
 /**
- * Trier OS — OpEx Self-Healing Loop
- * =====================================
- * Closed-loop tracking for OpEx Intelligence action plans.
- * Tracks whether commitments were executed, validates that savings
- * materialized in live data, and feeds outcomes back into per-plant
- * realization rate models to improve future predictions.
+ * opex_tracking.js — OpEx Self-Healing Loop API
+ * ================================================
+ * Closes the OpEx Intelligence loop by tracking whether action-plan
+ * commitments were executed, validating that savings actually materialized
+ * in live plant data at 30/60/90-day checkpoints, and feeding every
+ * outcome back into per-plant, per-category realization rate models so
+ * that future financial predictions become more accurate over time.
  *
- * TABLES (in trier_logistics.db):
- *   OpExCommitments       — every committed action from a game plan
- *   OpExOutcomes          — 30/60/90-day measurement results
- *   OpExPlantCalibration  — per-plant, per-category realization rates
- *   OpExAlerts            — escalation records for overdue/missed items
+ * When a corporate exec commits to an action plan item, the system:
+ *   1. Snapshots the current live baseline value for that category.
+ *   2. Creates three PENDING outcome checkpoints (30/60/90 days).
+ *   3. Nightly cron re-runs the same algorithm against live data, computes
+ *      the delta, marks VALIDATED / PARTIAL / MISSED, and fires escalation
+ *      alerts for persistent misses.
+ *   4. Every outcome updates the Bayesian rolling average in
+ *      OpExPlantCalibration — the next prediction for that plant/category
+ *      uses that plant's real realization history, not a static 22% default.
  *
- * ENDPOINTS:
- *   POST   /api/opex-tracking/commit                    — create commitment
- *   GET    /api/opex-tracking/commitments               — list all (corp view)
- *   PATCH  /api/opex-tracking/commitments/:id/status    — update status
- *   GET    /api/opex-tracking/outcomes                  — list outcome measurements
- *   POST   /api/opex-tracking/outcomes/:id              — manual outcome entry
- *   GET    /api/opex-tracking/calibration               — per-plant rates
- *   GET    /api/opex-tracking/alerts                    — open escalation alerts
- *   PATCH  /api/opex-tracking/alerts/:id/acknowledge    — ack an alert
- *   GET    /api/opex-tracking/dashboard                 — corp roll-up summary
- *   GET    /api/opex-tracking/plant/:plantId            — plant-level view
+ * -- ROUTES ----------------------------------------------------
+ *   POST   /api/opex-tracking/commit                  Create commitment + baseline snapshot
+ *   GET    /api/opex-tracking/commitments              List all (filterable by plant/status/category)
+ *   PATCH  /api/opex-tracking/commitments/:id/status  Update status (OPEN → IN_PROGRESS → COMPLETED)
+ *   GET    /api/opex-tracking/outcomes                 List outcome measurements
+ *   POST   /api/opex-tracking/outcomes/:id             Manual outcome entry
+ *   GET    /api/opex-tracking/calibration              Per-plant realization rates
+ *   GET    /api/opex-tracking/alerts                   Open escalation alerts
+ *   PATCH  /api/opex-tracking/alerts/:id/acknowledge  Acknowledge / resolve an alert
+ *   GET    /api/opex-tracking/dashboard                Corporate roll-up (counts, financials, heatmap)
+ *   GET    /api/opex-tracking/plant/:plantId           Plant-level view (plant manager scope)
  *
- * CRON: runOpExOutcomeCron() — called by server/index.js every 24 hrs.
- *   Re-runs category algorithms, records outcomes, updates calibration.
+ * -- EXPORTED FUNCTION ----------------------------------------
+ *   runOpExOutcomeCron()  Called by server/index.js Stage 5.9 every 24 hrs.
+ *                         Measures all due PENDING checkpoints, updates
+ *                         calibration, fires OVERDUE and ESCALATION alerts.
+ *
+ * -- DATABASE TABLES (trier_logistics.db) ---------------------
+ *   OpExCommitments       Each committed action plan item with baseline value
+ *   OpExOutcomes          30/60/90-day measured results per commitment
+ *   OpExPlantCalibration  Rolling realization rate per plant per category
+ *   OpExAlerts            Escalation records (OVERDUE / MISSED / ESCALATION)
+ *
+ * -- CATEGORY MEASUREMENT COVERAGE ----------------------------
+ *   overstock | ghost | freight | labor | vendor | phantom |
+ *   shrink | accidents | capex | sku  (10 of 14 OpEx categories)
  */
+
 
 const express  = require('express');
 const router   = express.Router();
