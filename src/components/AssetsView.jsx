@@ -2010,6 +2010,25 @@ export default function AssetsView({ plantId, plantLabel }) {
 
 
 
+            {showCameraModal && (
+                <CameraCaptureModal 
+                    title={cameraMode === 'create' ? "Snap Nameplate (OCR)" : "Capture Asset Photo"}
+                    onClose={(needsFallback) => {
+                        setShowCameraModal(false);
+                        if (needsFallback === true) {
+                            fileFallbackRef.current?.click();
+                        }
+                    }}
+                    onCapture={(file) => {
+                        const event = { target: { files: [file] } };
+                        if (cameraMode === 'create') {
+                            handlePreCreateOcrUpload(event);
+                        } else {
+                            handlePhotoUpload(event);
+                        }
+                    }} 
+                />
+            )}
         </>
     );
 }
@@ -2076,26 +2095,6 @@ function AssetTreeNode({ node, level, expandedNodes, toggleNode, onView }) {
                         />
                     ))}
                 </div>
-            )}
-            
-            {showCameraModal && (
-                <CameraCaptureModal 
-                    title={cameraMode === 'create' ? "Snap Nameplate (OCR)" : "Capture Asset Photo"}
-                    onClose={(needsFallback) => {
-                        setShowCameraModal(false);
-                        if (needsFallback === true) {
-                            fileFallbackRef.current?.click();
-                        }
-                    }}
-                    onCapture={(file) => {
-                        const event = { target: { files: [file] } };
-                        if (cameraMode === 'create') {
-                            handlePreCreateOcrUpload(event);
-                        } else {
-                            handlePhotoUpload(event);
-                        }
-                    }} 
-                />
             )}
         </div>
     );
