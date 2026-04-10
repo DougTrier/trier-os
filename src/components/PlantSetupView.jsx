@@ -48,7 +48,7 @@ import {
     Beaker, Wrench, Zap, Mountain, GitMerge, Eye, Pencil, Printer,
     Save, X, Plus, Trash2, Upload, AlertTriangle, RefreshCw,
     FileText, ClipboardList, TrendingUp, ChevronDown, ChevronRight,
-    Link, Wifi, WifiOff, Database, FlaskConical, Truck, BarChart3, ArrowRightLeft,
+    Link, Wifi, WifiOff, Database, FlaskConical, Truck, BarChart3, ArrowRightLeft, BookOpen, ChevronLeft
 } from 'lucide-react';
 import DeviceRegistryTab from './DeviceRegistryTab';
 
@@ -1781,6 +1781,7 @@ const PLANT_API = (path, o = {}) => fetch(`/api/plant-setup${path}`, {
  */
 function ApiIntegrationsTab({ plantId }) {
     const { t } = useTranslation();
+    const [showSetupGuide, setShowSetupGuide] = useState(false);
     const [configs, setConfigs]       = useState({});
     const [expanded, setExpanded]     = useState(null);
     const [form, setForm]             = useState({});
@@ -1861,11 +1862,16 @@ function ApiIntegrationsTab({ plantId }) {
 
     const isConfigured = (id) => configs[id] && Object.keys(configs[id]).some(k => configs[id][k]);
 
+    if (showSetupGuide) return <ApiSetupGuide onBack={() => setShowSetupGuide(false)} />;
+
     return (
         <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, gap: 14, overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', color: '#0ea5e9' }}><Link size={20} /> {t('plantSetup.apiIntegrations', 'API Integrations')}</h2>
                 <span style={{ fontSize: '0.78rem', color: '#475569' }}>{t('plantSetup.configureConnections', 'Configure connections to external dairy plant systems')}</span>
+                <button onClick={() => setShowSetupGuide(true)} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', marginLeft: 15, background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.3)', color: '#0ea5e9' }}>
+                    <BookOpen size={14} /> Setup Guide
+                </button>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#475569' }}>
                     <Wifi size={12} color="#10b981" /> {t('plantSetup.credentialsLocal', 'Credentials stored locally — no data leaves your plant network')}
                 </div>
@@ -2045,6 +2051,94 @@ function ApiIntegrationsTab({ plantId }) {
                     );
                 })}
             </div>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API SETUP & INTEGRATION INSTRUCTIONS GUIDE
+// ═══════════════════════════════════════════════════════════════════════════════
+function ApiSetupGuide({ onBack }) {
+    const { t } = useTranslation();
+    return (
+        <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 30, overflowY: 'auto' }}>
+            <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: 20, marginBottom: 20 }}>
+                <button onClick={onBack} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+                    <ChevronLeft size={16} /> Back to Integrations
+                </button>
+                <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, color: '#0ea5e9' }}>
+                    <BookOpen size={24} /> Internal API Connectivity Guide
+                </h2>
+                <button onClick={() => window.print()} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+                    <Printer size={16} /> Print Instructions
+                </button>
+            </div>
+            
+            <div className="printable-content" style={{ maxWidth: 850, margin: '0 auto', lineHeight: 1.6, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <h2 style={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10, marginTop: 0 }}>API &amp; Integration Guide</h2>
+                <p>
+                    Trier OS acts as the central intelligence hub for your plant. 
+                    This guide outlines exactly how to configure the internal Edge Agent to pull data synchronously from your legacy on-premises databases, enterprise systems, and live PLCs.
+                </p>
+
+                {/* ERP */}
+                <h3 style={{ color: '#0ea5e9', marginTop: 30, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Database size={20} /> 1. ERP &amp; Order Management (REST API)
+                </h3>
+                <p>Integrate with enterprise systems like SAP, Microsoft Dynamics 365, or Prophet 21. Trier OS acts as the client, polling the target URL on a configured interval to seamlessly retrieve daily production orders into your Planning Grid.</p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: 8, padding: 15, margin: '15px 0' }}>
+                    <strong>Real-World Example (SAP HTTP JSON endpoint)</strong><br/><br/>
+                    <strong>Host:</strong> <code>https://sap-gateway.internal.dairy:8443/odata/v2/ProductionOrders?$filter=Date eq 'Today'</code><br/>
+                    <strong>Poll Interval (sec):</strong> <code>3600</code> (Every hour)<br/>
+                    <strong>Auth Type:</strong> <code>Bearer</code><br/>
+                    <strong>Bearer Token:</strong> <code>eyJh...xxxx</code>
+                </div>
+
+                {/* SCADA / PLC */}
+                <h3 style={{ color: '#10b981', marginTop: 30, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Cpu size={20} /> 2. SCADA / PLC (Modbus TCP)
+                </h3>
+                <p>Trier OS queries legacy industrial systems directly across the network using native Modbus TCP. The internal Edge Agent mounts a dedicated polling thread per PLC to poll mission-critical statuses: temperatures, RPMs, and flow rates.</p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: 8, padding: 15, margin: '15px 0' }}>
+                    <strong>Real-World Example (Allen-Bradley CompactLogix via Gateway)</strong><br/><br/>
+                    <strong>Host:</strong> <code>192.168.10.50</code><br/>
+                    <strong>Port:</strong> <code>502</code><br/>
+                    <strong>Protocol:</strong> <code>Modbus TCP</code><br/>
+                    <br/>Once network established, you can target exact internal holding registers inside the &quot;Equipment Intelligence&quot; module. (e.g. Map 'Holding Register 40001' directly to Silo B Temperature thresholds).
+                </div>
+
+                {/* LIMS */}
+                <h3 style={{ color: '#8b5cf6', marginTop: 30, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FlaskConical size={20} /> 3. LIMS / Lab Systems (File Drop / SFTP)
+                </h3>
+                <p>For unmodernized databases lacking standard REST layers (like legacy POMS Dairy or LabVantage SQL), Trier OS supports dropping encrypted CSV telemetry down to a secure FTP directory.</p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: 8, padding: 15, margin: '15px 0' }}>
+                    <strong>Real-World Example (SFTP CSV File Sync)</strong><br/><br/>
+                    <strong>Host:</strong> <code>10.0.5.110</code><br/>
+                    <strong>Port:</strong> <code>22</code><br/>
+                    <strong>Protocol:</strong> <code>SFTP</code><br/>
+                    <strong>Database/Path:</strong> <code>/outbound/daily_butterfat_lab_results.csv</code>
+                </div>
+
+                <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px dashed var(--glass-border)', fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
+                    Secure Operations Manual • Trier OS On-Premises Edge Architecture
+                </div>
+            </div>
+
+            <style dangerouslySetInnerHTML={{__html:`
+                @media print {
+                    .no-print { display: none !important; }
+                    body { background: white !important; color: black !important; }
+                    .glass-card { background: none !important; border: none !important; box-shadow: none !important; color: black !important; padding: 0 !important; }
+                    .printable-content { color: black !important; max-width: 100% !important; margin: 0 !important; }
+                    .printable-content h2, .printable-content h3 { color: black !important; }
+                    .printable-content div[style*="background: rgba(0, 0, 0, 0.3)"] { border: 1px solid #ccc !important; background: #fafafa !important; color: black !important; }
+                    .printable-content div[style*="color: #0ea5e9"], 
+                    .printable-content div[style*="color: #10b981"], 
+                    .printable-content div[style*="color: #8b5cf6"] { color: black !important; }
+                    code { color: #333 !important; font-weight: bold; }
+                }
+            `}} />
         </div>
     );
 }
