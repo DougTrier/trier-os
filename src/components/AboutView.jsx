@@ -69,11 +69,12 @@ const AboutView = () => {
         setCreatorInfo(prev => ({ ...prev, [field]: value }));
     }
 
-    // --- Trier OS ENTERPRISE OPERATIONAL INTELLIGENCE MANUAL — Workflow-First ---
     const enterpriseManual = [
         {
             section: t('manual.s0.title', 'Trier OS vs. The Industry — Feature Comparison'),
             id: 'competitive-comparison',
+            navigateTo: '/dashboard',
+            filePath: 'src/components/AboutView.jsx',
             icon: <Globe size={22} />,
             content: t('manual.s0.content', 'How Trier OS compares to the top Enterprise System providers: Fiix, UpKeep, Limble, MaintainX, and eMaint. Legend: [YES] Full Support | [PARTIAL] Partial | [NO] Not Available | [UNIQUE] Industry-First / Unique to Trier'),
             subsections: [
@@ -213,6 +214,8 @@ const AboutView = () => {
         {
             section: 'TCO Analysis: True Cost vs. Market Leaders',
             id: 'tco-analysis',
+            navigateTo: '/dashboard',
+            filePath: 'src/components/AboutView.jsx',
             icon: <Cloud size={22} />,
             content: t('manual.tco.content', 'Trier OS is free — forever. It installs in under 10 minutes on any existing Windows server or VM, requires no database license (SQLite is built-in), no cloud hosting, no integration middleware, no dedicated IT staff, and no training budget (every user is onboarded automatically with a built-in guided tour). There are no per-user fees, no annual contracts, and no vendor price escalations. The comparison below shows what a company must spend to get each competing platform operational vs. the true cost of Trier OS. All competitor figures are USD, 2025–2026 market rates.'),
             subsections: [
@@ -1346,6 +1349,8 @@ const AboutView = () => {
         {
             section: t('manual.s11.title', 'Part X: Complete Screen & Button Reference'),
             id: 'screen-reference',
+            navigateTo: '/dashboard',
+            filePath: 'src/components/DashboardView.jsx',
             icon: <List size={22} />,
             content: t('manual.s11.content', 'Detailed reference for every screen, tab, button, and control in Trier OS.'),
             subsections: [
@@ -2133,6 +2138,7 @@ const AboutView = () => {
             id: 'scada-guides',
             navigateTo: '/settings',
             adminOnly: true,
+            filePath: 'server/routes/sensors.js',
             icon: <Activity size={22} />,
             content: t('manual.s17.content', 'Step-by-step setup guides for connecting each supported PLC/SCADA system to Trier OS, with real configuration examples.'),
             subsections: [
@@ -2840,6 +2846,7 @@ const AboutView = () => {
             section: t('manual.s24.title', 'Part XX: Mobile Offline Mode (PWA)'),
             id: 'mobile-offline',
             navigateTo: '/settings',
+            filePath: 'public/manifest.json',
             icon: <Globe size={22} />,
             content: t('manual.s24.content', 'Field technicians can keep working when the server is unreachable. Auto-syncs when connectivity returns.'),
             subsections: [
@@ -2988,6 +2995,8 @@ const AboutView = () => {
         {
             section: t('manual.s26.title', 'Part XXIII: Testing Process & Data Validation'),
             id: 'testing-validation',
+            navigateTo: '/it-department',
+            filePath: 'src/components/ITDepartmentView.jsx',
             icon: <CheckCircle size={22} />,
             content: t('manual.s26.content', 'Trier OS undergoes a structured, multi-phase testing process before any release. This section describes what gets tested, how it gets tested, and what the results mean for day-to-day operations.'),
             subsections: [
@@ -3047,6 +3056,8 @@ const AboutView = () => {
         {
             section: t('manual.s27.title', 'Part XXIV: Security Testing & Results'),
             id: 'security-testing',
+            navigateTo: '/it-department',
+            filePath: 'server/index.js',
             icon: <Shield size={22} />,
             content: t('manual.s27.content', 'Trier OS was built with security in mind from day one. This section summarizes the security measures in place and the results of formal security testing.'),
             subsections: [
@@ -3149,6 +3160,8 @@ const AboutView = () => {
         {
             section: t('manual.s28.title', 'Part XXV: Licensing, Support & Renewals'),
             id: 'licensing-support',
+            navigateTo: '/settings',
+            filePath: 'src/components/SettingsView.jsx',
             icon: <Key size={22} />,
             content: t('manual.s28.content', 'Trier OS uses a hardware-locked license system. Each installation is tied to the machine it runs on and may be time-limited or perpetual.'),
             subsections: [
@@ -3650,6 +3663,8 @@ const AboutView = () => {
         {
             section: t('manual.s6.title', 'Part VI: Integration & Enterprise Automation'),
             id: 'integration-enterprise-automation',
+            navigateTo: '/settings',
+            filePath: 'src/components/DataBridge.jsx',
             icon: <Server size={22} />,
             content: t('manual.s6.content', 'Connecting Trier OS to the outside world: ERP systems, Active Directory, and OT floor devices like PLCs and sensors.'),
             subsections: [
