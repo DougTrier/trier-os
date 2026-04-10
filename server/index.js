@@ -239,6 +239,17 @@ setInterval(() => {
 }, 15 * 60 * 1000);
 setImmediate(() => { try { runUtilityAnomalyCheck(); } catch (_) {} });
 
+// ── OpEx Self-Healing Outcome Cron ───────────────────────────────────────────
+// Runs every 24 hours. Re-measures each due 30/60/90-day outcome checkpoint
+// against live plant data, updates realization rates, fires escalation alerts.
+console.log('[BOOT] Stage 5.9: OpEx self-healing outcome cron configured (every 24 hrs)');
+const { runOpExOutcomeCron } = require('./routes/opex_tracking');
+setInterval(() => {
+    try { runOpExOutcomeCron(); }
+    catch (e) { console.warn('[OpExCron] Cron failed:', e.message); }
+}, 24 * 60 * 60 * 1000);
+setImmediate(() => { try { runOpExOutcomeCron(); } catch (_) {} });
+
 // ── Metric Rollup Cron (8:00 AM and 3:00 PM daily) ────────────────────────────
 // Sweeps plant DBs → aggregates SensorReadings → upserts PlantMetricSummary
 // in corporate_master.db so the Equipment Intelligence tile stays current.
@@ -1997,7 +2008,8 @@ app.get('/api/address', (req, res) => {
 });
 
 // â”€â”€ Shift Handoff Logbook (extracted to routes/shiftLog.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.use('/api/shift-log', require('./routes/shiftLog'));
+app.use('/api/shift-log',    require('./routes/shiftLog'));
+app.use('/api/opex-tracking', require('./routes/opex_tracking'));  // OpEx Self-Healing Loop (§ Tracking)
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use((req, res, next) => {

@@ -368,6 +368,8 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
     const [selectedRisk, setSelectedRisk] = useState(null);
     const [payScales, setPayScales] = useState([]);
     const [mapPins, setMapPins] = useState([]);
+    const [trackingData, setTrackingData] = useState(null);
+    const [commitMsg, setCommitMsg] = useState('');
     const [fleetSort, setFleetSort] = useState({ key: 'mileage', dir: -1 });
 
     const fetchAll = useCallback(() => {
@@ -408,7 +410,12 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                 .then(d => { if (!d.error) setOpexData(d); setOpexLoading(false); })
                 .catch(() => setOpexLoading(false));
         }
-    }, [activeSection, opexData, opexLoading]);
+        if (activeSection === 'tracking' && !trackingData) {
+            fetch('/api/opex-tracking/dashboard', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') } })
+                .then(r => r.json()).then(d => setTrackingData(d)).catch(() => {});
+        }
+    }, [activeSection, opexData, opexLoading, trackingData]);
+
 
     const sections = [
         { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -420,6 +427,7 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
         { id: 'forecast', label: 'Forecast', icon: Calendar },
         { id: 'workforce', label: 'Workforce', icon: Users },
         { id: 'realestate', label: 'Property & Real Estate', icon: Map },
+        { id: 'tracking',   label: 'OpEx Tracking',          icon: Target },
     ];
 
     if (loading) return (
@@ -1576,8 +1584,28 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                                     </div>
                                                     <div style={{ display: 'flex', gap: 8 }}>
                                                         <button onClick={printPlan} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}><Printer size={14} />{t('corpAnalytics.text.printGamePlan', 'Print Game Plan')}</button>
+                                                        <button onClick={() => {
+                                                            const tDate = new Date(); tDate.setDate(tDate.getDate() + 30);
+                                                            fetch('/api/opex-tracking/commit', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('authToken') },
+                                                                body: JSON.stringify({
+                                                                plantId: plantId || 'all_sites',
+                                                                category: opexModal,
+                                                                itemDescription: plan.title,
+                                                                predictedSavings: plan.savings || 0,
+                                                                targetDate: tDate.toISOString().split('T')[0],
+                                                                priority: 'HIGH'
+                                                            })
+                                                            .then(r => r.json())
+                                                            .then(() => { setCommitMsg('✅ Committed! Outcome checkpoints set at 30/60/90 days.'); setTimeout(() => setCommitMsg(''), 4000); })
+                                                            .catch(() => setCommitMsg('❌ Commit failed — check connection.'));
+                                                        }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', background: '#10b981' }}>
+                                                            <CheckCircle2 size={14} /> Commit to This Action
+                                                        </button>
                                                         <button onClick={() => setOpexModal(null)} className="btn-danger" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}><X size={14} />{t('corpAnalytics.text.close', 'Close')}</button>
                                                     </div>
+                                                    {commitMsg && <div style={{ marginTop: 8, padding: '6px 14px', borderRadius: 8, background: commitMsg.startsWith('✅') ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: commitMsg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>{commitMsg}</div>}
                                                 </div>
                                                 {/* Body */}
                                                 <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 22, maxHeight: '72vh', overflowY: 'auto' }}>
@@ -1637,6 +1665,104 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                     })()}
                 </>
             )}
+
+            {/* ═══════════ OPEX TRACKING (SELF-HEALING LOOP) ═══════════ */}
+            {activeSection === 'tracking' && (() => {
+                if (!trackingData) return <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}><RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ marginLeft: 10 }}>Loading tracking data...</span></div>;
+                const td = trackingData;
+                const statusColor = s => s === 'OPEN' ? '#3b82f6' : s === 'IN_PROGRESS' ? '#f59e0b' : s === 'COMPLETED' ? '#10b981' : s === 'MISSED' ? '#ef4444' : '#64748b';
+                const statusIcon  = s => s === 'OPEN' ? '🔵' : s === 'IN_PROGRESS' ? '🟡' : s === 'COMPLETED' ? '✅' : s === 'MISSED' ? '🔴' : '⚪';
+                return (
+                    <>
+                        {/* KPI Bar */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 16 }}>
+                            <KPICard icon={Target}      label="Open Actions"    value={td.counts?.open || 0}           color="#3b82f6" />
+                            <KPICard icon={TrendingDown} label="In Progress"     value={td.counts?.inProgress || 0}    color="#f59e0b" />
+                            <KPICard icon={CheckCircle2} label="Completed"        value={td.counts?.completed || 0}     color="#10b981" />
+                            <KPICard icon={AlertTriangle} label="Missed"          value={td.counts?.missed || 0}        color="#ef4444" />
+                            <KPICard icon={AlertTriangle} label="Overdue"         value={td.counts?.overdue || 0}       color="#dc2626" />
+                            <KPICard icon={DollarSign}  label="Total Predicted"   value={fmt(td.financials?.totalPredicted || 0)} color="#8b5cf6" />
+                            <KPICard icon={DollarSign}  label="Total Realized"    value={fmt(td.financials?.totalRealized  || 0)} color="#10b981" />
+                            <KPICard icon={Zap}         label="Realization Rate"  value={(td.financials?.realizationPct || 0) + '%'} color="#06b6d4" />
+                        </div>
+
+                        {/* Plant Heatmap */}
+                        {td.plantRates?.length > 0 && (
+                            <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
+                                <h3 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Plant Realization Heatmap</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10 }}>
+                                    {td.plantRates.map(p => {
+                                        const pct = p.avgRealization || 0;
+                                        const col = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : pct >= 20 ? '#ef4444' : '#64748b';
+                                        return (
+                                            <div key={p.PlantId} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${col}30` }}>
+                                                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#f1f5f9', marginBottom: 6 }}>{p.PlantId}</div>
+                                                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 4, height: 6, marginBottom: 6 }}>
+                                                    <div style={{ width: `${Math.min(100,pct)}%`, height: '100%', background: col, borderRadius: 4, transition: 'width 0.6s' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                                                    <span style={{ color: col, fontWeight: 700 }}>{pct > 0 ? pct.toFixed(1) + '%' : 'No data'}</span>
+                                                    <span style={{ color: '#64748b' }}>{p.commitments} actions</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Category Performance */}
+                        {td.categoryPerf?.length > 0 && (
+                            <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
+                                <h3 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category Performance</h3>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                    <thead>
+                                        <tr style={{ color: '#64748b' }}>
+                                            <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Category</th>
+                                            <th style={{ textAlign: 'right', padding: '6px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Commitments</th>
+                                            <th style={{ textAlign: 'right', padding: '6px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Predicted</th>
+                                            <th style={{ textAlign: 'right', padding: '6px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Avg Realization</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {td.categoryPerf.map((c, i) => {
+                                            const pct = c.avgRealization || 0;
+                                            const col = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                                            return (
+                                                <tr key={c.Category} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                                                    <td style={{ padding: '8px 10px', fontWeight: 600, color: '#f1f5f9', textTransform: 'capitalize' }}>{c.Category}</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#94a3b8' }}>{c.commitments}</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#f59e0b', fontWeight: 600 }}>{fmt(c.totalPredicted)}</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: pct > 0 ? col : '#64748b' }}>{pct > 0 ? pct.toFixed(1) + '%' : '—'}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {/* Open Alerts */}
+                        {td.openAlerts > 0 && (
+                            <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <AlertTriangle size={16} color="#ef4444" />
+                                <span style={{ fontSize: '0.85rem', color: '#fca5a5', fontWeight: 600 }}>{td.openAlerts} unresolved escalation alert{td.openAlerts > 1 ? 's' : ''} — review in the Alerts panel</span>
+                            </div>
+                        )}
+
+                        {/* Empty State */}
+                        {!td.counts?.open && !td.counts?.inProgress && !td.counts?.completed && (
+                            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#475569' }}>
+                                <Target size={40} style={{ marginBottom: 16, opacity: 0.4 }} />
+                                <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 8 }}>No Commitments Yet</div>
+                                <div style={{ fontSize: '0.85rem', maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>
+                                    Open the OpEx Intel tab, click any savings card, and use <strong style={{ color: '#10b981' }}>"Commit to This Action"</strong> to start tracking outcomes.
+                                </div>
+                            </div>
+                        )}
+                    </>
+                );
+            })()}
 
             {/* ═══════════ REAL ESTATE & PROPERTY SECTION ═══════════ */}
             {activeSection === 'realestate' && (
