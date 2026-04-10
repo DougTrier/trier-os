@@ -93,9 +93,9 @@ The application will automatically ignite at `http://localhost:5173`.
 
 ## :triangular_ruler: Zero Obfuscation Architecture
 
-Trier OS is built on extreme contextual transparency. We maintain a strict **~10.2% Contextual Density Ratio** across exactly 349,224 lines of code.
+Trier OS is built on extreme contextual transparency. We maintain a strict **~10.5% Contextual Density Ratio** across 153,000+ lines of core application logic.
 
-Every logic file contains the mandatory **Trier OS Architecture Header Pattern**, meaning over 35,000 lines of this repository exist purely to bridge the gap between engineering scripts and physical Plant Floor Operations.
+Every logic file contains the mandatory **Trier OS Architecture Header Pattern**, meaning over 16,000 lines of context documentation exist purely to bridge the gap between engineering scripts and physical Plant Floor Operations.
 
 **Notice to Contributors:** Any pull request that drops the core contextual coverage below 100% will be rejected automatically. See `CONTRIBUTING.md` for our strict header templates.
 

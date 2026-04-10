@@ -1,6 +1,6 @@
 # Contributing to Trier OS
 
-349,000 lines in 33 days. Built fast. We pushed every button, broke things, fixed them faster, and didn't stop until it was right.
+153,000 lines of core logic in 33 days. Built fast. We pushed every button, broke things, fixed them faster, and didn't stop until it was right.
 
 That's the standard this codebase was built to. Not perfection on the first try — persistence until it was right. If that sounds like how you build software, you'll fit in here.
 
@@ -18,7 +18,7 @@ If you have a question before diving in, open a **Discussion** rather than an Is
 
 ## 1. The Documentation Standard
 
-Trier OS maintains a **~10.2% Contextual Density Ratio** — every file carries enough human-readable context that a maintenance engineer walking into the codebase cold can understand what it does and why.
+Trier OS maintains a **~10.5% Contextual Density Ratio** — every file carries enough human-readable context that a maintenance engineer walking into the codebase cold can understand what it does and why.
 
 **Every `.js`, `.jsx`, and `.css` file you modify or create must include the standard Trier OS architecture header.**
 

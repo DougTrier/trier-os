@@ -15,8 +15,8 @@
 
 | Metric | Value |
 |---|---|
-| Total Lines of Code (full repository) | **1,531,654** |
-| Core Application Logic (`.js`, `.jsx`, `.css`) | **349,224** |
+| Total Lines of Code (full repository) | **265,000+** |
+| Core Application Logic (`.js`, `.jsx`) | **153,741** |
 | React UI Components | **134 modular interfaces** |
 | Backend API Routes | **53,000+ lines of core server logic** |
 | Production Dependencies | **34 vetted packages** |
@@ -98,7 +98,7 @@ All AI assistance is architecturally decoupled from the plant network and strict
 - **8-tier RBAC** — Technician → Creator, each with a precisely scoped module set
 - **Offline-first PWA** — Technicians continue operating when the server is unreachable; auto-sync on reconnect
 - **EDR-Safe local mode** — Fully disconnected from the internet; runs on strictly firewalled OT networks
-- **Zero Obfuscation standard** — 10.2% contextual density ratio; all architecture documented inline
+- **Zero Obfuscation standard** — 10.5% contextual density ratio; all architecture documented inline
 
 ---
 

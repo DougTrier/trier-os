@@ -55,7 +55,7 @@ App boots at `http://localhost:5173` — no cloud account required.
 
 ## 📐 Architecture Philosophy
 
-Trier OS is built on **extreme contextual transparency** — a strict ~10.2% Contextual Density Ratio across 349,000+ lines of code.
+Trier OS is built on **extreme contextual transparency** — a strict ~10.5% Contextual Density Ratio across 153,000+ lines of core application logic.
 
 Every logic file carries the **Trier OS Architecture Header Pattern**, ensuring any engineer can understand *why* a function exists in the context of physical Plant Floor Operations — not just *what* it does.
 
