@@ -46,7 +46,7 @@ This is a direct cost. You pay it whether your team does any maintenance or not.
 
 | Platform | Software License | Implementation (amortized) | Admin Labor Required | **Annual Total** |
 |---|---|---|---|---|
-| **Trier OS** | **$0** | **$0** | **~$800 (server power)** | **$800/yr** |
+| **Trier OS** | **$0** | **$0** | **$0** | **$0/yr** |
 | UpKeep Professional | $13,200 (20 users × $55/mo) | $3,000 | None required | $16,200/yr |
 | Fiix Professional | $18,000 (20 users × $75/mo) | $3,000 | None required | $21,000/yr |
 | IBM Maximo MAS | $60,000 min | $25,000 | 0.5 FTE = $29,250 | **$114,250/yr** |
@@ -56,10 +56,10 @@ This is a direct cost. You pay it whether your team does any maintenance or not.
 
 | From Platform | Their Annual Cost | Trier OS Annual Cost | **You Save Per Year** |
 |---|---|---|---|
-| UpKeep Professional | $16,200 | $800 | **$15,400** |
-| Fiix Professional | $21,000 | $800 | **$20,200** |
-| IBM Maximo MAS | $114,250 | $800 | **$113,450** |
-| SAP Plant Maintenance | $232,000 | $800 | **$231,200** |
+| UpKeep Professional | $16,200 | $0 | **$16,200** |
+| Fiix Professional | $21,000 | $0 | **$21,000** |
+| IBM Maximo MAS | $114,250 | $0 | **$114,250** |
+| SAP Plant Maintenance | $232,000 | $0 | **$232,000** |
 
 ---
 
@@ -194,10 +194,10 @@ Every minute a technician or supervisor spends navigating a slow system, filling
 
 | Compared Against | Labor Savings | Platform Savings | **Total Annual Savings** |
 |---|---|---|---|
-| vs. UpKeep Professional | $246,808 | $15,400 | **$262,208** |
-| vs. Fiix Professional | $246,808 | $20,200 | **$267,008** |
-| vs. IBM Maximo MAS | $246,808 | $113,450 | **$360,258** |
-| vs. SAP Plant Maintenance | $246,808 | $231,200 | **$478,008** |
+| vs. UpKeep Professional | $246,808 | $16,200 | **$263,008** |
+| vs. Fiix Professional | $246,808 | $21,000 | **$267,808** |
+| vs. IBM Maximo MAS | $246,808 | $114,250 | **$361,058** |
+| vs. SAP Plant Maintenance | $246,808 | $232,000 | **$478,808** |
 | vs. Paper / No System | $246,808 | $0 | **$246,808** |
 
 ---
@@ -216,8 +216,8 @@ Every minute a technician or supervisor spends navigating a slow system, filling
 | Scenario | Monthly Savings | **Months to Break Even** |
 |---|---|---|
 | vs. No system (labor only) | $20,567 | **< 0.5 months** |
-| vs. UpKeep | $21,851 | **< 0.5 months** |
-| vs. Maximo | $30,022 | **< 0.3 months** |
+| vs. UpKeep | $21,917 | **< 0.4 months** |
+| vs. Maximo | $30,088 | **< 0.3 months** |
 
 ---
 
@@ -239,10 +239,10 @@ These savings are real. They are excluded from the model only because they requi
 
 | Plant Profile | Techs | Annual Labor Savings | Platform Savings (vs. Fiix) | **Total Annual Value** |
 |---|---|---|---|---|
-| Small plant, 50 employees | 5 techs, 1 sup | $82,270 | $20,200 | **$102,470** |
-| Mid-size plant, 250 employees | 15 techs, 3 sup | $246,808 | $20,200 | **$267,008** |
-| Large plant, 750 employees | 40 techs, 8 sup | $657,880 | $60,000+ | **$717,880+** |
-| Multi-plant, 5 sites | 75 techs, 15 sup | $1,234,040 | $101,000+ | **$1,335,040+** |
+| Small plant, 50 employees | 5 techs, 1 sup | $82,270 | $21,000 | **$103,270** |
+| Mid-size plant, 250 employees | 15 techs, 3 sup | $246,808 | $21,000 | **$267,808** |
+| Large plant, 750 employees | 40 techs, 8 sup | $657,880 | $63,000+ | **$720,880+** |
+| Multi-plant, 5 sites | 75 techs, 15 sup | $1,234,040 | $105,000+ | **$1,339,040+** |
 
 ---
 
