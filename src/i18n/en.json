@@ -8254,7 +8254,7 @@
   "manual.item.1564": "Calibration / Instrument Tracking — Trier [YES] | Fiix [YES] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]",
   "manual.item.1565": "IT Asset & License Depreciation — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [PARTIAL] | IBM Maximo [PARTIAL]",
   "manual.item.1566": "Cross-Plant Asset Search — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [PARTIAL] | IBM Maximo [PARTIAL]",
-  "manual.cat.7": "Zero-Keystroke Workflows",
+  "manual.cat.7": "Keyboardless Workflows",
   "manual.item.1570": "Scan-to-Consume (Parts on WOs) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]",
   "manual.item.1571": "Badge-and-Scan Employee Tool Checkout — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]",
   "manual.item.1572": "Blind Vendor Receive / Cycle Counts — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]",

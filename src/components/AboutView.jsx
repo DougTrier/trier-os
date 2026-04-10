@@ -198,7 +198,7 @@ const AboutView = () => {
                     ]
                 },
                 {
-                    title: t('manual.cat.7', 'Zero-Keystroke Workflows'),
+                    title: t('manual.cat.7', 'Keyboardless Workflows'),
                     items: [
                         t('manual.item.1570', 'Scan-to-Consume (Parts on WOs) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
                         t('manual.item.1571', 'Badge-and-Scan Employee Tool Checkout — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
