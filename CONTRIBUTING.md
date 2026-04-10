@@ -18,7 +18,7 @@ If you have a question before diving in, open a **Discussion** rather than an Is
 
 ## 1. The Documentation Standard
 
-Trier OS maintains a **~10.5% Contextual Density Ratio** — every file carries enough human-readable context that a maintenance engineer walking into the codebase cold can understand what it does and why.
+Trier OS enforces a hard **10% minimum Contextual Density Ratio** — every file carries enough human-readable context that a maintenance engineer walking into the codebase cold can understand what it does and why.
 
 **Every `.js`, `.jsx`, and `.css` file you modify or create must include the standard Trier OS architecture header.**
 

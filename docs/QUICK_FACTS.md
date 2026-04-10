@@ -98,7 +98,7 @@ All AI assistance is architecturally decoupled from the plant network and strict
 - **8-tier RBAC** — Technician → Creator, each with a precisely scoped module set
 - **Offline-first PWA** — Technicians continue operating when the server is unreachable; auto-sync on reconnect
 - **EDR-Safe local mode** — Fully disconnected from the internet; runs on strictly firewalled OT networks
-- **Zero Obfuscation standard** — 10.5% contextual density ratio; all architecture documented inline
+- **Zero Obfuscation standard** — 10% minimum contextual density ratio enforced; all architecture documented inline
 
 ---
 
