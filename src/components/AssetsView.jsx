@@ -42,10 +42,16 @@ import { formatDate } from '../utils/formatDate';
 
 const CameraCaptureModal = ({ onClose, onCapture, title }) => {
     const videoRef = React.useRef(null);
+    const [cameraError, setCameraError] = React.useState(false);
+
     React.useEffect(() => {
         let stream = null;
         async function startCamera() {
             try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    setCameraError(true);
+                    return;
+                }
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
                 });
@@ -54,9 +60,7 @@ const CameraCaptureModal = ({ onClose, onCapture, title }) => {
                 }
             } catch (err) {
                 console.error("Camera access denied or unavail", err);
-                window.trierToast?.error('Camera access denied or unavailable. Trying manual upload fallback.');
-                // Provide fallback by converting the component to traditional file picker
-                onClose(true); // pass true to indicate it needs fallback
+                setCameraError(true);
             }
         }
         startCamera();
@@ -83,12 +87,29 @@ const CameraCaptureModal = ({ onClose, onCapture, title }) => {
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             {title && <h3 style={{ color: 'white', marginBottom: '15px' }}>{title}</h3>}
-            <video ref={videoRef} autoPlay playsInline style={{ maxWidth: '95%', maxHeight: '70vh', borderRadius: '8px', background: '#000' }} />
+            
+            {cameraError ? (
+                <div style={{ padding: '30px', background: '#334155', borderRadius: '12px', textAlign: 'center', color: '#fff', maxWidth: '400px', margin: '20px' }}>
+                    <div style={{ marginBottom: '15px' }}><Camera size={48} color="#94a3b8" /></div>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '1.2rem' }}>Camera Unavailable</h4>
+                    <p style={{ margin: '0 0 25px 0', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                        We couldn't connect to your camera. You may need to grant permissions, or you can securely upload an image file directly from your computer instead.
+                    </p>
+                    <button type="button" onClick={() => onClose(true)} style={{ padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', width: '100%' }}>
+                        Browse Files Instead
+                    </button>
+                </div>
+            ) : (
+                <video ref={videoRef} autoPlay playsInline style={{ maxWidth: '95%', maxHeight: '70vh', borderRadius: '8px', background: '#000' }} />
+            )}
+
             <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
-                <button onClick={() => onClose()} style={{ padding: '12px 24px', background: '#334155', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem' }}>Cancel</button>
-                <button onClick={handleCapture} style={{ padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1rem', fontWeight: 'bold' }}>
-                    <Camera size={20} /> Snap Photo
-                </button>
+                <button type="button" onClick={() => onClose(false)} style={{ padding: '12px 24px', background: '#475569', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem' }}>Cancel</button>
+                {!cameraError && (
+                    <button type="button" onClick={handleCapture} style={{ padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1rem', fontWeight: 'bold' }}>
+                        <Camera size={20} /> Snap Photo
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -1154,9 +1175,15 @@ export default function AssetsView({ plantId, plantLabel }) {
                         {/* Camera capture button for Nameplate OCR or View Mode Upload */}
                         {(!isEditing && !isCreating || isCreating) && (
                             <button 
-                                onClick={() => {
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
                                     setCameraMode(isCreating ? 'create' : 'view');
-                                    setShowCameraModal(true);
+                                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                                        fileFallbackRef.current?.click();
+                                    } else {
+                                        setShowCameraModal(true);
+                                    }
                                 }}
                                 disabled={uploadingPhoto}
                                 style={{ 
