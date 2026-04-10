@@ -142,6 +142,70 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
     // Document assembling logic
     let content = null;
     switch (type) {
+        case 'vendor-setup': {
+            content = (
+                <>
+                    {renderHeader('Vendor API Onboarding Guide', 'VENDOR-API')}
+                    {renderSectionHeader('System Overview')}
+                    {renderDescription('Trier OS provides a secure, headless API for external vendors to receive Requests for Quote (RFQs), submit pricing, and communicate with your supply chain team—directly circumventing email bottlenecks.')}
+
+                    {renderSectionHeader('1. Generate Vendor Access Credentials')}
+                    {renderDescription('Each vendor requires an exclusive 256-bit access token. To generate one, navigate to the main Master Catalog -> Vendors module, select an approved vendor, and click Grant Portal Access. The token will then appear in the Vendor Access tab.')}
+
+                    {renderSectionHeader('2. Connecting to the API')}
+                    {renderDescription('Vendors must configure their ERP systems (e.g., SAP, Oracle, NetSuite) or custom B2B scripts to interface with the Trier OS Vendor Edge API.')}
+                    {renderProperties([
+                        { label: 'Base URL', value: 'https://[your-trier-os-server]/api/vendor-portal' },
+                        { label: 'Authentication Header', value: 'x-vendor-token: <VENDOR_ACCESS_TOKEN>' }
+                    ])}
+
+                    {renderSectionHeader('3. Core Integration Workflows')}
+                    {renderTable(['Workflow', 'Endpoint', 'Description'], [
+                        ['A. RFQ Polling & Retrieval', 'GET /rfq', 'Vendors call this endpoint periodically to pull a list of open RFQs assigned specifically to their Vendor ID. It returns full header data including Due Dates and Line Items.'],
+                        ['B. Submitting a Quote (Pricing)', 'PUT /rfq/:id/items/:itemId', 'To submit pricing, vendors push an update payload containing QuotedPrice and LeadTimeDays to each line item inside the target RFQ. Once submitted, the RFQ shifts to "Quoted" status for internal review.'],
+                        ['C. Threaded Vendor Messaging', 'POST /messages', 'For discrepancies regarding lead times, specifications, or stock availability, vendors can POST directly to the messaging endpoint. All messages thread directly into the "Messages" tab within this internal portal for your Supply Chain team to review and respond.']
+                    ])}
+                </>
+            );
+            break;
+        }
+        case 'api-setup': {
+            content = (
+                <>
+                    {renderHeader('Internal API Connectivity Guide', 'INT-API')}
+                    {renderSectionHeader('System Overview')}
+                    {renderDescription('Trier OS acts as the central intelligence hub for your plant. This guide outlines exactly how to configure the internal Edge Agent to pull data synchronously from your legacy on-premises databases, enterprise systems, and live PLCs.')}
+
+                    {renderSectionHeader('1. ERP & Order Management (REST API)')}
+                    {renderDescription('Integrate with enterprise systems like SAP, Microsoft Dynamics 365, or Prophet 21. Trier OS acts as the client, polling the target URL on a configured interval to seamlessly retrieve daily production orders into your Planning Grid.')}
+                    {renderProperties([
+                        { label: 'Host', value: 'https://sap-gateway.internal.dairy:8443/odata/v2/ProductionOrders?$filter=Date eq \'Today\'' },
+                        { label: 'Poll Interval (sec)', value: '3600' },
+                        { label: 'Auth Type', value: 'Bearer' },
+                        { label: 'Bearer Token', value: 'eyJh...xxxx' }
+                    ])}
+
+                    {renderSectionHeader('2. SCADA / PLC (Modbus TCP)')}
+                    {renderDescription('Trier OS queries legacy industrial systems directly across the network using native Modbus TCP. The internal Edge Agent mounts a dedicated polling thread per PLC to poll mission-critical statuses: temperatures, RPMs, and flow rates.')}
+                    {renderProperties([
+                        { label: 'Host', value: '192.168.10.50' },
+                        { label: 'Port', value: '502' },
+                        { label: 'Protocol', value: 'Modbus TCP' },
+                        { label: 'Usage', value: 'Target exact internal holding registers inside the "Equipment Intelligence" module. (e.g. Map Holding Register 40001 directly to Silo B Temperature thresholds).' }
+                    ])}
+
+                    {renderSectionHeader('3. LIMS / Lab Systems (File Drop / SFTP)')}
+                    {renderDescription('For unmodernized databases lacking standard REST layers (like legacy POMS Dairy or LabVantage SQL), Trier OS supports dropping encrypted CSV telemetry down to a secure FTP directory.')}
+                    {renderProperties([
+                        { label: 'Host', value: '10.0.5.110' },
+                        { label: 'Port', value: '22' },
+                        { label: 'Protocol', value: 'SFTP' },
+                        { label: 'Database/Path', value: '/outbound/daily_butterfat_lab_results.csv' }
+                    ])}
+                </>
+            );
+            break;
+        }
         case 'logistics-intercept': {
             const isAsset = data?.type === 'asset';
             const plantLabel = (data?.plant || 'Unknown').replace(/_/g, ' ');

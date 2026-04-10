@@ -2069,7 +2069,7 @@ function ApiSetupGuide({ onBack }) {
                 <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, color: '#0ea5e9' }}>
                     <BookOpen size={24} /> Internal API Connectivity Guide
                 </h2>
-                <button onClick={() => window.print()} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+                <button onClick={() => window.triggerTrierPrint('api-setup', {})} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
                     <Printer size={16} /> Print Instructions
                 </button>
             </div>
@@ -2124,21 +2124,6 @@ function ApiSetupGuide({ onBack }) {
                     Secure Operations Manual • Trier OS On-Premises Edge Architecture
                 </div>
             </div>
-
-            <style dangerouslySetInnerHTML={{__html:`
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: white !important; color: black !important; }
-                    .glass-card { background: none !important; border: none !important; box-shadow: none !important; color: black !important; padding: 0 !important; }
-                    .printable-content { color: black !important; max-width: 100% !important; margin: 0 !important; }
-                    .printable-content h2, .printable-content h3 { color: black !important; }
-                    .printable-content div[style*="background: rgba(0, 0, 0, 0.3)"] { border: 1px solid #ccc !important; background: #fafafa !important; color: black !important; }
-                    .printable-content div[style*="color: #0ea5e9"], 
-                    .printable-content div[style*="color: #10b981"], 
-                    .printable-content div[style*="color: #8b5cf6"] { color: black !important; }
-                    code { color: #333 !important; font-weight: bold; }
-                }
-            `}} />
         </div>
     );
 }

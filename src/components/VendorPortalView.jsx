@@ -332,7 +332,7 @@ function VendorSetupTab() {
                 <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, color: '#10b981' }}>
                     <BookOpen size={28} /> {t('vendorPortal.setupGuideTitle', 'Vendor API Onboarding Guide')}
                 </h2>
-                <button className="btn-nav" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, fontSize: '0.85rem' }} title="Print Guide">
+                <button className="btn-nav" onClick={() => window.triggerTrierPrint('vendor-setup', {})} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, fontSize: '0.85rem' }} title="Print Guide">
                     <Printer size={16} /> Print Instructions
                 </button>
             </div>
@@ -389,19 +389,6 @@ function VendorSetupTab() {
                     Confidential & Proprietary • Distributed via Trier OS Enterprise Integration Services
                 </div>
             </div>
-            
-            <style dangerouslySetInnerHTML={{__html:`
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: white !important; color: black !important; }
-                    .glass-card { background: none !important; border: none !important; box-shadow: none !important; color: black !important; padding: 0 !important; }
-                    .printable-content { color: black !important; max-width: 100% !important; }
-                    .printable-content h3 { color: black !important; }
-                    .printable-content div[style*="background: rgba(255, 255, 255, 0.03)"] { border: 1px solid #ddd !important; background: #fafafa !important; }
-                    .printable-content div[style*="background: rgba(0, 0, 0, 0.3)"] { border: 1px solid #ddd !important; background: #eee !important; color: black !important; }
-                    code { color: #333 !important; font-weight: bold; }
-                }
-            `}} />
         </div>
     );
 }
