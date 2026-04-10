@@ -68,6 +68,7 @@ export default function LotoPanel() {
     const [tab, setTab] = useState('active');
     const [selectedPermit, setSelectedPermit] = useState(null);
     const [filter, setFilter] = useState('ACTIVE');
+    const [showInfo, setShowInfo] = useState(false);
 
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
@@ -597,7 +598,25 @@ export default function LotoPanel() {
             {tab === 'create' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div style={{ background: 'rgba(239,68,68,0.04)', borderRadius: 12, padding: 20, border: '1px solid rgba(239,68,68,0.15)' }}>
-                        <h4 style={{ margin: '0 0 16px 0', color: '#ef4444' }}>⚠️ New LOTO Permit</h4>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <h4 style={{ margin: 0, color: '#ef4444' }}>⚠️ New LOTO Permit</h4>
+                                <button type="button" onClick={() => setShowInfo(true)} style={{
+                                    background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
+                                    color: '#818cf8', borderRadius: '50%', width: 24, height: 24,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold'
+                                }} title="Help & Procedures">?</button>
+                            </div>
+                            <button type="button" onClick={handleAssetAutoFill} style={{
+                                background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', 
+                                color: '#fff', cursor: 'pointer', fontSize: '0.85rem', borderRadius: 8, padding: '8px 16px', fontWeight: 'bold',
+                                boxShadow: '0 4px 12px rgba(59,130,246,0.25)', display: 'flex', alignItems: 'center', gap: 6
+                            }} title="Scan Asset QR to auto-fill procedures from historical permits">
+                                📡 Scan Asset QR to Auto-Fill
+                            </button>
+                        </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                             <div>
@@ -612,15 +631,7 @@ export default function LotoPanel() {
                                 </select>
                             </div>
                             <div>
-                                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <span>Asset ID</span>
-                                    <button type="button" onClick={handleAssetAutoFill} style={{
-                                        background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', 
-                                        color: '#3b82f6', cursor: 'pointer', fontSize: '0.65rem', borderRadius: 4, padding: '2px 6px', fontWeight: 'bold'
-                                    }} title="Scan Asset QR to auto-fill procedures from historical permits">
-                                        📡 Scan Asset QR
-                                    </button>
-                                </label>
+                                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Asset ID</label>
                                 <input value={form.assetId} onChange={e => setForm({ ...form, assetId: e.target.value })}
                                     placeholder={t('loto.optionalEgConv001Placeholder')} style={inputStyle} />
                             </div>
@@ -724,6 +735,48 @@ export default function LotoPanel() {
                     </div>
                 </div>
             )}
+
+            {/* Info Modal */}
+            {showInfo && createPortal((
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.7)', zIndex: 10000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '20px'
+                }} onClick={() => setShowInfo(false)}>
+                    <div style={{
+                        background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 16, width: '100%', maxWidth: 600, padding: 24,
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                            <div style={{
+                                width: 32, height: 32, borderRadius: 8, background: 'rgba(59,130,246,0.15)', 
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', fontSize: '1.2rem'
+                            }}>ℹ️</div>
+                            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem' }}>How to Author a LOTO Permit</h3>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: '1.6', marginBottom: 24 }}>
+                            <p style={{ marginBottom: 12 }}><strong>1. Scan Equipment (Optional & Recommended):</strong> Use the blue <em>Scan Asset QR</em> button to scan the physical asset nameplate. If previous LOTO events exist, the system will instantly load the exact procedures and isolation points required, saving 90% of data entry.</p>
+                            <p style={{ marginBottom: 12 }}><strong>2. Define Hazard:</strong> Detail the primary energy sources (electrical, pneumatic) and the overarching isolation method for the permit.</p>
+                            <p style={{ marginBottom: 12 }}><strong>3. Identify Isolation Points:</strong> Lockout procedures often require multiple points of isolation to reach zero energy state. Use the "+ Add Point" button to ensure every lock and tag location is accounted for sequentially.</p>
+                            <p style={{ marginBottom: 0 }}><strong>4. Execute & Verify:</strong> Once issued, mechanics must perform the newly integrated <em>Scan-to-Lock</em> workflow on physical field tags to officially execute the procedure safely and retain audit compliance.</p>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                            <button onClick={() => {
+                                window.triggerTrierPrint?.('loto-help-guide', { title: 'LOTO Procedure Guide' });
+                            }} style={{
+                                padding: '10px 18px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa',
+                                border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, cursor: 'pointer', fontWeight: 600
+                            }}>🖨️ Print LOTO Guide</button>
+                            <button onClick={() => setShowInfo(false)} style={{
+                                padding: '10px 24px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff',
+                                border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600
+                            }}>Understood</button>
+                        </div>
+                    </div>
+                </div>
+            ), document.body)}
         </div>
     );
 }
