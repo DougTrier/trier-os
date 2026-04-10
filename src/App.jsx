@@ -65,7 +65,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
-import { LogOut, Settings, ClipboardList, PenTool, CalendarClock, BookOpen, Database as DatabaseIcon, Download, Archive, AlertTriangle, PhoneCall, Mail, Scan, TrendingDown, WifiOff, Monitor, LibraryBig, Zap, Info, UserPlus, Code, HelpCircle } from 'lucide-react';
+import { LogOut, Settings, ClipboardList, PenTool, CalendarClock, BookOpen, Database as DatabaseIcon, Download, Archive, AlertTriangle, PhoneCall, Mail, Scan, TrendingDown, WifiOff, Monitor, LibraryBig, Zap, Info, UserPlus, Code, HelpCircle, IdCard } from 'lucide-react';
 import { DialogProvider } from './hooks/useDialog';
 import DialogInterceptor from './components/DialogInterceptor';
 import { ToastProvider, useToast } from './components/ToastProvider';
@@ -574,9 +574,9 @@ function App() {
         setHwScanFlash(true);
         setTimeout(() => setHwScanFlash(false), 600);
 
-        // If GlobalScanner is already open, inject directly — bypasses the hwPendingScan
+        // If GlobalScanner OR another scanner interceptor is open, inject directly — bypasses the hwPendingScan
         // prop path which would not re-fire useEffect if the same item is scanned twice.
-        if (isScannerOpenRef.current) {
+        if (isScannerOpenRef.current || window.trierActiveScannerInterceptor) {
             window.dispatchEvent(new CustomEvent('hw-scan-inject', { detail: cleanCode }));
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             return;
@@ -967,6 +967,20 @@ function App() {
                                     <Zap size={15} />
                                 </button>
                             )}
+                            <button
+                                onClick={() => window.triggerTrierPrint('employee-badge', { name: currentUsername, role: activeUserRole, plant: currentPlantLabel })}
+                                title="Print My ID Badge"
+                                style={{
+                                    width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: 'rgba(56, 189, 248, 0.1)',
+                                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                                    color: '#38bdf8',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                <IdCard size={15} />
+                            </button>
                             <button
                                 onClick={handleLogout}
                                 title={t('app.logoutTip')}

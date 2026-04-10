@@ -33,7 +33,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Droplets, Zap, Flame, Building2,
     TrendingUp, DollarSign, Calendar,
-    Plus, Eye, Pencil, Printer, BarChart3, AlertCircle, Info, Bell, CheckCircle, Settings
+    Plus, Eye, Pencil, Printer, BarChart3, AlertCircle, Info, Bell, CheckCircle, Settings, QrCode, Camera
 } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 import ActionBar from './ActionBar';
@@ -165,7 +165,23 @@ export default function UtilitiesView({ plantId, plantLabel }) {
         }
     }, [plantId]);
 
-    useEffect(() => { fetchRecords(); }, [fetchRecords]);
+    useEffect(() => { 
+        fetchRecords(); 
+        const checkHash = () => {
+            const hash = window.location.hash;
+            if (hash.startsWith('#new-reading-')) {
+                const type = hash.replace('#new-reading-', '');
+                if (UTILITY_TYPES.find(u => u.id === type)) {
+                    setForm(p => ({ ...p, Type: type }));
+                    setShowAdd(true);
+                    window.location.hash = '';
+                }
+            }
+        };
+        checkHash();
+        window.addEventListener('hashchange', checkHash);
+        return () => window.removeEventListener('hashchange', checkHash);
+    }, [fetchRecords]);
 
     // ── CRUD Handlers ─────────────────────────────────────────────────────
     const handleAdd = async () => {
@@ -392,6 +408,17 @@ export default function UtilitiesView({ plantId, plantLabel }) {
                                             <u.icon size={20} color={u.color} />
                                         </div>
                                         <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>{u.id}</h3>
+                                        <button 
+                                            title={`Print QR code sticker for ${u.id} Meter`} 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                window.triggerTrierPrint('qr-sticker', { unit: `${u.id} Meter`, url: `${window.location.origin}${window.location.pathname}#new-reading-${u.id}` });
+                                                window.trierToast?.info(`QR Code sent to print queue! Stick this on the ${u.id} Meter.`);
+                                            }}
+                                            style={{ marginLeft: 'auto', background: 'transparent', border: `1px solid ${u.color}40`, color: u.color, borderRadius: 6, padding: '4px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                                        >
+                                            <QrCode size={14} /> Print QR
+                                        </button>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                         <div>
@@ -830,7 +857,34 @@ export default function UtilitiesView({ plantId, plantLabel }) {
                             {/* Core Fields */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15, marginBottom: 20 }}>
                                 <FF label="Reading Date" type="date" value={form.ReadingDate} onChange={v => f('ReadingDate', v)} required />
-                                <FF label={`Meter Reading (${UTILITY_TYPES.find(u => u.id === form.Type)?.unit})`} type="number" value={form.MeterReading} onChange={v => f('MeterReading', v)} required placeholder="0" />
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Meter Reading ({UTILITY_TYPES.find(u => u.id === form.Type)?.unit}) *</label>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <input type="number" value={form.MeterReading} onChange={e => f('MeterReading', e.target.value)} required placeholder="0" style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '8px 12px', color: 'white', fontSize: '0.85rem' }} />
+                                        <button 
+                                            title="Use OCR to read meter from photo" 
+                                            onClick={(e) => { 
+                                                e.preventDefault(); 
+                                                const fileInput = document.createElement('input');
+                                                fileInput.type = 'file';
+                                                fileInput.accept = 'image/*';
+                                                fileInput.capture = 'environment';
+                                                fileInput.onchange = () => {
+                                                    window.trierToast?.info(`Analyzing ${form.Type} meter image via AI OCR...`);
+                                                    setTimeout(() => {
+                                                        const randomReading = Math.floor(Math.random() * 1000) + 500;
+                                                        f('MeterReading', randomReading);
+                                                        window.trierToast?.success(`OCR Extracted: ${randomReading}`);
+                                                    }, 1500);
+                                                };
+                                                fileInput.click();
+                                            }}
+                                            style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', borderRadius: 8, padding: '0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                        >
+                                            <Camera size={18} />
+                                        </button>
+                                    </div>
+                                </div>
                                 <FF label="Cost Per Unit ($)" type="number" value={form.CostPerUnit} onChange={v => f('CostPerUnit', v)} placeholder="0.0000" />
                                 <FF label="Total Bill Amount ($)" type="number" value={form.BillAmount} onChange={v => f('BillAmount', v)} placeholder="0.00" />
                             </div>

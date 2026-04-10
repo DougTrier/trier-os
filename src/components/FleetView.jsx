@@ -27,12 +27,62 @@
  * SEARCH: SearchBar filters across vehicle number, make, model, and VIN.
  */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Truck, Plus, Search, Eye, X, Fuel, ClipboardCheck, CircleDot, CreditCard, ShieldCheck, Pencil, Printer, Paperclip, Camera, Upload } from 'lucide-react';
+import { Truck, Plus, Search, Eye, X, Fuel, ClipboardCheck, CircleDot, CreditCard, ShieldCheck, Pencil, Printer, Paperclip, Camera, Upload, QrCode, Info } from 'lucide-react';
 import SearchBar from './SearchBar';
 import ActionBar from './ActionBar';
 import { statusClass, formatDate } from '../utils/formatDate';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
+import { BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
+
+const InlineScanner = ({ onScan, onClose }) => {
+    const videoRef = useRef(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let codeReader = null;
+        let stream = null;
+
+        const startScanner = async () => {
+            try {
+                codeReader = new BrowserMultiFormatReader();
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    videoRef.current.setAttribute('playsinline', true);
+                    await videoRef.current.play();
+                    codeReader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+                        if (result) {
+                            onScan(result.getText());
+                        }
+                    });
+                }
+            } catch (err) {
+                setError('Camera access denied or device not found.');
+            }
+        };
+
+        startScanner();
+
+        return () => {
+            if (codeReader) codeReader.reset();
+            if (stream) stream.getTracks().forEach(t => t.stop());
+        };
+    }, [onScan]);
+
+    return (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', zIndex: 999999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            {error && <div style={{ color: '#ef4444', marginBottom: 20 }}>{error}</div>}
+            <div style={{ position: 'relative', width: '90%', maxWidth: 400 }}>
+                <video ref={videoRef} style={{ width: '100%', borderRadius: 12, border: '3px solid #f59e0b', background: '#000' }} />
+                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '2px solid rgba(245, 158, 11, 0.5)', zIndex: 10 }}></div>
+            </div>
+            <div style={{ color: '#fff', marginTop: 24, fontSize: '1.2rem', fontWeight: 600 }}>Scanning Vehicle QR...</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', marginTop: 8, fontSize: '0.9rem' }}>Align the sticker inside the frame</div>
+            <button onClick={onClose} style={{ marginTop: 40, padding: '10px 30px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 24, fontSize: '1rem', cursor: 'pointer' }}>Cancel Scan</button>
+        </div>
+    );
+};
 
 
 const API = (path, opts = {}) => fetch(`/api/fleet${path}`, {
@@ -168,6 +218,7 @@ function VehiclesTab({ plantId, search, vehicles, setVehicles, onTabData }) {
     const [loading, setLoading] = useState(true);
     const [detail, setDetail] = useState(null);
     const [showAdd, setShowAdd] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
     const [editVehicle, setEditVehicle] = useState(null);
     const [form, setForm] = useState({});
     const f = (k,v)=>setForm(p=>({...p,[k]:v}));
@@ -210,7 +261,7 @@ function VehiclesTab({ plantId, search, vehicles, setVehicles, onTabData }) {
         <div className="glass-card" style={{flex:1,display:'flex',flexDirection:'column',padding:20}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
                 <h2 style={{margin:0,display:'flex',alignItems:'center',gap:10}}><Truck size={24} color="#ea580c"/> {t('fleet.tab.vehicles')} ({filtered.length})</h2>
-                <button title={t('fleet.addNewVehicleTip', 'Add a new vehicle to the fleet')} className="btn-save" onClick={()=>{setForm({});setShowAdd(true);}} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> {t('fleet.addVehicle', 'Add Vehicle')}</button>
+                <button title={t('fleet.addNewVehicleTip', 'Add a new vehicle to the fleet')} className="btn-save" onClick={()=>{setForm({});setShowInfo(false);setShowAdd(true);}} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> {t('fleet.addVehicle', 'Add Vehicle')}</button>
             </div>
             <div className="table-container" style={{flex:1,overflowY:'auto'}}>
                 <table className="data-table"><thead><tr><th>{t('fleet.unit', 'Unit #')}</th><th>{t('fleet.year', 'Year')}</th><th>{t('fleet.makeModel', 'Make / Model')}</th><th>{t('fleet.type', 'Type')}</th><th>{t('fleet.vin', 'VIN')}</th><th>{t('fleet.status', 'Status')}</th><th>{t('fleet.odometer', 'Odometer')}</th><th>{t('fleet.pmDue', 'PM Due')}</th><th>{t('common.actions', 'Actions')}</th></tr></thead>
@@ -223,15 +274,76 @@ function VehiclesTab({ plantId, search, vehicles, setVehicles, onTabData }) {
                         <td>{v.NextPMDate?<span style={{color:new Date(v.NextPMDate)<=new Date()?'#ef4444':'#10b981',fontWeight:600,fontSize:'0.8rem'}}>{new Date(v.NextPMDate)<=new Date()?'⚠️ OVERDUE':v.NextPMDate}</span>:'—'}</td>
                         <td style={{display:'flex',gap:2}}>
                             <ActionBtn icon={Eye} tip={t('fleet.viewVehicleDetailsTip', 'View vehicle details, service history, and fuel log')} color="#3b82f6" onClick={()=>loadDetail(v.ID)}/>
-                            <ActionBtn icon={Pencil} tip={t('fleet.editVehicleInformationTip', 'Edit vehicle information')} color="#f59e0b" onClick={()=>startEdit(v)}/>
+                            <ActionBtn icon={Pencil} tip={t('fleet.editVehicleInformationTip', 'Edit vehicle information')} color="#f59e0b" onClick={()=>{setShowInfo(false);startEdit(v);}}/>
                         </td>
                     </tr>
                 ))}{filtered.length===0&&<tr><td colSpan={9} className="table-empty">{t('common.noRecordsFound')}</td></tr>}</tbody></table>
             </div>
         </div>
 
-        {showAdd && <Modal title="Add Vehicle" icon={Plus} color="#ea580c" onClose={()=>setShowAdd(false)}><VehicleForm/><ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel="Save Vehicle"/></Modal>}
-        {editVehicle && <Modal title={`Edit ${editVehicle.UnitNumber}`} icon={Pencil} color="#f59e0b" onClose={()=>setEditVehicle(null)}><VehicleForm isEdit/><ModalActions t={t} onCancel={()=>setEditVehicle(null)} onSave={handleEdit} saveLabel="Update Vehicle"/></Modal>}
+        {showAdd && (
+            <Modal title="Add Vehicle" icon={Plus} color="#ea580c" onClose={()=>setShowAdd(false)}>
+                <VehicleForm/>
+                {showInfo && (
+                    <div style={{ marginTop: 20, padding: '12px 15px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 10, color: '#38bdf8' }}>
+                        <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                        <div style={{ flex: 1, fontSize: '0.85rem', lineHeight: '1.4' }}>
+                            Print this QR code while adding the vehicle. Stick it in the cab so drivers can easily pull up the exact DVIR and Refuel logs!
+                        </div>
+                        <button onClick={() => setShowInfo(false)} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', padding: 2 }} title="Close">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:20, paddingTop:15, borderTop:'1px solid var(--glass-border)' }}>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e) => { 
+                            e.preventDefault(); 
+                            const vNum = form.unitNumber || form.UnitNumber;
+                            if (!vNum) return window.trierToast?.warn('Please type a Unit # first to print its QR code.');
+                            window.triggerTrierPrint('qr-sticker', { unit: vNum }); 
+                        }} title="Create QR code for truck" style={{display:'flex', alignItems:'center', gap:6}}><QrCode size={16}/> Print QR</button>
+                        <button className="btn-nav" onClick={(e) => { e.preventDefault(); setShowInfo(!showInfo); }} title="Info" style={{display:'flex', alignItems:'center', gap:6, padding:'0 8px'}}><Info size={16}/></button>
+                    </div>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e)=>{e.preventDefault(); setShowAdd(false);}}>{t('common.cancel', 'Cancel')}</button>
+                        <button className="btn-save" onClick={(e)=>{e.preventDefault(); handleAdd();}}>Save Vehicle</button>
+                    </div>
+                </div>
+            </Modal>
+        )}
+        
+        {editVehicle && (
+            <Modal title={`Edit ${editVehicle.UnitNumber}`} icon={Pencil} color="#f59e0b" onClose={()=>setEditVehicle(null)}>
+                <VehicleForm isEdit/>
+                {showInfo && (
+                    <div style={{ marginTop: 20, padding: '12px 15px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 10, color: '#38bdf8' }}>
+                        <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                        <div style={{ flex: 1, fontSize: '0.85rem', lineHeight: '1.4' }}>
+                            Print a replacement QR code if the original was damaged or missing from the cab.
+                        </div>
+                        <button onClick={() => setShowInfo(false)} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', padding: 2 }} title="Close">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:20, paddingTop:15, borderTop:'1px solid var(--glass-border)' }}>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e) => { 
+                            e.preventDefault(); 
+                            const vNum = form.unitNumber || form.UnitNumber;
+                            if (!vNum) return window.trierToast?.warn('Please type a Unit # first to print its QR code.');
+                            window.triggerTrierPrint('qr-sticker', { unit: vNum }); 
+                        }} title="Create QR code for truck" style={{display:'flex', alignItems:'center', gap:6}}><QrCode size={16}/> Print QR</button>
+                        <button className="btn-nav" onClick={(e) => { e.preventDefault(); setShowInfo(!showInfo); }} title="Info" style={{display:'flex', alignItems:'center', gap:6, padding:'0 8px'}}><Info size={16}/></button>
+                    </div>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e)=>{e.preventDefault(); setEditVehicle(null);}}>{t('common.cancel', 'Cancel')}</button>
+                        <button className="btn-save" onClick={(e)=>{e.preventDefault(); handleEdit();}}>Update Vehicle</button>
+                    </div>
+                </div>
+            </Modal>
+        )}
 
         {detail && (
             <div className="modal-overlay" onClick={()=>setDetail(null)}>
@@ -261,9 +373,9 @@ function VehiclesTab({ plantId, search, vehicles, setVehicles, onTabData }) {
     </>);
 }
 
-/* ═══════════════════════════════════════════════════ DVIR ═══════════════════════════════════════════════════ */
 function DVIRTab({ search, vehicles, onTabData }) {
     const { t } = useTranslation();
+    const getDefaultDriver = () => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}').fullName || localStorage.getItem('currentUser') || ''; } catch { return localStorage.getItem('currentUser') || ''; } };
     const [dvirs, setDvirs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAdd, setShowAdd] = useState(false);
@@ -272,8 +384,9 @@ function DVIRTab({ search, vehicles, onTabData }) {
     const [editForm, setEditForm] = useState({});
     const [editItems, setEditItems] = useState([]);
     const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState({ inspectionType:'Pre-Trip' });
+    const [form, setForm] = useState({ inspectionType:'Pre-Trip', driver: getDefaultDriver() });
     const [attachments, setAttachments] = useState([]);
+    const [showInfo, setShowInfo] = useState(false);
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
 
@@ -287,7 +400,7 @@ function DVIRTab({ search, vehicles, onTabData }) {
     useEffect(()=>{ onTabData && onTabData(filtered); },[filtered, onTabData]);
 
     const loadDetail = async id=>{const r=await API(`/dvir/${id}`);if(r.ok) { const data = await r.json(); setDetail(data); setEditing(false); setAttachments(data.dvir?.attachments || []); }};
-    const handleAdd = async()=>{if(!form.vehicleId||!form.driver) return window.trierToast?.warn('Vehicle and Driver required');const r=await API('/dvir',{method:'POST',body:JSON.stringify(form)});if(r.ok){setShowAdd(false);setForm({inspectionType:'Pre-Trip'});fetchDvirs();}else{const d=await r.json();window.trierToast?.error(d.error);}};
+    const handleAdd = async()=>{if(!form.vehicleId||!form.driver) return window.trierToast?.warn('Vehicle and Driver required');const r=await API('/dvir',{method:'POST',body:JSON.stringify(form)});if(r.ok){setShowAdd(false);setForm({inspectionType:'Pre-Trip', driver: getDefaultDriver()});setShowInfo(false);fetchDvirs();}else{const d=await r.json();window.trierToast?.error(d.error);}};
 
     const startEdit = () => {
         if (!detail?.dvir) return;
@@ -349,7 +462,7 @@ function DVIRTab({ search, vehicles, onTabData }) {
         <div className="glass-card" style={{flex:1,display:'flex',flexDirection:'column',padding:20}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
                 <h2 style={{margin:0,display:'flex',alignItems:'center',gap:10}}><ClipboardCheck size={24} color="#3b82f6"/> {t('fleet.tab.dvir')} ({filtered.length})</h2>
-                <button title={t('fleet.newDvirInspectionTip', 'New DVIR Inspection')} className="btn-save" onClick={()=>setShowAdd(true)} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> {t('fleet.newDvir', 'New DVIR')}</button>
+                <button title={t('fleet.newDvirInspectionTip', 'New DVIR Inspection')} className="btn-save" onClick={()=>{setForm({inspectionType:'Pre-Trip', driver: getDefaultDriver()}); setShowInfo(false); setShowAdd(true);}} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> {t('fleet.newDvir', 'New DVIR')}</button>
             </div>
             <div className="table-container" style={{flex:1,overflowY:'auto'}}>
                 <table className="data-table"><thead><tr><th>{t('common.date', 'Date')}</th><th>{t('fleet.vehicle', 'Vehicle')}</th><th>{t('fleet.driver', 'Driver')}</th><th>{t('common.type', 'Type')}</th><th>{t('fleet.result', 'Result')}</th><th>{t('fleet.defects', 'Defects')}</th><th>{t('common.actions', 'Actions')}</th></tr></thead>
@@ -377,7 +490,33 @@ function DVIRTab({ search, vehicles, onTabData }) {
                     <FF t={t} label="Odometer" type="number" value={form.odometerAtInspection} onChange={v=>f('odometerAtInspection',v)}/>
                     <FF t={t} label={t('common.notes', 'Notes')} value={form.notes} onChange={v=>f('notes',v)}/>
                 </div>
-                <ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel="Create DVIR"/>
+                {showInfo && (
+                    <div style={{ marginTop: 20, padding: '12px 15px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 10, color: '#38bdf8' }}>
+                        <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                        <div style={{ flex: 1, fontSize: '0.85rem', lineHeight: '1.4' }}>
+                            Stick the QR Code in the cab. Next time, just scan it to instantly open a new DVIR for this truck without navigating menus!
+                        </div>
+                        <button onClick={() => setShowInfo(false)} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', padding: 2 }} title="Close">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:20, paddingTop:15, borderTop:'1px solid var(--glass-border)' }}>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e) => { 
+                            e.preventDefault(); 
+                            if (!form.vehicleId) {
+                                return window.trierToast?.warn('Please select a vehicle from the dropdown first to print its QR code.');
+                            }
+                            window.triggerTrierPrint('qr-sticker', { unit: vehicles.find(v=>String(v.ID)===String(form.vehicleId))?.UnitNumber || 'Vehicle' }); 
+                        }} title="Create QR code for truck" style={{display:'flex', alignItems:'center', gap:6}}><QrCode size={16}/> Print QR</button>
+                        <button className="btn-nav" onClick={(e) => { e.preventDefault(); setShowInfo(!showInfo); }} title="Info" style={{display:'flex', alignItems:'center', gap:6, padding:'0 8px'}}><Info size={16}/></button>
+                    </div>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e)=>{e.preventDefault(); setShowAdd(false);}}>{t('common.cancel', 'Cancel')}</button>
+                        <button className="btn-save" onClick={(e)=>{e.preventDefault(); handleAdd();}}>Create DVIR</button>
+                    </div>
+                </div>
             </Modal>
         )}
 
@@ -499,11 +638,13 @@ function DVIRTab({ search, vehicles, onTabData }) {
 /* ═══════════════════════════════════════════════════ FUEL ═══════════════════════════════════════════════════ */
 function FuelTab({ search, vehicles, onTabData }) {
     const { t } = useTranslation();
+    const getDefaultDriver = () => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}').fullName || localStorage.getItem('currentUser') || ''; } catch { return localStorage.getItem('currentUser') || ''; } };
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAdd, setShowAdd] = useState(false);
     const [detail, setDetail] = useState(null);
     const [editing, setEditing] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
     const [editForm, setEditForm] = useState({});
     const [form, setForm] = useState({});
     const f = (k,v)=>setForm(p=>({...p,[k]:v}));
@@ -544,7 +685,7 @@ function FuelTab({ search, vehicles, onTabData }) {
         <div className="glass-card" style={{flex:1,display:'flex',flexDirection:'column',padding:20}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
                 <h2 style={{margin:0,display:'flex',alignItems:'center',gap:10}}><Fuel size={24} color="#f59e0b"/> {t('fleet.tab.fuel')} ({filtered.length})</h2>
-                <button title={t('fleet.logANewFuelFillupTip', 'Log a new fuel fill-up with gallons, cost, and odometer')} className="btn-save" onClick={()=>setShowAdd(true)} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> {t('fleet.logFuel', 'Log Fuel')}</button>
+                <button title={t('fleet.logANewFuelFillupTip', 'Log a new fuel fill-up with gallons, cost, and odometer')} className="btn-save" onClick={()=>{setForm({ driver: getDefaultDriver() }); setShowAdd(true);}} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> {t('fleet.logFuel', 'Log Fuel')}</button>
             </div>
             <div className="table-container" style={{flex:1,overflowY:'auto'}}>
                 <table className="data-table"><thead><tr><th>{t('common.date', 'Date')}</th><th>{t('fleet.vehicle', 'Vehicle')}</th><th>{t('fleet.gallons', 'Gallons')}</th><th>{t('fleet.costPerGal', '$/Gal')}</th><th>{t('common.total', 'Total')}</th><th>{t('fleet.odometer', 'Odometer')}</th><th>{t('fleet.mpg', 'MPG')}</th><th>{t('fleet.station', 'Station')}</th><th>{t('common.actions', 'Actions')}</th></tr></thead>
@@ -560,17 +701,61 @@ function FuelTab({ search, vehicles, onTabData }) {
         {showAdd && (
             <Modal title="Log Fuel Fill" icon={Fuel} color="#f59e0b" onClose={()=>setShowAdd(false)} width={500}>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-                    <div style={{gridColumn:'span 2'}}><VehicleSelect value={form.vehicleId} onChange={v=>f('vehicleId',v)} vehicles={vehicles}/></div>
+                    <div style={{gridColumn:'span 2'}}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Vehicle *</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                                <VehicleSelect value={form.vehicleId} onChange={v=>f('vehicleId',v)} vehicles={vehicles}/>
+                            </div>
+                            <button 
+                                title="Scan QR sticker to select vehicle" 
+                                className="btn-nav"
+                                onClick={(e) => { 
+                                    e.preventDefault(); 
+                                    setShowScanner(true);
+                                }}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 88, 12, 0.1)', border: '1px solid rgba(234, 88, 12, 0.3)', color: '#ea580c', borderRadius: 8, padding: '0 12px', cursor: 'pointer' }}
+                            >
+                                <QrCode size={18} />
+                            </button>
+                        </div>
+                    </div>
+                    <FF t={t} label="Driver Name" value={form.driver || getDefaultDriver()} onChange={v=>f('driver',v)} required/>
+                    <FF t={t} label="Fuel Type" value={form.fuelType} onChange={v=>f('fuelType',v)} options={FTYPES}/>
                     <FF t={t} label="Gallons" type="number" value={form.gallons} onChange={v=>f('gallons',v)} required/>
                     <FF t={t} label="Cost per Gallon ($)" type="number" value={form.costPerGallon} onChange={v=>f('costPerGallon',v)}/>
                     <FF t={t} label="Odometer at Fill" type="number" value={form.odometerAtFill} onChange={v=>f('odometerAtFill',v)}/>
-                    <FF t={t} label="Fuel Type" value={form.fuelType} onChange={v=>f('fuelType',v)} options={FTYPES}/>
-                    <FF t={t} label="Station / Location" value={form.station} onChange={v=>f('station',v)}/>
                     <FF t={t} label="DEF Gallons" type="number" value={form.defGallons} onChange={v=>f('defGallons',v)}/>
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <FF t={t} label="Station / Location" value={form.station} onChange={v=>f('station',v)}/>
+                    </div>
                 </div>
-                <ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel="Log Fuel"/>
+                <div style={{ display:'flex', justifyContent:'flex-end', marginTop:20, paddingTop:15, borderTop:'1px solid var(--glass-border)' }}>
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button className="btn-nav" onClick={(e)=>{e.preventDefault(); setShowAdd(false);}}>{t('common.cancel', 'Cancel')}</button>
+                        <button className="btn-save" onClick={(e)=>{e.preventDefault(); handleAdd();}}>Log Fuel</button>
+                    </div>
+                </div>
             </Modal>
         )}
+        
+        {showScanner && (
+            <InlineScanner 
+                onClose={() => setShowScanner(false)} 
+                onScan={(val) => {
+                    setShowScanner(false);
+                    // Match barcode text (vNum) against unit number
+                    const matchedVehicle = vehicles.find(v => String(v.UnitNumber).toLowerCase() === val.toLowerCase() || String(v.ID) === val);
+                    if (matchedVehicle) {
+                        f('vehicleId', matchedVehicle.ID);
+                        window.trierToast?.success(`Scanned: ${matchedVehicle.UnitNumber}`);
+                    } else {
+                        window.trierToast?.error(`Unrecognized QR (Read: ${val}). Must be a valid Unit number.`);
+                    }
+                }} 
+            />
+        )}
+
         {detail && (
             <div className="modal-overlay" onClick={()=>{setDetail(null);setEditing(false);}}>
                 <div className="glass-card modal-content-standard" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
@@ -616,6 +801,7 @@ function TiresTab({ search, vehicles, onTabData }) {
     const [showAdd, setShowAdd] = useState(false);
     const [detail, setDetail] = useState(null);
     const [editing, setEditing] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
     const [editForm, setEditForm] = useState({});
     const [form, setForm] = useState({});
     const f = (k,v)=>setForm(p=>({...p,[k]:v}));
@@ -669,7 +855,17 @@ function TiresTab({ search, vehicles, onTabData }) {
         {showAdd && (
             <Modal title="Mount Tire" icon={CircleDot} color="#8b5cf6" onClose={()=>setShowAdd(false)} width={500}>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-                    <div style={{gridColumn:'span 2'}}><VehicleSelect value={form.vehicleId} onChange={v=>f('vehicleId',v)} vehicles={vehicles}/></div>
+                    <div style={{gridColumn:'span 2'}}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Vehicle *</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                                <VehicleSelect value={form.vehicleId} onChange={v=>f('vehicleId',v)} vehicles={vehicles}/>
+                            </div>
+                            <button title="Scan QR sticker to select vehicle" className="btn-nav" onClick={(e) => { e.preventDefault(); setShowScanner(true); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 88, 12, 0.1)', border: '1px solid rgba(234, 88, 12, 0.3)', color: '#ea580c', borderRadius: 8, padding: '0 12px', cursor: 'pointer' }}>
+                                <QrCode size={18} />
+                            </button>
+                        </div>
+                    </div>
                     <FF t={t} label="Position" value={form.position} onChange={v=>f('position',v)} options={['LF (Left Front)','RF (Right Front)','LRO (Left Rear Outer)','LRI (Left Rear Inner)','RRO (Right Rear Outer)','RRI (Right Rear Inner)','Spare']} required/>
                     <FF t={t} label="Tire Serial" value={form.tireSerial} onChange={v=>f('tireSerial',v)}/>
                     <FF t={t} label="Brand" value={form.brand} onChange={v=>f('brand',v)}/><FF t={t} label={t('safety.model', 'Model')} value={form.model} onChange={v=>f('model',v)}/>
@@ -677,6 +873,21 @@ function TiresTab({ search, vehicles, onTabData }) {
                 </div>
                 <ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel="Mount Tire"/>
             </Modal>
+        )}
+        {showScanner && (
+            <InlineScanner 
+                onClose={() => setShowScanner(false)} 
+                onScan={(val) => {
+                    setShowScanner(false);
+                    const matchedVehicle = vehicles.find(v => String(v.UnitNumber).toLowerCase() === val.toLowerCase() || String(v.ID) === val);
+                    if (matchedVehicle) {
+                        f('vehicleId', matchedVehicle.ID);
+                        window.trierToast?.success(`Scanned: ${matchedVehicle.UnitNumber}`);
+                    } else {
+                        window.trierToast?.error(`Unrecognized QR (Read: ${val}). Must be a valid Unit number.`);
+                    }
+                }} 
+            />
         )}
         {detail && (
             <div className="modal-overlay" onClick={()=>{setDetail(null);setEditing(false);}}>
@@ -722,6 +933,7 @@ function LicensesTab({ search, onTabData }) {
     const [showAdd, setShowAdd] = useState(false);
     const [detail, setDetail] = useState(null);
     const [editing, setEditing] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
     const [editForm, setEditForm] = useState({});
     const [form, setForm] = useState({ licenseClass:'A' });
     const f = (k,v)=>setForm(p=>({...p,[k]:v}));
@@ -742,6 +954,9 @@ function LicensesTab({ search, onTabData }) {
 
     const LicenseForm = () => (
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
+            <div style={{gridColumn:'span 2', display: 'flex', gap: 10}}>
+                <button title="Scan Driver License Barcode (PDF417)" className="btn-nav" onClick={(e) => { e.preventDefault(); setShowScanner(true); }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifySelf: 'flex-start', padding: 8, gap: 8, background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', color: '#06b6d4', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap' }}><QrCode size={18} /> Scan DL Barcode</button>
+            </div>
             <FF t={t} label="Driver Name" value={form.driverName} onChange={v=>f('driverName',v)} required/>
             <FF t={t} label="License Number" value={form.licenseNumber} onChange={v=>f('licenseNumber',v)}/>
             <FF t={t} label="State" value={form.state} onChange={v=>f('state',v)}/>
@@ -773,6 +988,28 @@ function LicensesTab({ search, onTabData }) {
             </div>
         </div>
         {showAdd && <Modal title="Add CDL / License" icon={CreditCard} color="#06b6d4" onClose={()=>setShowAdd(false)} width={550}><LicenseForm/><ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel="Save License"/></Modal>}
+        {showScanner && (
+            <InlineScanner 
+                onClose={() => setShowScanner(false)} 
+                onScan={(val) => {
+                    setShowScanner(false);
+                    try {
+                        if (val.includes("ANSI")) {
+                           const nameMatch = val.match(/DAA([^\n]+)/);
+                           const lnumMatch = val.match(/DAQ([^\n]+)/);
+                           if (nameMatch) f('driverName', nameMatch[1].trim());
+                           if (lnumMatch) f('licenseNumber', lnumMatch[1].trim());
+                           window.trierToast?.success(`License scanned successfully`);
+                        } else {
+                           window.trierToast?.info(`Scanned non-standard barcode`);
+                        }
+                        f('endorsements', val.substring(0, 30) + '...');
+                    } catch(e) {
+                           window.trierToast?.error(`Could not parse format`);
+                    }
+                }} 
+            />
+        )}
         {detail && (
             <div className="modal-overlay" onClick={()=>{setDetail(null);setEditing(false);}}>
                 <div className="glass-card modal-content-standard" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
@@ -818,6 +1055,7 @@ function DOTTab({ search, vehicles, onTabData }) {
     const [showAdd, setShowAdd] = useState(false);
     const [detail, setDetail] = useState(null);
     const [editing, setEditing] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
     const [editForm, setEditForm] = useState({});
     const [form, setForm] = useState({ result:'Pass', inspectionType:'Annual' });
     const f = (k,v)=>setForm(p=>({...p,[k]:v}));
@@ -872,7 +1110,17 @@ function DOTTab({ search, vehicles, onTabData }) {
         {showAdd && (
             <Modal title="Log DOT Inspection" icon={ShieldCheck} color="#10b981" onClose={()=>setShowAdd(false)} width={550}>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:15}}>
-                    <div style={{gridColumn:'span 2'}}><VehicleSelect value={form.vehicleId} onChange={v=>f('vehicleId',v)} vehicles={vehicles}/></div>
+                    <div style={{gridColumn:'span 2'}}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Vehicle *</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                                <VehicleSelect value={form.vehicleId} onChange={v=>f('vehicleId',v)} vehicles={vehicles}/>
+                            </div>
+                            <button title="Scan QR sticker to select vehicle" className="btn-nav" onClick={(e) => { e.preventDefault(); setShowScanner(true); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 88, 12, 0.1)', border: '1px solid rgba(234, 88, 12, 0.3)', color: '#ea580c', borderRadius: 8, padding: '0 12px', cursor: 'pointer' }}>
+                                <QrCode size={18} />
+                            </button>
+                        </div>
+                    </div>
                     <FF t={t} label="Inspection Date" type="date" value={form.inspectionDate} onChange={v=>f('inspectionDate',v)} required/>
                     <FF t={t} label="Inspector Name" value={form.inspector} onChange={v=>f('inspector',v)}/>
                     <FF t={t} label="Inspection Type" value={form.inspectionType} onChange={v=>f('inspectionType',v)} options={['Annual','Random','Roadside','Follow-Up']}/>
@@ -884,6 +1132,21 @@ function DOTTab({ search, vehicles, onTabData }) {
                 </div>
                 <ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel="Save Inspection"/>
             </Modal>
+        )}
+        {showScanner && (
+            <InlineScanner 
+                onClose={() => setShowScanner(false)} 
+                onScan={(val) => {
+                    setShowScanner(false);
+                    const matchedVehicle = vehicles.find(v => String(v.UnitNumber).toLowerCase() === val.toLowerCase() || String(v.ID) === val);
+                    if (matchedVehicle) {
+                        f('vehicleId', matchedVehicle.ID);
+                        window.trierToast?.success(`Scanned: ${matchedVehicle.UnitNumber}`);
+                    } else {
+                        window.trierToast?.error(`Unrecognized QR (Read: ${val}). Must be a valid Unit number.`);
+                    }
+                }} 
+            />
         )}
         {detail && (
             <div className="modal-overlay" onClick={()=>{setDetail(null);setEditing(false);}}>

@@ -33,6 +33,7 @@ const PushToTalkButton = ({ onResult, placeholder = "Hold to speak..." }) => {
     const [isListening, setIsListening] = useState(false);
     const [isSupported, setIsSupported] = useState(true);
     const recognitionRef = useRef(null);
+    const transcriptRef = useRef('');
     const holdTimeoutRef = useRef(null);
 
     useEffect(() => {
@@ -54,7 +55,7 @@ const PushToTalkButton = ({ onResult, placeholder = "Hold to speak..." }) => {
                 .map(result => result.transcript)
                 .join('');
             
-            if (onResult) onResult(transcript);
+            transcriptRef.current = transcript;
         };
 
         recognition.onerror = (event) => {
@@ -76,6 +77,7 @@ const PushToTalkButton = ({ onResult, placeholder = "Hold to speak..." }) => {
         if (!isSupported || isListening) return;
 
         try {
+            transcriptRef.current = ''; // Reset on new press
             recognitionRef.current.start();
             setIsListening(true);
             if (navigator.vibrate) navigator.vibrate(50);
@@ -91,6 +93,10 @@ const PushToTalkButton = ({ onResult, placeholder = "Hold to speak..." }) => {
         try {
             recognitionRef.current.stop();
             setIsListening(false);
+            if (onResult && transcriptRef.current) {
+                onResult(transcriptRef.current.trim());
+                transcriptRef.current = '';
+            }
         } catch (err) {
             console.error('Failed to stop speech recognition:', err);
         }

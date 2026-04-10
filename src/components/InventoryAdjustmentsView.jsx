@@ -33,7 +33,7 @@
  *   POST /api/storeroom/adjustments          — Record new adjustment
  */
 import React, { useState, useEffect } from 'react';
-import { Settings2, Search, ArrowUpDown, Save, RefreshCw, AlertCircle, Info, X, CheckCircle } from 'lucide-react';
+import { Settings2, Search, ArrowUpDown, Save, RefreshCw, AlertCircle, Info, X, CheckCircle, Scan } from 'lucide-react';
 import SmartDialog from './SmartDialog';
 import PushToTalkButton from './PushToTalkButton';
 import { useTranslation } from '../i18n/index.jsx';
@@ -51,6 +51,7 @@ export default function InventoryAdjustmentsView({ plantId, plantLabel }) {
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [rapidScanMode, setRapidScanMode] = useState(false);
     const [dialog, setDialog] = useState(null);
 
     const activeUserRole = localStorage.getItem('userRole') || 'technician';
@@ -161,14 +162,24 @@ export default function InventoryAdjustmentsView({ plantId, plantLabel }) {
                         {t('inventory.adjustments.recordPhysicalCountsReceipts')}
                     </p>
                 </div>
-                <button 
-                    onClick={() => setShowHelp(true)}
-                    className="btn-primary" 
-                    style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--primary)', borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    title={t('inventory.adjustments.howDoAdjustmentsWork')}
-                >
-                    <Info size={20} />
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                        onClick={() => setRapidScanMode(true)}
+                        className="btn-nav" 
+                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
+                        title="Enable Smart Scanning workflow"
+                    >
+                        <Scan size={18} /> Smart Scanner Mode
+                    </button>
+                    <button 
+                        onClick={() => setShowHelp(true)}
+                        className="btn-primary" 
+                        style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--primary)', borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title={t('inventory.adjustments.howDoAdjustmentsWork')}
+                    >
+                        <Info size={20} />
+                    </button>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '30px' }}>
@@ -431,7 +442,207 @@ export default function InventoryAdjustmentsView({ plantId, plantLabel }) {
             </div>
         )}
         {dialog && <SmartDialog {...dialog} />}
+        {rapidScanMode && <SmartScannerModal onClose={() => setRapidScanMode(false)} />}
         </>
+    );
+}
+
+function SmartScannerModal({ onClose }) {
+    const { t } = useTranslation();
+    const [logs, setLogs] = useState([]);
+    const [adjustmentType, setAdjustmentType] = useState('6'); // Default physical count
+    const [activePart, setActivePart] = useState(null);
+    const [pendingQty, setPendingQty] = useState(1);
+    
+    // We need refs to access the latest state inside the hardware scanner callback
+    const activePartRef = React.useRef(activePart);
+    const pendingQtyRef = React.useRef(pendingQty);
+    const adjTypeRef = React.useRef(adjustmentType);
+    const inputRef = React.useRef(null);
+    
+    useEffect(() => {
+        activePartRef.current = activePart;
+        pendingQtyRef.current = pendingQty;
+        adjTypeRef.current = adjustmentType;
+    }, [activePart, pendingQty, adjustmentType]);
+
+    const submitAdjustment = async (part, qty, type) => {
+        if (!part) return;
+        try {
+            const adjRes = await fetch(`/api/parts/${encodeURIComponent(part.ID)}/adjust`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
+                body: JSON.stringify({
+                    qty: parseFloat(qty),
+                    type: type,
+                    reason: `Smart Scanner`,
+                    newCost: parseFloat(part.UnitCost || 0)
+                })
+            });
+            
+            if (adjRes.ok) {
+                setLogs(prev => [{ time: new Date().toLocaleTimeString(), code: part.ID, status: `Saved ${qty > 0 ? '+' : ''}${qty}. New Stock: ${part.Stock + parseFloat(qty)}`, success: true }, ...prev]);
+                if (navigator.vibrate) navigator.vibrate(150);
+            } else {
+                const err = await adjRes.json();
+                setLogs(prev => [{ time: new Date().toLocaleTimeString(), code: part.ID, status: 'Failed: ' + err.error, success: false }, ...prev]);
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            }
+        } catch (err) {
+            setLogs(prev => [{ time: new Date().toLocaleTimeString(), code: part.ID, status: 'Network error', success: false }, ...prev]);
+        }
+    };
+
+    const handleManualSubmit = () => {
+        if (activePartRef.current) {
+            submitAdjustment(activePartRef.current, pendingQtyRef.current, adjTypeRef.current);
+            setActivePart(null);
+            setPendingQty(1);
+        }
+    };
+
+    useEffect(() => {
+        window.trierActiveScannerInterceptor = true;
+        
+        const handleScan = async (e) => {
+            const code = e.detail;
+            
+            // 1. If there's an active part pending, AUTO-SAVE IT FIRST using the current typed quantity
+            if (activePartRef.current) {
+                await submitAdjustment(activePartRef.current, pendingQtyRef.current, adjTypeRef.current);
+            }
+            
+            // 2. Fetch the newly scanned part
+            try {
+                const searchRes = await fetch(`/api/parts?search=${encodeURIComponent(code)}&field=VendorPartNumber&match=exact`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' } 
+                });
+                let parts = [];
+                if (searchRes.ok) parts = await searchRes.json();
+                
+                if (!parts || parts.length === 0) {
+                    const broadRes = await fetch(`/api/parts/${encodeURIComponent(code)}`, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' }
+                    });
+                    if (broadRes.ok) parts = [await broadRes.json()];
+                }
+                
+                const part = parts && parts.length > 0 ? parts[0] : null;
+                
+                if (!part) {
+                    setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: 'Part not found in system', success: false }, ...prev]);
+                    if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+                    setActivePart(null);
+                    return;
+                }
+                
+                // 3. Set the new part as active and wait for qty input or next scan!
+                setActivePart(part);
+                setPendingQty(1); // default sequence
+                
+                // 4. Auto focus the input field so they can immediately type a number
+                setTimeout(() => {
+                    if (inputRef.current) {
+                        inputRef.current.focus();
+                        inputRef.current.select();
+                    }
+                }, 50);
+                
+            } catch (err) {
+                setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: 'Network error fetching part', success: false }, ...prev]);
+            }
+        };
+        
+        window.addEventListener('hw-scan-inject', handleScan);
+        return () => {
+            window.trierActiveScannerInterceptor = false;
+            window.removeEventListener('hw-scan-inject', handleScan);
+        };
+    }, []);
+
+    return (
+        <div className="modal-overlay" style={{ zIndex: 11000, background: 'rgba(0,0,0,0.85)' }} onClick={onClose}>
+            <div className="glass-card" style={{ maxWidth: 600, width: '90%', margin: '0 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+                <div style={{ padding: '20px 25px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, transparent 100%)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ background: '#10b981', color: '#fff', padding: 8, borderRadius: '50%', display: 'flex' }}>
+                            <Scan size={24} />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Smart Scanner Mode</h2>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Scan item → Type quantity → Scan next item (auto-saves)</span>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="btn-nav" title="Close" style={{ border: 'none', background: 'transparent' }}><X size={24} /></button>
+                </div>
+                
+                <div style={{ padding: '30px 25px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Context Action:
+                            <select value={adjustmentType} onChange={e => setAdjustmentType(e.target.value)} style={{ padding: '6px', borderRadius: '6px' }}>
+                                <option value="6">Physical Cycle Count</option>
+                                <option value="1">Receipt / Receiving</option>
+                                <option value="3">Positive Audit</option>
+                                <option value="5">Scrap / Defective</option>
+                            </select>
+                        </label>
+                    </div>
+                    
+                    <div style={{ background: 'var(--bg-lighter)', padding: '20px', borderRadius: 12, border: `2px dashed ${activePart ? '#f59e0b' : '#10b981'}`, textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                        {!activePart ? (
+                            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                                Ready. Scan an item barcode.
+                            </div>
+                        ) : (
+                            <div style={{ width: '100%' }}>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 800 }}>VEND: {activePart.VendorName || '--'}</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginBottom: 5 }}>[{activePart.ID}]</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 20 }}>{activePart.Description}</div>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 15 }}>
+                                    <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Quantity to {adjustmentType === '1' ? 'Receive' : 'Adjust'}:</span>
+                                    <input 
+                                        ref={inputRef}
+                                        type="number" 
+                                        step="any"
+                                        value={pendingQty} 
+                                        onChange={e => setPendingQty(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleManualSubmit(); }}
+                                        style={{ width: '100px', fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '2px solid #f59e0b', borderRadius: '8px' }}
+                                    />
+                                </div>
+                                <div style={{ marginTop: 15, fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600 }}>
+                                    Type number. Then scan NEXT ITEM to auto-save, or press ENTER.
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div>
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Smart Session Logs:</h4>
+                        <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: 8, height: 180, overflowY: 'auto' }}>
+                            {logs.length === 0 ? (
+                                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Waiting for scans...</div>
+                            ) : (
+                                logs.map((lg, i) => (
+                                    <div key={i} style={{ padding: '10px 15px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{lg.time}</span>
+                                        <span style={{ fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace' }}>[{lg.code}]</span>
+                                        <span style={{ color: lg.success ? '#10b981' : '#ef4444', fontSize: '0.85rem' }}>{lg.status}</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style={{ padding: '15px 25px', borderTop: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Active sequence saves on blur or new scan.</div>
+                    <button className="btn-nav" onClick={onClose}>Finish & Close</button>
+                </div>
+            </div>
+        </div>
     );
 }
 

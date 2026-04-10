@@ -31,6 +31,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { BookOpen, Save, Trash2, Lock, User, Calendar, Search, X, Printer } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
+import PushToTalkButton from './PushToTalkButton';
 
 /**
  * ShiftHandoff — Notepad++ Style Digital Maintenance Logbook
@@ -659,6 +660,17 @@ const ShiftHandoff = ({ selectedPlant }) => {
                                     }}
                                     title={t('shiftHandoff.typeYourShiftNotesHereTip')}
                                 />
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', padding: '10px', gap: '10px' }}>
+                                    <PushToTalkButton 
+                                        onResult={(text) => {
+                                            const newText = (activeText ? activeText + '\n' : '') + `[${new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})}] ` + text;
+                                            handleTextChange({ target: { value: newText } });
+                                        }}
+                                        placeholder="Hold to Dictate"
+                                    />
+                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', width: '100%', maxWidth: '100px' }}>Hold to transcribe a voice entry</span>
+                                </div>
                             </div>
                         </div>
                     </>

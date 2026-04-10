@@ -38,8 +38,9 @@
  * @param {Function}      onComplete  — Callback: called after successful close-out
  * @param {number}        prefillHours — Pre-populate labor hours from WO estimate
  */
-import React, { useState, useEffect } from 'react';
-import { Clock, Package, DollarSign, CheckCircle2, ChevronRight, ChevronLeft, Plus, X, Search, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock, Package, DollarSign, CheckCircle2, ChevronRight, ChevronLeft, Plus, X, Search, Loader2, Camera, Scan, AlertCircle } from 'lucide-react';
+import { BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 import DraftManager from '../utils/DraftManager';
 import { useTranslation } from '../i18n/index.jsx';
 import { formatDate } from '../utils/formatDate';
@@ -66,6 +67,12 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
     const [partSearch, setPartSearch] = useState('');
     const [partResults, setPartResults] = useState([]);
     const [searchingParts, setSearchingParts] = useState(false);
+
+    // Scanner State
+    const [showScanner, setShowScanner] = useState(false);
+    const [scannerError, setScannerError] = useState('');
+    const codeReaderRef = useRef(null);
+    const videoRef = useRef(null);
 
     // Warranty status tracking
     const [warrantyInfo, setWarrantyInfo] = useState(null);
@@ -137,7 +144,7 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
         }
     };
 
-    const searchParts = async (query) => {
+    const searchParts = async (query, autoAddFirst = false) => {
         setSearchingParts(true);
         try {
             const url = query && query.length > 0 
@@ -145,12 +152,92 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                 : `/api/parts?sort=usage&order=DESC&limit=10`; // Easy-Add mode for common parts
             const res = await fetch(url);
             const data = await res.json();
-            setPartResults(data.data || []);
+            const results = data.data || [];
+            if (autoAddFirst && results.length > 0) {
+                // If this was from a scan, auto-add the exact match if it exists
+                const exactMatch = results.find(p => p.ID.toUpperCase() === query.toUpperCase());
+                addPartRow(exactMatch || results[0]);
+                setPartSearch('');
+            } else {
+                setPartResults(results);
+            }
         } catch (err) {
             console.error('Failed to search parts:', err);
         } finally {
             setSearchingParts(false);
         }
+    };
+    
+    // Scanner Interceptor Hook for Hardware Wedge (Zebra/Honeywell)
+    const searchPartsRef = useRef(searchParts);
+    useEffect(() => { searchPartsRef.current = searchParts; }, [searchParts]);
+    
+    useEffect(() => {
+        if (isOpen && step === 2) {
+            window.trierActiveScannerInterceptor = true;
+            const handleHwScan = (e) => {
+                if (e.detail) {
+                    setPartSearch(e.detail);
+                    searchPartsRef.current(e.detail, true); // True to auto-add exactly matched part
+                }
+            };
+            window.addEventListener('hw-scan-inject', handleHwScan);
+            return () => {
+                window.trierActiveScannerInterceptor = false;
+                window.removeEventListener('hw-scan-inject', handleHwScan);
+            };
+        } else {
+            window.trierActiveScannerInterceptor = false;
+        }
+    }, [isOpen, step]);
+
+    // Initialize scanner when modal opens
+    useEffect(() => {
+        if (showScanner) {
+            setScannerError('');
+            const hints = new Map();
+            hints.set(DecodeHintType.TRY_HARDER, true);
+            hints.set(DecodeHintType.POSSIBLE_FORMATS, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+            
+            const codeReader = new BrowserMultiFormatReader(hints);
+            codeReaderRef.current = codeReader;
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then((stream) => {
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                        videoRef.current.play();
+                        
+                        codeReader.decodeFromVideoElement(videoRef.current, (result, err) => {
+                            if (result) {
+                                // Scan successful
+                                if (navigator.vibrate) navigator.vibrate(200);
+                                stopScanner();
+                                setPartSearch(result.text);
+                                searchParts(result.text, true); // auto-add if found
+                            }
+                        });
+                    }
+                })
+                .catch((err) => {
+                    console.error("Camera error:", err);
+                    setScannerError('Camera access denied or unavailable.');
+                });
+        }
+        return () => {
+            if (showScanner) stopScanner();
+        };
+    }, [showScanner]);
+
+    const stopScanner = () => {
+        if (codeReaderRef.current) {
+            codeReaderRef.current.reset();
+        }
+        if (videoRef.current && videoRef.current.srcObject) {
+            videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+            videoRef.current.srcObject = null;
+        }
+        setShowScanner(false);
     };
 
     const addLaborRow = () => {
@@ -370,61 +457,73 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                             {step === 2 && (
                                 <div>
                                     <div style={{ marginBottom: '20px' }}>
-                                        <h3 style={{ margin: '0 0 15px 0', display: 'flex', alignItems: 'center', gap: '8px' }}><Package size={18} /> {t('close.out.partsUsed')}</h3>
-                                        <div style={{ position: 'relative' }}>
-                                            <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-                                                <Search size={16} />
-                                            </div>
-                                            <input 
-                                                type="text" 
-                                                placeholder={t('close.out.partNameIdOr')} 
-                                                style={{ paddingLeft: '40px', width: '100%', borderRadius: partResults.length > 0 ? '8px 8px 0 0' : '8px' }}
-                                                value={partSearch}
-                                                onFocus={() => searchParts(partSearch)}
-                                                onChange={e => {
-                                                    setPartSearch(e.target.value);
-                                                    searchParts(e.target.value);
-                                                }}
-                                                title={t('closeOutWizard.searchForPartsByNameTip')}
-                                            />
-                                            {searchingParts && <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}><Loader2 className="spinning" size={16} /></div>}
-                                            
-                                            {partResults.length > 0 && (
-                                                <div style={{ 
-                                                    position: 'absolute', 
-                                                    top: '100%', 
-                                                    left: 0, 
-                                                    right: 0, 
-                                                    background: '#1e293b', 
-                                                    border: '1px solid var(--glass-border)', 
-                                                    borderRadius: '0 0 8px 8px', 
-                                                    zIndex: 100, 
-                                                    maxHeight: '300px', 
-                                                    overflowY: 'auto',
-                                                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)' 
-                                                }}>
-                                                    {!partSearch && (
-                                                        <div style={{ padding: '10px 12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            {t('close.out.mostFrequentlyUsed')}
-                                                        </div>
-                                                    )}
-                                                    {partResults.map(p => (
-                                                        <div key={p.ID} onClick={() => addPartRow(p)} style={{ padding: '12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="asset-row-hover">
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary)' }}>{p.ID}</span>
-                                                                <span style={{ fontSize: '0.75rem', color: '#10b981' }}>${new Number(p.UnitCost || 0).toFixed(2)}</span>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Package size={18} /> {t('close.out.partsUsed')}</h3>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <div style={{ position: 'relative', flex: 1 }}>
+                                                <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                                                    <Search size={16} />
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder={t('close.out.partNameIdOr')} 
+                                                    style={{ paddingLeft: '40px', width: '100%', borderRadius: partResults.length > 0 ? '8px 8px 0 0' : '8px' }}
+                                                    value={partSearch}
+                                                    onFocus={() => searchParts(partSearch)}
+                                                    onChange={e => {
+                                                        setPartSearch(e.target.value);
+                                                        searchParts(e.target.value);
+                                                    }}
+                                                    title={t('closeOutWizard.searchForPartsByNameTip')}
+                                                />
+                                                {searchingParts && <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}><Loader2 className="spinning" size={16} /></div>}
+                                                
+                                                {partResults.length > 0 && (
+                                                    <div style={{ 
+                                                        position: 'absolute', 
+                                                        top: '100%', 
+                                                        left: 0, 
+                                                        right: 0, 
+                                                        background: '#1e293b', 
+                                                        border: '1px solid var(--glass-border)', 
+                                                        borderRadius: '0 0 8px 8px', 
+                                                        zIndex: 100, 
+                                                        maxHeight: '300px', 
+                                                        overflowY: 'auto',
+                                                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)' 
+                                                    }}>
+                                                        {!partSearch && (
+                                                            <div style={{ padding: '10px 12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                {t('close.out.mostFrequentlyUsed')}
                                                             </div>
-                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>{p.Description || p.Descript}</div>
-                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Stock: {p.Stock} | {p.Location || 'No Loc'}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {partSearch && !searchingParts && partResults.length === 0 && (
-                                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1e293b', padding: '10px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', borderRadius: '0 0 8px 8px', border: '1px solid var(--glass-border)' }}>
-                                                    No parts found matching "{partSearch}"
-                                                </div>
-                                            )}
+                                                        )}
+                                                        {partResults.map(p => (
+                                                            <div key={p.ID} onClick={() => addPartRow(p)} style={{ padding: '12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="asset-row-hover">
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary)' }}>{p.ID}</span>
+                                                                    <span style={{ fontSize: '0.75rem', color: '#10b981' }}>${new Number(p.UnitCost || 0).toFixed(2)}</span>
+                                                                </div>
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>{p.Description || p.Descript}</div>
+                                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Stock: {p.Stock} | {p.Location || 'No Loc'}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {partSearch && !searchingParts && partResults.length === 0 && (
+                                                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1e293b', padding: '10px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', borderRadius: '0 0 8px 8px', border: '1px solid var(--glass-border)' }}>
+                                                        No parts found matching "{partSearch}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button 
+                                                className="btn-primary" 
+                                                onClick={() => setShowScanner(true)}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 20px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+                                                title="Scan part barcode to log consumption"
+                                            >
+                                                <Scan size={18} /> Scan Part
+                                            </button>
                                         </div>
                                     </div>
 
@@ -550,6 +649,42 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                     </div>
                 )}
             </div>
+
+            {/* In-Line Scanner Modal */}
+            {showScanner && (
+                <div className="modal-overlay" style={{ zIndex: 11000, background: 'rgba(0,0,0,0.9)' }}>
+                    <div className="glass-card modal-content-standard" style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid var(--glass-border)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Camera color="#10b981" />
+                                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Scan Part Barcode</h3>
+                            </div>
+                            <button onClick={stopScanner} className="btn-icon">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#000' }}>
+                            {scannerError ? (
+                                <div style={{ color: '#ef4444', textAlign: 'center', padding: '40px 20px' }}>
+                                    <AlertCircle size={48} style={{ margin: '0 auto 15px auto' }} />
+                                    <div>{scannerError}</div>
+                                </div>
+                            ) : (
+                                <div style={{ position: 'relative', width: '100%', maxWidth: '400px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 0 0 2px var(--primary)' }}>
+                                    <video ref={videoRef} style={{ width: '100%', height: 'auto', display: 'block' }} muted playsInline />
+                                    {/* Scanner target box overlay */}
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, boxShadow: 'inset 0 0 0 50px rgba(0,0,0,0.4)', pointerEvents: 'none' }}>
+                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '200px', height: '100px', border: '2px solid rgba(16,185,129,0.8)', borderRadius: '8px', boxShadow: '0 0 15px rgba(16,185,129,0.5)' }}></div>
+                                    </div>
+                                    <div style={{ position: 'absolute', bottom: '15px', width: '100%', textAlign: 'center', color: '#fff', fontSize: '0.8rem', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                                        Center barcode in the box
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

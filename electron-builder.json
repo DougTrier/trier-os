@@ -8,7 +8,7 @@
   },
   "afterPack": "./electron/afterPack.js",
   "asar": false,
-  "npmRebuild": true,
+  "npmRebuild": false,
   "nodeGypRebuild": false,
   "buildDependenciesFromSource": false,
   "files": [
@@ -48,6 +48,10 @@
       },
       {
         "target": "msi",
+        "arch": ["x64"]
+      },
+      {
+        "target": "zip",
         "arch": ["x64"]
       }
     ],

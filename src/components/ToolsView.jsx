@@ -31,7 +31,7 @@
  *   POST   /api/tools/:id/checkin      — Check in a returned tool
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Hammer, Search, Plus, X, Eye, AlertTriangle, CheckCircle2, Clock, BarChart3, Pencil, Printer } from 'lucide-react';
+import { Hammer, Search, Plus, X, Eye, AlertTriangle, CheckCircle2, Clock, BarChart3, Pencil, Printer, Scan } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { TakeTourButton } from './ContextualTour';
 import ActionBar from './ActionBar';
@@ -74,12 +74,20 @@ export default function ToolsView({ plantId }) {
     const { t } = useTranslation();
     const [tab, setTab] = useState('inventory');
     const [search, setSearch] = useState('');
+    const [badgeMode, setBadgeMode] = useState(false); // Quick Checkout/Checkin
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-base)' }}>
             <div className="glass-card no-print" style={{ padding: '15px 25px', display: 'flex', gap: '20px', alignItems: 'center', flexShrink: 0 }}>
                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 10 }}><Hammer size={24} /> {t('tools.toolCrib', 'Tool Crib')}</h2>
                 <div style={{ width: 2, height: 30, background: 'var(--glass-border)' }} />
                 <div className="nav-pills no-print">
+                    <button onClick={() => setBadgeMode('checkout')} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', fontWeight: 'bold' }} title="Scan employee badge then scan tool">
+                        <Scan size={16} /> Quick Checkout
+                    </button>
+                    <button onClick={() => setBadgeMode('checkin')} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', fontWeight: 'bold' }} title="Scan tools to return them instantly">
+                        <Scan size={16} /> Quick Return
+                    </button>
+                    <div style={{ width: 1, height: 20, background: 'var(--glass-border)', margin: '0 5px' }} />
                     {[['inventory', t('tools.inventory', 'Inventory'), Hammer], ['checkouts', t('tools.activeCheckouts', 'Active Checkouts'), Clock], ['overdue', t('tools.overdue', 'Overdue'), AlertTriangle], ['stats', t('tools.stats', 'Stats'), BarChart3]].map(([id, l, I]) => (
                         <button key={id} onClick={() => setTab(id)} className={`btn-nav ${tab === id ? 'active' : ''}`} title="Tab"><I size={16} style={{ marginRight: 4 }} />{l}</button>
                     ))}
@@ -93,6 +101,7 @@ export default function ToolsView({ plantId }) {
                 {tab === 'overdue' && <OverdueTab />}
                 {tab === 'stats' && <StatsTab />}
             </div>
+            {badgeMode && <BadgeScannerModal mode={badgeMode} onClose={() => setBadgeMode(false)} />}
         </div>
     );
 }
@@ -326,3 +335,149 @@ function StatsTab() {
     );
 }
 
+function BadgeScannerModal({ mode, onClose }) {
+    const { t } = useTranslation();
+    const [employee, setEmployee] = useState(mode === 'checkin' ? 'SYSTEM' : null);
+    const [logs, setLogs] = useState([]);
+    const [message, setMessage] = useState(mode === 'checkout' ? 'Scan Employee ID Badge or select Self-Service...' : 'Scan Tool Barcode to return...');
+    
+    const handleSelfService = () => {
+        const selfUser = localStorage.getItem('userName') || 'Current User';
+        setEmployee(selfUser);
+        setMessage(`Checkout Mode for: ${selfUser}. Scan Tool Barcodes now.`);
+    };
+    
+    useEffect(() => {
+        window.trierActiveScannerInterceptor = true;
+        
+        const handleScan = async (e) => {
+            const code = e.detail;
+            
+            if (mode === 'checkout' && !employee) {
+                setEmployee(code);
+                setMessage(`Checkout Mode for: ${code}. Scan Tool Barcodes now.`);
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                return;
+            }
+            
+            // Assume Tool Scan
+            setMessage(`Processing tool: ${code}...`);
+            try {
+                // Find internal tool ID from ToolID string
+                const searchRes = await fetch(`/api/tools?search=${encodeURIComponent(code)}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' }
+                });
+                const tools = await searchRes.json();
+                // Match the ToolID
+                const tool = tools.find(t => t.ToolID.toUpperCase() === code.toUpperCase());
+                
+                if (!tool) {
+                    setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: 'Failed: Tool not found', success: false }, ...prev]);
+                    setMessage(mode === 'checkout' ? `Checkout Mode for: ${employee}. Ready.` : 'Ready. Scan next tool...');
+                    if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+                    return;
+                }
+                
+                if (mode === 'checkout') {
+                    const res = await fetch(`/api/tools/${tool.ID}/checkout`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
+                        body: JSON.stringify({ checkedOutBy: employee, dueBackDays: 7, notes: 'Quick Scan Checkout' })
+                    });
+                    if (res.ok) {
+                        setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: `Checked out to ${employee}`, success: true }, ...prev]);
+                        if (navigator.vibrate) navigator.vibrate(200);
+                    } else {
+                        const err = await res.json();
+                        setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: 'Failed: ' + err.error, success: false }, ...prev]);
+                        if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+                    }
+                } else if (mode === 'checkin') {
+                    const res = await fetch(`/api/tools/${tool.ID}/return`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
+                        body: JSON.stringify({ returnedBy: localStorage.getItem('userName') || 'scan-user', condition: 'Good', notes: 'Quick Scan Return' })
+                    });
+                    if (res.ok) {
+                        setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: `Returned successfully`, success: true }, ...prev]);
+                        if (navigator.vibrate) navigator.vibrate(200);
+                    } else {
+                        const err = await res.json();
+                        setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: 'Failed: ' + err.error, success: false }, ...prev]);
+                        if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+                    }
+                }
+            } catch (err) {
+                setLogs(prev => [{ time: new Date().toLocaleTimeString(), code, status: 'Network error', success: false }, ...prev]);
+            }
+            setMessage(mode === 'checkout' ? `Checkout Mode for: ${employee}. Scan next tool.` : 'Scan next tool barcode...');
+        };
+        
+        window.addEventListener('hw-scan-inject', handleScan);
+        return () => {
+            window.trierActiveScannerInterceptor = false;
+            window.removeEventListener('hw-scan-inject', handleScan);
+        };
+    }, [mode, employee]);
+    
+    return (
+        <div className="modal-overlay" style={{ zIndex: 11000, background: 'rgba(0,0,0,0.85)' }} onClick={onClose}>
+            <div className="glass-card" style={{ maxWidth: 600, width: '90%', margin: '0 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+                <div style={{ padding: '20px 25px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: mode === 'checkout' ? 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, transparent 100%)' : 'linear-gradient(135deg, rgba(59,130,246,0.2) 0%, transparent 100%)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ background: mode === 'checkout' ? '#10b981' : '#3b82f6', color: '#fff', padding: 8, borderRadius: '50%', display: 'flex' }}>
+                            <Scan size={24} />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{mode === 'checkout' ? 'Quick Checkout Mode' : 'Quick Return Mode'}</h2>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Using global hardware wedge scanner</span>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="btn-nav" title="Close" style={{ border: 'none', background: 'transparent' }}><X size={24} /></button>
+                </div>
+                
+                <div style={{ padding: '30px 25px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div style={{ background: 'var(--bg-lighter)', padding: '20px', borderRadius: 12, border: '1px dashed var(--primary)', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: 5 }}>
+                            {message}
+                        </div>
+                        {!employee && mode === 'checkout' && (
+                            <button className="btn-nav" onClick={handleSelfService} style={{ marginTop: 15, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Scan size={16} /> Check out to myself ({localStorage.getItem('userName') || 'User'})
+                            </button>
+                        )}
+                        {employee && mode === 'checkout' && (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'rgba(16,185,129,0.1)', border: '1px solid #10b981', color: '#10b981', borderRadius: '20px', marginTop: 10, fontSize: '0.85rem', fontWeight: 700 }}>
+                                <CheckCircle2 size={16} /> Employee Assigned: {employee}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div>
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Scan History Session:</h4>
+                        <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: 8, height: 200, overflowY: 'auto' }}>
+                            {logs.length === 0 ? (
+                                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Waiting for scans...</div>
+                            ) : (
+                                logs.map((lg, i) => (
+                                    <div key={i} style={{ padding: '10px 15px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{lg.time}</span>
+                                        <span style={{ fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace' }}>[{lg.code}]</span>
+                                        <span style={{ color: lg.success ? '#10b981' : '#ef4444', fontSize: '0.85rem' }}>{lg.status}</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style={{ padding: '15px 25px', borderTop: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                    {mode === 'checkout' && employee && (
+                        <button className="btn-nav" onClick={() => { setEmployee(null); setLogs([]); setMessage('Scan next Employee ID Badge...'); }}>Reset Employee</button>
+                    )}
+                    <button className="btn-nav" onClick={onClose}>Close Scanner</button>
+                </div>
+            </div>
+        </div>
+    );
+}

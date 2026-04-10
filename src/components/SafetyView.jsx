@@ -50,6 +50,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ShieldAlert, Plus, Search, Eye, X, ClipboardCheck, AlertTriangle, Settings2, Pencil, Image, Camera, Trash2 } from 'lucide-react';
 import SearchBar from './SearchBar';
 import ActionBar from './ActionBar';
+import PushToTalkButton from './PushToTalkButton';
 import { statusClass, formatDate } from '../utils/formatDate';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
@@ -61,10 +62,20 @@ const API_C = (path, o = {}) => fetch(`/api/calibration${path}`, { ...o, headers
 const Badge = ({ color, children }) => (
     <span style={{ display:'inline-block', padding:'3px 10px', borderRadius:12, fontSize:'0.72rem', fontWeight:600, background:`${color}22`, color, border:`1px solid ${color}44` }}>{children}</span>
 );
-const FF = ({ t, label, type='text', value, onChange, options, required }) => {
+const FF = ({ t, label, type='text', value, onChange, options, required, allowVoice }) => {
     return (
         <div>
-            <label style={{ fontSize:'0.8rem', color:'var(--text-muted)', display:'block', marginBottom:4 }}>{label}{required && ' *'}</label>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:4 }}>
+                <label style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>{label}{required && ' *'}</label>
+                {allowVoice && type === 'textarea' && (
+                    <div style={{ transform: 'scale(0.8)', transformOrigin: 'right bottom' }}>
+                        <PushToTalkButton 
+                            onResult={(txt) => onChange(value ? value + ' ' + txt : txt)} 
+                            placeholder="Hold to Dictate" 
+                        />
+                    </div>
+                )}
+            </div>
             {options ? (
                 <select value={value||''} onChange={e=>onChange(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid var(--glass-border)', borderRadius:8, padding:'8px 12px', color:'white', fontSize:'0.85rem' }}>
                     <option value="">— {t ? t('common.select', 'Select') : 'Select'} —</option>
@@ -497,8 +508,8 @@ function IncidentsTab({ search, plantId }) {
                         <button className="btn-nav" onClick={() => fileRef.current?.click()} style={{display: 'flex', alignItems: 'center', gap: 6, height: 38}}><Image size={16} /> Attach Image/File</button>
                         <button className="btn-nav" onClick={() => cameraRef.current?.click()} style={{display: 'flex', alignItems: 'center', gap: 6, height: 38}}><Camera size={16} /> Take Photo</button>
                     </div>
-                    <div style={{gridColumn:'span 2'}}><FF t={t} label={t('common.description', 'Description')} type="textarea" value={form.description} onChange={v=>f('description',v)}/></div>
-                    <div style={{gridColumn:'span 2'}}><FF t={t} label={t('safety.immediateActionsTaken', 'Immediate Actions Taken')} type="textarea" value={form.immediateActions} onChange={v=>f('immediateActions',v)}/></div>
+                    <div style={{gridColumn:'span 2'}}><FF t={t} label={t('common.description', 'Description')} type="textarea" allowVoice={true} value={form.description} onChange={v=>f('description',v)}/></div>
+                    <div style={{gridColumn:'span 2'}}><FF t={t} label={t('safety.immediateActionsTaken', 'Immediate Actions Taken')} type="textarea" allowVoice={true} value={form.immediateActions} onChange={v=>f('immediateActions',v)}/></div>
                 </div>
                 <ModalActions t={t} onCancel={()=>setShowAdd(false)} onSave={handleAdd} saveLabel={t('safety.submitReport', 'Submit Report')}/>
             </Modal>
@@ -550,9 +561,9 @@ function IncidentsTab({ search, plantId }) {
                                     <button className="btn-nav" onClick={() => fileRef.current?.click()} style={{display: 'flex', alignItems: 'center', gap: 6, height: 38}}><Image size={16} /> Attach Image/File</button>
                                     <button className="btn-nav" onClick={() => cameraRef.current?.click()} style={{display: 'flex', alignItems: 'center', gap: 6, height: 38}}><Camera size={16} /> Take Photo</button>
                                 </div>
-                                <div style={{gridColumn:'span 2'}}><FF t={t} label={t('common.description', 'Description')} type="textarea" value={editForm.Description} onChange={v=>ef('Description',v)}/></div>
-                                <div style={{gridColumn:'span 2'}}><FF t={t} label={t('safety.rootCause', 'Root Cause')} type="textarea" value={editForm.RootCause} onChange={v=>ef('RootCause',v)}/></div>
-                                <div style={{gridColumn:'span 2'}}><FF t={t} label={t('safety.correctiveActions', 'Corrective Actions')} type="textarea" value={editForm.CorrectiveAction} onChange={v=>ef('CorrectiveAction',v)}/></div>
+                                <div style={{gridColumn:'span 2'}}><FF t={t} label={t('common.description', 'Description')} type="textarea" allowVoice={true} value={editForm.Description} onChange={v=>ef('Description',v)}/></div>
+                                <div style={{gridColumn:'span 2'}}><FF t={t} label={t('safety.rootCause', 'Root Cause')} type="textarea" allowVoice={true} value={editForm.RootCause} onChange={v=>ef('RootCause',v)}/></div>
+                                <div style={{gridColumn:'span 2'}}><FF t={t} label={t('safety.correctiveActions', 'Corrective Actions')} type="textarea" allowVoice={true} value={editForm.CorrectiveAction} onChange={v=>ef('CorrectiveAction',v)}/></div>
                             </div>
                         )}
                         

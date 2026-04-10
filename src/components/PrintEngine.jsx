@@ -60,6 +60,26 @@ import { formatDate } from '../utils/formatDate';
  */
 const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null, documentLogo: null } }) => {
     const { t } = useTranslation();
+    const [qrCode, setQrCode] = React.useState(null);
+
+    React.useEffect(() => {
+        if (type === 'employee-badge' && data?.name) {
+            import('qrcode').then(QRCode => {
+                QRCode.default.toDataURL(data.name, { margin: 0, width: 64, color: { dark: '#000000FF', light: '#FFFFFFFF' } })
+                    .then(url => setQrCode(url))
+                    .catch(e => console.error("QR Code failed:", e));
+            });
+        }
+        if (type === 'qr-sticker' && data) {
+            const qrText = (data.url || data.unit || 'TrierQR').toString();
+            import('qrcode').then(QRCode => {
+                QRCode.default.toDataURL(qrText, { margin: 1, width: 200, color: { dark: '#000000FF', light: '#FFFFFFFF' } })
+                    .then(url => setQrCode(url))
+                    .catch(e => console.error("QR Code failed:", e));
+            });
+        }
+    }, [type, data]);
+
     if (!data) return null;
 
     const renderHeader = (title, docId) => (
@@ -142,6 +162,66 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
     // Document assembling logic
     let content = null;
     switch (type) {
+        case 'employee-badge': {
+            content = (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '40px' }}>
+                    <div style={{ border: '2px solid #000', borderRadius: '12px', width: '3.375in', height: '2.125in', padding: '15px', position: 'relative', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
+                            <img src={branding.documentLogo || "/assets/TrierLogoPrint.png"} alt="Trier OS" style={{ height: '30px' }} />
+                            <div style={{ textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: '#666' }}>
+                                {plantLabel || data?.plant || 'CORPORATE'}<br/>
+                                AUTHORIZED PERSONNEL
+                            </div>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', gap: 15 }}>
+                            <div style={{ width: '60px', height: '60px', borderRadius: '4px', border: '1px solid #ccc', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ fontSize: '24px', color: '#999' }}>👤</div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 800, lineHeight: 1.1 }}>{data?.name || 'Employee'}</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666', textTransform: 'uppercase', marginTop: 4 }}>{data?.role?.replace('_', ' ') || 'Staff'}</div>
+                            </div>
+                        </div>
+                        <div style={{ marginTop: 'auto', borderTop: '2px solid #000', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 600 }}>ID: {data?.name}</div>
+                            {qrCode ? (
+                                <img src={qrCode} alt="Employee QR" style={{ width: 40, height: 40 }} />
+                            ) : (
+                                <div style={{ fontFamily: 'monospace', fontSize: '1.2rem', letterSpacing: '2px' }}>*{data?.name}*</div>
+                            )}
+                        </div>
+                    </div>
+                    <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666', maxWidth: '3.375in', textAlign: 'center' }}>
+                        Cut along the borders and insert into a standard 2.125" x 3.375" ID badge holder. This badge can be scanned by any standard factory laser scanner.
+                    </div>
+                </div>
+            );
+            break;
+        }
+        case 'qr-sticker': {
+            content = (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '40px' }}>
+                    <div style={{ border: '2px solid #000', borderRadius: '8px', padding: '15px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box' }}>
+                        <div style={{ marginBottom: 10 }}>
+                            <img src={branding.documentLogo || "/assets/TrierLogoPrint.png"} alt="Trier OS" style={{ height: '30px' }} />
+                        </div>
+                        {qrCode ? (
+                            <img src={qrCode} alt="QR Code sticker" style={{ width: 180, height: 180 }} />
+                        ) : (
+                            <div style={{ width: 180, height: 180, border: '1px dashed #ccc', display:'flex', alignItems:'center', justifyContent:'center' }}>Rendering QR...</div>
+                        )}
+                        <div style={{ marginTop: 10, fontSize: '1rem', fontWeight: 800, textAlign: 'center' }}>
+                            {data?.unit || 'SCANNABLE ITEM'}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#666', marginTop: 4 }}>SCAN WITH TRIER OS</div>
+                    </div>
+                    <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666', maxWidth: '3in', textAlign: 'center' }}>
+                        Print this on sticker paper and affix it to the physical asset/location. 
+                    </div>
+                </div>
+            );
+            break;
+        }
         case 'vendor-setup': {
             content = (
                 <>
