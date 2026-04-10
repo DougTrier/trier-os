@@ -8788,5 +8788,11 @@
   "supplyChain.allSitesOpenCol": "열려 있는",
   "supplyChain.allSitesOverdueCol": "늦은",
   "supplyChain.allSitesTopVendors": "상위 공급업체 - 공개 PO 지출",
-  "supplyChain.allSitesNoVendors": "사이트 전체에 걸쳐 공개 구매 주문이 없습니다."
+  "supplyChain.allSitesNoVendors": "사이트 전체에 걸쳐 공개 구매 주문이 없습니다.",
+  "plantSetup.erpRestConfig": "REST/HTTP 풀 구성",
+  "plantSetup.erpPreset": "ERP 프리셋",
+  "plantSetup.erpBaseUrl": "기본 URL",
+  "plantSetup.erpAuthType": "인증 유형",
+  "plantSetup.erpPollInterval": "폴링 간격(초)",
+  "plantSetup.erpBearerToken": "무기명 토큰"
 }

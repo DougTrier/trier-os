@@ -8794,5 +8794,11 @@
   "supplyChain.allSitesOpenCol": "يفتح",
   "supplyChain.allSitesOverdueCol": "متأخر",
   "supplyChain.allSitesTopVendors": "كبار البائعين - فتح أمر الإنفاق",
-  "supplyChain.allSitesNoVendors": "لا توجد طلبات شراء مفتوحة عبر المواقع."
+  "supplyChain.allSitesNoVendors": "لا توجد طلبات شراء مفتوحة عبر المواقع.",
+  "plantSetup.erpRestConfig": "تكوين سحب REST / HTTP",
+  "plantSetup.erpPreset": "إعداد تخطيط موارد المؤسسات (ERP) مسبقًا",
+  "plantSetup.erpBaseUrl": "عنوان URL الأساسي",
+  "plantSetup.erpAuthType": "نوع المصادقة",
+  "plantSetup.erpPollInterval": "الفاصل الزمني للاستقصاء (ثانية)",
+  "plantSetup.erpBearerToken": "رمز حامل"
 }

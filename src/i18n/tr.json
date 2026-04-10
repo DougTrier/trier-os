@@ -8794,5 +8794,11 @@
   "supplyChain.allSitesOpenCol": "Açık",
   "supplyChain.allSitesOverdueCol": "Geç",
   "supplyChain.allSitesTopVendors": "En İyi Satıcılar — Açık PO Harcaması",
-  "supplyChain.allSitesNoVendors": "Siteler arasında açık satın alma siparişi yok."
+  "supplyChain.allSitesNoVendors": "Siteler arasında açık satın alma siparişi yok.",
+  "plantSetup.erpRestConfig": "REST / HTTP Çekme Yapılandırması",
+  "plantSetup.erpPreset": "ERP Ön Ayarı",
+  "plantSetup.erpBaseUrl": "Temel URL",
+  "plantSetup.erpAuthType": "Kimlik Doğrulama Türü",
+  "plantSetup.erpPollInterval": "Anket Aralığı (sn)",
+  "plantSetup.erpBearerToken": "Taşıyıcı Jetonu"
 }

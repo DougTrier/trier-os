@@ -8794,5 +8794,11 @@
   "supplyChain.allSitesOpenCol": "खुला",
   "supplyChain.allSitesOverdueCol": "देर",
   "supplyChain.allSitesTopVendors": "शीर्ष विक्रेता - पीओ व्यय खोलें",
-  "supplyChain.allSitesNoVendors": "सभी साइटों पर कोई खुला खरीद ऑर्डर नहीं।"
+  "supplyChain.allSitesNoVendors": "सभी साइटों पर कोई खुला खरीद ऑर्डर नहीं।",
+  "plantSetup.erpRestConfig": "REST/HTTP पुल कॉन्फिग",
+  "plantSetup.erpPreset": "ईआरपी प्रीसेट",
+  "plantSetup.erpBaseUrl": "आधार यूआरएल",
+  "plantSetup.erpAuthType": "प्रामाणिक प्रकार",
+  "plantSetup.erpPollInterval": "मतदान अंतराल (सेकंड)",
+  "plantSetup.erpBearerToken": "वाहक टोकन"
 }
