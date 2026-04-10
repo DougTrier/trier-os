@@ -61,7 +61,7 @@ This list is ordered by the **highest time savings and frequency of use**.
   * Instead of clicking a checkbox, the tech scans the point to prove they are physically at the valve.
   * *Time Saved: 30 seconds per point. Massive compliance/liability protection.*
 
-## 9. Contractor Check-In (ContractorsView)
+## 9. [SKIPPED] Contractor Check-In (ContractorsView)
 * **The Pain Point:** Front desk manually logging in contractors by typing their company name and individual name.
 * **The Automation:** **"Safety Kiosk QR Badge"**
   * Approved contractors are emailed a temporary QR code or stored in Apple/Google Wallet.
