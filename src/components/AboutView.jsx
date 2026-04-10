@@ -205,7 +205,7 @@ const AboutView = () => {
             content: 'Trier OS is free — forever. It installs in under 10 minutes on any existing Windows server or VM, requires no database license (SQLite is built-in), no cloud hosting, no integration middleware, no dedicated IT staff, and no training budget (every user is onboarded automatically with a built-in guided tour). There are no per-user fees, no annual contracts, and no vendor price escalations. The comparison below shows what a company must spend to get each competing platform operational vs. the true cost of Trier OS. All competitor figures are USD, 2025–2026 market rates.',
             subsections: [
                 {
-                    title: '1 — The Full Dependency Stack',
+                    title: t('manual.tco.0.title', '1 — The Full Dependency Stack'),
                     tcoNote: 'Before a single user logs in, competing platforms require this entire supporting ecosystem. Trier OS requires none of it — install takes under 10 minutes on existing infrastructure.',
                     tcoTable: {
                         headers: ['Dependency', 'SAP S/4HANA', 'IBM Maximo', 'Oracle Fusion', 'Hexagon EAM', 'UpKeep / Fiix', 'Trier OS'],
@@ -226,7 +226,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '2 — Infrastructure Cost Before Any Software Is Purchased',
+                    title: t('manual.tco.1.title', '2 — Infrastructure Cost Before Any Software Is Purchased'),
                     tcoNote: 'These costs exist regardless of user count. They appear on separate purchase orders — never in the software quote.',
                     tcoTable: {
                         headers: ['Component', 'One-Time Cost', 'Annual Recurring', '5-Year Total', 'Trier OS'],
@@ -245,7 +245,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '3 — Year 1 Total Cost of Ownership — 75 Users, 1 Plant',
+                    title: t('manual.tco.2.title', '3 — Year 1 Total Cost of Ownership — 75 Users, 1 Plant'),
                     tcoNote: 'All costs required to get each platform operational for 75 users at a single facility. Trier OS installs in 10 minutes on existing infrastructure — no licenses, no partners, no training budget, no hosting fees.',
                     tcoTable: {
                         headers: ['Cost Category', 'SAP S/4HANA', 'IBM Maximo', 'Oracle Fusion', 'Hexagon EAM', 'UpKeep Pro', 'Trier OS'],
@@ -266,7 +266,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '4 — 5-Year Total Cost of Ownership',
+                    title: t('manual.tco.3.title', '4 — 5-Year Total Cost of Ownership'),
                     tcoNote: 'Year 1 costs plus four years of recurring fees with standard 4–6% annual vendor price escalation. Trier OS has no recurring costs — the 5-year total is the same as year one: $0.',
                     tcoTable: {
                         headers: ['Platform', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', '5-Year Total'],
@@ -283,7 +283,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '5 — 5-Year Savings vs. Trier OS',
+                    title: t('manual.tco.4.title', '5 — 5-Year Savings vs. Trier OS'),
                     tcoNote: 'Total money returned to operations over 5 years by choosing Trier OS. Trier OS costs $0 — every dollar the competitor charges is a dollar saved.',
                     tcoTable: {
                         headers: ['Competitor', '5-Year Competitor Cost', '5-Year Trier OS Cost', 'Total Savings', 'Savings %'],
@@ -299,7 +299,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '6 — Per-Employee & Per-User Cost (5-Year)',
+                    title: t('manual.tco.5.title', '6 — Per-Employee & Per-User Cost (5-Year)'),
                     tcoNote: '200-employee plant, 75 system users, 5-year horizon. Trier OS is free — the per-employee and per-user cost is $0.',
                     tcoTable: {
                         headers: ['Platform', '5-Year TCO', 'Cost / Employee / Year', 'Cost / User / Month'],
@@ -316,7 +316,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '7 — Multi-Plant Scale Economics',
+                    title: t('manual.tco.6.title', '7 — Multi-Plant Scale Economics'),
                     tcoNote: 'Trier OS has no per-plant licensing and no cost at any scale. Every competitor multiplies their fees per plant. Trier OS stays at $0 whether the company has 1 plant or 100.',
                     tcoTable: {
                         headers: ['Platform', '1 Plant (5yr)', '3 Plants (5yr)', '10 Plants (5yr)', 'Savings vs. Trier OS at 10 Plants'],
@@ -332,7 +332,7 @@ const AboutView = () => {
                     }
                 },
                 {
-                    title: '8 — What Trier OS Eliminates Entirely',
+                    title: t('manual.tco.7.title', '8 — What Trier OS Eliminates Entirely'),
                     tcoNote: 'Every item below is a real line item on a competitor\'s total invoice that simply does not exist with Trier OS.',
                     tcoItems: [
                         { label: 'Software license fees', value: '$45–$625/user/month with every competitor — Trier OS is free forever, no user cap, no seat fees' },
@@ -351,7 +351,7 @@ const AboutView = () => {
                     ]
                 },
                 {
-                    title: '9 — Data Sources',
+                    title: t('manual.tco.8.title', '9 — Data Sources'),
                     tcoNote: 'All figures are based on published vendor pricing and verified analyst reports (2025–2026).',
                     tcoItems: [
                         { label: 'SAP S/4HANA $200/user/mo', value: 'SAP RISE published pricing, Top10ERP 2026' },

@@ -29,8 +29,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { useTranslation } from '../i18n/index.jsx';
 
 const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
+    const { t } = useTranslation();
     const mountRef = useRef(null);
     const rendererRef = useRef(null);
     const sceneRef = useRef(null);
@@ -377,7 +379,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontSize: '1.3rem' }}>🔬</span>
                     <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1rem' }}>
-                        3D LiDAR Viewer
+                        {t('lidar3d.viewerTitle', '3D LiDAR Viewer')}
                     </span>
                     {planName && (
                         <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
@@ -390,7 +392,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {/* View Mode */}
                     <div style={{ display: 'flex', gap: 2, background: 'rgba(30,41,59,0.8)', borderRadius: 6, padding: 2 }}>
-                        {[['height', '🌈 Height'], ['solid', '💎 Solid'], ['xray', '📡 X-Ray']].map(([mode, label]) => (
+                        {[['height', t('lidar3d.viewModeHeight', '🌈 Height')], ['solid', t('lidar3d.viewModeSolid', '💎 Solid')], ['xray', t('lidar3d.viewModeXray', '📡 X-Ray')]].map(([mode, label]) => (
                             <button key={mode} onClick={() => setViewMode(mode)}
                                 style={{
                                     padding: '4px 10px', fontSize: '0.75rem', border: 'none', cursor: 'pointer',
@@ -405,7 +407,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
 
                     {/* Camera Presets */}
                     <div style={{ display: 'flex', gap: 2, background: 'rgba(30,41,59,0.8)', borderRadius: 6, padding: 2 }}>
-                        {[['top', '⬆️ Top'], ['front', '🔲 Front'], ['side', '◻️ Side'], ['iso', '📐 Iso']].map(([preset, label]) => (
+                        {[['top', t('lidar3d.presetTop', '⬆️ Top')], ['front', t('lidar3d.presetFront', '🔲 Front')], ['side', t('lidar3d.presetSide', '◻️ Side')], ['iso', t('lidar3d.presetIso', '📐 Iso')]].map(([preset, label]) => (
                             <button key={preset} onClick={() => setCameraView(preset)}
                                 style={{
                                     padding: '4px 8px', fontSize: '0.7rem', border: 'none',
@@ -419,7 +421,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
 
                     {/* Point Size */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ color: '#64748b', fontSize: '0.7rem' }}>Size</span>
+                        <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{t('lidar3d.pointSizeLabel', 'Size')}</span>
                         <input type="range" min="1" max="8" step="0.5" value={pointSize}
                             onChange={(e) => setPointSize(parseFloat(e.target.value))}
                             style={{ width: 60, accentColor: '#6366f1' }} />
@@ -432,7 +434,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                             cursor: 'pointer', background: showGrid ? '#6366f1' : 'rgba(30,41,59,0.8)',
                             color: '#e2e8f0',
                         }}>
-                        ⊞ Grid
+                        {t('lidar3d.gridToggle', '⊞ Grid')}
                     </button>
 
                     {/* Help */}
@@ -451,7 +453,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                             cursor: 'pointer', background: '#ef4444', color: '#fff', fontWeight: 600,
                             marginLeft: 8,
                         }}>
-                        ✕ Close
+                        {t('lidar3d.closeButton', '✕ Close')}
                     </button>
                 </div>
             </div>
@@ -471,7 +473,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                             animation: 'spin 1s linear infinite',
                         }} />
                         <div style={{ color: '#94a3b8', marginTop: 16, fontSize: '0.9rem' }}>
-                            Loading 3D point cloud...
+                            {t('lidar3d.loadingPointCloud', 'Loading 3D point cloud...')}
                         </div>
                         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                     </div>
@@ -486,7 +488,7 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                     }}>
                         <span style={{ fontSize: '3rem' }}>⚠️</span>
                         <div style={{ color: '#ef4444', marginTop: 12, fontSize: '1rem' }}>
-                            Failed to load 3D scan
+                            {t('lidar3d.loadError', 'Failed to load 3D scan')}
                         </div>
                         <div style={{ color: '#94a3b8', marginTop: 4, fontSize: '0.8rem' }}>
                             {error}
@@ -505,11 +507,11 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                         lineHeight: 1.6,
                     }}>
                         <div style={{ color: '#e2e8f0', fontWeight: 600, marginBottom: 4, fontSize: '0.8rem' }}>
-                            📊 Scan Data
+                            {t('lidar3d.statsScanData', '📊 Scan Data')}
                         </div>
-                        <div>Points: <span style={{ color: '#6366f1' }}>{stats.vertices?.toLocaleString()}</span></div>
-                        <div>Dimensions: <span style={{ color: '#22d3ee' }}>{stats.width}m × {stats.depth}m × {stats.height}m</span></div>
-                        <div>Z Range: <span style={{ color: '#a78bfa' }}>{stats.zMin}m → {stats.zMax}m</span></div>
+                        <div>{t('lidar3d.statsPoints', 'Points:')} <span style={{ color: '#6366f1' }}>{stats.vertices?.toLocaleString()}</span></div>
+                        <div>{t('lidar3d.statsDimensions', 'Dimensions:')} <span style={{ color: '#22d3ee' }}>{stats.width}m × {stats.depth}m × {stats.height}m</span></div>
+                        <div>{t('lidar3d.statsZRange', 'Z Range:')} <span style={{ color: '#a78bfa' }}>{stats.zMin}m → {stats.zMax}m</span></div>
                     </div>
                 )}
 
@@ -524,20 +526,20 @@ const LiDAR3DViewer = ({ plyUrl, onClose, planName }) => {
                         minWidth: 220,
                     }}>
                         <div style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 8, fontSize: '0.9rem' }}>
-                            🎮 Controls
+                            {t('lidar3d.helpControls', '🎮 Controls')}
                         </div>
-                        <div>🖱 Left click + drag → <span style={{ color: '#6366f1' }}>Orbit</span></div>
-                        <div>🖱 Right click + drag → <span style={{ color: '#6366f1' }}>Pan</span></div>
-                        <div>🖱 Scroll wheel → <span style={{ color: '#6366f1' }}>Zoom</span></div>
+                        <div>🖱 {t('lidar3d.helpOrbitDrag', 'Left click + drag')} → <span style={{ color: '#6366f1' }}>{t('lidar3d.helpOrbit', 'Orbit')}</span></div>
+                        <div>🖱 {t('lidar3d.helpPanDrag', 'Right click + drag')} → <span style={{ color: '#6366f1' }}>{t('lidar3d.helpPan', 'Pan')}</span></div>
+                        <div>🖱 {t('lidar3d.helpScrollWheel', 'Scroll wheel')} → <span style={{ color: '#6366f1' }}>{t('lidar3d.helpZoom', 'Zoom')}</span></div>
                         <div style={{ marginTop: 8, borderTop: '1px solid rgba(99,102,241,0.2)', paddingTop: 8 }}>
-                            <strong>Keyboard:</strong>
+                            <strong>{t('lidar3d.helpKeyboard', 'Keyboard:')}</strong>
                         </div>
-                        <div><kbd style={kbdStyle}>1</kbd> Top view</div>
-                        <div><kbd style={kbdStyle}>2</kbd> Front view</div>
-                        <div><kbd style={kbdStyle}>3</kbd> Side view</div>
-                        <div><kbd style={kbdStyle}>4</kbd> Isometric view</div>
-                        <div><kbd style={kbdStyle}>G</kbd> Toggle grid</div>
-                        <div><kbd style={kbdStyle}>Esc</kbd> Close viewer</div>
+                        <div><kbd style={kbdStyle}>1</kbd> {t('lidar3d.helpKey1', 'Top view')}</div>
+                        <div><kbd style={kbdStyle}>2</kbd> {t('lidar3d.helpKey2', 'Front view')}</div>
+                        <div><kbd style={kbdStyle}>3</kbd> {t('lidar3d.helpKey3', 'Side view')}</div>
+                        <div><kbd style={kbdStyle}>4</kbd> {t('lidar3d.helpKey4', 'Isometric view')}</div>
+                        <div><kbd style={kbdStyle}>G</kbd> {t('lidar3d.helpKeyG', 'Toggle grid')}</div>
+                        <div><kbd style={kbdStyle}>Esc</kbd> {t('lidar3d.helpKeyEsc', 'Close viewer')}</div>
                     </div>
                 )}
             </div>

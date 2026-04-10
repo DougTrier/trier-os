@@ -32,6 +32,7 @@
  */
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 const ToastContext = createContext(null);
 
@@ -83,6 +84,7 @@ const TOAST_CONFIG = {
 };
 
 function Toast({ toast, onDismiss }) {
+    const { t } = useTranslation();
     const config = TOAST_CONFIG[toast.type] || TOAST_CONFIG.info;
 
     return (
@@ -119,7 +121,7 @@ function Toast({ toast, onDismiss }) {
                     flexShrink: 0,
                     opacity: 0.6,
                 }}
-                title="Dismiss"
+                title={t('toastProvider.dismiss', 'Dismiss')}
             >
                 <X size={14} />
             </button>

@@ -31,11 +31,18 @@
  */
 import React, { useState } from 'react';
 import { Bluetooth, BluetoothConnected, BluetoothOff, Thermometer, Activity, Gauge, AlertTriangle, Link, Unlink } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 // Signal strength bars based on RSSI
 function RSSIBars({ rssi }) {
+    const { t } = useTranslation();
     const strength = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -80 ? 2 : 1;
-    const label = ['Weak', 'Fair', 'Good', 'Excellent'][strength - 1];
+    const label = [
+        t('bluetoothPanel.weak', 'Weak'),
+        t('bluetoothPanel.fair', 'Fair'),
+        t('bluetoothPanel.good', 'Good'),
+        t('bluetoothPanel.excellent', 'Excellent')
+    ][strength - 1];
     const color = ['#ef4444', '#f59e0b', '#10b981', '#10b981'][strength - 1];
     return (
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }} title={`${rssi} dBm — ${label}`}>
@@ -53,8 +60,9 @@ function RSSIBars({ rssi }) {
 
 // Distance indicator badge
 function DistanceBadge({ metres }) {
+    const { t } = useTranslation();
     if (metres < 0) return null;
-    const label = metres < 0.5 ? 'Arm\'s reach' : metres < 2 ? `~${metres.toFixed(1)} m` : `~${metres.toFixed(0)} m`;
+    const label = metres < 0.5 ? t('bluetoothPanel.armsReach', "Arm's reach") : metres < 2 ? `~${metres.toFixed(1)} m` : `~${metres.toFixed(0)} m`;
     const color = metres < 0.5 ? '#10b981' : metres < 2 ? '#f59e0b' : '#64748b';
     return (
         <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: 8, background: `${color}20`, color, border: `1px solid ${color}40` }}>
@@ -65,10 +73,11 @@ function DistanceBadge({ metres }) {
 
 // Single sensor reading card
 function SensorCard({ label, reading, icon: Icon, thresholds, onBreach }) {
+    const { t } = useTranslation();
     if (!reading) return (
         <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', opacity: 0.5 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                <Icon size={14} /> {label} — not detected
+                <Icon size={14} /> {label} — {t('bluetoothPanel.notDetected', 'not detected')}
             </div>
         </div>
     );
@@ -94,6 +103,7 @@ function SensorCard({ label, reading, icon: Icon, thresholds, onBreach }) {
 }
 
 export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
+    const { t } = useTranslation();
     const [linkingMac, setLinkingMac] = useState(null);
     const [linkAssetId, setLinkAssetId] = useState('');
     const [linkLoading, setLinkLoading] = useState(false);
@@ -109,13 +119,13 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
                 body: JSON.stringify({ mac, assetId: linkAssetId.trim(), plantId: plantId || localStorage.getItem('selectedPlantId'), linkedBy: user.fullName || 'Unknown' }),
             });
             if (r.ok) {
-                window.trierToast?.success(`Beacon linked to Asset ${linkAssetId.trim()}`);
+                window.trierToast?.success(t('bluetoothPanel.beaconLinkedToAsset', 'Beacon linked to Asset') + ' ' + linkAssetId.trim());
                 setLinkingMac(null);
                 setLinkAssetId('');
             } else {
-                window.trierToast?.error('Failed to link beacon');
+                window.trierToast?.error(t('bluetoothPanel.failedToLinkBeacon', 'Failed to link beacon'));
             }
-        } catch { window.trierToast?.error('Network error'); }
+        } catch { window.trierToast?.error(t('bluetoothPanel.networkError', 'Network error')); }
         setLinkLoading(false);
     };
 
@@ -124,10 +134,10 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
         return (
             <div style={{ padding: '24px', borderRadius: 16, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
                 <BluetoothOff size={40} style={{ color: '#64748b', marginBottom: 12 }} />
-                <p style={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8 }}>Bluetooth Not Available</p>
+                <p style={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8 }}>{t('bluetoothPanel.bluetoothNotAvailable', 'Bluetooth Not Available')}</p>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.83rem', lineHeight: 1.6 }}>
-                    Web Bluetooth requires Chrome or Edge on Android, Windows, or macOS.<br />
-                    iOS users: use the QR / Barcode tab or NFC Tag tab instead.
+                    {t('bluetoothPanel.webBluetoothRequires', 'Web Bluetooth requires Chrome or Edge on Android, Windows, or macOS.')}<br />
+                    {t('bluetoothPanel.iosUsersNote', 'iOS users: use the QR / Barcode tab or NFC Tag tab instead.')}
                 </p>
             </div>
         );
@@ -142,27 +152,27 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
                     <BluetoothConnected size={20} style={{ color: '#10b981' }} />
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f1f5f9' }}>{name}</div>
-                        {assetId && <div style={{ fontSize: '0.75rem', color: '#10b981' }}>Asset: {assetId}</div>}
+                        {assetId && <div style={{ fontSize: '0.75rem', color: '#10b981' }}>{t('bluetoothPanel.asset', 'Asset')}: {assetId}</div>}
                     </div>
                     <button
                         onClick={ble.disconnect}
                         style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: 5 }}
                     >
-                        <Unlink size={12} /> Disconnect
+                        <Unlink size={12} /> {t('bluetoothPanel.disconnect', 'Disconnect')}
                     </button>
                 </div>
 
                 {/* Sensor readings */}
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>LIVE SENSOR READINGS</p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>{t('bluetoothPanel.liveSensorReadings', 'LIVE SENSOR READINGS')}</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-                    <SensorCard label="Temperature" reading={ble.sensorReadings.temperature} icon={Thermometer} />
-                    <SensorCard label="Vibration" reading={ble.sensorReadings.vibration} icon={Activity} />
-                    <SensorCard label="Pressure" reading={ble.sensorReadings.pressure} icon={Gauge} />
+                    <SensorCard label={t('bluetoothPanel.temperature', 'Temperature')} reading={ble.sensorReadings.temperature} icon={Thermometer} />
+                    <SensorCard label={t('bluetoothPanel.vibration', 'Vibration')} reading={ble.sensorReadings.vibration} icon={Activity} />
+                    <SensorCard label={t('bluetoothPanel.pressure', 'Pressure')} reading={ble.sensorReadings.pressure} icon={Gauge} />
                 </div>
 
                 {!Object.keys(ble.sensorReadings).length && (
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0' }}>
-                        No sensor data received yet — device may not expose sensor characteristics.
+                        {t('bluetoothPanel.noSensorData', 'No sensor data received yet — device may not expose sensor characteristics.')}
                     </p>
                 )}
             </div>
@@ -175,40 +185,39 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
             {!ble.isScanning ? (
                 <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
                     <Bluetooth size={40} style={{ color: 'var(--primary)', marginBottom: 12, opacity: 0.8 }} />
-                    <p style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: 8 }}>BLE Asset Scanner</p>
+                    <p style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: 8 }}>{t('bluetoothPanel.bleAssetScanner', 'BLE Asset Scanner')}</p>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.83rem', marginBottom: 20, lineHeight: 1.6 }}>
-                        Scan for Trier OS BLE beacon tags on nearby equipment.<br />
-                        When a tagged asset is within arm's reach, it auto-populates.
+                        {t('bluetoothPanel.scanDescription', 'Scan for Trier OS BLE beacon tags on nearby equipment.')}<br />
+                        {t('bluetoothPanel.armsReachDescription', "When a tagged asset is within arm's reach, it auto-populates.")}
                     </p>
                     {!ble.isScanSupported && (
                         <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.78rem', color: '#fbbf24', textAlign: 'left' }}>
-                            <strong>Note:</strong> Passive background scanning requires the Chrome experimental features flag.<br />
-                            A device-chooser dialog will open instead — select a Trier OS beacon to connect.
+                            <strong>{t('bluetoothPanel.note', 'Note:')}</strong> {t('bluetoothPanel.passiveScanNote', 'Passive background scanning requires the Chrome experimental features flag. A device-chooser dialog will open instead — select a Trier OS beacon to connect.')}
                         </div>
                     )}
                     <button
                         onClick={ble.scanForDevices}
                         style={{ width: '100%', padding: '12px', borderRadius: 10, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                     >
-                        <Bluetooth size={18} /> Scan for BLE Devices
+                        <Bluetooth size={18} /> {t('bluetoothPanel.scanForBleDevices', 'Scan for BLE Devices')}
                     </button>
                 </div>
             ) : (
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                         <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                        <span style={{ color: '#93c5fd', fontWeight: 600, fontSize: '0.88rem' }}>Scanning…</span>
+                        <span style={{ color: '#93c5fd', fontWeight: 600, fontSize: '0.88rem' }}>{t('bluetoothPanel.scanning', 'Scanning…')}</span>
                         <button
                             onClick={ble.stopScan}
                             style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', cursor: 'pointer', fontSize: '0.78rem' }}
                         >
-                            Stop
+                            {t('bluetoothPanel.stop', 'Stop')}
                         </button>
                     </div>
 
                     {ble.nearbyDevices.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                            No Trier OS beacons detected nearby…
+                            {t('bluetoothPanel.noBeaconsDetected', 'No Trier OS beacons detected nearby…')}
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -230,16 +239,16 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
                                             <button
                                                 onClick={() => setLinkingMac(device.id === linkingMac ? null : device.id)}
                                                 style={{ padding: '4px 10px', borderRadius: 7, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', cursor: 'pointer', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: 4 }}
-                                                title="Link this beacon to an Asset ID"
+                                                title={t('bluetoothPanel.linkBeaconToAssetTip', 'Link this beacon to an Asset ID')}
                                             >
-                                                <Link size={11} /> Link Asset
+                                                <Link size={11} /> {t('bluetoothPanel.linkAsset', 'Link Asset')}
                                             </button>
                                             <button
                                                 onClick={() => { ble.stopScan(); ble.connectToDevice({ id: device.id, gatt: { connect: async () => {} }, name: device.name, addEventListener: () => {} }); }}
                                                 style={{ padding: '4px 10px', borderRadius: 7, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399', cursor: 'pointer', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: 4 }}
-                                                title="Connect to read sensor data"
+                                                title={t('bluetoothPanel.connectToReadSensorDataTip', 'Connect to read sensor data')}
                                             >
-                                                <BluetoothConnected size={11} /> Connect
+                                                <BluetoothConnected size={11} /> {t('bluetoothPanel.connect', 'Connect')}
                                             </button>
                                         </div>
                                     </div>
@@ -251,7 +260,7 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
                                                 type="text"
                                                 value={linkAssetId}
                                                 onChange={e => setLinkAssetId(e.target.value)}
-                                                placeholder="Asset ID (e.g. PUMP-001)"
+                                                placeholder={t('bluetoothPanel.assetIdPlaceholder', 'Asset ID (e.g. PUMP-001)')}
                                                 style={{ flex: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '5px 10px', color: '#f1f5f9', fontSize: '0.8rem' }}
                                                 autoFocus
                                             />
@@ -260,7 +269,7 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
                                                 disabled={linkLoading || !linkAssetId.trim()}
                                                 style={{ padding: '5px 12px', borderRadius: 7, background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#34d399', cursor: 'pointer', fontSize: '0.78rem', opacity: linkLoading ? 0.6 : 1 }}
                                             >
-                                                {linkLoading ? '…' : 'Save'}
+                                                {linkLoading ? '…' : t('bluetoothPanel.save', 'Save')}
                                             </button>
                                         </div>
                                     )}

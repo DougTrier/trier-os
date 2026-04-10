@@ -31,13 +31,17 @@
  */
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 export default function LoadingSpinner({
-    message = 'Loading...',
+    message,
     size = 24,
     inline = false,
     style = {},
 }) {
+    const { t } = useTranslation();
+    const displayMessage = message !== undefined ? message : t('loadingSpinner.loading', 'Loading...');
+
     if (inline) {
         return (
             <span style={{
@@ -49,7 +53,7 @@ export default function LoadingSpinner({
                 ...style,
             }}>
                 <RefreshCw size={size * 0.66} className="spinning" />
-                {message}
+                {displayMessage}
             </span>
         );
     }
@@ -65,8 +69,8 @@ export default function LoadingSpinner({
             ...style,
         }}>
             <RefreshCw size={size} className="spinning" style={{ marginBottom: 12, opacity: 0.5 }} />
-            {message && (
-                <span style={{ fontSize: '0.85rem', opacity: 0.6 }}>{message}</span>
+            {displayMessage && (
+                <span style={{ fontSize: '0.85rem', opacity: 0.6 }}>{displayMessage}</span>
             )}
         </div>
     );

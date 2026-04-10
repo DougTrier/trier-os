@@ -13,8 +13,9 @@
  */
 
 'use strict';
-const simulator = require('./modbus-simulator');
-const EdgeAgent = require('./edge-agent');
+const simulator    = require('./modbus-simulator');
+const EdgeAgent    = require('./edge-agent');
+const HttpEdgeAgent = require('./http-edge-agent');
 
 // Simulator port allocation: one port per integrationId
 const SIM_BASE_PORT = 5020;
@@ -64,7 +65,9 @@ function startWorker(plantId, integrationId, config) {
     if (workers.has(key)) {
         return { ok: false, message: 'Worker already running — stop it first' };
     }
-    const agent = new EdgeAgent(plantId, integrationId, config);
+    // type: 'http' → HttpEdgeAgent (ERP/REST pull); default → EdgeAgent (Modbus)
+    const AgentClass = config.type === 'http' ? HttpEdgeAgent : EdgeAgent;
+    const agent = new AgentClass(plantId, integrationId, config);
     agent.start();
     workers.set(key, agent);
     return { ok: true, message: `Worker started for ${plantId} / ${integrationId}` };

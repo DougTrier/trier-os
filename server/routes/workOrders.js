@@ -42,6 +42,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { whitelist, validateSort } = require('../validators');
+const { insertOutboxEvent } = require('../services/erp-outbox');
 
 // ── GET /api/work-orders ─────────────────────────────────────────────────
 // List work orders with pagination, filtering, search
@@ -639,6 +640,27 @@ router.put('/:id', (req, res) => {
         const values = [...Object.values(fields), req.params.id, req.params.id, req.params.id];
 
         db.run(`UPDATE "Work" SET ${sets} WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?`, values);
+
+        // ── ERP Write-Back: queue WO close event when completing a WO ──
+        if (completeStatuses.includes(statusId)) {
+            try {
+                const plantId = req.headers['x-plant-id'] || 'Plant_1';
+                const woRow = db.queryOne(
+                    'SELECT WorkOrderNumber, Description, AstID, StatusID FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?',
+                    [req.params.id, req.params.id, req.params.id]
+                );
+                if (woRow) {
+                    insertOutboxEvent(plantId, 'erp', 'wo_close', {
+                        woNumber: woRow.WorkOrderNumber || req.params.id,
+                        description: woRow.Description,
+                        assetId: woRow.AstID,
+                        status: fields.StatusID,
+                        completedAt: new Date().toISOString(),
+                        plantId,
+                    });
+                }
+            } catch { /* non-blocking */ }
+        }
 
         res.json({ success: true, message: 'Work order updated' });
     } catch (err) {

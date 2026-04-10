@@ -34,6 +34,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GraduationCap, AlertTriangle, CheckCircle, Clock, Users, BookOpen, BarChart2, RefreshCw, Plus, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 const authHeaders = (plant) => ({
     'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -46,19 +47,20 @@ const API = (path, plant, opts = {}) =>
 
 // ── Status Badge ─────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
+    const { t } = useTranslation();
     const map = {
-        current: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', label: 'Current' },
-        'expiring-soon': { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', label: 'Expiring Soon' },
-        expired: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', label: 'Expired' },
-        'no-expiry': { color: '#6366f1', bg: 'rgba(99,102,241,0.12)', label: 'No Expiry' },
-        compliant: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', label: 'Compliant' },
-        'at-risk': { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', label: 'At Risk' },
-        'non-compliant': { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', label: 'Non-Compliant' },
+        current: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', labelKey: 'trainingView.statusCurrent', label: 'Current' },
+        'expiring-soon': { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', labelKey: 'trainingView.statusExpiringSoon', label: 'Expiring Soon' },
+        expired: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', labelKey: 'trainingView.statusExpired', label: 'Expired' },
+        'no-expiry': { color: '#6366f1', bg: 'rgba(99,102,241,0.12)', labelKey: 'trainingView.statusNoExpiry', label: 'No Expiry' },
+        compliant: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', labelKey: 'trainingView.statusCompliant', label: 'Compliant' },
+        'at-risk': { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', labelKey: 'trainingView.statusAtRisk', label: 'At Risk' },
+        'non-compliant': { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', labelKey: 'trainingView.statusNonCompliant', label: 'Non-Compliant' },
     };
     const s = map[status] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: status };
     return (
         <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, color: s.color, background: s.bg, border: `1px solid ${s.color}33`, whiteSpace: 'nowrap' }}>
-            {s.label}
+            {s.labelKey ? t(s.labelKey, s.label) : s.label}
         </span>
     );
 }
@@ -79,13 +81,14 @@ function StatCard({ icon, label, value, sub, color = '#6366f1', warn = false }) 
 
 // ── Log Training Modal ────────────────────────────────────────────────────
 function LogTrainingModal({ courses, onClose, onSaved, plant }) {
+    const { t } = useTranslation();
     const [form, setForm] = useState({ user_id: '', user_name: '', department: '', course_id: '', completed_date: new Date().toISOString().split('T')[0], score: '', trainer: '', certificate_number: '', notes: '' });
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState('');
     const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
     const save = async () => {
-        if (!form.user_name || !form.course_id || !form.completed_date) { setErr('Employee name, course, and completion date are required.'); return; }
+        if (!form.user_name || !form.course_id || !form.completed_date) { setErr(t('trainingView.validationError', 'Employee name, course, and completion date are required.')); return; }
         setSaving(true);
         setErr('');
         try {
@@ -109,37 +112,37 @@ function LogTrainingModal({ courses, onClose, onSaved, plant }) {
             <div className="glass-card" style={{ width: 540, maxHeight: '90vh', overflow: 'auto', padding: 30, position: 'relative' }}>
                 <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={22} /></button>
                 <h3 style={{ margin: '0 0 24px', fontSize: '1.15rem', color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <GraduationCap size={20} color="#10b981" /> Log Training Completion
+                    <GraduationCap size={20} color="#10b981" /> {t('trainingView.logTrainingCompletion', 'Log Training Completion')}
                 </h3>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                    <div><label style={lbl}>Employee Name *</label><input style={inp} value={form.user_name} onChange={set('user_name')} placeholder="Full Name" /></div>
-                    <div><label style={lbl}>Employee ID / Username</label><input style={inp} value={form.user_id} onChange={set('user_id')} placeholder="username or ID" /></div>
-                    <div><label style={lbl}>Department</label><input style={inp} value={form.department} onChange={set('department')} placeholder="Maintenance, Production…" /></div>
-                    <div><label style={lbl}>Course *</label>
+                    <div><label style={lbl}>{t('trainingView.employeeName', 'Employee Name *')}</label><input style={inp} value={form.user_name} onChange={set('user_name')} placeholder={t('trainingView.placeholderFullName', 'Full Name')} /></div>
+                    <div><label style={lbl}>{t('trainingView.employeeId', 'Employee ID / Username')}</label><input style={inp} value={form.user_id} onChange={set('user_id')} placeholder={t('trainingView.placeholderUsernameId', 'username or ID')} /></div>
+                    <div><label style={lbl}>{t('trainingView.department', 'Department')}</label><input style={inp} value={form.department} onChange={set('department')} placeholder={t('trainingView.placeholderDepartment', 'Maintenance, Production…')} /></div>
+                    <div><label style={lbl}>{t('trainingView.course', 'Course *')}</label>
                         <select style={inp} value={form.course_id} onChange={set('course_id')}>
-                            <option value="">— Select course —</option>
+                            <option value="">{t('trainingView.selectCourse', '— Select course —')}</option>
                             {Object.entries(
                                 (courses || []).reduce((acc, c) => { (acc[c.category] = acc[c.category] || []).push(c); return acc; }, {})
                             ).map(([cat, list]) => (
                                 <optgroup key={cat} label={cat}>
-                                    {list.map(c => <option key={c.id} value={c.id}>{c.title} ({c.validity_days > 0 ? `${c.validity_days}d validity` : 'no expiry'})</option>)}
+                                    {list.map(c => <option key={c.id} value={c.id}>{c.title} ({c.validity_days > 0 ? `${c.validity_days}${t('trainingView.dValiditySuffix', 'd validity')}` : t('trainingView.noExpiry', 'no expiry')})</option>)}
                                 </optgroup>
                             ))}
                         </select>
                     </div>
-                    <div><label style={lbl}>Completion Date *</label><input type="date" style={inp} value={form.completed_date} onChange={set('completed_date')} /></div>
-                    <div><label style={lbl}>Score (%)</label><input type="number" style={inp} value={form.score} onChange={set('score')} placeholder="Optional" min="0" max="100" /></div>
-                    <div><label style={lbl}>Trainer / Instructor</label><input style={inp} value={form.trainer} onChange={set('trainer')} placeholder="Name or agency" /></div>
-                    <div><label style={lbl}>Certificate #</label><input style={inp} value={form.certificate_number} onChange={set('certificate_number')} placeholder="Optional" /></div>
+                    <div><label style={lbl}>{t('trainingView.completionDate', 'Completion Date *')}</label><input type="date" style={inp} value={form.completed_date} onChange={set('completed_date')} /></div>
+                    <div><label style={lbl}>{t('trainingView.score', 'Score (%)')}</label><input type="number" style={inp} value={form.score} onChange={set('score')} placeholder={t('trainingView.placeholderOptional', 'Optional')} min="0" max="100" /></div>
+                    <div><label style={lbl}>{t('trainingView.trainer', 'Trainer / Instructor')}</label><input style={inp} value={form.trainer} onChange={set('trainer')} placeholder={t('trainingView.placeholderTrainerName', 'Name or agency')} /></div>
+                    <div><label style={lbl}>{t('trainingView.certificateNumber', 'Certificate #')}</label><input style={inp} value={form.certificate_number} onChange={set('certificate_number')} placeholder={t('trainingView.placeholderOptional', 'Optional')} /></div>
                 </div>
-                <div style={{ marginTop: 14 }}><label style={lbl}>Notes</label><textarea style={{ ...inp, height: 70, resize: 'vertical' }} value={form.notes} onChange={set('notes')} placeholder="Optional notes…" /></div>
+                <div style={{ marginTop: 14 }}><label style={lbl}>{t('trainingView.notes', 'Notes')}</label><textarea style={{ ...inp, height: 70, resize: 'vertical' }} value={form.notes} onChange={set('notes')} placeholder={t('trainingView.placeholderOptionalNotes', 'Optional notes…')} /></div>
 
                 {err && <div style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: 12, padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 8 }}>{err}</div>}
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                    <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: 8, cursor: 'pointer' }}>{t('trainingView.cancel', 'Cancel')}</button>
                     <button onClick={save} disabled={saving} style={{ flex: 2, padding: '10px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
-                        {saving ? 'Saving…' : '✓ Log Training'}
+                        {saving ? t('trainingView.saving', 'Saving…') : t('trainingView.logTrainingConfirm', '✓ Log Training')}
                     </button>
                 </div>
             </div>
@@ -151,6 +154,7 @@ function LogTrainingModal({ courses, onClose, onSaved, plant }) {
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════
 export default function TrainingView({ plantId, plantLabel }) {
+    const { t } = useTranslation();
     const [tab, setTab] = useState('dashboard');
     const [data, setData] = useState({ dashboard: null, records: [], courses: [], compliance: null, expiring: null });
     const [loading, setLoading] = useState(false);
@@ -172,7 +176,7 @@ export default function TrainingView({ plantId, plantLabel }) {
             ]);
             setData({ dashboard: dash, records: Array.isArray(records) ? records : [], courses: Array.isArray(courses) ? courses : [], compliance, expiring });
         } catch (e) {
-            setError('Failed to load training data');
+            setError(t('trainingView.failedToLoad', 'Failed to load training data'));
         } finally {
             setLoading(false);
         }
@@ -181,11 +185,11 @@ export default function TrainingView({ plantId, plantLabel }) {
     useEffect(() => { load(); }, [load]);
 
     const tabs = [
-        { id: 'dashboard', label: 'Dashboard', icon: <BarChart2 size={14} /> },
-        { id: 'records', label: 'Records', icon: <BookOpen size={14} /> },
-        { id: 'compliance', label: 'Compliance', icon: <CheckCircle size={14} /> },
-        { id: 'expiring', label: 'Expiring', icon: <Clock size={14} /> },
-        { id: 'courses', label: 'Course Library', icon: <GraduationCap size={14} /> },
+        { id: 'dashboard', label: t('trainingView.tabDashboard', 'Dashboard'), icon: <BarChart2 size={14} /> },
+        { id: 'records', label: t('trainingView.tabRecords', 'Records'), icon: <BookOpen size={14} /> },
+        { id: 'compliance', label: t('trainingView.tabCompliance', 'Compliance'), icon: <CheckCircle size={14} /> },
+        { id: 'expiring', label: t('trainingView.tabExpiring', 'Expiring'), icon: <Clock size={14} /> },
+        { id: 'courses', label: t('trainingView.tabCourseLibrary', 'Course Library'), icon: <GraduationCap size={14} /> },
     ];
 
     const filteredRecords = (data.records || []).filter(r =>
@@ -205,7 +209,7 @@ export default function TrainingView({ plantId, plantLabel }) {
             {/* Header */}
             <div className="glass-card no-print" style={{ padding: '15px 25px', display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: '#10b981', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <GraduationCap size={24} /> Training & Certifications
+                    <GraduationCap size={24} /> {t('trainingView.heading', 'Training & Certifications')}
                 </h2>
                 <div style={{ width: 2, height: 30, background: 'var(--glass-border)' }} />
                 <div className="nav-pills" style={{ padding: 0, margin: 0, background: 'transparent' }}>
@@ -223,10 +227,10 @@ export default function TrainingView({ plantId, plantLabel }) {
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
                     <button onClick={load} disabled={loading} style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem' }}>
                         <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-                        Refresh
+                        {t('trainingView.refresh', 'Refresh')}
                     </button>
                     <button onClick={() => setShowLogModal(true)} style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 700 }}>
-                        <Plus size={16} /> Log Training
+                        <Plus size={16} /> {t('trainingView.logTraining', 'Log Training')}
                     </button>
                 </div>
             </div>
@@ -234,7 +238,7 @@ export default function TrainingView({ plantId, plantLabel }) {
             {/* Content */}
             <div style={{ flex: 1, overflow: 'auto', padding: '0 4px' }}>
                 {error && <div style={{ color: '#ef4444', padding: 20 }}>{error}</div>}
-                {loading && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, color: '#64748b', gap: 12 }}><RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />Loading training data…</div>}
+                {loading && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, color: '#64748b', gap: 12 }}><RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />{t('trainingView.loadingData', 'Loading training data…')}</div>}
 
                 {!loading && !error && (
                     <>
@@ -242,33 +246,33 @@ export default function TrainingView({ plantId, plantLabel }) {
                         {tab === 'dashboard' && data.dashboard && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
-                                    <StatCard icon={<Users size={16} />} label="Employees Tracked" value={data.dashboard.totalEmployees || 0} sub={`${data.dashboard.activeCourses || 0} active courses`} color="#818cf8" />
-                                    <StatCard icon={<BookOpen size={16} />} label="Total Records" value={data.dashboard.totalRecords || 0} sub="All-time training completions" color="#6366f1" />
-                                    <StatCard icon={<CheckCircle size={16} />} label="Compliance Rate" value={`${data.dashboard.complianceRate || 0}%`} sub={`${data.dashboard.totalEmployees - (data.dashboard.totalRecords > 0 ? 0 : 0)} employees in system`} color="#10b981" />
-                                    <StatCard icon={<Clock size={16} />} label="Expiring (30 Days)" value={data.dashboard.expiringSoon || 0} sub="Need renewal action" color="#f59e0b" warn={(data.dashboard.expiringSoon || 0) > 0} />
-                                    <StatCard icon={<AlertTriangle size={16} />} label="Already Expired" value={data.dashboard.expired || 0} sub="Immediate attention required" color="#ef4444" warn={(data.dashboard.expired || 0) > 0} />
+                                    <StatCard icon={<Users size={16} />} label={t('trainingView.employeesTracked', 'Employees Tracked')} value={data.dashboard.totalEmployees || 0} sub={`${data.dashboard.activeCourses || 0} ${t('trainingView.activeCoursesSuffix', 'active courses')}`} color="#818cf8" />
+                                    <StatCard icon={<BookOpen size={16} />} label={t('trainingView.totalRecords', 'Total Records')} value={data.dashboard.totalRecords || 0} sub={t('trainingView.allTimeTrainingCompletions', 'All-time training completions')} color="#6366f1" />
+                                    <StatCard icon={<CheckCircle size={16} />} label={t('trainingView.complianceRate', 'Compliance Rate')} value={`${data.dashboard.complianceRate || 0}%`} sub={`${data.dashboard.totalEmployees - (data.dashboard.totalRecords > 0 ? 0 : 0)} ${t('trainingView.employeesInSystemSuffix', 'employees in system')}`} color="#10b981" />
+                                    <StatCard icon={<Clock size={16} />} label={t('trainingView.expiring30Days', 'Expiring (30 Days)')} value={data.dashboard.expiringSoon || 0} sub={t('trainingView.needRenewalAction', 'Need renewal action')} color="#f59e0b" warn={(data.dashboard.expiringSoon || 0) > 0} />
+                                    <StatCard icon={<AlertTriangle size={16} />} label={t('trainingView.alreadyExpired', 'Already Expired')} value={data.dashboard.expired || 0} sub={t('trainingView.immediateAttentionRequired', 'Immediate attention required')} color="#ef4444" warn={(data.dashboard.expired || 0) > 0} />
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                     {/* By Category */}
                                     <div className="glass-card" style={{ padding: 20 }}>
-                                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9' }}>Training by Category</h3>
+                                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9' }}>{t('trainingView.trainingByCategory', 'Training by Category')}</h3>
                                         {(data.dashboard.byCategory || []).map((cat, i) => (
                                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                                 <span style={{ fontSize: '0.83rem', color: '#e2e8f0' }}>{cat.category}</span>
                                                 <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#818cf8' }}>{cat.records}</span>
                                             </div>
                                         ))}
-                                        {(data.dashboard.byCategory || []).length === 0 && <p style={{ color: '#64748b', fontSize: '0.83rem' }}>No training records yet. Log the first one above.</p>}
+                                        {(data.dashboard.byCategory || []).length === 0 && <p style={{ color: '#64748b', fontSize: '0.83rem' }}>{t('trainingView.noTrainingRecordsYet', 'No training records yet. Log the first one above.')}</p>}
                                     </div>
 
                                     {/* Upcoming Expiries */}
                                     <div className="glass-card" style={{ padding: 20 }}>
                                         <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <Clock size={16} color="#f59e0b" /> Upcoming Expiries (60 Days)
+                                            <Clock size={16} color="#f59e0b" /> {t('trainingView.upcomingExpiries60Days', 'Upcoming Expiries (60 Days)')}
                                         </h3>
                                         {(data.dashboard.upcomingExpiries || []).length === 0
-                                            ? <p style={{ color: '#10b981', fontSize: '0.83rem' }}>✅ No expiries in the next 60 days</p>
+                                            ? <p style={{ color: '#10b981', fontSize: '0.83rem' }}>{t('trainingView.noExpiries60Days', '✅ No expiries in the next 60 days')}</p>
                                             : (data.dashboard.upcomingExpiries || []).map((r, i) => (
                                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                                     <div>
@@ -276,7 +280,7 @@ export default function TrainingView({ plantId, plantLabel }) {
                                                         <div style={{ fontSize: '0.73rem', color: '#64748b' }}>{r.course_title}</div>
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
-                                                        <div style={{ fontSize: '0.82rem', color: r.days_left <= 14 ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>{r.days_left}d left</div>
+                                                        <div style={{ fontSize: '0.82rem', color: r.days_left <= 14 ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>{r.days_left}{t('trainingView.daysLeftSuffix', 'd left')}</div>
                                                         <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{r.expires_date}</div>
                                                     </div>
                                                 </div>
@@ -293,15 +297,15 @@ export default function TrainingView({ plantId, plantLabel }) {
                                 <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
                                     <div style={{ position: 'relative', flex: 1 }}>
                                         <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by employee or course…" style={{ width: '100%', padding: '9px 12px 9px 34px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
+                                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('trainingView.searchByEmployeeOrCourse', 'Search by employee or course…')} style={{ width: '100%', padding: '9px 12px 9px 34px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
                                     </div>
-                                    <span style={{ color: '#64748b', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{filteredRecords.length} records</span>
+                                    <span style={{ color: '#64748b', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{filteredRecords.length} {t('trainingView.recordsSuffix', 'records')}</span>
                                 </div>
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                         <thead>
                                             <tr>
-                                                {['Employee', 'Course', 'Category', 'Completed', 'Expires', 'Status', 'Trainer', 'Cert #'].map(h => (
+                                                {[t('trainingView.colEmployee', 'Employee'), t('trainingView.colCourse', 'Course'), t('trainingView.colCategory', 'Category'), t('trainingView.colCompleted', 'Completed'), t('trainingView.colExpires', 'Expires'), t('trainingView.colStatus', 'Status'), t('trainingView.colTrainer', 'Trainer'), t('trainingView.colCertNumber', 'Cert #')].map(h => (
                                                     <th key={h} style={thS}>{h}</th>
                                                 ))}
                                             </tr>
@@ -331,7 +335,7 @@ export default function TrainingView({ plantId, plantLabel }) {
                                             ))}
                                         </tbody>
                                     </table>
-                                    {filteredRecords.length === 0 && <p style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No training records found. Click "Log Training" to add the first one.</p>}
+                                    {filteredRecords.length === 0 && <p style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>{t('trainingView.noRecordsFound', 'No training records found. Click "Log Training" to add the first one.')}</p>}
                                 </div>
                             </div>
                         )}
@@ -341,10 +345,10 @@ export default function TrainingView({ plantId, plantLabel }) {
                             <div className="glass-card" style={{ padding: 20 }}>
                                 <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
                                     {[
-                                        { label: 'Compliant', val: data.compliance.compliant, color: '#10b981' },
-                                        { label: 'At Risk', val: data.compliance.atRisk, color: '#f59e0b' },
-                                        { label: 'Non-Compliant', val: data.compliance.nonCompliant, color: '#ef4444' },
-                                        { label: 'Total Employees', val: data.compliance.totalEmployees, color: '#818cf8' },
+                                        { label: t('trainingView.compliant', 'Compliant'), val: data.compliance.compliant, color: '#10b981' },
+                                        { label: t('trainingView.atRisk', 'At Risk'), val: data.compliance.atRisk, color: '#f59e0b' },
+                                        { label: t('trainingView.nonCompliant', 'Non-Compliant'), val: data.compliance.nonCompliant, color: '#ef4444' },
+                                        { label: t('trainingView.totalEmployees', 'Total Employees'), val: data.compliance.totalEmployees, color: '#818cf8' },
                                     ].map(s => (
                                         <div key={s.label} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}33`, borderRadius: 10, padding: '12px 18px', minWidth: 120 }}>
                                             <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 4, textTransform: 'uppercase', fontWeight: 700 }}>{s.label}</div>
@@ -353,13 +357,13 @@ export default function TrainingView({ plantId, plantLabel }) {
                                     ))}
                                     <div style={{ marginLeft: 'auto', position: 'relative' }}>
                                         <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees…" style={{ padding: '9px 12px 9px 34px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', outline: 'none', width: 220 }} />
+                                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('trainingView.searchEmployees', 'Search employees…')} style={{ padding: '9px 12px 9px 34px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', outline: 'none', width: 220 }} />
                                     </div>
                                 </div>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
                                         <tr>
-                                            {['Employee', 'Dept', 'Total Certs', 'Current', 'Expiring', 'Expired', 'Status'].map(h => (
+                                            {[t('trainingView.colEmployee', 'Employee'), t('trainingView.colDept', 'Dept'), t('trainingView.colTotalCerts', 'Total Certs'), t('trainingView.colCurrent', 'Current'), t('trainingView.colExpiring', 'Expiring'), t('trainingView.colExpired', 'Expired'), t('trainingView.colStatus', 'Status')].map(h => (
                                                 <th key={h} style={thS}>{h}</th>
                                             ))}
                                         </tr>
@@ -386,7 +390,7 @@ export default function TrainingView({ plantId, plantLabel }) {
                                                                 {(emp.records || []).map((r, j) => (
                                                                     <div key={j} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '8px 12px', fontSize: '0.78rem' }}>
                                                                         <div style={{ fontWeight: 700, color: '#e2e8f0', marginBottom: 3 }}>{r.course_title}</div>
-                                                                        <div style={{ color: '#64748b' }}>Expires: {r.expires_date || 'No expiry'}</div>
+                                                                        <div style={{ color: '#64748b' }}>{t('trainingView.expiresLabel', 'Expires:')} {r.expires_date || t('trainingView.noExpiryLabel', 'No expiry')}</div>
                                                                         <StatusBadge status={r.status} />
                                                                     </div>
                                                                 ))}
@@ -398,7 +402,7 @@ export default function TrainingView({ plantId, plantLabel }) {
                                         ))}
                                     </tbody>
                                 </table>
-                                {filteredEmployees.length === 0 && <p style={{ color: '#64748b', padding: '20px', textAlign: 'center' }}>No employee records found. Log training completions to build the compliance picture.</p>}
+                                {filteredEmployees.length === 0 && <p style={{ color: '#64748b', padding: '20px', textAlign: 'center' }}>{t('trainingView.noEmployeeRecordsFound', 'No employee records found. Log training completions to build the compliance picture.')}</p>}
                             </div>
                         )}
 
@@ -406,11 +410,11 @@ export default function TrainingView({ plantId, plantLabel }) {
                         {tab === 'expiring' && (
                             <div className="glass-card" style={{ padding: 20 }}>
                                 <h3 style={{ margin: '0 0 20px', fontSize: '1rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Clock size={18} /> Expiring or Expired Certifications
+                                    <Clock size={18} /> {t('trainingView.expiringOrExpiredCertifications', 'Expiring or Expired Certifications')}
                                 </h3>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr>{['Employee', 'Course', 'Category', 'Regulatory Ref', 'Expires', 'Days Until Expiry'].map(h => <th key={h} style={thS}>{h}</th>)}</tr>
+                                        <tr>{[t('trainingView.colEmployee', 'Employee'), t('trainingView.colCourse', 'Course'), t('trainingView.colCategory', 'Category'), t('trainingView.colRegulatoryRef', 'Regulatory Ref'), t('trainingView.colExpires', 'Expires'), t('trainingView.colDaysUntilExpiry', 'Days Until Expiry')].map(h => <th key={h} style={thS}>{h}</th>)}</tr>
                                     </thead>
                                     <tbody>
                                         {(data.expiring?.records || []).map((r, i) => (
@@ -429,7 +433,7 @@ export default function TrainingView({ plantId, plantLabel }) {
                                         ))}
                                     </tbody>
                                 </table>
-                                {(data.expiring?.count || 0) === 0 && <p style={{ color: '#10b981', padding: '20px 0', textAlign: 'center' }}>✅ No certifications expiring in the next 60 days</p>}
+                                {(data.expiring?.count || 0) === 0 && <p style={{ color: '#10b981', padding: '20px 0', textAlign: 'center' }}>{t('trainingView.noCertExpiring60Days', '✅ No certifications expiring in the next 60 days')}</p>}
                             </div>
                         )}
 
@@ -439,12 +443,12 @@ export default function TrainingView({ plantId, plantLabel }) {
                                 <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
                                     <div style={{ position: 'relative', flex: 1 }}>
                                         <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search courses…" style={{ width: '100%', padding: '9px 12px 9px 34px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
+                                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('trainingView.searchCourses', 'Search courses…')} style={{ width: '100%', padding: '9px 12px 9px 34px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
                                     </div>
                                 </div>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr>{['Code', 'Title', 'Category', 'Duration', 'Validity', 'Regulatory Ref', 'Recurring'].map(h => <th key={h} style={thS}>{h}</th>)}</tr>
+                                        <tr>{[t('trainingView.colCode', 'Code'), t('trainingView.colTitle', 'Title'), t('trainingView.colCategory', 'Category'), t('trainingView.colDuration', 'Duration'), t('trainingView.colValidity', 'Validity'), t('trainingView.colRegulatoryRef', 'Regulatory Ref'), t('trainingView.colRecurring', 'Recurring')].map(h => <th key={h} style={thS}>{h}</th>)}</tr>
                                     </thead>
                                     <tbody>
                                         {data.courses.filter(c => !search || c.title?.toLowerCase().includes(search.toLowerCase()) || c.code?.toLowerCase().includes(search.toLowerCase())).map((c, i) => (
@@ -454,8 +458,8 @@ export default function TrainingView({ plantId, plantLabel }) {
                                                 <td style={{ ...tdS, fontFamily: 'monospace', color: '#818cf8', fontWeight: 700 }}>{c.code}</td>
                                                 <td style={tdS}><div style={{ fontWeight: 600 }}>{c.title}</div>{c.description && <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 2 }}>{c.description.slice(0, 60)}</div>}</td>
                                                 <td style={tdS}><span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: 20 }}>{c.category}</span></td>
-                                                <td style={{ ...tdS, textAlign: 'center' }}>{c.duration_hours}h</td>
-                                                <td style={{ ...tdS, textAlign: 'center' }}>{c.validity_days > 0 ? `${c.validity_days} days` : 'Permanent'}</td>
+                                                <td style={{ ...tdS, textAlign: 'center' }}>{c.duration_hours}{t('trainingView.hoursSuffix', 'h')}</td>
+                                                <td style={{ ...tdS, textAlign: 'center' }}>{c.validity_days > 0 ? `${c.validity_days} ${t('trainingView.daysSuffix', 'days')}` : t('trainingView.permanent', 'Permanent')}</td>
                                                 <td style={{ ...tdS, fontSize: '0.75rem', color: '#818cf8', fontFamily: 'monospace' }}>{c.regulatory_ref || '—'}</td>
                                                 <td style={{ ...tdS, textAlign: 'center' }}>{c.is_recurring ? <span style={{ color: '#10b981' }}>✓</span> : <span style={{ color: '#64748b' }}>—</span>}</td>
                                             </tr>

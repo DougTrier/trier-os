@@ -846,4 +846,31 @@ router.get('/integrations/worker/data', (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Get ERP sync log from the plant DB (HttpEdgeAgent writes ErpSyncLog)
+router.get('/integrations/erp/log', (req, res) => {
+    try {
+        const plantId = req.headers['x-plant-id'] || 'Plant_1';
+        const limit   = Math.min(parseInt(req.query.limit) || 20, 100);
+        const dbPath  = path.join(dataDir, `${plantId}.db`);
+        const db      = new Database(dbPath, { readonly: true });
+        let rows = [];
+        try {
+            rows = db.prepare(`
+                SELECT IntegrationID, Endpoint, RecordsIn, RecordsUpserted, Status, ErrorMessage, SyncedAt
+                FROM ErpSyncLog
+                ORDER BY SyncedAt DESC
+                LIMIT ?
+            `).all(limit);
+        } catch { /* table may not exist yet */ }
+        db.close();
+        res.json({ rows });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Expose available ERP presets to the UI
+router.get('/integrations/erp/presets', (req, res) => {
+    const { ERP_PRESETS } = require('../integrations/http-edge-agent');
+    res.json(ERP_PRESETS);
+});
+
 module.exports = router;

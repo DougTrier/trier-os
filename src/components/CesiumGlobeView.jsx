@@ -31,6 +31,7 @@
  * @param {string} selectedPin - ID of the currently selected pin (triggers fly-to)
  */
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from '../i18n/index.jsx';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
@@ -49,6 +50,7 @@ function getPinColor(type) {
 export default function CesiumGlobeView({
     pins = [], selectedPin, flyTo, onPinClick, onMapClick, addMode, showTraffic
 }) {
+    const { t } = useTranslation();
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
     const bordersSourceRef = useRef(null);
@@ -235,7 +237,7 @@ export default function CesiumGlobeView({
                     disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 },
                 label: {
-                    text: `${emoji} ${pin.label || 'Unnamed'}`,
+                    text: `${emoji} ${pin.label || t('cesiumGlobe.unnamed', 'Unnamed')}`,
                     font: '13px Inter, sans-serif',
                     fillColor: Cesium.Color.WHITE,
                     outlineColor: Cesium.Color.BLACK,

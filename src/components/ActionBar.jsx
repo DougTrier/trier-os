@@ -139,7 +139,7 @@ export default function ActionBar({
                         letterSpacing: '0.05em',
                         flexShrink: 0,
                     }}>
-                        Editing
+                        {t('actionBar.editing', 'Editing')}
                     </span>
                 )}
                 {isCreating && (
@@ -155,7 +155,7 @@ export default function ActionBar({
                         letterSpacing: '0.05em',
                         flexShrink: 0,
                     }}>
-                        New Record
+                        {t('actionBar.newRecord', 'New Record')}
                     </span>
                 )}
             </div>
@@ -217,7 +217,7 @@ export default function ActionBar({
                                 className="btn-save"
                                 onClick={onSave}
                                 disabled={isSaving}
-                                title={isCreating ? "Create this record (Ctrl+S)" : "Save changes (Ctrl+S)"}
+                                title={isCreating ? t('actionBar.createThisRecordCtrlsTip', 'Create this record (Ctrl+S)') : t('actionBar.saveChangesCtrlsTip', 'Save changes (Ctrl+S)')}
                                 style={{ height: '36px', fontSize: '0.8rem', opacity: isSaving ? 0.7 : 1 }}
                             >
                                 {isSaving ? (

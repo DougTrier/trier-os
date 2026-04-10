@@ -34,10 +34,21 @@ import React from 'react';
 
 const iconStyle = (size) => ({ width: size, height: size, display: 'block' });
 
+// Translation key map for categories — use with t(CATEGORY_LABEL_KEYS[cat], cat) in consuming components
+export const CATEGORY_LABEL_KEYS = {
+    'Production': 'equipmentCategory.production',
+    'HVAC': 'equipmentCategory.hvac',
+    'Electrical': 'equipmentCategory.electrical',
+    'Safety': 'equipmentCategory.safety',
+    'Plumbing': 'equipmentCategory.plumbing',
+    'Material Handling': 'equipmentCategory.materialHandling',
+    'Instrumentation': 'equipmentCategory.instrumentation',
+};
+
 export const EQUIPMENT_ICONS = [
     // ── Production Equipment ──
     {
-        id: 'pump', label: 'Pump', category: 'Production',
+        id: 'pump', label: 'Pump', labelKey: 'equipmentIcon.pump', category: 'Production',
         icon: ({ size = 32, color = '#06b6d4' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <circle cx="32" cy="32" r="22" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -48,7 +59,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'motor', label: 'Motor', category: 'Production',
+        id: 'motor', label: 'Motor', labelKey: 'equipmentIcon.motor', category: 'Production',
         icon: ({ size = 32, color = '#8b5cf6' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="14" y="20" width="36" height="24" rx="4" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -60,7 +71,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'conveyor', label: 'Conveyor', category: 'Production',
+        id: 'conveyor', label: 'Conveyor', labelKey: 'equipmentIcon.conveyor', category: 'Production',
         icon: ({ size = 32, color = '#f59e0b' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="8" y="24" width="48" height="16" rx="8" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -72,7 +83,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'tank', label: 'Tank', category: 'Production',
+        id: 'tank', label: 'Tank', labelKey: 'equipmentIcon.tank', category: 'Production',
         icon: ({ size = 32, color = '#3b82f6' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="18" y="12" width="28" height="40" rx="6" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -84,7 +95,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'valve', label: 'Valve', category: 'Production',
+        id: 'valve', label: 'Valve', labelKey: 'equipmentIcon.valve', category: 'Production',
         icon: ({ size = 32, color = '#10b981' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <path d="M16 24 L32 32 L16 40 Z" fill={`${color}33`} stroke={color} strokeWidth="2"/>
@@ -95,7 +106,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'compressor', label: 'Compressor', category: 'Production',
+        id: 'compressor', label: 'Compressor', labelKey: 'equipmentIcon.compressor', category: 'Production',
         icon: ({ size = 32, color = '#ec4899' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="12" y="18" width="40" height="28" rx="6" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -107,7 +118,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'mixer', label: 'Mixer', category: 'Production',
+        id: 'mixer', label: 'Mixer', labelKey: 'equipmentIcon.mixer', category: 'Production',
         icon: ({ size = 32, color = '#f97316' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="16" y="20" width="32" height="32" rx="4" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -118,7 +129,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'heat_exchanger', label: 'Heat Exchanger', category: 'Production',
+        id: 'heat_exchanger', label: 'Heat Exchanger', labelKey: 'equipmentIcon.heatExchanger', category: 'Production',
         icon: ({ size = 32, color = '#ef4444' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <circle cx="32" cy="32" r="20" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -129,7 +140,7 @@ export const EQUIPMENT_ICONS = [
     },
     // ── HVAC & Utility ──
     {
-        id: 'ahu', label: 'AHU', category: 'HVAC',
+        id: 'ahu', label: 'AHU', labelKey: 'equipmentIcon.ahu', category: 'HVAC',
         icon: ({ size = 32, color = '#06b6d4' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="10" y="16" width="44" height="32" rx="4" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -141,7 +152,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'chiller', label: 'Chiller', category: 'HVAC',
+        id: 'chiller', label: 'Chiller', labelKey: 'equipmentIcon.chiller', category: 'HVAC',
         icon: ({ size = 32, color = '#38bdf8' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="10" y="16" width="44" height="32" rx="6" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -153,7 +164,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'boiler', label: 'Boiler', category: 'HVAC',
+        id: 'boiler', label: 'Boiler', labelKey: 'equipmentIcon.boiler', category: 'HVAC',
         icon: ({ size = 32, color = '#ef4444' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="16" y="14" width="32" height="38" rx="6" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -165,7 +176,7 @@ export const EQUIPMENT_ICONS = [
     },
     // ── Electrical ──
     {
-        id: 'panel', label: 'Elec Panel', category: 'Electrical',
+        id: 'panel', label: 'Elec Panel', labelKey: 'equipmentIcon.elecPanel', category: 'Electrical',
         icon: ({ size = 32, color = '#f59e0b' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="14" y="10" width="36" height="44" rx="3" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -180,7 +191,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'transformer', label: 'Transformer', category: 'Electrical',
+        id: 'transformer', label: 'Transformer', labelKey: 'equipmentIcon.transformer', category: 'Electrical',
         icon: ({ size = 32, color = '#a78bfa' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <circle cx="24" cy="32" r="14" fill="none" stroke={color} strokeWidth="2.5"/>
@@ -193,7 +204,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'generator', label: 'Generator', category: 'Electrical',
+        id: 'generator', label: 'Generator', labelKey: 'equipmentIcon.generator', category: 'Electrical',
         icon: ({ size = 32, color = '#22c55e' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="10" y="18" width="44" height="28" rx="6" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -204,7 +215,7 @@ export const EQUIPMENT_ICONS = [
     },
     // ── Safety Equipment ──
     {
-        id: 'fire_extinguisher', label: 'Fire Extinguisher', category: 'Safety',
+        id: 'fire_extinguisher', label: 'Fire Extinguisher', labelKey: 'equipmentIcon.fireExtinguisher', category: 'Safety',
         icon: ({ size = 32, color = '#ef4444' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="22" y="18" width="20" height="36" rx="4" fill={`${color}33`} stroke={color} strokeWidth="2.5"/>
@@ -215,7 +226,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'eye_wash', label: 'Eye Wash', category: 'Safety',
+        id: 'eye_wash', label: 'Eye Wash', labelKey: 'equipmentIcon.eyeWash', category: 'Safety',
         icon: ({ size = 32, color = '#06b6d4' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <path d="M12 32 C12 32 22 18 32 18 C42 18 52 32 52 32 C52 32 42 46 32 46 C22 46 12 32 12 32Z" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -226,7 +237,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'first_aid', label: 'First Aid', category: 'Safety',
+        id: 'first_aid', label: 'First Aid', labelKey: 'equipmentIcon.firstAid', category: 'Safety',
         icon: ({ size = 32, color = '#22c55e' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="12" y="16" width="40" height="32" rx="6" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -237,7 +248,7 @@ export const EQUIPMENT_ICONS = [
     },
     // ── Plumbing / Process ──
     {
-        id: 'pipe_junction', label: 'Pipe Junction', category: 'Plumbing',
+        id: 'pipe_junction', label: 'Pipe Junction', labelKey: 'equipmentIcon.pipeJunction', category: 'Plumbing',
         icon: ({ size = 32, color = '#64748b' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <line x1="8" y1="32" x2="56" y2="32" stroke={color} strokeWidth="4" strokeLinecap="round"/>
@@ -247,7 +258,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'filter', label: 'Filter', category: 'Plumbing',
+        id: 'filter', label: 'Filter', labelKey: 'equipmentIcon.filter', category: 'Plumbing',
         icon: ({ size = 32, color = '#818cf8' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <path d="M14 14 L50 14 L36 38 L36 52 L28 52 L28 38 Z" fill={`${color}22`} stroke={color} strokeWidth="2.5" strokeLinejoin="round"/>
@@ -258,7 +269,7 @@ export const EQUIPMENT_ICONS = [
     },
     // ── General / Misc ──
     {
-        id: 'forklift', label: 'Forklift', category: 'Material Handling',
+        id: 'forklift', label: 'Forklift', labelKey: 'equipmentIcon.forklift', category: 'Material Handling',
         icon: ({ size = 32, color = '#f59e0b' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="20" y="20" width="24" height="24" rx="4" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -270,7 +281,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'dock_door', label: 'Dock Door', category: 'Material Handling',
+        id: 'dock_door', label: 'Dock Door', labelKey: 'equipmentIcon.dockDoor', category: 'Material Handling',
         icon: ({ size = 32, color = '#94a3b8' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="10" y="10" width="44" height="44" rx="4" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -283,7 +294,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'scale', label: 'Scale', category: 'Production',
+        id: 'scale', label: 'Scale', labelKey: 'equipmentIcon.scale', category: 'Production',
         icon: ({ size = 32, color = '#10b981' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="12" y="38" width="40" height="8" rx="2" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -295,7 +306,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'sensor', label: 'Sensor', category: 'Instrumentation',
+        id: 'sensor', label: 'Sensor', labelKey: 'equipmentIcon.sensor', category: 'Instrumentation',
         icon: ({ size = 32, color = '#a78bfa' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <circle cx="32" cy="32" r="12" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>
@@ -308,7 +319,7 @@ export const EQUIPMENT_ICONS = [
         )
     },
     {
-        id: 'camera', label: 'Camera', category: 'Safety',
+        id: 'camera', label: 'Camera', labelKey: 'equipmentIcon.camera', category: 'Safety',
         icon: ({ size = 32, color = '#64748b' }) => (
             <svg viewBox="0 0 64 64" style={iconStyle(size)}>
                 <rect x="14" y="22" width="36" height="24" rx="4" fill={`${color}22`} stroke={color} strokeWidth="2.5"/>

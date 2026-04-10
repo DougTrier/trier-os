@@ -1015,6 +1015,10 @@ app.use('/api/warranty',    require('./routes/warranty'));                    //
 app.use('/api/plant-setup', require('./routes/plant_setup'));               // Plant Setup: Production Model, Units, SKUs, Calendar
 app.use('/api/devices',    require('./routes/device-registry'));            // Device Registry: PLC/SCADA onboarding, ARP discovery, Modbus probe
 app.use('/api/production-import', require('./routes/production_import'));   // AS400 Number 9 Report Import & Production Planning Engine
+app.use('/api/integrations/outbox', require('./routes/integrations-outbox')); // ERP Write-Back Outbox: status, history, retry
+
+// ── ERP Write-Back Outbox Drain Worker ────────────────────────────────────────
+require('./services/erp-outbox').startDrainWorker();
 
 
 

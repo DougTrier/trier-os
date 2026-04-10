@@ -25,6 +25,7 @@
  *   GET  /transactions        Receipt and usage transaction log
  *   POST /transactions        Log a usage event (subtract) or manual receipt (add)
  *   GET  /summary             KPI summary: total inventory value, low-stock count, PO spend
+ *   GET  /all-sites           Cross-plant rollup: open POs, overdue, inventory value, top vendors (15-min cache)
  *
  * ITEM CATEGORIES: Dairy Ingredients | Packaging | Chemicals | Consumables
  *   Dairy Ingredients — cultures, chocolate powder, sugar, buttermilk powder, vitamins
@@ -38,9 +39,11 @@
 const express = require('express');
 const router  = express.Router();
 const { getDb } = require('../database');
-const fs     = require('fs');
-const path   = require('path');
-const multer = require('multer');
+const fs       = require('fs');
+const path     = require('path');
+const multer   = require('multer');
+const Database = require('better-sqlite3');
+const dataDir  = require('../resolve_data_dir');
 
 // ── Multer setup for item photos ──────────────────────────────────────────────
 const uploadDir = path.join(require('../resolve_data_dir'), 'uploads');
@@ -592,6 +595,123 @@ router.put('/transactions/:id', (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // GET /api/supply-chain/summary
 // ══════════════════════════════════════════════════════════════════════════════
+// ── All-Sites Rollup ──────────────────────────────────────────────────────────
+// System DBs excluded from the plant sweep
+const SC_NON_PLANT_DBS = new Set([
+    'schema_template', 'corporate_master', 'Corporate_Office', 'dairy_master',
+    'it_master', 'logistics', 'trier_auth', 'trier_chat', 'trier_logistics',
+    'examples'
+]);
+
+let _allSitesCache = null;
+let _allSitesCacheTs = 0;
+const ALL_SITES_TTL = 15 * 60 * 1000; // 15 minutes
+
+function getAllSupplyChainDbs() {
+    const plantDbs = [];
+    try {
+        const files = fs.readdirSync(dataDir).filter(f => {
+            if (!f.endsWith('.db')) return false;
+            const id = f.replace('.db', '');
+            if (SC_NON_PLANT_DBS.has(id)) return false;
+            if (f.startsWith('trier_') || f.startsWith('logistics')) return false;
+            return true;
+        });
+        for (const f of files) {
+            try {
+                const plantId = f.replace('.db', '');
+                const db = new Database(path.join(dataDir, f), { readonly: true });
+                // Must have SupplyItem to be useful
+                const hasTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SupplyItem'").get();
+                if (hasTable) plantDbs.push({ plantId, db });
+                else db.close();
+            } catch { /* skip locked/broken */ }
+        }
+    } catch (e) { console.error('[supply-chain/all-sites]', e.message); }
+    return plantDbs;
+}
+
+router.get('/all-sites', (req, res) => {
+    try {
+        const now = Date.now();
+        if (_allSitesCache && (now - _allSitesCacheTs) < ALL_SITES_TTL) {
+            return res.json(_allSitesCache);
+        }
+
+        const plants = getAllSupplyChainDbs();
+
+        let openOrders = 0, overdueOrders = 0, totalInventoryValue = 0, totalItems = 0;
+        const spendByPlant = [];
+        const vendorSpend = {};     // vendorName → totalSpend
+        const vendorOrders = {};    // vendorName → openOrderCount
+
+        const today = new Date().toISOString().slice(0, 10);
+
+        for (const { plantId, db } of plants) {
+            try {
+                // Open / overdue POs
+                const open = db.prepare("SELECT COUNT(*) as c FROM SupplyPO WHERE Status IN ('Open','Partial')").get()?.c || 0;
+                const overdue = db.prepare(
+                    "SELECT COUNT(*) as c FROM SupplyPO WHERE Status IN ('Open','Partial') AND ExpectedDate IS NOT NULL AND ExpectedDate < ?"
+                ).get(today)?.c || 0;
+                const invValue = db.prepare(
+                    'SELECT ROUND(COALESCE(SUM(OnHand*UnitCost),0),2) as v FROM SupplyItem WHERE ActiveFlag=1'
+                ).get()?.v || 0;
+                const items = db.prepare('SELECT COUNT(*) as c FROM SupplyItem WHERE ActiveFlag=1').get()?.c || 0;
+
+                // MTD spend: received POs this month
+                const mtdStart = today.slice(0, 7) + '-01';
+                const mtdSpend = db.prepare(
+                    "SELECT ROUND(COALESCE(SUM(TotalValue),0),2) as v FROM SupplyPO WHERE Status='Received' AND ReceivedDate >= ?"
+                ).get(mtdStart)?.v || 0;
+
+                openOrders += open;
+                overdueOrders += overdue;
+                totalInventoryValue += invValue;
+                totalItems += items;
+
+                spendByPlant.push({ plantId, openOrders: open, overdueOrders: overdue, mtdSpend, inventoryValue: invValue });
+
+                // Per-vendor open order rollup
+                try {
+                    const vendorRows = db.prepare(`
+                        SELECT v.VendorName, COUNT(po.ID) as orders,
+                               ROUND(COALESCE(SUM(po.TotalValue),0),2) as spend
+                        FROM SupplyPO po
+                        JOIN SupplyVendor v ON v.ID = po.VendorID
+                        WHERE po.Status IN ('Open','Partial')
+                        GROUP BY v.VendorName
+                    `).all();
+                    for (const row of vendorRows) {
+                        vendorSpend[row.VendorName] = (vendorSpend[row.VendorName] || 0) + row.spend;
+                        vendorOrders[row.VendorName] = (vendorOrders[row.VendorName] || 0) + row.orders;
+                    }
+                } catch { /* vendor table may be missing */ }
+            } catch { /* skip plant on error */ } finally {
+                db.close();
+            }
+        }
+
+        // Build top-vendor list sorted by open spend
+        const topSpend = Object.entries(vendorSpend)
+            .map(([name, spend]) => ({ name, spend, orders: vendorOrders[name] || 0 }))
+            .sort((a, b) => b.spend - a.spend)
+            .slice(0, 10);
+
+        const result = {
+            openOrders, overdueOrders, totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
+            totalItems, spendByPlant, topSpend, plantCount: plants.length,
+            asOf: new Date().toISOString()
+        };
+        _allSitesCache = result;
+        _allSitesCacheTs = now;
+        res.json(result);
+    } catch (e) {
+        console.error('[supply-chain/all-sites]', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.get('/summary', (req, res) => {
     try {
         const plantId = getPlantId(req);

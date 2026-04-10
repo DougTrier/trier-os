@@ -50,6 +50,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { whitelist } = require('../validators');
+const { insertOutboxEvent } = require('../services/erp-outbox');
 
 // ── GET /api/parts/stats ─────────────────────────────────────────────────
 router.get('/stats', (req, res) => {
@@ -438,6 +439,23 @@ router.post('/:id/adjust', (req, res) => {
         });
 
         tx();
+
+        // ── ERP Write-Back: queue part_consume event for negative adjustments ──
+        if (adjQty < 0 && String(type) !== '4') {
+            try {
+                const plantId = req.headers['x-plant-id'] || 'Plant_1';
+                const part = db.queryOne('SELECT PartNumber, Description, Stock FROM Part WHERE ID = ?', [partId]);
+                insertOutboxEvent(plantId, 'erp', 'part_consume', {
+                    partId,
+                    partNumber: part?.PartNumber,
+                    description: part?.Description,
+                    qty: Math.abs(adjQty),
+                    reason: reason || '',
+                    consumedAt: new Date().toISOString(),
+                    plantId,
+                });
+            } catch { /* non-blocking */ }
+        }
 
         res.status(201).json({ success: true, message: 'Inventory adjusted successfully' });
     } catch (err) {

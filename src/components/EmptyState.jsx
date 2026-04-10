@@ -33,14 +33,18 @@
  */
 import React from 'react';
 import { FolderOpen } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 export default function EmptyState({
     icon,
-    title = 'No records found',
+    title,
     message = '',
     action,
     style = {},
 }) {
+    const { t } = useTranslation();
+    const displayTitle = title !== undefined ? title : t('emptyState.noRecordsFound', 'No records found');
+
     return (
         <div style={{
             display: 'flex',
@@ -66,7 +70,7 @@ export default function EmptyState({
                 color: 'var(--text-main)',
                 opacity: 0.7,
             }}>
-                {title}
+                {displayTitle}
             </h3>
             {message && (
                 <p style={{

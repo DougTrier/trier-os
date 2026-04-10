@@ -3,9 +3,9 @@
 # ======================================================================
 $ErrorActionPreference = "Continue"
 
-$SOURCE   = "G:\Vibe Coding\Trier OS\TrierOS_Platform"
+$SOURCE   = "G:\Trier OS"
 $BUILD    = $args[0]
-if (-not $BUILD) { $BUILD = "E:\02 Trier OS Builds\Production" }
+if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.3.0-production" }
 $NODE_EXE = (Get-Command node).Source
 
 Write-Host ""
@@ -27,6 +27,17 @@ Write-Host "[2/8] Building production frontend..." -ForegroundColor Yellow
 Set-Location $SOURCE
 & npx vite build 2>&1 | Select-String "built in" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  OK" -ForegroundColor Green
+
+# Step 2b: Bundle Monaco editor (self-hosted, no CDN, works air-gapped)
+Write-Host "[2b/8] Bundling Monaco editor..." -ForegroundColor Yellow
+$monacoSrc = "$SOURCE\node_modules\monaco-editor\min\vs"
+$monacoDst = "$SOURCE\dist\monaco-vs"
+if (Test-Path $monacoSrc) {
+    robocopy $monacoSrc $monacoDst /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+    Write-Host "  Monaco bundled into dist/monaco-vs/" -ForegroundColor Green
+} else {
+    Write-Host "  WARNING: monaco-editor not found — skipping" -ForegroundColor Yellow
+}
 
 # Step 3: Copy app files (EXCLUDE keygen.js � private tool)
 Write-Host "[3/8] Copying application files..." -ForegroundColor Yellow

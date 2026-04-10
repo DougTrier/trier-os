@@ -31,6 +31,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Package, AlertTriangle, TrendingDown, DollarSign, BarChart2, RefreshCw, Info, ChevronDown, ChevronUp, Printer, Eye, Pencil, Save } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path, plant) =>
     fetch(path, {
@@ -105,7 +106,8 @@ const ActionBtn = ({ icon: Icon, tip, color = 'var(--text-muted)', onClick }) =>
 );
 
 // ── Parts Table ───────────────────────────────────────────────────────────
-function PartsTable({ parts, showABC = false, emptyMsg = 'No parts found' }) {
+function PartsTable({ parts, showABC = false, emptyMsg }) {
+    const { t } = useTranslation();
     const [expanded, setExpanded] = useState(false);
     const shown = expanded ? parts : parts.slice(0, 15);
 
@@ -115,7 +117,7 @@ function PartsTable({ parts, showABC = false, emptyMsg = 'No parts found' }) {
     };
 
     if (!parts || parts.length === 0) {
-        return <p style={{ color: '#64748b', fontSize: '0.85rem', padding: '16px 0' }}>{emptyMsg}</p>;
+        return <p style={{ color: '#64748b', fontSize: '0.85rem', padding: '16px 0' }}>{emptyMsg ?? t('storeroomView.noPartsFound', 'No parts found')}</p>;
     }
 
     return (
@@ -124,15 +126,15 @@ function PartsTable({ parts, showABC = false, emptyMsg = 'No parts found' }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                     <thead>
                         <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            {showABC && <th style={th}>Class</th>}
-                            <th style={{ ...th, textAlign: 'left' }}>Part ID</th>
-                            <th style={{ ...th, textAlign: 'left' }}>Description</th>
-                            <th style={th}>Stock</th>
-                            <th style={th}>Unit Cost</th>
-                            <th style={{ ...th, color: '#ef4444' }}>Inv. Value</th>
-                            <th style={th}>Last Used</th>
-                            {showABC && <th style={th}>Usage Value</th>}
-                            <th style={{ ...th, textAlign: 'center' }}>ACTIONS</th>
+                            {showABC && <th style={th}>{t('storeroomView.colClass', 'Class')}</th>}
+                            <th style={{ ...th, textAlign: 'left' }}>{t('storeroomView.colPartId', 'Part ID')}</th>
+                            <th style={{ ...th, textAlign: 'left' }}>{t('storeroomView.colDescription', 'Description')}</th>
+                            <th style={th}>{t('storeroomView.colStock', 'Stock')}</th>
+                            <th style={th}>{t('storeroomView.colUnitCost', 'Unit Cost')}</th>
+                            <th style={{ ...th, color: '#ef4444' }}>{t('storeroomView.colInvValue', 'Inv. Value')}</th>
+                            <th style={th}>{t('storeroomView.colLastUsed', 'Last Used')}</th>
+                            {showABC && <th style={th}>{t('storeroomView.colUsageValue', 'Usage Value')}</th>}
+                            <th style={{ ...th, textAlign: 'center' }}>{t('storeroomView.colActions', 'ACTIONS')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -147,13 +149,13 @@ function PartsTable({ parts, showABC = false, emptyMsg = 'No parts found' }) {
                                 <td style={td}>{p.stock}</td>
                                 <td style={td}>${Number(p.unitCost || 0).toFixed(2)}</td>
                                 <td style={{ ...td, color: '#ef4444', fontWeight: 700 }}>${Number(p.inventoryValue || 0).toLocaleString()}</td>
-                                <td style={{ ...td, color: '#64748b' }}>{p.lastUsedDate ? new Date(p.lastUsedDate).toLocaleDateString() : p.daysSinceUse ? `${p.daysSinceUse}d ago` : '—'}</td>
+                                <td style={{ ...td, color: '#64748b' }}>{p.lastUsedDate ? new Date(p.lastUsedDate).toLocaleDateString() : p.daysSinceUse ? `${p.daysSinceUse}${t('storeroomView.daysAgoSuffix', 'd ago')}` : '—'}</td>
                                 {showABC && <td style={{ ...td, color: '#10b981' }}>${Number(p.usageValue || 0).toLocaleString()}</td>}
                                 <td style={{ padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center' }}>
-                                    <ActionBtn icon={Eye} tip="View Part" color="#3b82f6" onClick={() => navigateToPart(p.ID)} />
-                                    <ActionBtn icon={Pencil} tip="Edit Part" color="#f59e0b" onClick={() => navigateToPart(p.ID)} />
-                                    <ActionBtn icon={Save} tip="Save Part Data" color="#10b981" onClick={() => navigateToPart(p.ID)} />
-                                    <ActionBtn icon={Printer} tip="Print Part Label" color="#8b5cf6" onClick={() => navigateToPart(p.ID)} />
+                                    <ActionBtn icon={Eye} tip={t('storeroomView.viewPart', 'View Part')} color="#3b82f6" onClick={() => navigateToPart(p.ID)} />
+                                    <ActionBtn icon={Pencil} tip={t('storeroomView.editPart', 'Edit Part')} color="#f59e0b" onClick={() => navigateToPart(p.ID)} />
+                                    <ActionBtn icon={Save} tip={t('storeroomView.savePartData', 'Save Part Data')} color="#10b981" onClick={() => navigateToPart(p.ID)} />
+                                    <ActionBtn icon={Printer} tip={t('storeroomView.printPartLabel', 'Print Part Label')} color="#8b5cf6" onClick={() => navigateToPart(p.ID)} />
                                 </td>
                             </tr>
                         ))}
@@ -167,7 +169,7 @@ function PartsTable({ parts, showABC = false, emptyMsg = 'No parts found' }) {
                     fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6,
                 }}>
                     {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    {expanded ? 'Show less' : `Show all ${parts.length} parts`}
+                    {expanded ? t('storeroomView.showLess', 'Show less') : t('storeroomView.showAllParts', 'Show all {n} parts').replace('{n}', parts.length)}
                 </button>
             )}
         </div>
@@ -181,6 +183,7 @@ const td = { padding: '9px 12px', color: '#e2e8f0', textAlign: 'center' };
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════
 export default function StoreroomView({ plantId, plantLabel }) {
+    const { t } = useTranslation();
     const [tab, setTab] = useState('summary');
     const [days, setDays] = useState(365);
     const [loading, setLoading] = useState(false);
@@ -209,7 +212,7 @@ export default function StoreroomView({ plantId, plantLabel }) {
             setSlowData(slow);
             setCostData(cost);
         } catch (e) {
-            setError('Failed to load storeroom data');
+            setError(t('storeroomView.failedToLoad', 'Failed to load storeroom data'));
         } finally {
             setLoading(false);
         }
@@ -218,11 +221,11 @@ export default function StoreroomView({ plantId, plantLabel }) {
     useEffect(() => { load(); }, [load]);
 
     const tabs = [
-        { id: 'summary', label: 'Overview', icon: <BarChart2 size={14} /> },
-        { id: 'abc', label: 'ABC Analysis', icon: <Package size={14} /> },
-        { id: 'dead', label: 'Dead Stock', icon: <AlertTriangle size={14} /> },
-        { id: 'slow', label: 'Slow-Moving', icon: <TrendingDown size={14} /> },
-        { id: 'cost', label: 'Carrying Cost', icon: <DollarSign size={14} /> },
+        { id: 'summary', label: t('storeroomView.tabOverview', 'Overview'), icon: <BarChart2 size={14} /> },
+        { id: 'abc', label: t('storeroomView.tabAbcAnalysis', 'ABC Analysis'), icon: <Package size={14} /> },
+        { id: 'dead', label: t('storeroomView.tabDeadStock', 'Dead Stock'), icon: <AlertTriangle size={14} /> },
+        { id: 'slow', label: t('storeroomView.tabSlowMoving', 'Slow-Moving'), icon: <TrendingDown size={14} /> },
+        { id: 'cost', label: t('storeroomView.tabCarryingCost', 'Carrying Cost'), icon: <DollarSign size={14} /> },
     ];
 
     return (
@@ -230,7 +233,7 @@ export default function StoreroomView({ plantId, plantLabel }) {
             {/* ── Header ── */}
             <div className="glass-card no-print" style={{ padding: '15px 25px', display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Package size={24} /> Storeroom Intelligence
+                    <Package size={24} /> {t('storeroomView.heading', 'Storeroom Intelligence')}
                 </h2>
                 <div style={{ width: 2, height: 30, background: 'var(--glass-border)' }} />
                 <div className="nav-pills" style={{ padding: 0, margin: 0, background: 'transparent' }}>
@@ -243,31 +246,31 @@ export default function StoreroomView({ plantId, plantLabel }) {
                     ))}
                 </div>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <label style={{ fontSize: '0.8rem', color: '#64748b' }}>Lookback:</label>
+                    <label style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('storeroomView.lookback', 'Lookback:')}</label>
                     <select value={days} onChange={e => setDays(Number(e.target.value))} style={{
                         background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
                         color: '#f1f5f9', borderRadius: 8, padding: '5px 10px', fontSize: '0.82rem', cursor: 'pointer',
                     }}>
-                        <option value={90}>90 days</option>
-                        <option value={180}>180 days</option>
-                        <option value={365}>1 year</option>
-                        <option value={730}>2 years</option>
+                        <option value={90}>{t('storeroomView.option90days', '90 days')}</option>
+                        <option value={180}>{t('storeroomView.option180days', '180 days')}</option>
+                        <option value={365}>{t('storeroomView.option1year', '1 year')}</option>
+                        <option value={730}>{t('storeroomView.option2years', '2 years')}</option>
                     </select>
-                    <button onClick={load} disabled={loading} title="Refresh" style={{
+                    <button onClick={load} disabled={loading} title={t('storeroomView.refresh', 'Refresh')} style={{
                         background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
                         color: '#818cf8', borderRadius: 8, padding: '7px 14px', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem',
                     }}>
                         <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-                        {loading ? 'Loading…' : 'Refresh'}
+                        {loading ? t('storeroomView.loading', 'Loading…') : t('storeroomView.refresh', 'Refresh')}
                     </button>
-                    <button onClick={() => window.triggerTrierPrint('storeroom-report', { summary, lookbackDays: days })} title="Print Intelligence Report" style={{
+                    <button onClick={() => window.triggerTrierPrint('storeroom-report', { summary, lookbackDays: days })} title={t('storeroomView.printReportTip', 'Print Intelligence Report')} style={{
                         background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
                         color: '#10b981', borderRadius: 8, padding: '7px 14px', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem',
                     }}>
                         <Printer size={14} />
-                        Print
+                        {t('storeroomView.print', 'Print')}
                     </button>
                 </div>
             </div>
@@ -284,31 +287,31 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                 <div style={{ display: 'grid', gridTemplateColumns: 'auto repeat(4, 1fr)', gap: 14, alignItems: 'start' }}>
                                     <div className="glass-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, justifyContent:'center' }}>
                                         <HealthRing score={summary.healthScore || 0} label={summary.healthLabel || ''} />
-                                        <span style={{ fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>Storeroom Health</span>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>{t('storeroomView.storeroomHealth', 'Storeroom Health')}</span>
                                     </div>
-                                    <StatCard icon={<Package size={16} />} label="Total Parts" value={summary.totalParts?.toLocaleString() || 0} sub={`$${(summary.totalInventoryValue || 0).toLocaleString()} on shelf`} color="#818cf8" />
-                                    <StatCard icon={<DollarSign size={16} />} label="Annual Carrying Cost" value={`$${(summary.annualCarryingCost || 0).toLocaleString()}`} sub="Est. at 25% of inventory value" color="#f59e0b" />
-                                    <StatCard icon={<AlertTriangle size={16} />} label="Dead Stock" value={summary.deadStock?.count || 0} sub={`$${(summary.deadStock?.value || 0).toLocaleString()} (${summary.deadStock?.pctOfInventory || 0}% of inventory)`} color="#ef4444" warn={(summary.deadStock?.count || 0) > 0} />
-                                    <StatCard icon={<TrendingDown size={16} />} label="Slow-Moving" value={summary.slowMoving?.count || 0} sub={`$${(summary.slowMoving?.value || 0).toLocaleString()} (${summary.slowMoving?.pctOfInventory || 0}% of inventory)`} color="#f59e0b" />
+                                    <StatCard icon={<Package size={16} />} label={t('storeroomView.totalParts', 'Total Parts')} value={summary.totalParts?.toLocaleString() || 0} sub={`$${(summary.totalInventoryValue || 0).toLocaleString()} ${t('storeroomView.onShelfSuffix', 'on shelf')}`} color="#818cf8" />
+                                    <StatCard icon={<DollarSign size={16} />} label={t('storeroomView.annualCarryingCost', 'Annual Carrying Cost')} value={`$${(summary.annualCarryingCost || 0).toLocaleString()}`} sub={t('storeroomView.estCarryingCostNote', 'Est. at 25% of inventory value')} color="#f59e0b" />
+                                    <StatCard icon={<AlertTriangle size={16} />} label={t('storeroomView.deadStock', 'Dead Stock')} value={summary.deadStock?.count || 0} sub={`$${(summary.deadStock?.value || 0).toLocaleString()} (${summary.deadStock?.pctOfInventory || 0}${t('storeroomView.pctOfInventorySuffix', '% of inventory')})`} color="#ef4444" warn={(summary.deadStock?.count || 0) > 0} />
+                                    <StatCard icon={<TrendingDown size={16} />} label={t('storeroomView.slowMoving', 'Slow-Moving')} value={summary.slowMoving?.count || 0} sub={`$${(summary.slowMoving?.value || 0).toLocaleString()} (${summary.slowMoving?.pctOfInventory || 0}${t('storeroomView.pctOfInventorySuffix', '% of inventory')})`} color="#f59e0b" />
                                 </div>
 
                                 {/* ABC Summary + Top Dead Stock side by side */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                     <div className="glass-card" style={{ padding: 20 }}>
                                         <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9', display:'flex', alignItems:'center', gap:8 }}>
-                                            <BarChart2 size={16} color="#818cf8" /> ABC Classification
+                                            <BarChart2 size={16} color="#818cf8" /> {t('storeroomView.abcClassification', 'ABC Classification')}
                                         </h3>
                                         {[
-                                            { cls: 'A', count: summary.classA?.count, desc: 'High-value, high-usage — stock tight, track closely', color: '#10b981' },
-                                            { cls: 'B', count: summary.classB?.count, desc: 'Medium usage — standard reorder discipline', color: '#f59e0b' },
-                                            { cls: 'C', count: summary.classC?.count, desc: 'Low usage — review stock levels periodically', color: '#94a3b8' },
+                                            { cls: 'A', count: summary.classA?.count, desc: t('storeroomView.classADesc', 'High-value, high-usage — stock tight, track closely'), color: '#10b981' },
+                                            { cls: 'B', count: summary.classB?.count, desc: t('storeroomView.classBDesc', 'Medium usage — standard reorder discipline'), color: '#f59e0b' },
+                                            { cls: 'C', count: summary.classC?.count, desc: t('storeroomView.classCDesc', 'Low usage — review stock levels periodically'), color: '#94a3b8' },
                                         ].map(row => (
                                             <div key={row.cls} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                                                 <ABCBadge cls={row.cls} />
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                                         <span style={{ fontSize: '0.82rem', color: '#e2e8f0' }}>{row.desc}</span>
-                                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: row.color }}>{row.count || 0} parts</span>
+                                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: row.color }}>{row.count || 0} {t('storeroomView.parts', 'parts')}</span>
                                                     </div>
                                                     <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
                                                         <div style={{ height: '100%', background: row.color, borderRadius: 2, width: `${summary.totalParts > 0 ? ((row.count || 0) / summary.totalParts * 100) : 0}%`, transition: 'width 0.8s ease' }} />
@@ -319,10 +322,10 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                     </div>
                                     <div className="glass-card" style={{ padding: 20 }}>
                                         <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9', display:'flex', alignItems:'center', gap:8 }}>
-                                            <AlertTriangle size={16} color="#ef4444" /> Top Dead Stock by Value
+                                            <AlertTriangle size={16} color="#ef4444" /> {t('storeroomView.topDeadStockByValue', 'Top Dead Stock by Value')}
                                         </h3>
                                         {(summary.topDeadStock || []).length === 0
-                                            ? <p style={{ color: '#10b981', fontSize:'0.85rem' }}>✅ No significant dead stock identified</p>
+                                            ? <p style={{ color: '#10b981', fontSize:'0.85rem' }}>{t('storeroomView.noSignificantDeadStock', '✅ No significant dead stock identified')}</p>
                                             : (summary.topDeadStock || []).slice(0, 8).map((p, i) => (
                                                 <div key={i} 
                                                      onClick={() => { localStorage.setItem('PF_NAV_VIEW', p.ID); window.dispatchEvent(new CustomEvent('pf-nav', { detail: 'parts' })); }}
@@ -335,7 +338,7 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
                                                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ef4444' }}>${(p.inventoryValue || 0).toLocaleString()}</div>
-                                                        <div style={{ fontSize: '0.68rem', color: '#64748b' }}>{p.stock} units</div>
+                                                        <div style={{ fontSize: '0.68rem', color: '#64748b' }}>{p.stock} {t('storeroomView.units', 'units')}</div>
                                                     </div>
                                                 </div>
                                             ))
@@ -353,19 +356,19 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                         const s = abcData.summary?.[`class${cls}`];
                                         return (
                                             <div key={cls} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px 20px', minWidth: 160 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><ABCBadge cls={cls} /><span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>Class {cls}</span></div>
-                                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f1f5f9' }}>{s?.count || 0} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>parts</span></div>
-                                                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{s?.pctOfParts || 0}% of catalog • {s?.pctOfValue || 0}% of usage value</div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><ABCBadge cls={cls} /><span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>{t('storeroomView.abcClassLabel', 'Class {cls}').replace('{cls}', cls)}</span></div>
+                                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f1f5f9' }}>{s?.count || 0} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('storeroomView.parts', 'parts')}</span></div>
+                                                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{t('storeroomView.abcCatalogUsageText', '{pctOfParts}% of catalog • {pctOfValue}% of usage value').replace('{pctOfParts}', s?.pctOfParts || 0).replace('{pctOfValue}', s?.pctOfValue || 0)}</div>
                                             </div>
                                         );
                                     })}
                                     <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px 20px', minWidth: 160 }}>
-                                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 6 }}>TOTAL INVENTORY VALUE</div>
+                                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 6 }}>{t('storeroomView.totalInventoryValue', 'TOTAL INVENTORY VALUE')}</div>
                                         <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f1f5f9' }}>${(abcData.totalInventoryValue || 0).toLocaleString()}</div>
-                                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{abcData.totalParts || 0} total parts</div>
+                                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{abcData.totalParts || 0} {t('storeroomView.parts', 'parts')}</div>
                                     </div>
                                 </div>
-                                <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#94a3b8' }}>All Parts — Ranked by Usage Value (Pareto)</h3>
+                                <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#94a3b8' }}>{t('storeroomView.allPartsRanked', 'All Parts — Ranked by Usage Value (Pareto)')}</h3>
                                 <PartsTable parts={abcData.parts || []} showABC />
                             </div>
                         )}
@@ -376,20 +379,20 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
                                     <div style={{ display: 'flex', gap: 14 }}>
                                         <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '14px 20px' }}>
-                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>DEAD STOCK PARTS</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>{t('storeroomView.deadStockParts', 'DEAD STOCK PARTS')}</div>
                                             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>{deadData.deadStockCount || 0}</div>
                                         </div>
                                         <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '14px 20px' }}>
-                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>CAPITAL LOCKED ON SHELF</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>{t('storeroomView.capitalLockedOnShelf', 'CAPITAL LOCKED ON SHELF')}</div>
                                             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>${(deadData.totalDeadValue || 0).toLocaleString()}</div>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: '#64748b', fontSize: '0.8rem', maxWidth: 280, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '10px 14px' }}>
                                         <Info size={14} style={{ flexShrink: 0 }} />
-                                        Zero usage in the last {days} days with stock on hand. Review for return, disposal, or reclassification.
+                                        {t('storeroomView.zeroUsageInfo', 'Zero usage in the last {n} days with stock on hand. Review for return, disposal, or reclassification.').replace('{n}', days)}
                                     </div>
                                 </div>
-                                <PartsTable parts={deadData.parts || []} emptyMsg={`✅ No dead stock identified in the last ${days} days`} />
+                                <PartsTable parts={deadData.parts || []} emptyMsg={t('storeroomView.noDeadStockFound', '✅ No dead stock identified in the last {n} days').replace('{n}', days)} />
                             </div>
                         )}
 
@@ -398,19 +401,19 @@ export default function StoreroomView({ plantId, plantLabel }) {
                             <div className="glass-card" style={{ padding: 20 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
                                     <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '14px 20px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>SLOW-MOVING PARTS</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>{t('storeroomView.slowMovingParts', 'SLOW-MOVING PARTS')}</div>
                                         <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f59e0b' }}>{slowData.slowMovingCount || 0}</div>
                                     </div>
                                     <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '14px 20px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>TOTAL VALUE</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>{t('storeroomView.totalValue', 'TOTAL VALUE')}</div>
                                         <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f59e0b' }}>${(slowData.totalSlowValue || 0).toLocaleString()}</div>
                                     </div>
                                     <div style={{ color: '#64748b', fontSize: '0.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '10px 14px', maxWidth: 280 }}>
                                         <Info size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                                        Used fewer than 3 times in {days} days. Consider adjusting min/max or consolidating with other plants.
+                                        {t('storeroomView.slowMovingInfo', 'Used fewer than 3 times in {n} days. Consider adjusting min/max or consolidating with other plants.').replace('{n}', days)}
                                     </div>
                                 </div>
-                                <PartsTable parts={slowData.parts || []} emptyMsg={`✅ No slow-moving parts identified`} />
+                                <PartsTable parts={slowData.parts || []} emptyMsg={t('storeroomView.noSlowMoving', '✅ No slow-moving parts identified')} />
                             </div>
                         )}
 
@@ -418,17 +421,17 @@ export default function StoreroomView({ plantId, plantLabel }) {
                         {tab === 'cost' && costData && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                                    <StatCard icon={<DollarSign size={16} />} label="Total Inventory Value" value={`$${(costData.totalInventoryValue || 0).toLocaleString()}`} sub={`${costData.totalParts || 0} parts`} color="#818cf8" />
-                                    <StatCard icon={<DollarSign size={16} />} label={`Annual Carrying Cost (${costData.carryingRatePct || 25}%)`} value={`$${(costData.annualCarryingCost || 0).toLocaleString()}`} sub="Industry standard 25% holding rate" color="#f59e0b" warn />
-                                    <StatCard icon={<AlertTriangle size={16} />} label="Dead + Slow Capital" value={`$${((costData.breakdown?.deadStock?.inventoryValue || 0) + (costData.breakdown?.slowMoving?.inventoryValue || 0)).toLocaleString()}`} sub="Consider return, disposal, or consolidation" color="#ef4444" warn />
+                                    <StatCard icon={<DollarSign size={16} />} label={t('storeroomView.totalInventoryValue', 'TOTAL INVENTORY VALUE')} value={`$${(costData.totalInventoryValue || 0).toLocaleString()}`} sub={`${costData.totalParts || 0} ${t('storeroomView.parts', 'parts')}`} color="#818cf8" />
+                                    <StatCard icon={<DollarSign size={16} />} label={`${t('storeroomView.annualCarryingCost', 'Annual Carrying Cost')} (${costData.carryingRatePct || 25}%)`} value={`$${(costData.annualCarryingCost || 0).toLocaleString()}`} sub={t('storeroomView.holdingRateNote', 'Industry standard 25% holding rate')} color="#f59e0b" warn />
+                                    <StatCard icon={<AlertTriangle size={16} />} label={t('storeroomView.deadStock', 'Dead Stock') + ' + ' + t('storeroomView.slowMoving', 'Slow-Moving')} value={`$${((costData.breakdown?.deadStock?.inventoryValue || 0) + (costData.breakdown?.slowMoving?.inventoryValue || 0)).toLocaleString()}`} sub={t('storeroomView.disposalNote', 'Consider return, disposal, or consolidation')} color="#ef4444" warn />
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                     <div className="glass-card" style={{ padding: 20 }}>
-                                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9' }}>Stock Health Breakdown</h3>
+                                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9' }}>{t('storeroomView.stockHealthBreakdown', 'Stock Health Breakdown')}</h3>
                                         {[
-                                            { label: 'Active Stock', data: costData.breakdown?.active, color: '#10b981' },
-                                            { label: 'Slow-Moving', data: costData.breakdown?.slowMoving, color: '#f59e0b' },
-                                            { label: 'Dead Stock', data: costData.breakdown?.deadStock, color: '#ef4444' },
+                                            { label: t('storeroomView.activeStock', 'Active Stock'), data: costData.breakdown?.active, color: '#10b981' },
+                                            { label: t('storeroomView.slowMoving', 'Slow-Moving'), data: costData.breakdown?.slowMoving, color: '#f59e0b' },
+                                            { label: t('storeroomView.deadStock', 'Dead Stock'), data: costData.breakdown?.deadStock, color: '#ef4444' },
                                         ].map(row => (
                                             <div key={row.label} style={{ marginBottom: 14 }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -442,13 +445,13 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                         ))}
                                     </div>
                                     <div className="glass-card" style={{ padding: 20 }}>
-                                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9' }}>Top Categories by Value</h3>
+                                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#f1f5f9' }}>{t('storeroomView.topCategoriesByValue', 'Top Categories by Value')}</h3>
                                         {(costData.byCategory || []).slice(0, 8).map((cat, i) => (
                                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                                 <span style={{ fontSize: '0.82rem', color: '#e2e8f0' }}>{cat.category}</span>
                                                 <div style={{ textAlign: 'right' }}>
                                                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#818cf8' }}>${(cat.inventoryValue || 0).toLocaleString()}</div>
-                                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{cat.count} parts • ${(cat.annualCarryingCost || 0).toLocaleString()}/yr</div>
+                                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{t('storeroomView.catCountCarryCost', '{count} parts • ${cost}/yr').replace('{count}', cat.count).replace('{cost}', (cat.annualCarryingCost || 0).toLocaleString())}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -461,7 +464,7 @@ export default function StoreroomView({ plantId, plantLabel }) {
                 {loading && (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, color: '#64748b', gap: 12 }}>
                         <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                        Analyzing storeroom data…
+                        {t('storeroomView.analyzingData', 'Analyzing storeroom data…')}
                     </div>
                 )}
             </div>

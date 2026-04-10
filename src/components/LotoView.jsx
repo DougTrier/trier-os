@@ -31,24 +31,26 @@ import React from 'react';
 import { LockKeyhole, ArrowLeft } from 'lucide-react';
 import LotoPanel from './LotoPanel';
 import { TakeTourButton } from './ContextualTour';
+import { useTranslation } from '../i18n/index.jsx';
 
 export default function LotoView({ plantId, plantLabel }) {
+    const { t } = useTranslation();
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-base)', overflow: 'hidden' }}>
             {/* Header */}
             <div className="glass-card no-print" style={{ padding: '15px 25px', display: 'flex', gap: '20px', alignItems: 'center', flexShrink: 0 }}>
                 <h2 style={{ fontSize: '1.4rem', margin: 0, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <LockKeyhole size={24} /> LOTO / Lockout-Tagout
+                    <LockKeyhole size={24} /> {t('lotoView.heading', 'LOTO / Lockout-Tagout')}
                 </h2>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <TakeTourButton tourId="loto" />
-                    <button 
+                    <button
                         onClick={() => window.dispatchEvent(new CustomEvent('pf-nav', { detail: '' }))}
                         className="btn-nav"
                         style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36 }}
-                        title="Return to Mission Control"
+                        title={t('app.returnToMissionControl', 'Return to Mission Control')}
                     >
-                        <ArrowLeft size={15} /> Mission Control
+                        <ArrowLeft size={15} /> {t('app.missionControl', 'Mission Control')}
                     </button>
                 </div>
             </div>

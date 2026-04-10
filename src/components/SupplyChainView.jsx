@@ -1483,6 +1483,115 @@ function SuppliersTab({ plantId }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Main Export
 // ═══════════════════════════════════════════════════════════════════════════════
+// All-Sites Cross-Plant Rollup
+// ═══════════════════════════════════════════════════════════════════════════════
+function AllSitesView() {
+    const { t } = useTranslation();
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const r = await fetch('/api/supply-chain/all-sites', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+            });
+            if (r.ok) setData(await r.json());
+        } catch { /* network error */ } finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => { load(); }, [load]);
+
+    if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>{t('common.loading', 'Loading…')}</div>;
+
+    const kpis = [
+        { label: t('supplyChain.allSitesTotalValue', 'Total Inventory Value'), val: fmt(data?.totalInventoryValue), color: '#10b981', icon: DollarSign },
+        { label: t('supplyChain.allSitesSKUs', 'Total SKUs'), val: fmtN(data?.totalItems), color: '#3b82f6', icon: Package },
+        { label: t('supplyChain.allSitesOpenPOs', 'Open POs'), val: fmtN(data?.openOrders), color: '#f59e0b', icon: ClipboardList },
+        { label: t('supplyChain.allSitesOverdue', 'Overdue POs'), val: fmtN(data?.overdueOrders), color: data?.overdueOrders > 0 ? '#ef4444' : '#475569', icon: AlertTriangle },
+    ];
+
+    const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 20px' };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '2px 2px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    {t('supplyChain.allSitesAsOf', 'As of')} {data?.asOf ? new Date(data.asOf).toLocaleString() : '—'}
+                    {' · '}{data?.plantCount || 0} {t('supplyChain.allSitesPlants', 'plants')}
+                </span>
+                <button onClick={load} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem' }}>
+                    <RefreshCw size={14} />{t('btn.refresh', 'Refresh')}
+                </button>
+            </div>
+
+            {/* KPI row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                {kpis.map(k => (
+                    <div key={k.label} style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <k.icon size={22} color={k.color} />
+                        <div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: k.color }}>{k.val}</div>
+                            <div style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {/* Per-plant breakdown */}
+                <div style={cardStyle}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+                        {t('supplyChain.allSitesByPlant', 'By Plant')}
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                        <thead>
+                            <tr style={{ color: '#64748b' }}>
+                                <th style={{ textAlign: 'left', paddingBottom: 6, fontWeight: 600 }}>{t('common.plant', 'Plant')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.allSitesInvValue', 'Inv. Value')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.allSitesMTD', 'MTD Spend')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.allSitesOpenCol', 'Open')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600, color: '#ef4444' }}>{t('supplyChain.allSitesOverdueCol', 'Late')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(data?.spendByPlant || []).map(row => (
+                                <tr key={row.plantId} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <td style={{ padding: '6px 0', color: '#f1f5f9' }}>{row.plantId.replace(/_/g, ' ')}</td>
+                                    <td style={{ textAlign: 'right', color: '#10b981' }}>{fmt(row.inventoryValue)}</td>
+                                    <td style={{ textAlign: 'right', color: '#94a3b8' }}>{fmt(row.mtdSpend)}</td>
+                                    <td style={{ textAlign: 'right', color: '#f59e0b' }}>{row.openOrders}</td>
+                                    <td style={{ textAlign: 'right', color: row.overdueOrders > 0 ? '#ef4444' : '#475569' }}>{row.overdueOrders}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Top vendors by open PO spend */}
+                <div style={cardStyle}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+                        {t('supplyChain.allSitesTopVendors', 'Top Vendors — Open PO Spend')}
+                    </div>
+                    {(data?.topSpend || []).length === 0
+                        ? <div style={{ color: '#475569', fontSize: '0.78rem' }}>{t('supplyChain.allSitesNoVendors', 'No open purchase orders across sites.')}</div>
+                        : (data.topSpend).map((v, i) => (
+                            <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <span style={{ fontSize: '0.7rem', color: '#475569', width: 16 }}>{i + 1}</span>
+                                <span style={{ flex: 1, fontSize: '0.82rem', color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                                <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>{fmt(v.spend)}</span>
+                                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{v.orders} PO{v.orders !== 1 ? 's' : ''}</span>
+                            </div>
+                        ))
+                    }
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function SupplyChainView({ plantId }) {
     const { t } = useTranslation();
     const [tab, setTab] = useState(() => localStorage.getItem('PF_SC_TAB') || 'inventory');
@@ -1526,14 +1635,10 @@ export default function SupplyChainView({ plantId }) {
                 </div>
             </div>
 
-            {/* All-Sites placeholder */}
+            {/* All-Sites Cross-Plant Rollup or per-plant tabs */}
             {isAllSites ? (
-                <div className="glass-card" style={{ padding: 40, textAlign: 'center' }}>
-                    <ShoppingCart size={48} color="#8b5cf6" style={{ opacity: 0.4, marginBottom: 16 }} />
-                    <h3 style={{ margin: '0 0 8px', color: '#f1f5f9' }}>{t('supplyChain.selectPlantTitle', 'Select a Plant')}</h3>
-                    <p style={{ color: '#64748b', margin: 0 }}>
-                        {t('supplyChain.selectPlantMessage', 'Supply Chain inventory is plant-specific. Use the plant selector in the top bar to choose a facility.')}
-                    </p>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 2px' }}>
+                    <AllSitesView />
                 </div>
             ) : (
                 <div style={{ flex: 1, overflowY: 'auto', padding: '0 2px' }}>

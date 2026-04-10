@@ -59,6 +59,7 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Code, FolderOpen, Rocket, ClipboardList, Save, GitBranch, RefreshCw, AlertTriangle, CheckCircle, XCircle, ChevronRight, DollarSign, FlaskConical, TrendingDown, TrendingUp, Minus, Zap, Search, FileDown, Copy, Check, PanelRight } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 // Monaco is lazy-loaded — it only downloads when the Studio modal is actually opened.
 // The RBAC gate in App.jsx ensures this never loads for technician sessions.
@@ -86,12 +87,13 @@ function apiFetch(path, options = {}) {
 
 // ── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
+    const { t } = useTranslation();
     const map = {
-        SUCCESS:  { color: '#10b981', label: 'Success' },
-        FAILED:   { color: '#ef4444', label: 'Failed' },
-        BUILDING: { color: '#f59e0b', label: 'Building…' },
-        REVERTED: { color: '#6366f1', label: 'Reverted' },
-        PENDING:  { color: '#64748b', label: 'Pending' },
+        SUCCESS:  { color: '#10b981', label: t('liveStudio.statusSuccess', 'Success') },
+        FAILED:   { color: '#ef4444', label: t('liveStudio.statusFailed', 'Failed') },
+        BUILDING: { color: '#f59e0b', label: t('liveStudio.statusBuilding', 'Building…') },
+        REVERTED: { color: '#6366f1', label: t('liveStudio.statusReverted', 'Reverted') },
+        PENDING:  { color: '#64748b', label: t('liveStudio.statusPending', 'Pending') },
     };
     const s = map[status] || map.PENDING;
     return (
@@ -134,6 +136,7 @@ function highlightMatch(text, query) {
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('editor');
     // Start docked when opened via "Go to Code" (initialFile provided), full-screen when opened from the nav button.
     const [isDocked, setIsDocked] = useState(!!initialFile);
@@ -240,7 +243,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
     // ── Select and load a file ───────────────────────────────────────────────
     const loadFile = useCallback((file) => {
         if (isDirty) {
-            if (!window.confirm(`You have unsaved changes in ${selectedFile?.name}. Discard them?`)) return;
+            if (!window.confirm(t('liveStudio.confirmDiscardChanges', 'You have unsaved changes in ') + (selectedFile?.name ?? '') + t('liveStudio.confirmDiscardChangesSuffix', '. Discard them?'))) return;
         }
         apiFetch(`/api/studio/file?path=${encodeURIComponent(file.path)}`)
             .then(d => {
@@ -316,12 +319,12 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
         }).then(d => {
             if (d.success) {
                 setSavedContent(editorContent);
-                setSaveMsg('Saved ✓');
+                setSaveMsg(t('liveStudio.savedConfirm', 'Saved ✓'));
                 setTimeout(() => setSaveMsg(''), 2500);
             } else {
-                setSaveMsg('Error: ' + (d.error || 'Unknown error'));
+                setSaveMsg(t('liveStudio.saveError', 'Error: ') + (d.error || t('liveStudio.unknownError', 'Unknown error')));
             }
-        }).catch(e => setSaveMsg('Save failed: ' + e.message))
+        }).catch(e => setSaveMsg(t('liveStudio.saveFailed', 'Save failed: ') + e.message))
           .finally(() => setSaving(false));
     }, [selectedFile, editorContent]);
 
@@ -426,7 +429,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
             body: JSON.stringify({ branchName: branchInput.trim() }),
         }).then(d => {
             if (d.success) { refreshGitStatus(); } // keep field filled — auto-fill already set it
-            else alert('Branch error: ' + (d.error || 'Unknown'));
+            else alert(t('liveStudio.branchError', 'Branch error: ') + (d.error || t('liveStudio.unknownError', 'Unknown error')));
         }).catch(() => {});
     }, [branchInput, refreshGitStatus]);
 
@@ -434,7 +437,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
     const triggerDeploy = useCallback(() => {
         if (deployConfirm !== 'DEPLOY NOW') return;
         setDeployState('building');
-        setDeployLog('Initiating deploy pipeline…');
+        setDeployLog(t('liveStudio.initiatingDeploy', 'Initiating deploy pipeline…'));
 
         apiFetch('/api/studio/deploy', {
             method: 'POST',
@@ -442,14 +445,14 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
         }).then(d => {
             if (d.error) {
                 setDeployState('failed');
-                setDeployLog('Deploy blocked: ' + d.error);
+                setDeployLog(t('liveStudio.deployBlocked', 'Deploy blocked: ') + d.error);
                 return;
             }
             setCurrentLedgerId(d.ledgerId);
             startPolling(d.ledgerId);
         }).catch(e => {
             setDeployState('failed');
-            setDeployLog('Network error: ' + e.message);
+            setDeployLog(t('liveStudio.networkError', 'Network error: ') + e.message);
         });
     }, [deployConfirm, deployNotes]);
 
@@ -493,7 +496,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     refreshGitStatus();
                     setDeployLog(`Reverted to ${d.revertedTo}`);
                 } else {
-                    alert('Revert failed: ' + (d.error || 'Unknown'));
+                    alert(t('liveStudio.revertFailed', 'Revert failed: ') + (d.error || t('liveStudio.unknownError', 'Unknown error')));
                 }
             }).catch(() => {});
     }, [revertConfirm, refreshGitStatus]);
@@ -669,7 +672,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.5)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(99,102,241,0.15)'}
-                    title="Drag to resize"
+                    title={t('liveStudio.dragToResize', 'Drag to resize')}
                 />
             )}
             {/* ── Legal Warning Banner ────────────────────────────────────── */}
@@ -681,7 +684,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                 flexShrink: 0,
             }}>
                 <AlertTriangle size={14} />
-                Caution: Operations in this workspace will permanently modify the running Trier OS environment.
+                {t('liveStudio.legalWarning', 'Caution: Operations in this workspace will permanently modify the running Trier OS environment.')}
             </div>
 
             {/* ── Header ─────────────────────────────────────────────────── */}
@@ -695,7 +698,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* Left: title + branch badge */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto' }}>
                         <Code size={18} color="#6366f1" />
-                        <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem', whiteSpace: 'nowrap' }}>Trier OS Live Studio</span>
+                        <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem', whiteSpace: 'nowrap' }}>{t('liveStudio.title', 'Trier OS Live Studio')}</span>
                         {gitStatus && (
                             <span style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
@@ -704,19 +707,19 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 border: '1px solid rgba(99,102,241,0.2)', whiteSpace: 'nowrap',
                             }}>
                                 <GitBranch size={10} /> {gitStatus.branch}
-                                {gitStatus.isDirty && <span style={{ color: '#f59e0b', marginLeft: 4 }}>● {gitStatus.changedFiles} changed</span>}
+                                {gitStatus.isDirty && <span style={{ color: '#f59e0b', marginLeft: 4 }}>● {gitStatus.changedFiles} {t('liveStudio.changed', 'changed')}</span>}
                             </span>
                         )}
                     </div>
 
                     {/* Right: tabs + controls — pushed to end, wraps below title on narrow */}
                     <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flex: '0 0 auto', flexWrap: 'wrap', rowGap: 6 }}>
-                        {tabBtn('editor', <Code size={12} />, 'Editor')}
-                        {tabBtn('deploy', <Rocket size={12} />, 'Deploy')}
-                        {tabBtn('friction', <DollarSign size={12} />, 'Friction')}
-                        {tabBtn('universe', <FlaskConical size={12} />, 'Universe')}
-                        {tabBtn('impact', <Zap size={12} />, 'Impact')}
-                        {tabBtn('ledger', <ClipboardList size={12} />, 'Ledger')}
+                        {tabBtn('editor', <Code size={12} />, t('liveStudio.tabEditor', 'Editor'))}
+                        {tabBtn('deploy', <Rocket size={12} />, t('liveStudio.tabDeploy', 'Deploy'))}
+                        {tabBtn('friction', <DollarSign size={12} />, t('liveStudio.tabFriction', 'Friction'))}
+                        {tabBtn('universe', <FlaskConical size={12} />, t('liveStudio.tabUniverse', 'Universe'))}
+                        {tabBtn('impact', <Zap size={12} />, t('liveStudio.tabImpact', 'Impact'))}
+                        {tabBtn('ledger', <ClipboardList size={12} />, t('liveStudio.tabLedger', 'Ledger'))}
 
                         <button onClick={() => setIsDocked(!isDocked)} style={{
                             width: 30, height: 30, borderRadius: '50%', border: 'none',
@@ -724,7 +727,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             color: isDocked ? '#818cf8' : '#cbd5e1',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer', marginLeft: 8, transition: 'all 0.2s'
-                        }} title={isDocked ? "Maximize" : "Dock Side-by-Side"}>
+                        }} title={isDocked ? t('liveStudio.maximize', 'Maximize') : t('liveStudio.dockSideBySide', 'Dock Side-by-Side')}>
                             <PanelRight size={14} />
                         </button>
 
@@ -750,7 +753,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                         <input
                             value={codeSearch}
                             onChange={e => handleCodeSearch(e.target.value)}
-                            placeholder="Search codebase…"
+                            placeholder={t('liveStudio.searchCodebasePlaceholder', 'Search codebase…')}
                             style={{
                                 background: 'none', border: 'none', outline: 'none',
                                 color: '#e2e8f0', fontSize: '0.82rem', width: '100%', minWidth: 0,
@@ -775,13 +778,13 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     </div>
                     {totalMatches > 0 && (
                         <>
-                            <button onClick={() => navigateMatch(-1)} title="Previous match" style={{
+                            <button onClick={() => navigateMatch(-1)} title={t('liveStudio.previousMatch', 'Previous match')} style={{
                                 width: 26, height: 26, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
                                 background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 cursor: 'pointer', flexShrink: 0, fontSize: '0.75rem',
                             }}>▲</button>
-                            <button onClick={() => navigateMatch(1)} title="Next match" style={{
+                            <button onClick={() => navigateMatch(1)} title={t('liveStudio.nextMatch', 'Next match')} style={{
                                 width: 26, height: 26, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
                                 background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -800,9 +803,9 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 color: isDirty ? '#818cf8' : '#334155',
                                 fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s',
                             }}
-                            title="Save (Ctrl+S)"
+                            title={t('liveStudio.saveCtrlS', 'Save (Ctrl+S)')}
                         >
-                            <Save size={12} /> {saving ? 'Saving…' : saveMsg || 'Save'}
+                            <Save size={12} /> {saving ? t('liveStudio.saving', 'Saving…') : saveMsg || t('liveStudio.save', 'Save')}
                         </button>
                     )}
                 </div>
@@ -819,15 +822,15 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     }}>
                         <div style={{ padding: '0 12px 8px', display: 'flex', alignItems: 'center', gap: 6, color: '#475569', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                             {searchResults !== null ? <Search size={11} /> : <FolderOpen size={11} />}
-                            {searchResults !== null ? 'Results' : 'Files'}
+                            {searchResults !== null ? t('liveStudio.resultsLabel', 'Results') : t('liveStudio.filesLabel', 'Files')}
                         </div>
 
                         {/* ── Search results mode ── */}
                         {searchResults !== null ? (
                             isSearching ? (
-                                <div style={{ padding: '20px 12px', color: '#475569', fontSize: '0.78rem', textAlign: 'center' }}>Searching…</div>
+                                <div style={{ padding: '20px 12px', color: '#475569', fontSize: '0.78rem', textAlign: 'center' }}>{t('liveStudio.searching', 'Searching…')}</div>
                             ) : searchResults.length === 0 ? (
-                                <div style={{ padding: '20px 12px', color: '#475569', fontSize: '0.78rem', textAlign: 'center' }}>No matches found</div>
+                                <div style={{ padding: '20px 12px', color: '#475569', fontSize: '0.78rem', textAlign: 'center' }}>{t('liveStudio.noMatchesFound', 'No matches found')}</div>
                             ) : searchResults.map(r => (
                                 <div key={r.path}>
                                     <button
@@ -890,10 +893,10 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             background: 'rgba(15,23,42,0.95)', flexShrink: 0,
                         }}>
                             <span style={{ color: selectedFile ? '#94a3b8' : '#475569', fontSize: '0.8rem' }}>
-                                {selectedFile ? selectedFile.path : 'Select a file from the sidebar'}
+                                {selectedFile ? selectedFile.path : t('liveStudio.selectFileFromSidebar', 'Select a file from the sidebar')}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                {isDirty && <span style={{ color: '#f59e0b', fontSize: '0.75rem' }}>● Unsaved</span>}
+                                {isDirty && <span style={{ color: '#f59e0b', fontSize: '0.75rem' }}>● {t('liveStudio.unsaved', 'Unsaved')}</span>}
                                 {saveMsg && <span style={{ color: saveMsg.startsWith('Error') ? '#ef4444' : '#10b981', fontSize: '0.75rem' }}>{saveMsg}</span>}
                                 <button
                                     onClick={saveFile}
@@ -907,7 +910,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                         fontSize: '0.78rem', fontWeight: 600,
                                     }}
                                 >
-                                    <Save size={12} /> {saving ? 'Saving…' : 'Save (Ctrl+S)'}
+                                    <Save size={12} /> {saving ? t('liveStudio.saving', 'Saving…') : t('liveStudio.saveCtrlS', 'Save (Ctrl+S)')}
                                 </button>
                             </div>
                         </div>
@@ -923,13 +926,13 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#1e1e1e' }}>
                                     <div style={{ padding: '5px 14px', background: 'rgba(99,102,241,0.1)', borderBottom: '1px solid rgba(99,102,241,0.2)', fontSize: '0.75rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                                         <Search size={11} />
-                                        <span><strong style={{ color: '#a5b4fc' }}>{matchingLines.length}</strong> matching line{matchingLines.length !== 1 ? 's' : ''} for "<strong style={{ color: '#a5b4fc' }}>{q}</strong>"</span>
-                                        <span style={{ color: '#475569' }}>— click a line to edit it inline</span>
-                                        <button onClick={() => handleCodeSearch('')} style={{ marginLeft: 'auto', background: 'none', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, color: '#818cf8', cursor: 'pointer', fontSize: '0.72rem', padding: '2px 8px' }}>Clear search → Edit full file</button>
+                                        <span><strong style={{ color: '#a5b4fc' }}>{matchingLines.length}</strong> {t('liveStudio.matchingLine', 'matching line')}{matchingLines.length !== 1 ? t('liveStudio.matchingLinePluralSuffix', 's') : ''} {t('liveStudio.matchingLineFor', 'for')} "<strong style={{ color: '#a5b4fc' }}>{q}</strong>"</span>
+                                        <span style={{ color: '#475569' }}>— {t('liveStudio.clickLineToEditInline', 'click a line to edit it inline')}</span>
+                                        <button onClick={() => handleCodeSearch('')} style={{ marginLeft: 'auto', background: 'none', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, color: '#818cf8', cursor: 'pointer', fontSize: '0.72rem', padding: '2px 8px' }}>{t('liveStudio.clearSearchEditFullFile', 'Clear search → Edit full file')}</button>
                                     </div>
                                     <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
                                         {matchingLines.length === 0 ? (
-                                            <div style={{ padding: '40px', textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>No matches in this file</div>
+                                            <div style={{ padding: '40px', textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>{t('liveStudio.noMatchesInFile', 'No matches in this file')}</div>
                                         ) : matchingLines.map(({ lineNum, text }) => (
                                             <div
                                                 key={lineNum}
@@ -990,7 +993,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             {selectedFile ? (
                                 <Suspense fallback={
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#475569', fontSize: '0.85rem' }}>
-                                        Loading Monaco Editor…
+                                        {t('liveStudio.loadingMonaco', 'Loading Monaco Editor…')}
                                     </div>
                                 }>
                                     <MonacoEditor
@@ -1047,8 +1050,8 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     height: '100%', color: '#334155', gap: 12,
                                 }}>
                                     <Code size={40} style={{ opacity: 0.2 }} />
-                                    <span style={{ fontSize: '0.9rem' }}>Select a file to begin editing</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#1e293b' }}>Only src/components/ and server/routes/ are accessible</span>
+                                    <span style={{ fontSize: '0.9rem' }}>{t('liveStudio.selectFileToEdit', 'Select a file to begin editing')}</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#1e293b' }}>{t('liveStudio.fileAccessHint', 'Only src/components/ and server/routes/ are accessible')}</span>
                                 </div>
                             )}
                         </div>
@@ -1063,7 +1066,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* How-to guide */}
                     <details style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10, padding: '14px 18px' }}>
                         <summary style={{ cursor: 'pointer', color: '#818cf8', fontWeight: 700, fontSize: '0.85rem', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '1rem' }}>ℹ</span> How to Use Live Studio — Step-by-Step
+                            <span style={{ fontSize: '1rem' }}>ℹ</span> {t('liveStudio.howToUseTitle', 'How to Use Live Studio — Step-by-Step')}
                         </summary>
                         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.6 }}>
                             <div style={{ display: 'flex', gap: 10 }}><span style={{ color: '#6366f1', fontWeight: 700, minWidth: 20 }}>1.</span><span><strong style={{ color: '#e2e8f0' }}>Open a file.</strong> Click the indigo <code style={{ background: 'rgba(255,255,255,0.07)', padding: '1px 5px', borderRadius: 4 }}>&lt;/&gt; Go to Code</code> button on any page in the Operations Manual. The studio opens docked on the right and pre-loads that file in the Editor tab.</span></div>
@@ -1081,7 +1084,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 18 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                             <span style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <GitBranch size={14} /> Git Status
+                                <GitBranch size={14} /> {t('liveStudio.gitStatus', 'Git Status')}
                             </span>
                             <button onClick={refreshGitStatus} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569' }}>
                                 <RefreshCw size={13} />
@@ -1090,34 +1093,34 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                         {gitStatus ? (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                                 <div style={{ fontSize: '0.8rem' }}>
-                                    <div style={{ color: '#475569', marginBottom: 3 }}>Current Branch</div>
+                                    <div style={{ color: '#475569', marginBottom: 3 }}>{t('liveStudio.currentBranch', 'Current Branch')}</div>
                                     <div style={{ color: '#a5b4fc', fontWeight: 600 }}>{gitStatus.branch}</div>
                                 </div>
                                 <div style={{ fontSize: '0.8rem' }}>
-                                    <div style={{ color: '#475569', marginBottom: 3 }}>Working Tree</div>
+                                    <div style={{ color: '#475569', marginBottom: 3 }}>{t('liveStudio.workingTree', 'Working Tree')}</div>
                                     <div style={{ color: gitStatus.isDirty ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
-                                        {gitStatus.isDirty ? `${gitStatus.changedFiles} changed file(s)` : 'Clean'}
+                                        {gitStatus.isDirty ? `${gitStatus.changedFiles} ${t('liveStudio.changedFiles', 'changed file(s)')}` : t('liveStudio.clean', 'Clean')}
                                     </div>
                                 </div>
                                 <div style={{ fontSize: '0.8rem', gridColumn: '1 / -1' }}>
-                                    <div style={{ color: '#475569', marginBottom: 3 }}>Last Stable Tag</div>
-                                    <div style={{ color: '#10b981', fontWeight: 600 }}>{gitStatus.lastStableTag || 'None yet'}</div>
+                                    <div style={{ color: '#475569', marginBottom: 3 }}>{t('liveStudio.lastStableTag', 'Last Stable Tag')}</div>
+                                    <div style={{ color: '#10b981', fontWeight: 600 }}>{gitStatus.lastStableTag || t('liveStudio.noneYet', 'None yet')}</div>
                                 </div>
                             </div>
                         ) : (
-                            <div style={{ color: '#475569', fontSize: '0.8rem' }}>Loading…</div>
+                            <div style={{ color: '#475569', fontSize: '0.8rem' }}>{t('liveStudio.loading', 'Loading…')}</div>
                         )}
                     </div>
 
                     {/* Branch management */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 18 }}>
-                        <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.85rem', marginBottom: 12 }}>Create Sandbox Branch</div>
-                        <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 10 }}>Pattern: studio/&lt;user&gt;/&lt;descriptor&gt; — e.g. studio/doug/fix-calendar-bug</div>
+                        <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.85rem', marginBottom: 12 }}>{t('liveStudio.createSandboxBranch', 'Create Sandbox Branch')}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 10 }}>{t('liveStudio.branchPattern', 'Pattern: studio/<user>/<descriptor> — e.g. studio/doug/fix-calendar-bug')}</div>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <input
                                 value={branchInput}
                                 onChange={e => setBranchInput(e.target.value)}
-                                placeholder="studio/your-name/feature-name"
+                                placeholder={t('liveStudio.branchInputPlaceholder', 'studio/your-name/feature-name')}
                                 style={{
                                     flex: 1, padding: '7px 12px', borderRadius: 7,
                                     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -1135,7 +1138,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     fontSize: '0.82rem', fontWeight: 600,
                                 }}
                             >
-                                Create / Switch
+                                {t('liveStudio.createSwitch', 'Create / Switch')}
                             </button>
                         </div>
                     </div>
@@ -1143,16 +1146,16 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* Commit to branch */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10, padding: 18 }}>
                         <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.85rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <GitBranch size={14} /> Commit to Branch
+                            <GitBranch size={14} /> {t('liveStudio.commitToBranch', 'Commit to Branch')}
                         </div>
                         <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 14, lineHeight: 1.5 }}>
-                            Save all current changes to the current branch with a commit message. Do this before deploying.
+                            {t('liveStudio.commitToBranchHint', 'Save all current changes to the current branch with a commit message. Do this before deploying.')}
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <input
                                 value={commitMsg}
                                 onChange={e => setCommitMsg(e.target.value)}
-                                placeholder="Describe what you changed…"
+                                placeholder={t('liveStudio.commitMsgPlaceholder', 'Describe what you changed…')}
                                 style={{
                                     flex: 1, padding: '7px 12px', borderRadius: 7,
                                     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -1189,7 +1192,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     fontSize: '0.82rem', fontWeight: 600,
                                 }}
                             >
-                                {commitState === 'working' ? 'Committing…' : 'Commit'}
+                                {commitState === 'working' ? t('liveStudio.committing', 'Committing…') : t('liveStudio.commit', 'Commit')}
                             </button>
                         </div>
                         {commitResult && (
@@ -1202,10 +1205,10 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* Deploy pipeline */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: 18 }}>
                         <div style={{ color: '#f87171', fontWeight: 700, fontSize: '0.85rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Rocket size={14} /> Deploy Pipeline
+                            <Rocket size={14} /> {t('liveStudio.deployPipeline', 'Deploy Pipeline')}
                         </div>
                         <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 16, lineHeight: 1.5 }}>
-                            Stage src/components/ + server/routes/ → commit → npm run build → tag stable-YYYY-MM-DD → PM2 reload
+                            {t('liveStudio.deployPipelineHint', 'Stage src/components/ + server/routes/ → commit → npm run build → tag stable-YYYY-MM-DD → PM2 reload')}
                         </div>
 
                         {deployState === 'idle' && (
@@ -1213,7 +1216,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 <textarea
                                     value={deployNotes}
                                     onChange={e => setDeployNotes(e.target.value)}
-                                    placeholder="Deploy notes (optional)…"
+                                    placeholder={t('liveStudio.deployNotesPlaceholder', 'Deploy notes (optional)…')}
                                     rows={2}
                                     style={{
                                         width: '100%', padding: '8px 12px', borderRadius: 7, resize: 'vertical',
@@ -1223,13 +1226,13 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     }}
                                 />
                                 <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 8 }}>
-                                    Type <strong style={{ color: '#f87171' }}>DEPLOY NOW</strong> to confirm:
+                                    {t('liveStudio.deployConfirmPrompt', 'Type')} <strong style={{ color: '#f87171' }}>{t('liveStudio.deployNowConfirmWord', 'DEPLOY NOW')}</strong> {t('liveStudio.deployConfirmPromptSuffix', 'to confirm:')}
                                 </div>
                                 <div style={{ display: 'flex', gap: 8 }}>
                                     <input
                                         value={deployConfirm}
                                         onChange={e => setDeployConfirm(e.target.value)}
-                                        placeholder="DEPLOY NOW"
+                                        placeholder={t('liveStudio.deployNowConfirmWord', 'DEPLOY NOW')}
                                         style={{
                                             flex: 1, padding: '8px 12px', borderRadius: 7,
                                             background: 'rgba(255,255,255,0.04)',
@@ -1249,7 +1252,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                         }}
                                     >
                                         <Rocket size={13} style={{ marginRight: 6 }} />
-                                        Deploy
+                                        {t('liveStudio.deployButton', 'Deploy')}
                                     </button>
                                 </div>
                             </>
@@ -1266,7 +1269,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                             onClick={() => { setDeployState('idle'); setDeployLog(''); setDeployConfirm(''); setDeployNotes(''); }}
                                             style={{ padding: '3px 10px', borderRadius: 6, border: 'none', background: 'rgba(255,255,255,0.06)', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
                                         >
-                                            New Deploy
+                                            {t('liveStudio.newDeploy', 'New Deploy')}
                                         </button>
                                     )}
                                 </div>
@@ -1277,7 +1280,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     maxHeight: 280, overflowY: 'auto', margin: 0, whiteSpace: 'pre-wrap',
                                     border: '1px solid rgba(255,255,255,0.05)',
                                 }}>
-                                    {deployLog || 'Waiting for pipeline output…'}
+                                    {deployLog || t('liveStudio.waitingForPipelineOutput', 'Waiting for pipeline output…')}
                                 </pre>
                             </div>
                         )}
@@ -1285,10 +1288,10 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
 
                     {/* Revert */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 10, padding: 18 }}>
-                        <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.85rem', marginBottom: 8 }}>Emergency Revert</div>
+                        <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.85rem', marginBottom: 8 }}>{t('liveStudio.emergencyRevert', 'Emergency Revert')}</div>
                         <div style={{ color: '#475569', fontSize: '0.78rem', marginBottom: 12, lineHeight: 1.5 }}>
-                            Reverts working tree to <strong style={{ color: '#818cf8' }}>{gitStatus?.lastStableTag || 'the last stable-* tag'}</strong>.
-                            This is the Boot Safe Mode recovery path.
+                            {t('liveStudio.revertHint', 'Reverts working tree to')} <strong style={{ color: '#818cf8' }}>{gitStatus?.lastStableTag || t('liveStudio.lastStableTagFallback', 'the last stable-* tag')}</strong>.
+                            {t('liveStudio.revertSafeMode', ' This is the Boot Safe Mode recovery path.')}
                         </div>
                         {!revertConfirm ? (
                             <button
@@ -1301,7 +1304,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     fontSize: '0.8rem', fontWeight: 600, opacity: gitStatus?.lastStableTag ? 1 : 0.4,
                                 }}
                             >
-                                Revert to Stable Tag
+                                {t('liveStudio.revertToStableTag', 'Revert to Stable Tag')}
                             </button>
                         ) : (
                             <div style={{ display: 'flex', gap: 8 }}>
@@ -1313,7 +1316,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                         cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700,
                                     }}
                                 >
-                                    Confirm Revert
+                                    {t('liveStudio.confirmRevert', 'Confirm Revert')}
                                 </button>
                                 <button
                                     onClick={() => setRevertConfirm(false)}
@@ -1323,7 +1326,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                         cursor: 'pointer', fontSize: '0.8rem',
                                     }}
                                 >
-                                    Cancel
+                                    {t('liveStudio.cancel', 'Cancel')}
                                 </button>
                             </div>
                         )}
@@ -1336,7 +1339,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                 <div style={{ flex: 1, overflowY: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <details style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '14px 18px' }}>
                         <summary style={{ cursor: 'pointer', color: '#f59e0b', fontWeight: 700, fontSize: '0.85rem', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '1rem' }}>ℹ</span> How to Use — Frictional Cost Engine
+                            <span style={{ fontSize: '1rem' }}>ℹ</span> {t('liveStudio.frictionHowToTitle', 'How to Use — Frictional Cost Engine')}
                         </summary>
                         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.6 }}>
                             <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 4 }}>The Friction Engine calculates the real dollar cost of adding or removing UI elements from operator workflows. Run it before deploying any screen change.</div>
@@ -1347,17 +1350,17 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                         </div>
                     </details>
                     <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <DollarSign size={16} color="#f59e0b" /> Frictional Cost Engine
+                        <DollarSign size={16} color="#f59e0b" /> {t('liveStudio.frictionEngineName', 'Frictional Cost Engine')}
                         <span style={{ marginLeft: 'auto', color: '#475569', fontSize: '0.75rem', fontWeight: 400 }}>
-                            Physics baseline: 1 scan=1.5s · 1 tap=0.5s · 1 field=3.0s · 1 dropdown=1.0s
+                            {t('liveStudio.frictionPhysicsBaseline', 'Physics baseline: 1 scan=1.5s · 1 tap=0.5s · 1 field=3.0s · 1 dropdown=1.0s')}
                         </span>
                     </div>
 
                     {/* File context */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 16 }}>
-                        <div style={{ fontSize: '0.8rem', color: '#475569', marginBottom: 8 }}>Analyzing against git HEAD baseline:</div>
+                        <div style={{ fontSize: '0.8rem', color: '#475569', marginBottom: 8 }}>{t('liveStudio.frictionAnalyzingBaseline', 'Analyzing against git HEAD baseline:')}</div>
                         <div style={{ color: selectedFile ? '#a5b4fc' : '#334155', fontSize: '0.85rem', fontWeight: 600 }}>
-                            {selectedFile ? selectedFile.path : 'No file selected — open a file in the Editor tab first'}
+                            {selectedFile ? selectedFile.path : t('liveStudio.frictionNoFileSelected', 'No file selected — open a file in the Editor tab first')}
                         </div>
                         <button
                             onClick={runFrictionAnalysis}
@@ -1370,7 +1373,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6,
                             }}
                         >
-                            <DollarSign size={13} /> {frictionLoading ? 'Analyzing…' : 'Run Friction Analysis'}
+                            <DollarSign size={13} /> {frictionLoading ? t('liveStudio.analyzing', 'Analyzing…') : t('liveStudio.runFrictionAnalysis', 'Run Friction Analysis')}
                         </button>
                     </div>
 
@@ -1393,7 +1396,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 {frictionResult.annual.verdict === 'neutral' && <Minus        size={22} color="#818cf8" />}
                                 <div>
                                     {frictionResult.annual.verdict === 'neutral' && (
-                                        <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.9rem' }}>No interactive element changes detected.</div>
+                                        <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.9rem' }}>{t('liveStudio.frictionNeutral', 'No interactive element changes detected.')}</div>
                                     )}
                                     {frictionResult.annual.verdict === 'savings' && (
                                         <>
@@ -1422,7 +1425,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             {frictionResult.breakdown.length > 0 && (
                                 <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
                                     <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.78rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                        Element Delta Breakdown
+                                        {t('liveStudio.elementDeltaBreakdown', 'Element Delta Breakdown')}
                                     </div>
                                     {frictionResult.breakdown.map((row, i) => (
                                         <div key={i} style={{
@@ -1454,7 +1457,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     )}
                     {frictionResult?.error && (
                         <div style={{ color: '#ef4444', fontSize: '0.82rem', padding: 14, background: 'rgba(239,68,68,0.08)', borderRadius: 8 }}>
-                            Analysis error: {frictionResult.error}
+                            {t('liveStudio.analysisError', 'Analysis error: ')}{frictionResult.error}
                         </div>
                     )}
                 </div>
@@ -1465,7 +1468,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                 <div style={{ flex: 1, overflowY: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <details style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10, padding: '14px 18px' }}>
                         <summary style={{ cursor: 'pointer', color: '#818cf8', fontWeight: 700, fontSize: '0.85rem', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '1rem' }}>ℹ</span> How to Use — Parallel Universe Simulation Engine
+                            <span style={{ fontSize: '1rem' }}>ℹ</span> {t('liveStudio.universeHowToTitle', 'How to Use — Parallel Universe Simulation Engine')}
                         </summary>
                         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.6 }}>
                             <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 4 }}>The Parallel Universe engine clones a plant database to a historical point in time, strips events after that date, and runs a split-screen KPI comparison against the live system. Use it to validate logic changes against real historical data before deploying.</div>
@@ -1476,11 +1479,10 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                         </div>
                     </details>
                     <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <FlaskConical size={16} color="#6366f1" /> Parallel Universe — Future Simulation Engine
+                        <FlaskConical size={16} color="#6366f1" /> {t('liveStudio.universeEngineName', 'Parallel Universe — Future Simulation Engine')}
                     </div>
                     <div style={{ color: '#475569', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                        Clone a plant DB, strip it back to a target date, and compare KPIs between the live system and the simulation snapshot.
-                        Events from the audit ledger are used to project what the metrics would have looked like at that point in time.
+                        {t('liveStudio.universeDescription', 'Clone a plant DB, strip it back to a target date, and compare KPIs between the live system and the simulation snapshot. Events from the audit ledger are used to project what the metrics would have looked like at that point in time.')}
                     </div>
 
                     {/* Config card */}
@@ -1488,18 +1490,18 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                         <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 18 }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                                 <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 6 }}>Plant</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 6 }}>{t('liveStudio.plantLabel', 'Plant')}</div>
                                     <select
                                         value={simPlant}
                                         onChange={e => setSimPlant(e.target.value)}
                                         style={{ width: '100%', padding: '7px 10px', borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#e2e8f0', fontSize: '0.82rem', outline: 'none' }}
                                     >
-                                        <option value="">Select a plant…</option>
+                                        <option value="">{t('liveStudio.selectPlantPlaceholder', 'Select a plant…')}</option>
                                         {plants.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 6 }}>Cutoff Date (T:00:00:00)</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 6 }}>{t('liveStudio.cutoffDateLabel', 'Cutoff Date (T:00:00:00)')}</div>
                                     <input
                                         type="date"
                                         value={simDate}
@@ -1522,13 +1524,13 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6,
                                 }}
                             >
-                                <FlaskConical size={13} /> Clone & Run Simulation
+                                <FlaskConical size={13} /> {t('liveStudio.cloneRunSimulation', 'Clone & Run Simulation')}
                             </button>
                         </div>
                     ) : simState === 'creating' ? (
                         <div style={{ padding: 30, textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>
                             <FlaskConical size={28} style={{ marginBottom: 10, opacity: 0.4 }} />
-                            <div>Cloning plant DB and stripping records after {simDate}…</div>
+                            <div>{t('liveStudio.cloningPlantDb', 'Cloning plant DB and stripping records after')} {simDate}…</div>
                         </div>
                     ) : simResult && simState === 'ready' ? (
                         <>
@@ -1543,12 +1545,12 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                             {si === 0 ? '🔬 ' : '🟢 '}{side.label}
                                         </div>
                                         {[
-                                            ['Open Work Orders',   'openWOs'],
-                                            ['Completed WOs',      'completedWOs'],
-                                            ['Overdue WOs',        'overdueWOs'],
-                                            ['Active PM Schedules','pmSchedules'],
-                                            ['PM Compliance %',    'pmCompliance'],
-                                            ['Total Assets',       'totalAssets'],
+                                            [t('liveStudio.kpiOpenWOs', 'Open Work Orders'),   'openWOs'],
+                                            [t('liveStudio.kpiCompletedWOs', 'Completed WOs'), 'completedWOs'],
+                                            [t('liveStudio.kpiOverdueWOs', 'Overdue WOs'),     'overdueWOs'],
+                                            [t('liveStudio.kpiActivePMSchedules', 'Active PM Schedules'), 'pmSchedules'],
+                                            [t('liveStudio.kpiPMCompliance', 'PM Compliance %'), 'pmCompliance'],
+                                            [t('liveStudio.kpiTotalAssets', 'Total Assets'),   'totalAssets'],
                                         ].map(([label, key]) => (
                                             <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem' }}>
                                                 <span style={{ color: '#64748b' }}>{label}</span>
@@ -1563,7 +1565,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
 
                             {/* Delta summary */}
                             <div style={{ background: 'rgba(15,23,42,0.8)', borderRadius: 10, padding: 16, border: '1px solid rgba(255,255,255,0.07)' }}>
-                                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#94a3b8', marginBottom: 12 }}>Delta: Live vs Simulation</div>
+                                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#94a3b8', marginBottom: 12 }}>{t('liveStudio.deltaLiveVsSim', 'Delta: Live vs Simulation')}</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                                     {Object.entries(simResult.deltas || {}).map(([key, delta]) => (
                                         <div key={key} style={{
@@ -1580,7 +1582,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             </div>
 
                             <button onClick={destroySimulation} style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 7, border: 'none', background: 'rgba(255,255,255,0.05)', color: '#64748b', cursor: 'pointer', fontSize: '0.78rem' }}>
-                                Destroy Simulation &amp; Reset
+                                {t('liveStudio.destroySimulation', 'Destroy Simulation & Reset')}
                             </button>
                         </>
                     ) : null}
@@ -1592,7 +1594,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                 <div style={{ flex: 1, overflowY: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <details style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '14px 18px' }}>
                         <summary style={{ cursor: 'pointer', color: '#f59e0b', fontWeight: 700, fontSize: '0.85rem', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '1rem' }}>ℹ</span> How to Use — Visual Change Consequence Analyzer
+                            <span style={{ fontSize: '1rem' }}>ℹ</span> {t('liveStudio.impactHowToTitle', 'How to Use — Visual Change Consequence Analyzer')}
                         </summary>
                         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.6 }}>
                             <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 4 }}>The Impact Analyzer traces modified source files through the ES6 import chain to every React Router route they affect, and translates that into plain-English business workflow impact. Run this before deploying to know exactly what the change touches.</div>
@@ -1603,19 +1605,18 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                         </div>
                     </details>
                     <div style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Zap size={16} color="#f59e0b" /> Visual Change Consequence Analyzer
+                        <Zap size={16} color="#f59e0b" /> {t('liveStudio.impactAnalyzerName', 'Visual Change Consequence Analyzer')}
                     </div>
                     <div style={{ color: '#475569', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                        Traces component changes through ES6 import chains to React Router routes,
-                        translating code diffs into plain-English business workflow impact.
+                        {t('liveStudio.impactDescription', 'Traces component changes through ES6 import chains to React Router routes, translating code diffs into plain-English business workflow impact.')}
                     </div>
 
                     {/* Scope card */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 16 }}>
                         <div style={{ fontSize: '0.78rem', color: '#475569', marginBottom: 8 }}>
-                            Scope: {selectedFile
-                                ? <><strong style={{ color: '#a5b4fc' }}>{selectedFile.path}</strong> (current editor file)</>
-                                : <strong style={{ color: '#f59e0b' }}>All uncommitted changes (git diff HEAD)</strong>
+                            {t('liveStudio.scopeLabel', 'Scope:')} {selectedFile
+                                ? <><strong style={{ color: '#a5b4fc' }}>{selectedFile.path}</strong> ({t('liveStudio.currentEditorFile', 'current editor file')})</>
+                                : <strong style={{ color: '#f59e0b' }}>{t('liveStudio.allUncommittedChanges', 'All uncommitted changes (git diff HEAD)')}</strong>
                             }
                         </div>
                         <button
@@ -1629,7 +1630,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 opacity: blastLoading ? 0.6 : 1,
                             }}
                         >
-                            <Zap size={13} /> {blastLoading ? 'Analyzing import chains…' : 'Map Blast Radius'}
+                            <Zap size={13} /> {blastLoading ? t('liveStudio.analyzingImportChains', 'Analyzing import chains…') : t('liveStudio.mapBlastRadius', 'Map Blast Radius')}
                         </button>
                     </div>
 
@@ -1652,7 +1653,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             {blastResult.changedComponents.length > 0 && (
                                 <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
                                     <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.72rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                        Changed Components ({blastResult.changedComponents.length})
+                                        {t('liveStudio.changedComponents', 'Changed Components')} ({blastResult.changedComponents.length})
                                     </div>
                                     {blastResult.changedComponents.map((c, i) => (
                                         <div key={i} style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.8rem', color: '#f59e0b', fontFamily: 'monospace' }}>
@@ -1666,7 +1667,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             {blastResult.affectedRoutes.length > 0 && (
                                 <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
                                     <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.72rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                        Affected Routes ({blastResult.affectedRoutes.length})
+                                        {t('liveStudio.affectedRoutes', 'Affected Routes')} ({blastResult.affectedRoutes.length})
                                     </div>
                                     {blastResult.affectedRoutes.map((r, i) => (
                                         <div key={i} style={{
@@ -1698,7 +1699,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                             {blastResult.importingComponents.length > 0 && (
                                 <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
                                     <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.72rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                        Downstream Importers ({blastResult.importingComponents.length})
+                                        {t('liveStudio.downstreamImporters', 'Downstream Importers')} ({blastResult.importingComponents.length})
                                     </div>
                                     {blastResult.importingComponents.map((c, i) => (
                                         <div key={i} style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.8rem', display: 'flex', gap: 10 }}>
@@ -1711,14 +1712,14 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
 
                             {blastResult.changedComponents.length > 0 && blastResult.affectedRoutes.length === 0 && (
                                 <div style={{ color: '#475569', fontSize: '0.8rem', textAlign: 'center', padding: 20, background: 'rgba(15,23,42,0.5)', borderRadius: 8 }}>
-                                    No route mappings found. These may be utility/shared components not directly mounted on any route.
+                                    {t('liveStudio.noRouteMappings', 'No route mappings found. These may be utility/shared components not directly mounted on any route.')}
                                 </div>
                             )}
                         </>
                     )}
                     {blastResult?.error && (
                         <div style={{ color: '#ef4444', fontSize: '0.82rem', padding: 14, background: 'rgba(239,68,68,0.08)', borderRadius: 8 }}>
-                            Analysis error: {blastResult.error}
+                            {t('liveStudio.analysisError', 'Analysis error: ')}{blastResult.error}
                         </div>
                     )}
                 </div>
@@ -1731,7 +1732,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* How-to guide */}
                     <details style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.18)', borderRadius: 10, padding: '10px 14px', fontSize: '0.78rem', color: '#94a3b8' }}>
                         <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#818cf8', fontSize: '0.8rem', userSelect: 'none' }}>
-                            How to use the Deployment Ledger
+                            {t('liveStudio.ledgerHowToTitle', 'How to use the Deployment Ledger')}
                         </summary>
                         <ol style={{ margin: '10px 0 4px 0', paddingLeft: 18, lineHeight: 1.7 }}>
                             <li><strong style={{ color: '#c7d2fe' }}>Read the history</strong> — Every deploy triggered from the Deploy tab is recorded here with its branch, commit SHA, stable tag, status, and full build log. Green = success, red = failed.</li>
@@ -1744,7 +1745,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* Header row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <ClipboardList size={15} /> Executive Deployment Ledger
+                            <ClipboardList size={15} /> {t('liveStudio.executiveDeploymentLedger', 'Executive Deployment Ledger')}
                             {ledger.length > 0 && <span style={{ color: '#334155', fontWeight: 400, fontSize: '0.78rem' }}>({ledger.length} entries)</span>}
                         </span>
                         <div style={{ display: 'flex', gap: 8 }}>
@@ -1753,13 +1754,13 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 disabled={ledger.length === 0}
                                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', cursor: ledger.length > 0 ? 'pointer' : 'default', color: ledger.length > 0 ? '#818cf8' : '#334155', borderRadius: 6, padding: '4px 12px', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem' }}
                             >
-                                <FileDown size={12} /> Export PDF
+                                <FileDown size={12} /> {t('liveStudio.exportPdf', 'Export PDF')}
                             </button>
                             <button
                                 onClick={() => apiFetch('/api/studio/ledger').then(d => d.entries && setLedger(d.entries))}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.78rem' }}
                             >
-                                <RefreshCw size={12} /> All
+                                <RefreshCw size={12} /> {t('liveStudio.all', 'All')}
                             </button>
                         </div>
                     </div>
@@ -1767,20 +1768,20 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                     {/* §15 Deep-Search Filters */}
                     <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 14 }}>
                         <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
-                            Search &amp; Filter
+                            {t('liveStudio.searchAndFilter', 'Search & Filter')}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
                             <input
                                 value={ledgerSearchQ}
                                 onChange={e => setLedgerSearchQ(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && searchLedger()}
-                                placeholder="Search notes, branch, SHA, user…"
+                                placeholder={t('liveStudio.ledgerSearchPlaceholder', 'Search notes, branch, SHA, user…')}
                                 style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#e2e8f0', fontSize: '0.78rem', outline: 'none' }}
                             />
                             <input
                                 value={ledgerSearchUser}
                                 onChange={e => setLedgerSearchUser(e.target.value)}
-                                placeholder="User…"
+                                placeholder={t('liveStudio.userPlaceholder', 'User…')}
                                 style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#e2e8f0', fontSize: '0.78rem', outline: 'none' }}
                             />
                             <input
@@ -1800,11 +1801,11 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 onChange={e => setLedgerSearchStatus(e.target.value)}
                                 style={{ padding: '6px 8px', borderRadius: 6, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.08)', color: '#e2e8f0', fontSize: '0.75rem', outline: 'none' }}
                             >
-                                <option value="">Any Status</option>
-                                <option value="SUCCESS">Success</option>
-                                <option value="FAILED">Failed</option>
-                                <option value="REVERTED">Reverted</option>
-                                <option value="BUILDING">Building</option>
+                                <option value="">{t('liveStudio.anyStatus', 'Any Status')}</option>
+                                <option value="SUCCESS">{t('liveStudio.statusSuccess', 'Success')}</option>
+                                <option value="FAILED">{t('liveStudio.statusFailed', 'Failed')}</option>
+                                <option value="REVERTED">{t('liveStudio.statusReverted', 'Reverted')}</option>
+                                <option value="BUILDING">{t('liveStudio.statusBuilding', 'Building')}</option>
                             </select>
                         </div>
                         <button
@@ -1818,14 +1819,14 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                 opacity: ledgerSearching ? 0.6 : 1,
                             }}
                         >
-                            <Search size={12} /> {ledgerSearching ? 'Searching…' : 'Search'}
+                            <Search size={12} /> {ledgerSearching ? t('liveStudio.searching', 'Searching…') : t('liveStudio.searchButton', 'Search')}
                         </button>
                     </div>
 
                     {/* Ledger entries */}
                     {ledger.length === 0 ? (
                         <div style={{ color: '#334155', textAlign: 'center', padding: 40, fontSize: '0.85rem' }}>
-                            No deploy history yet. Deploy something to begin building your ledger.
+                            {t('liveStudio.noDeployHistory', 'No deploy history yet. Deploy something to begin building your ledger.')}
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1838,7 +1839,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                             <StatusBadge status={entry.Status} />
                                             <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>#{entry.ID}</span>
-                                            <span style={{ color: '#475569', fontSize: '0.78rem' }}>by {entry.DeployedBy}</span>
+                                            <span style={{ color: '#475569', fontSize: '0.78rem' }}>{t('liveStudio.deployedBy', 'by')} {entry.DeployedBy}</span>
                                         </div>
                                         <span style={{ color: '#334155', fontSize: '0.72rem' }}>
                                             {entry.StartedAt ? new Date(entry.StartedAt).toLocaleString() : '--'}
@@ -1847,23 +1848,23 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: '0.75rem', alignItems: 'center' }}>
                                         {entry.SandboxBranch && (
                                             <span style={{ color: '#475569' }}>
-                                                Branch: <span style={{ color: '#818cf8' }}>{entry.SandboxBranch}</span>
+                                                {t('liveStudio.branchLabel', 'Branch:')} <span style={{ color: '#818cf8' }}>{entry.SandboxBranch}</span>
                                             </span>
                                         )}
                                         {entry.StableTag && (
                                             <span style={{ color: '#475569' }}>
-                                                Tag: <span style={{ color: '#10b981' }}>{entry.StableTag}</span>
+                                                {t('liveStudio.tagLabel', 'Tag:')} <span style={{ color: '#10b981' }}>{entry.StableTag}</span>
                                             </span>
                                         )}
                                         {entry.CommitSHA && (
                                             <span style={{ color: '#475569', display: 'flex', alignItems: 'center', gap: 5 }}>
-                                                SHA:
+                                                {t('liveStudio.shaLabel', 'SHA:')}
                                                 <code style={{ color: '#64748b', fontFamily: 'monospace', fontSize: '0.73rem', background: 'rgba(255,255,255,0.04)', padding: '1px 6px', borderRadius: 4 }}>
                                                     {entry.CommitSHA.slice(0, 12)}
                                                 </code>
                                                 <button
                                                     onClick={() => copySHA(entry.CommitSHA)}
-                                                    title="Copy full SHA"
+                                                    title={t('liveStudio.copyFullSha', 'Copy full SHA')}
                                                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: copiedSHA === entry.CommitSHA ? '#10b981' : '#334155', display: 'flex' }}
                                                 >
                                                     {copiedSHA === entry.CommitSHA ? <Check size={11} /> : <Copy size={11} />}
@@ -1872,7 +1873,7 @@ export default function LiveStudio({ isOpen, onClose, initialFile = null }) {
                                         )}
                                         {entry.CompletedAt && (
                                             <span style={{ color: '#334155', fontSize: '0.72rem' }}>
-                                                Completed: {new Date(entry.CompletedAt).toLocaleString()}
+                                                {t('liveStudio.completedLabel', 'Completed:')} {new Date(entry.CompletedAt).toLocaleString()}
                                             </span>
                                         )}
                                     </div>

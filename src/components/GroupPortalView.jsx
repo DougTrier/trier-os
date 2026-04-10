@@ -65,31 +65,31 @@ export default function GroupPortalView({ plantId, plantLabel, onOpenWorkspace, 
             .then(data => {
                 if (!data) return;
                 const m = {
-                    'maintenance':     `${data.openWorkOrders || 0} open · ${data.overdueWorkOrders || 0} overdue`,
-                    'engineering':     `${data.totalAssets || 0} assets tracked`,
-                    'supply-chain':    `${data.totalParts || 0} parts in inventory`,
-                    'logistics-fleet':  `${data.pendingTransfers || 0} pending transfers`,
-                    'compliance':      `${data.totalProcedures || 0} active SOPs`,
-                    'governance':      'Audit & Security',
-                    'analytics':       'Reports & Forecasting',
-                    'comms':           'Knowledge Exchange',
-                    'quality':         'Lab & Quality Control',
-                    'sops':            `${data.totalProcedures || 0} procedures`,
-                    'directory':       'Enterprise Directory',
-                    'admin-console':   'System Administration',
-                    'import-wizard':   'Data Import & API Management',
-                    'utilities':       'Utility intelligence dashboard',
+                    'maintenance':     `${data.openWorkOrders || 0} ${t('mc.metric.open', 'open')} · ${data.overdueWorkOrders || 0} ${t('mc.metric.overdue', 'overdue')}`,
+                    'engineering':     `${data.totalAssets || 0} ${t('mc.metric.assetsTracked', 'assets tracked')}`,
+                    'supply-chain':    `${data.totalParts || 0} ${t('mc.metric.partsInInventory', 'parts in inventory')}`,
+                    'logistics-fleet': `${data.pendingTransfers || 0} ${t('mc.metric.pendingTransfers', 'pending transfers')}`,
+                    'compliance':      `${data.totalProcedures || 0} ${t('mc.metric.activeSOPs', 'active SOPs')}`,
+                    'governance':      t('mc.metric.auditSecurity', 'Audit & Security'),
+                    'analytics':       t('mc.metric.reportsForecasting', 'Reports & Forecasting'),
+                    'comms':           t('mc.metric.knowledgeExchange', 'Knowledge Exchange'),
+                    'quality':         t('mc.metric.qualityLog', 'Log losses · Cryo · Bacteria'),
+                    'sops':            `${data.totalProcedures || 0} ${t('mc.metric.procedures', 'procedures')}`,
+                    'directory':       t('mc.metric.enterpriseDirectory', 'Enterprise Directory'),
+                    'admin-console':   t('mc.metric.sysAdmin', 'System Administration'),
+                    'import-wizard':   t('mc.metric.dataImport', 'Data Import Tools'),
+                    'utilities':       t('mc.metric.utilityDashboard', 'Utility intelligence dashboard'),
                 };
                 setMetrics(m);
 
                 const u = {};
                 if (data.overdueWorkOrders > 0) {
-                    u['maintenance'] = { count: data.overdueWorkOrders, tooltip: `⚠ ${data.overdueWorkOrders} overdue work order(s)` };
+                    u['maintenance'] = { count: data.overdueWorkOrders, tooltip: `⚠ ${data.overdueWorkOrders} ${t('mc.urgency.overdueWOsShort', 'overdue work order(s)')}` };
                 }
                 setUrgency(u);
             })
             .catch(e => console.warn('[GroupPortalView] fetch error:', e));
-    }, [plantId]);
+    }, [plantId, t]);
 
     return (
         <div style={{
@@ -122,7 +122,7 @@ export default function GroupPortalView({ plantId, plantLabel, onOpenWorkspace, 
                 }}>
                     <button onClick={onBackToMC} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
                         <ArrowLeft size={16} />
-                        Mission Control
+                        {t('app.missionControl', 'Mission Control')}
                     </button>
 
                     <div style={{ width: 52, height: 52, borderRadius: 14, background: group.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -130,8 +130,8 @@ export default function GroupPortalView({ plantId, plantLabel, onOpenWorkspace, 
                     </div>
 
                     <div style={{ flex: 1 }}>
-                        <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#f1f5f9' }}>{group.title}</h1>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>{group.desc}</p>
+                        <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#f1f5f9' }}>{t(`mc.tile.${groupKey}.title`, group.title)}</h1>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>{t(`mc.tile.${groupKey}.desc`, group.desc)}</p>
                     </div>
                 </div>
 
@@ -168,6 +168,7 @@ export default function GroupPortalView({ plantId, plantLabel, onOpenWorkspace, 
 
 function PortalChildTile({ tile, tileKey, metric, urgencyData, index, onClick }) {
     const [hovered, setHovered] = useState(false);
+    const { t } = useTranslation();
     const Icon = tile.icon;
     const urgencyCount = typeof urgencyData === 'object' ? urgencyData?.count : (urgencyData || 0);
 
@@ -196,12 +197,17 @@ function PortalChildTile({ tile, tileKey, metric, urgencyData, index, onClick })
                     <Icon size={26} color="#fff" />
                 </div>
                 <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f1f5f9' }}>{tile.title}</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f1f5f9' }}>{t(`mc.tile.${tileKey}.title`, tile.title)}</div>
                     {metric && <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 3 }}>{metric}</div>}
                 </div>
                 <ChevronRight size={20} color={hovered ? tile.accent : '#334155'} />
             </div>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.7 }}>{tile.desc}</p>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.7 }}>{t(`mc.tile.${tileKey}.desc`, tile.desc)}</p>
+            {tile.pills && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {tile.pills.map(p => <span key={p} style={{ background: `${tile.accent}20`, color: tile.accent, fontSize: '0.6rem', padding: '2px 8px', borderRadius: 8 }}>{t(`mc.tile.${tileKey}.pill.${p}`, p)}</span>)}
+                </div>
+            )}
         </div>
     );
 }

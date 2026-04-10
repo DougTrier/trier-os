@@ -31,11 +31,12 @@
  */
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
+import { useTranslation } from '../i18n/index.jsx';
 
 export default function SearchBar({
     value = '',
     onChange,
-    placeholder = 'Search...',
+    placeholder,
     width,
     title,
     style = {},
@@ -43,6 +44,8 @@ export default function SearchBar({
     autoFocus = false,
     onKeyDown,
 }) {
+    const { t } = useTranslation();
+    const displayPlaceholder = placeholder !== undefined ? placeholder : t('searchBar.search', 'Search...');
     const inputRef = useRef(null);
 
     // Auto-focus support
@@ -85,11 +88,11 @@ export default function SearchBar({
             <input
                 ref={inputRef}
                 type="text"
-                placeholder={placeholder}
+                placeholder={displayPlaceholder}
                 value={value}
                 onChange={handleChange}
                 onKeyDown={onKeyDown}
-                title={title || placeholder}
+                title={title || displayPlaceholder}
                 style={{
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid var(--glass-border)',
@@ -113,7 +116,7 @@ export default function SearchBar({
             {value && (
                 <button
                     onClick={handleClear}
-                    title="Clear search"
+                    title={t('searchBar.clearSearch', 'Clear search')}
                     style={{
                         position: 'absolute',
                         right: 8,

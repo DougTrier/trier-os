@@ -64,7 +64,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { MapPin, Upload, X, Edit3, Eye, Plus, Trash2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw, Flame, CloudLightning, Droplets, DoorOpen, Wrench, Shield, Layers, ArrowRight, Route, Ruler, Type, MousePointer, ChevronRight, Package, Hexagon, Building, Clock, Smartphone, Navigation2, Thermometer, Activity, AlertOctagon, Printer } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
-import { getIconCategories, getEquipmentIcon } from './EquipmentIcons.jsx';
+import { getIconCategories, getEquipmentIcon, CATEGORY_LABEL_KEYS } from './EquipmentIcons.jsx';
 import PhotoAssembly from './PhotoAssembly.jsx';
 import LiDAR3DViewer from './LiDAR3DViewer.jsx';
 import LiDARScanner from './LiDARScanner.jsx';
@@ -2187,7 +2187,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                 )}
 
                 {/* Layer Type Filter Buttons */}
-                <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexWrap: 'wrap' }}>
                     {LAYER_TYPES.map(layer => {
                         const Icon = layer.icon;
                         const isActive = activeLayer === layer.id;
@@ -2197,7 +2197,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                 key={layer.id}
                                 onClick={() => setActiveLayer(layer.id)}
                                 className="btn-primary"
-                                title={`${layer.label} layer${filteredCount > 0 ? ` (${filteredCount})` : ''}`}
+                                title={`${t(`floorPlan.layer.${layer.id}`, layer.label)} layer${filteredCount > 0 ? ` (${filteredCount})` : ''}`}
                                 style={{
                                     padding: '4px 10px',
                                     fontSize: '0.65rem',
@@ -2214,7 +2214,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                 }}
                             >
                                 <Icon size={12} />
-                                {layer.label}
+                                {t(`floorPlan.layer.${layer.id}`, layer.label)}
                                 {filteredCount > 0 && layer.id !== 'all' && (
                                     <span style={{ background: `${layer.color}33`, padding: '0 4px', borderRadius: '4px', fontSize: '0.6rem' }}>{filteredCount}</span>
                                 )}
@@ -2460,7 +2460,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                     {/* Layer type selector — first so user picks layer before pin details */}
                     <select value={activeLayer === 'all' ? 'assets' : activeLayer} onChange={e => setActiveLayer(e.target.value)}
                         style={{ padding: '4px 8px', fontSize: '0.75rem', maxWidth: '130px' }} title={t('floorPlan.layerTypeForThisPinTip')}>
-                        {LAYER_TYPES.filter(l => l.id !== 'all').map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                        {LAYER_TYPES.filter(l => l.id !== 'all').map(l => <option key={l.id} value={l.id}>{t(`floorPlan.layer.${l.id}`, l.label)}</option>)}
                     </select>
                     {/* Asset dropdown for Assets layer; label input for all other layers */}
                     {(activeLayer === 'all' || activeLayer === 'assets') ? (
@@ -2597,7 +2597,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                         borderRadius: '4px', color: zoneType === key ? zt.color : '#94a3b8',
                                         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
                                     }} title={t('floorPlan.zoneTypeTip')}>
-                                    <span>{zt.emoji}</span> {zt.label}
+                                    <span>{zt.emoji}</span> {t(`floorPlan.zone.${key}`, zt.label)}
                                 </button>
                             ))}
                         </div>
@@ -2660,7 +2660,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                     fontSize: '0.6rem', fontWeight: 700, color: '#64748b',
                                     textTransform: 'uppercase', letterSpacing: '0.06em',
                                     marginBottom: '6px', paddingLeft: '4px',
-                                }}>{category}</div>
+                                }}>{t(CATEGORY_LABEL_KEYS[category], category)}</div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                                     {icons.map(eq => {
                                         const IconComp = eq.icon;
@@ -2690,7 +2690,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                                     document.body.appendChild(ghost);
                                                     iconGhostRef.current = ghost;
                                                 }}
-                                                title={eq.label}
+                                                title={t(eq.labelKey, eq.label)}
                                                 style={{
                                                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                                                     gap: '2px', padding: '6px 2px', borderRadius: '8px',
@@ -2711,7 +2711,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                                             >
                                                 <IconComp size={28} />
                                                 <span style={{ fontSize: '0.55rem', color: '#94a3b8', textAlign: 'center', lineHeight: '1.1' }}>
-                                                    {eq.label}
+                                                    {t(eq.labelKey, eq.label)}
                                                 </span>
                                             </div>
                                         );
@@ -3413,7 +3413,7 @@ export default function FloorPlanView({ plantId, isAdmin }) {
                             background: zone.color + '22', border: '1px solid ' + zone.color,
                             color: zone.color, fontWeight: 700,
                         }}>{ztConfig.emoji} {zone.name}</span>
-                        <span style={{ color: '#94a3b8' }}>{t('floorPlan.text.type', 'Type:')}<b style={{ color: zone.color }}>{ztConfig.label}</b></span>
+                        <span style={{ color: '#94a3b8' }}>{t('floorPlan.text.type', 'Type:')}<b style={{ color: zone.color }}>{t(`floorPlan.zone.${zone.zoneType}`, ztConfig.label)}</b></span>
                         {zone.hazardClass && <span style={{ color: '#f97316' }}>⚠ {zone.hazardClass}</span>}
                         {zone.capacity > 0 && <span style={{ color: '#94a3b8' }}>Capacity: {zone.capacity}</span>}
                         {(() => {

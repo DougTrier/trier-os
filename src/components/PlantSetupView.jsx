@@ -1913,6 +1913,52 @@ function ApiIntegrationsTab({ plantId }) {
                                         <FF label={t('plantSetup.databasePath', 'Database / Path')} value={form.database} onChange={v => setForm(p => ({ ...p, database: v }))} />
                                         <div style={{ gridColumn: '1/-1' }}><FF label={t('plantSetup.notesAdditionalConfig', 'Notes / Additional Config')} value={form.notes} onChange={v => setForm(p => ({ ...p, notes: v }))} /></div>
                                     </div>
+                                    {/* ── ERP HTTP/REST Config ── only shown for ERP integration ── */}
+                                    {intg.id === 'erp' && (
+                                        <div style={{ marginTop: 14, padding: '14px', background: 'rgba(14,165,233,0.04)', border: '1px solid rgba(14,165,233,0.12)', borderRadius: 8 }}>
+                                            <div style={{ fontSize: '0.68rem', color: '#0ea5e9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                                                {t('plantSetup.erpRestConfig', 'REST / HTTP Pull Config')}
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10, marginBottom: 12 }}>
+                                                <FF label={t('plantSetup.erpPreset', 'ERP Preset')}
+                                                    value={form.preset || 'generic'}
+                                                    onChange={v => setForm(p => ({ ...p, preset: v, type: 'http' }))}
+                                                    options={['generic','sap','oracle','dynamics365']} />
+                                                <FF label={t('plantSetup.erpBaseUrl', 'Base URL')}
+                                                    value={form.baseUrl || ''}
+                                                    onChange={v => setForm(p => ({ ...p, baseUrl: v, type: 'http' }))}
+                                                    placeholder="https://erp.company.com" />
+                                                <FF label={t('plantSetup.erpAuthType', 'Auth Type')}
+                                                    value={form.authType || 'none'}
+                                                    onChange={v => setForm(p => ({ ...p, authType: v }))}
+                                                    options={['none','apikey','bearer','basic','oauth2']} />
+                                                <FF label={t('plantSetup.erpPollInterval', 'Poll Interval (sec)')}
+                                                    value={form.pollIntervalSeconds || '300'}
+                                                    onChange={v => setForm(p => ({ ...p, pollIntervalSeconds: v }))}
+                                                    placeholder="300" />
+                                            </div>
+                                            {/* Conditional credential fields */}
+                                            {form.authType === 'apikey' && (
+                                                <FF label={t('plantSetup.apiKeyToken', 'API Key')} value={form.apiKey || ''} onChange={v => setForm(p => ({ ...p, apiKey: v }))} />
+                                            )}
+                                            {form.authType === 'bearer' && (
+                                                <FF label={t('plantSetup.erpBearerToken', 'Bearer Token')} value={form.bearerToken || ''} onChange={v => setForm(p => ({ ...p, bearerToken: v }))} />
+                                            )}
+                                            {form.authType === 'basic' && (
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                                    <FF label={t('plantSetup.username', 'Username')} value={form.basicUser || ''} onChange={v => setForm(p => ({ ...p, basicUser: v }))} />
+                                                    <FF label={t('plantSetup.passwordSecret', 'Password')} type="password" value={form.basicPass || ''} onChange={v => setForm(p => ({ ...p, basicPass: v }))} />
+                                                </div>
+                                            )}
+                                            {form.authType === 'oauth2' && (
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10 }}>
+                                                    <FF label="Token URL" value={form.oauthTokenUrl || ''} onChange={v => setForm(p => ({ ...p, oauthTokenUrl: v }))} placeholder="https://…/oauth/token" />
+                                                    <FF label="Client ID" value={form.oauthClientId || ''} onChange={v => setForm(p => ({ ...p, oauthClientId: v }))} />
+                                                    <FF label="Client Secret" type="password" value={form.oauthClientSecret || ''} onChange={v => setForm(p => ({ ...p, oauthClientSecret: v }))} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     {/* ── Simulator & Worker Controls ── */}
                                     <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(14,165,233,0.05)', border: '1px solid rgba(14,165,233,0.15)', borderRadius: 8 }}>
                                         <div style={{ fontSize: '0.68rem', color: '#0ea5e9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>

@@ -38,6 +38,7 @@
  *   <RoleAvatar role="engineer" size={36} showLabel />
  */
 import React, { useState } from 'react';
+import { useTranslation } from '../i18n/index.jsx';
 
 // ── Avatar mapping: role → image file + display label + accent color ──
 const AVATAR_MAP = {
@@ -57,6 +58,13 @@ const AVATAR_MAP = {
 // Fallback for unknown roles
 const FALLBACK = { img: '/avatars/ground_floor.png', label: 'Staff', accent: '#64748b' };
 
+const ROLE_LABEL_KEYS = {
+    ceo: 'roleAvatar.executive', creator: 'roleAvatar.systemCreator', corporate: 'roleAvatar.corporate',
+    it_admin: 'roleAvatar.itStaff', lab_tech: 'roleAvatar.labStaff', engineer: 'roleAvatar.engineer',
+    technician: 'roleAvatar.maintenance', mechanic: 'roleAvatar.mechanic',
+    manager: 'roleAvatar.plantManager', supervisor: 'roleAvatar.supervisor', employee: 'roleAvatar.groundFloor',
+};
+
 export function getAvatarForRole(role) {
     return AVATAR_MAP[role] || FALLBACK;
 }
@@ -72,8 +80,10 @@ export default function RoleAvatar({
     className = '',
     title: titleOverride,
 }) {
+    const { t } = useTranslation();
     const [hovered, setHovered] = useState(false);
     const avatar = AVATAR_MAP[role] || FALLBACK;
+    const localLabel = t(ROLE_LABEL_KEYS[role] || 'roleAvatar.staff', avatar.label);
 
     const imgSize = size;
     const borderWidth = Math.max(2, Math.round(size / 20));
@@ -84,7 +94,7 @@ export default function RoleAvatar({
             onClick={onClick}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            title={titleOverride || `${avatar.label}`}
+            title={titleOverride || localLabel}
             style={{
                 display: 'inline-flex',
                 flexDirection: 'column',
@@ -109,7 +119,7 @@ export default function RoleAvatar({
                 background: `linear-gradient(135deg, ${avatar.accent}15 0%, transparent 60%)`,
             }}>
                 <img src={avatar.img}
-                    alt={avatar.label}
+                    alt={localLabel}
                     loading="lazy"
                     style={{
                         width: '100%',
@@ -140,7 +150,7 @@ export default function RoleAvatar({
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                 }}>
-                    {avatar.label}
+                    {localLabel}
                 </span>
             )}
             {showRole && (
@@ -162,6 +172,7 @@ export default function RoleAvatar({
  * Used in admin user management or profile settings
  */
 export function AvatarPicker({ currentRole, onSelect, size = 64 }) {
+    const { t } = useTranslation();
     const roles = Object.keys(AVATAR_MAP);
 
     return (
@@ -199,7 +210,7 @@ export function AvatarPicker({ currentRole, onSelect, size = 64 }) {
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                     }}>
-                        {AVATAR_MAP[role].label}
+                        {t(ROLE_LABEL_KEYS[role] || 'roleAvatar.staff', AVATAR_MAP[role].label)}
                     </span>
                 </div>
             ))}

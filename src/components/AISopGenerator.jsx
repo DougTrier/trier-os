@@ -100,13 +100,13 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
             }
             setPdfProcessing(false);
         } else {
-            setError('Unsupported file type. Supported: .txt, .md, .pdf, .png, .jpg');
+            setError(t('a.i.sop.generator.unsupportedFileType', 'Unsupported file type. Supported: .txt, .md, .pdf, .png, .jpg'));
         }
     };
 
     const handleGenerate = async () => {
         if (sourceText.trim().length < 20) {
-            setError('Please provide at least 20 characters of equipment documentation.');
+            setError(t('a.i.sop.generator.minCharsError', 'Please provide at least 20 characters of equipment documentation.'));
             return;
         }
         setError('');
@@ -129,7 +129,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
     };
 
     const handleSave = async () => {
-        if (!sopId.trim()) { setError('Procedure ID is required'); return; }
+        if (!sopId.trim()) { setError(t('a.i.sop.generator.procedureIdRequired', 'Procedure ID is required')); return; }
         setIsSaving(true);
         setError('');
         try {
@@ -197,13 +197,17 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                     </h2>
                     {/* Step Indicator */}
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {['Upload', 'Configure', 'Review'].map((s, i) => {
-                            const stepMap = { 'Upload': 'upload', 'Configure': 'configure', 'Review': 'review' };
+                        {[
+                            { key: 'upload', label: t('a.i.sop.generator.stepUpload', 'Upload') },
+                            { key: 'configure', label: t('a.i.sop.generator.stepConfigure', 'Configure') },
+                            { key: 'review', label: t('a.i.sop.generator.stepReview', 'Review') }
+                        ].map(({ key, label }, i) => {
+                            const STEP_ORDER = ['upload', 'configure', 'review'];
                             const current = step === 'generating' ? 'configure' : step;
-                            const isActive = stepMap[s] === current;
-                            const isDone = i < ['upload', 'configure', 'review'].indexOf(current);
+                            const isActive = key === current;
+                            const isDone = i < STEP_ORDER.indexOf(current);
                             return (
-                                <React.Fragment key={s}>
+                                <React.Fragment key={key}>
                                     {i > 0 && <ChevronRight size={14} color="var(--text-muted)" />}
                                     <span style={{
                                         padding: '4px 12px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: 600,
@@ -211,7 +215,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                                         color: isActive ? '#8b5cf6' : isDone ? '#10b981' : 'var(--text-muted)',
                                         border: `1px solid ${isActive ? '#8b5cf644' : isDone ? '#10b98133' : 'transparent'}`
                                     }}>
-                                        {isDone ? '✓ ' : ''}{s}
+                                        {isDone ? '✓ ' : ''}{label}
                                     </span>
                                 </React.Fragment>
                             );
@@ -241,7 +245,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                                 <Bot size={48} color="#8b5cf6" style={{ marginBottom: '12px' }} />
                                 <h3 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '1.3rem' }}>{t('a.i.sop.generator.uploadEquipmentDocumentation')}</h3>
                                 <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>
-                                    Upload a PDF manual, paste text, or upload an image. The AI will extract procedures automatically.
+                                    {t('a.i.sop.generator.uploadDescription', 'Upload a PDF manual, paste text, or upload an image. The AI will extract procedures automatically.')}
                                 </p>
                             </div>
 
@@ -258,14 +262,14 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                                             border: '4px solid rgba(139,92,246,0.2)', borderTopColor: '#8b5cf6',
                                             animation: 'spin 1s linear infinite', margin: '0 auto 10px'
                                         }} />
-                                        <p style={{ color: '#8b5cf6', fontWeight: 600, margin: '0 0 4px 0' }}>Extracting text from document...</p>
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>This may take a moment for large PDFs</p>
+                                        <p style={{ color: '#8b5cf6', fontWeight: 600, margin: '0 0 4px 0' }}>{t('a.i.sop.generator.extractingText', 'Extracting text from document...')}</p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{t('a.i.sop.generator.largeDocsMayTakeMoment', 'This may take a moment for large PDFs')}</p>
                                     </>
                                 ) : (
                                     <>
                                         <Upload size={32} color="#8b5cf6" style={{ marginBottom: '10px' }} />
-                                        <p style={{ color: '#8b5cf6', fontWeight: 600, margin: '0 0 4px 0' }}>Click to Upload File</p>
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>.pdf, .txt, .md, or images (.png, .jpg)</p>
+                                        <p style={{ color: '#8b5cf6', fontWeight: 600, margin: '0 0 4px 0' }}>{t('a.i.sop.generator.clickToUploadFile', 'Click to Upload File')}</p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{t('a.i.sop.generator.uploadFileTypes', '.pdf, .txt, .md, or images (.png, .jpg)')}</p>
                                     </>
                                 )}
                                 <input ref={fileRef} type="file" accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.tiff,.bmp,.webp" onChange={handleFileUpload} style={{ display: 'none' }} title={t('aiSop.selectAFileToUploadTip')} />
@@ -342,7 +346,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                                 borderRadius: '10px', padding: '15px', maxWidth: '600px', margin: '0 auto'
                             }}>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                    <strong style={{ color: '#8b5cf6' }}>📄 Source Text:</strong> {sourceText.length.toLocaleString()} characters
+                                    <strong style={{ color: '#8b5cf6' }}>{t('a.i.sop.generator.sourceText', '📄 Source Text:')}</strong> {sourceText.length.toLocaleString()} characters
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', fontStyle: 'italic' }}>
                                     "{sourceText.substring(0, 120)}..."
@@ -362,7 +366,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                             ) : (
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', paddingTop: '10px' }}>
                                     <button className="btn-nav" onClick={() => setStep('upload')} style={{ padding: '10px 20px' }} title={t('aiSop.goBackToModifyTheTip')}>
-                                        ← Back
+                                        {t('a.i.sop.generator.back', '← Back')}
                                     </button>
                                     <button
                                         className="btn-primary"
@@ -436,7 +440,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                             {/* Warnings */}
                             {editedSOP.warnings?.length > 0 && (
                                 <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '10px', padding: '12px' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>⚠️ Safety Warnings</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>{t('a.i.sop.generator.safetyWarnings', '⚠️ Safety Warnings')}</div>
                                     {editedSOP.warnings.map((w, i) => (
                                         <div key={i} style={{ fontSize: '0.8rem', color: '#fbbf24', padding: '2px 0' }}>• {w}</div>
                                     ))}
@@ -491,7 +495,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                             {/* Tools & Parts */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '14px' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>🔧 Required Tools</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>{t('a.i.sop.generator.requiredTools', '🔧 Required Tools')}</div>
                                     {(editedSOP.tools || []).map((tool, i) => (
                                         <div key={i} style={{ fontSize: '0.8rem', color: '#fff', padding: '2px 0' }}>• {tool}</div>
                                     ))}
@@ -500,7 +504,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                                     )}
                                 </div>
                                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '14px' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>📦 Required Parts</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>{t('a.i.sop.generator.requiredParts', '📦 Required Parts')}</div>
                                     {(editedSOP.parts || []).map((p, i) => (
                                         <div key={i} style={{ fontSize: '0.8rem', color: '#fff', padding: '2px 0' }}>• {p.name} (Qty: {p.quantity})</div>
                                     ))}
@@ -521,7 +525,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                         background: 'rgba(0,0,0,0.2)'
                     }}>
                         <button className="btn-nav" onClick={() => setStep('configure')} title={t('aiSop.goBackAndRegenerateWithTip')} style={{ padding: '10px 20px' }}>
-                            ← Re-Generate
+                            {t('a.i.sop.generator.reGenerate', '← Re-Generate')}
                         </button>
                         <button
                             className="btn-primary"
@@ -535,7 +539,7 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                             }}
                             title={t('aiSop.saveThisAigeneratedSopToTip')}
                         >
-                            <Save size={18} /> {isSaving ? 'Saving...' : 'Save to SOP Library'}
+                            <Save size={18} /> {isSaving ? t('a.i.sop.generator.saving', 'Saving...') : t('a.i.sop.generator.saveToSopLibrary', 'Save to SOP Library')}
                         </button>
                     </div>
                 )}

@@ -36,20 +36,25 @@
  */
 import React from 'react';
 import { AlertTriangle, CheckCircle2, Info, X, HelpCircle } from 'lucide-react';
-export default function SmartDialog({ 
-    type = 'info', 
-    title, 
-    message, 
-    confirmLabel = 'Confirm', 
-    cancelLabel = 'Cancel', 
-    onConfirm, 
+import { useTranslation } from '../i18n/index.jsx';
+export default function SmartDialog({
+    type = 'info',
+    title,
+    message,
+    confirmLabel,
+    cancelLabel,
+    onConfirm,
     onCancel,
     isAlert = false,
     showInput = false,
-    inputPlaceholder = 'Enter details...',
+    inputPlaceholder,
     inputValue = '',
     onInputChange
 }) {
+    const { t } = useTranslation();
+    const displayConfirmLabel = confirmLabel ?? t('smartDialog.confirm', 'Confirm');
+    const displayCancelLabel = cancelLabel ?? t('smartDialog.cancel', 'Cancel');
+    const displayInputPlaceholder = inputPlaceholder ?? t('smartDialog.inputPlaceholder', 'Enter details...');
     const getIcon = () => {
         switch (type) {
             case 'warning': return <AlertTriangle size={32} color="#f59e0b" />;
@@ -120,10 +125,10 @@ export default function SmartDialog({
                                 className="glass-input"
                                 value={inputValue}
                                 onChange={(e) => onInputChange(e.target.value)}
-                                placeholder={inputPlaceholder}
+                                placeholder={displayInputPlaceholder}
                                 autoFocus
-                                style={{ 
-                                    width: '100%', 
+                                style={{
+                                    width: '100%',
                                     padding: '12px 16px',
                                     borderRadius: '12px',
                                     background: 'rgba(255,255,255,0.05)',
@@ -131,7 +136,7 @@ export default function SmartDialog({
                                     color: '#fff',
                                     outline: 'none'
                                 }}
-                                title={inputPlaceholder}
+                                title={displayInputPlaceholder}
                             />
                         </div>
                     )}
@@ -147,23 +152,23 @@ export default function SmartDialog({
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     padding: '10px 24px'
                                 }}
-                                title="Cancel and close this dialog"
+                                title={t('smartDialog.cancelAndClose', 'Cancel and close this dialog')}
                             >
-                                {cancelLabel}
+                                {displayCancelLabel}
                             </button>
                         )}
-                        <button 
+                        <button
                             onClick={onConfirm}
                             className="btn-primary"
-                            style={{ 
+                            style={{
                                 background: type === 'error' || type === 'warning' ? '#ef4444' : 'var(--primary)',
                                 color: '#fff',
                                 padding: '10px 24px',
                                 minWidth: '100px'
                             }}
-                            title={confirmLabel}
+                            title={displayConfirmLabel}
                         >
-                            {confirmLabel}
+                            {displayConfirmLabel}
                         </button>
                     </div>
                 </div>

@@ -35,8 +35,10 @@
  * @param {Function} onClose    — Callback to close the scanner overlay
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from '../i18n/index.jsx';
 
 const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
+    const { t } = useTranslation();
     const [status, setStatus] = useState('ready');       // ready | checking | scanning | processing | uploading | done | error | unsupported
     const [pointCount, setPointCount] = useState(0);
     const [scanDuration, setScanDuration] = useState(0);
@@ -412,14 +414,14 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: '1.4rem' }}>📱</span>
                     <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1.1rem' }}>
-                        LiDAR Scanner
+                        {t('lidarScanner.title', 'LiDAR Scanner')}
                     </span>
                 </div>
                 <button onClick={onClose} style={{
                     padding: '6px 16px', borderRadius: 8, border: 'none',
                     background: '#ef4444', color: '#fff', fontWeight: 700,
                     fontSize: '0.85rem', cursor: 'pointer',
-                }}>✕ Close</button>
+                }}>{t('lidarScanner.closeButton', '✕ Close')}</button>
             </div>
 
             {/* Main Content */}
@@ -441,14 +443,14 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
 
                 {/* Status Title */}
                 <h2 style={{ color: '#e2e8f0', margin: 0, textAlign: 'center', fontSize: '1.3rem' }}>
-                    {status === 'ready' && 'Ready to Scan'}
-                    {status === 'checking' && 'Checking Device...'}
-                    {status === 'scanning' && 'Scanning Facility'}
-                    {status === 'processing' && 'Processing Point Cloud'}
-                    {status === 'uploading' && 'Uploading to Trier OS'}
-                    {status === 'done' && 'Scan Complete!'}
-                    {status === 'error' && 'Scan Error'}
-                    {status === 'unsupported' && 'LiDAR Scanner'}
+                    {status === 'ready' && t('lidarScanner.statusReady', 'Ready to Scan')}
+                    {status === 'checking' && t('lidarScanner.statusChecking', 'Checking Device...')}
+                    {status === 'scanning' && t('lidarScanner.statusScanning', 'Scanning Facility')}
+                    {status === 'processing' && t('lidarScanner.statusProcessing', 'Processing Point Cloud')}
+                    {status === 'uploading' && t('lidarScanner.statusUploading', 'Uploading to Trier OS')}
+                    {status === 'done' && t('lidarScanner.statusDone', 'Scan Complete!')}
+                    {status === 'error' && t('lidarScanner.statusError', 'Scan Error')}
+                    {status === 'unsupported' && t('lidarScanner.statusUnsupported', 'LiDAR Scanner')}
                 </h2>
 
                 {/* Scanning Stats */}
@@ -462,19 +464,19 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                             <div style={{ color: '#ef4444', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'monospace' }}>
                                 {pointCount.toLocaleString()}
                             </div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>POINTS</div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{t('lidarScanner.statsPoints', 'POINTS')}</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ color: '#ef4444', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'monospace' }}>
                                 {formatDuration(scanDuration)}
                             </div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>DURATION</div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{t('lidarScanner.statsDuration', 'DURATION')}</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ color: '#ef4444', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'monospace' }}>
                                 {frameCountRef.current}
                             </div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>FRAMES</div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{t('lidarScanner.statsFrames', 'FRAMES')}</div>
                         </div>
                     </div>
                 )}
@@ -502,7 +504,7 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                         type="text"
                         value={scanName}
                         onChange={(e) => setScanName(e.target.value)}
-                        placeholder="Name your scan (e.g., Processing Area)"
+                        placeholder={t('lidarScanner.scanNamePlaceholder', 'Name your scan (e.g., Processing Area)')}
                         style={{
                             width: '100%', padding: '12px 16px', borderRadius: 10,
                             background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(99,102,241,0.3)',
@@ -529,7 +531,7 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                             justifyContent: 'center', gap: 10,
                             boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
                         }}>
-                            📡 Start LiDAR Scan
+                            {t('lidarScanner.startScanButton', '📡 Start LiDAR Scan')}
                         </button>
                     )}
 
@@ -542,7 +544,7 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                             animation: 'pulse 1.5s infinite',
                         }}>
-                            ⏹ Stop & Save Scan
+                            {t('lidarScanner.stopScanButton', '⏹ Stop & Save Scan')}
                         </button>
                     )}
 
@@ -553,9 +555,9 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                                 color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center',
                                 lineHeight: 1.8, padding: '10px 0',
                             }}>
-                                <strong style={{ color: '#f59e0b' }}>No LiDAR sensor detected on this device.</strong>
+                                <strong style={{ color: '#f59e0b' }}>{t('lidarScanner.unsupportedNoSensor', 'No LiDAR sensor detected on this device.')}</strong>
                                 <br />
-                                You can still import a scan file from a LiDAR app:
+                                {t('lidarScanner.unsupportedImportPrompt', 'You can still import a scan file from a LiDAR app:')}
                             </div>
 
                             <label style={{
@@ -565,7 +567,7 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                                 cursor: 'pointer', display: 'flex', alignItems: 'center',
                                 justifyContent: 'center', gap: 10, textAlign: 'center',
                             }}>
-                                📂 Import Scan File (.ply / .obj)
+                                {t('lidarScanner.importFileButton', '📂 Import Scan File (.ply / .obj)')}
                                 <input type="file" accept=".ply,.obj" onChange={handleFileUpload}
                                     style={{ display: 'none' }} />
                             </label>
@@ -575,11 +577,11 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                                 lineHeight: 1.8, padding: '10px 15px',
                                 background: 'rgba(30,41,59,0.5)', borderRadius: 10,
                             }}>
-                                <strong style={{ color: '#818cf8' }}>📱 iPhone LiDAR Scan Instructions:</strong><br />
-                                1. Download <strong>3d Scanner App</strong> or <strong>Polycam</strong> (free)<br />
-                                2. Scan your facility area<br />
-                                3. Export as <strong>.PLY</strong> file<br />
-                                4. Import it here
+                                <strong style={{ color: '#818cf8' }}>{t('lidarScanner.instructionsTitle', '📱 iPhone LiDAR Scan Instructions:')}</strong><br />
+                                {t('lidarScanner.instructionsStep1', '1. Download')} <strong>3d Scanner App</strong> {t('lidarScanner.instructionsStep1Or', 'or')} <strong>Polycam</strong> ({t('lidarScanner.instructionsStep1Free', 'free')})<br />
+                                {t('lidarScanner.instructionsStep2', '2. Scan your facility area')}<br />
+                                {t('lidarScanner.instructionsStep3', '3. Export as')} <strong>.PLY</strong> {t('lidarScanner.instructionsStep3File', 'file')}<br />
+                                {t('lidarScanner.instructionsStep4', '4. Import it here')}
                             </div>
                         </>
                     )}
@@ -605,7 +607,7 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                             cursor: 'pointer', display: 'flex', alignItems: 'center',
                             justifyContent: 'center', gap: 10,
                         }}>
-                            🔬 View in 3D
+                            {t('lidarScanner.viewIn3DButton', '🔬 View in 3D')}
                         </button>
                     )}
                 </div>
@@ -618,12 +620,12 @@ const LiDARScanner = ({ plantId, headers, onComplete, onClose }) => {
                         background: 'rgba(30,41,59,0.5)', borderRadius: 10,
                         maxWidth: 400,
                     }}>
-                        <strong style={{ color: '#a78bfa' }}>📋 Scanning Tips:</strong><br />
-                        • Move slowly and steadily<br />
-                        • Point at walls, equipment, and floors<br />
-                        • Keep 1-3 meters from surfaces<br />
-                        • Overlap areas for better coverage<br />
-                        • Well-lit areas scan better
+                        <strong style={{ color: '#a78bfa' }}>{t('lidarScanner.tipsTitle', '📋 Scanning Tips:')}</strong><br />
+                        • {t('lidarScanner.tip1', 'Move slowly and steadily')}<br />
+                        • {t('lidarScanner.tip2', 'Point at walls, equipment, and floors')}<br />
+                        • {t('lidarScanner.tip3', 'Keep 1-3 meters from surfaces')}<br />
+                        • {t('lidarScanner.tip4', 'Overlap areas for better coverage')}<br />
+                        • {t('lidarScanner.tip5', 'Well-lit areas scan better')}
                     </div>
                 )}
             </div>

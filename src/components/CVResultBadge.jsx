@@ -24,23 +24,25 @@
  * @param {object} style     — Additional inline styles applied to the badge container
  */
 import React from 'react';
+import { useTranslation } from '../i18n/index.jsx';
 
 const SEVERITY_META = {
-    1: { color: '#10b981', bg: 'rgba(16,185,129,0.85)', icon: '🟢', label: 'Normal' },
-    2: { color: '#10b981', bg: 'rgba(16,185,129,0.85)', icon: '🟢', label: 'Normal' },
-    3: { color: '#f59e0b', bg: 'rgba(245,158,11,0.85)', icon: '🟡', label: 'Monitor' },
-    4: { color: '#ef4444', bg: 'rgba(239,68,68,0.85)',  icon: '🔴', label: 'Action Required' },
-    5: { color: '#ef4444', bg: 'rgba(239,68,68,0.85)',  icon: '🔴', label: 'Critical' },
+    1: { color: '#10b981', bg: 'rgba(16,185,129,0.85)', icon: '🟢', labelKey: 'cvResultBadge.normal', label: 'Normal' },
+    2: { color: '#10b981', bg: 'rgba(16,185,129,0.85)', icon: '🟢', labelKey: 'cvResultBadge.normal', label: 'Normal' },
+    3: { color: '#f59e0b', bg: 'rgba(245,158,11,0.85)', icon: '🟡', labelKey: 'cvResultBadge.monitor', label: 'Monitor' },
+    4: { color: '#ef4444', bg: 'rgba(239,68,68,0.85)',  icon: '🔴', labelKey: 'cvResultBadge.actionRequired', label: 'Action Required' },
+    5: { color: '#ef4444', bg: 'rgba(239,68,68,0.85)',  icon: '🔴', labelKey: 'cvResultBadge.critical', label: 'Critical' },
 };
 
 const CONDITION_META = {
-    New:     { bg: 'rgba(16,185,129,0.85)',  icon: '🟢', label: 'New' },
-    Good:    { bg: 'rgba(16,185,129,0.85)',  icon: '🟢', label: 'Good' },
-    Worn:    { bg: 'rgba(245,158,11,0.85)',  icon: '🟡', label: 'Worn' },
-    Replace: { bg: 'rgba(239,68,68,0.85)',   icon: '🔴', label: 'Replace' },
+    New:     { bg: 'rgba(16,185,129,0.85)',  icon: '🟢', labelKey: 'cvResultBadge.new', label: 'New' },
+    Good:    { bg: 'rgba(16,185,129,0.85)',  icon: '🟢', labelKey: 'cvResultBadge.good', label: 'Good' },
+    Worn:    { bg: 'rgba(245,158,11,0.85)',  icon: '🟡', labelKey: 'cvResultBadge.worn', label: 'Worn' },
+    Replace: { bg: 'rgba(239,68,68,0.85)',   icon: '🔴', labelKey: 'cvResultBadge.replace', label: 'Replace' },
 };
 
 export default function CVResultBadge({ severity, condition, label, style = {} }) {
+    const { t } = useTranslation();
     let meta;
     if (severity != null) {
         meta = SEVERITY_META[Math.min(Math.max(Math.round(severity), 1), 5)];
@@ -70,7 +72,7 @@ export default function CVResultBadge({ severity, condition, label, style = {} }
             zIndex: 2,
             ...style,
         }}>
-            {meta.icon} {label || meta.label}
+            {meta.icon} {label || t(meta.labelKey, meta.label)}
         </div>
     );
 }

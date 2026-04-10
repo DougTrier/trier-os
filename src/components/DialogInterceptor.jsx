@@ -28,8 +28,12 @@
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import SmartDialog from './SmartDialog';
+import { useTranslation } from '../i18n/index.jsx';
 
 export default function DialogInterceptor() {
+    const { t } = useTranslation();
+    const tRef = useRef(t);
+    tRef.current = t;
     const [dialogState, setDialogState] = useState(null);
     const resolveRef = useRef(null);
     const nativeAlert = useRef(null);
@@ -74,10 +78,10 @@ export default function DialogInterceptor() {
 
         const detectTitle = (type) => {
             switch (type) {
-                case 'error': return 'Error';
-                case 'warning': return 'Warning';
-                case 'success': return 'Success';
-                default: return 'Notice';
+                case 'error': return tRef.current('dialogInterceptor.error', 'Error');
+                case 'warning': return tRef.current('dialogInterceptor.warning', 'Warning');
+                case 'success': return tRef.current('dialogInterceptor.success', 'Success');
+                default: return tRef.current('dialogInterceptor.notice', 'Notice');
             }
         };
 
@@ -91,7 +95,7 @@ export default function DialogInterceptor() {
                     title: detectTitle(type),
                     message: String(message),
                     isAlert: true,
-                    confirmLabel: 'OK'
+                    confirmLabel: tRef.current('dialogInterceptor.ok', 'OK')
                 });
             });
         };
@@ -102,11 +106,11 @@ export default function DialogInterceptor() {
                 resolveRef.current = resolve;
                 setDialogState({
                     type: 'question',
-                    title: 'Confirm',
+                    title: tRef.current('dialogInterceptor.confirm', 'Confirm'),
                     message: String(message).replace(/\\n/g, '\n'),
                     isAlert: false,
-                    confirmLabel: 'Confirm',
-                    cancelLabel: 'Cancel'
+                    confirmLabel: tRef.current('dialogInterceptor.confirm', 'Confirm'),
+                    cancelLabel: tRef.current('dialogInterceptor.cancel', 'Cancel')
                 });
             });
         };
@@ -117,14 +121,14 @@ export default function DialogInterceptor() {
                 resolveRef.current = resolve;
                 setDialogState({
                     type: 'question',
-                    title: 'Input Required',
+                    title: tRef.current('dialogInterceptor.inputRequired', 'Input Required'),
                     message: String(message),
                     isAlert: false,
                     showInput: true,
-                    inputPlaceholder: 'Enter value...',
+                    inputPlaceholder: tRef.current('dialogInterceptor.enterValue', 'Enter value...'),
                     inputValue: defaultValue || '',
-                    confirmLabel: 'Submit',
-                    cancelLabel: 'Cancel'
+                    confirmLabel: tRef.current('dialogInterceptor.submit', 'Submit'),
+                    cancelLabel: tRef.current('dialogInterceptor.cancel', 'Cancel')
                 });
             });
         };

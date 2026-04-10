@@ -83,13 +83,13 @@ function ApprovalQueue() {
             });
             setActionNote(prev => ({ ...prev, [id]: '' }));
             fetchAll();
-        } catch (e) { window.trierToast?.error('Approval failed'); }
+        } catch (e) { window.trierToast?.error(t('approvalQueue.approvalFailed', 'Approval failed')); }
     };
 
     const handleReject = async (id) => {
         const reason = actionNote[id] || '';
         if (!reason) {
-            window.trierToast?.error('Please provide a reason for rejection');
+            window.trierToast?.error(t('approvalQueue.pleaseProvideRejectionReason', 'Please provide a reason for rejection'));
             return;
         }
         try {
@@ -100,7 +100,7 @@ function ApprovalQueue() {
             });
             setActionNote(prev => ({ ...prev, [id]: '' }));
             fetchAll();
-        } catch (e) { window.trierToast?.error('Rejection failed'); }
+        } catch (e) { window.trierToast?.error(t('approvalQueue.rejectionFailed', 'Rejection failed')); }
     };
 
     const saveSettings = async () => {
@@ -110,8 +110,8 @@ function ApprovalQueue() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             });
-            window.trierToast?.error('Approval settings saved successfully');
-        } catch (e) { window.trierToast?.error('Failed to save settings'); }
+            window.trierToast?.success(t('approvalQueue.settingsSaved', 'Approval settings saved'));
+        } catch (e) { window.trierToast?.error(t('approvalQueue.settingsFailed', 'Failed to save settings')); }
     };
 
     const statusColors = {
@@ -131,13 +131,13 @@ function ApprovalQueue() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <AlertTriangle size={20} color="#f59e0b" /> Approval Workflows
+                    <AlertTriangle size={20} color="#f59e0b" /> {t('approvalQueue.approvalWorkflows', 'Approval Workflows')}
                     {stats.pending > 0 && (
                         <span style={{
                             background: '#f59e0b', color: '#000', padding: '2px 8px',
                             borderRadius: '10px', fontSize: '0.7rem', fontWeight: 'bold'
                         }}>
-                            {stats.pending} pending
+                            {stats.pending} {t('approvalQueue.pendingBadge', 'pending')}
                         </span>
                     )}
                 </h3>
@@ -146,7 +146,7 @@ function ApprovalQueue() {
                         background: 'none', border: '1px solid var(--glass-border)', color: 'var(--text-muted)',
                         padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem'
                     }} title={t('approvalQueue.toggleApprovalThresholdSettingsTip')}>
-                        <Settings size={12} /> Thresholds {showSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        <Settings size={12} /> {t('approvalQueue.thresholds', 'Thresholds')} {showSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                     </button>
                     <button onClick={fetchAll} style={{
                         background: 'none', border: '1px solid var(--glass-border)', color: 'var(--text-muted)',
@@ -160,11 +160,11 @@ function ApprovalQueue() {
             {/* Stats Row */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 {[
-                    { label: 'Pending', value: stats.pending, color: '#f59e0b', key: 'pending' },
-                    { label: 'Approved', value: stats.approved, color: '#10b981', key: 'approved' },
-                    { label: 'Rejected', value: stats.rejected, color: '#ef4444', key: 'rejected' },
+                    { label: t('approvalQueue.pending', 'Pending'), value: stats.pending, color: '#f59e0b', key: 'pending' },
+                    { label: t('approvalQueue.approved', 'Approved'), value: stats.approved, color: '#10b981', key: 'approved' },
+                    { label: t('approvalQueue.rejected', 'Rejected'), value: stats.rejected, color: '#ef4444', key: 'rejected' },
                 ].map(s => (
-                    <button 
+                    <button
                         key={s.key}
                         onClick={() => setFilter(s.key)}
                         style={{
@@ -174,7 +174,7 @@ function ApprovalQueue() {
                             color: filter === s.key ? s.color : 'var(--text-muted)',
                             textAlign: 'center', transition: 'all 0.15s ease'
                         }}
-                        title={`Filter by ${s.label.toLowerCase()} approvals`}
+                        title={t('approvalQueue.filterApprovalsTip', 'Filter approvals')}
                     >
                         <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{s.value}</div>
                         <div style={{ fontSize: '0.7rem' }}>{s.label}</div>
@@ -197,12 +197,12 @@ function ApprovalQueue() {
                     marginBottom: '15px', border: '1px solid var(--glass-border)'
                 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '10px', color: '#f59e0b' }}>
-                        ⚙️ Approval Thresholds
+                        {t('approvalQueue.approvalThresholdsHeader', '⚙️ Approval Thresholds')}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                                PO Approval Threshold ($)
+                                {t('approvalQueue.poThresholdLabel', 'PO Approval Threshold ($)')}
                             </label>
                             <input
                                 type="number"
@@ -218,7 +218,7 @@ function ApprovalQueue() {
                         </div>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                                WO Approval Threshold ($)
+                                {t('approvalQueue.woThresholdLabel', 'WO Approval Threshold ($)')}
                             </label>
                             <input
                                 type="number"
@@ -266,7 +266,7 @@ function ApprovalQueue() {
                 </div>
             ) : approvals.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    {filter === 'pending' ? '✅ No pending approvals — all caught up!' : `No ${filter} items.`}
+                    {filter === 'pending' ? t('approvalQueue.noPendingApprovals', '✅ No pending approvals — all caught up!') : t('approvalQueue.noFilterItems', 'No items to show.')}
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
@@ -304,13 +304,13 @@ function ApprovalQueue() {
                             </div>
 
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                                {item.reference_desc || 'No description'}
+                                {item.reference_desc || t('approvalQueue.noDescription', 'No description')}
                             </div>
 
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                                 {t('approval.queue.submittedBy')} <strong>{item.submitted_by}</strong> • {formatDate(item.submitted_at)}
                                 {item.plant_id && <> {t('approvalQueue.plant')} <strong>{item.plant_id.replace(/_/g, ' ')}</strong></>}
-                                {item.resolved_by && <> • {item.status === 'approved' ? 'Approved' : 'Rejected'} by <strong>{item.resolved_by}</strong></>}
+                                {item.resolved_by && <> • {item.status === 'approved' ? t('approvalQueue.approved', 'Approved') : t('approvalQueue.rejected', 'Rejected')} {t('approvalQueue.by', 'by')} <strong>{item.resolved_by}</strong></>}
                             </div>
 
                             {item.reject_reason && (
@@ -318,7 +318,7 @@ function ApprovalQueue() {
                                     marginTop: '6px', padding: '6px 10px', borderRadius: '6px',
                                     background: 'rgba(239,68,68,0.1)', fontSize: '0.75rem', color: '#f87171'
                                 }}>
-                                    Reason: {item.reject_reason}
+                                    {t('approvalQueue.reason', 'Reason:')} {item.reject_reason}
                                 </div>
                             )}
 
