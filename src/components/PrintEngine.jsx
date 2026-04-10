@@ -3969,6 +3969,22 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
             break;
         }
 
+        case 'loto-help-guide': {
+            content = (
+                <>
+                    {renderHeader('LOTO Procedure Guide', 'SOP-LOTO-001')}
+                    {renderSectionHeader('How to Author a LOTO Permit')}
+                    <div className="print-narrative">
+                        <p><strong>1. Scan Equipment (Optional & Recommended):</strong> Use the blue <em>Scan Asset QR</em> button to scan the physical asset nameplate. If previous LOTO events exist, the system will instantly load the exact procedures and isolation points required, saving 90% of data entry.</p>
+                        <p><strong>2. Define Hazard:</strong> Detail the primary energy sources (electrical, pneumatic) and the overarching isolation method for the permit.</p>
+                        <p><strong>3. Identify Isolation Points:</strong> Lockout procedures often require multiple points of isolation to reach zero energy state. Use the "+ Add Point" button to ensure every lock and tag location is accounted for sequentially.</p>
+                        <p><strong>4. Execute & Verify:</strong> Once issued, mechanics must perform the newly integrated <em>Scan-to-Lock</em> workflow on physical field tags to officially execute the procedure safely and retain audit compliance.</p>
+                    </div>
+                </>
+            );
+            break;
+        }
+
         case 'loto-permit-detail': {
             const p = data?.permit || data || {};
             const points = data?.points || [];
