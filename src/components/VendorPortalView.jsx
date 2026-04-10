@@ -29,7 +29,7 @@
  * PRINT: Vendor comparison report and RFQ summary via PrintEngine.
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Globe, X, MessageSquare, FileText, Key, KeyRound, Eye, Pencil, Printer, Save } from 'lucide-react';
+import { Globe, X, MessageSquare, FileText, Key, KeyRound, Eye, Pencil, Printer, Save, BookOpen } from 'lucide-react';
 import { formatDate } from '../utils/formatDate';
 import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
@@ -69,6 +69,7 @@ export default function VendorPortalView({ plantId }) {
         { id: 'vendors', label: 'Vendor Access', icon: Key },
         { id: 'rfq', label: 'RFQ', icon: FileText },
         { id: 'messages', label: 'Messages', icon: MessageSquare },
+        { id: 'setup', label: 'Vendor Setup', icon: BookOpen },
     ];
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-base)' }}>
@@ -85,6 +86,7 @@ export default function VendorPortalView({ plantId }) {
                 {tab === 'vendors' && <VendorsTab search={search} />}
                 {tab === 'rfq' && <RFQTab search={search} />}
                 {tab === 'messages' && <MessagesTab search={search} />}
+                {tab === 'setup' && <VendorSetupTab />}
             </div>
         </div>
     );
@@ -315,6 +317,91 @@ function MessagesTab({ search }) {
                     </div>
                 </>)}
             </div>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VENDOR SETUP & ONBOARDING GUIDE TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+function VendorSetupTab() {
+    const { t } = useTranslation();
+    return (
+        <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 30, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: 20, marginBottom: 20 }}>
+                <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, color: '#10b981' }}>
+                    <BookOpen size={28} /> {t('vendorPortal.setupGuideTitle', 'Vendor API Onboarding Guide')}
+                </h2>
+                <button className="btn-nav" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, fontSize: '0.85rem' }} title="Print Guide">
+                    <Printer size={16} /> Print Instructions
+                </button>
+            </div>
+            
+            <div className="printable-content" style={{ maxWidth: 800, lineHeight: 1.6, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <p style={{ fontSize: '1rem', marginBottom: 20 }}>
+                    Trier OS provides a secure, headless API for external vendors to receive Requests for Quote (RFQs), submit pricing, and communicate with your supply chain team—directly circumventing email bottlenecks.
+                </p>
+                
+                <h3 style={{ color: 'white', marginTop: 25, marginBottom: 10 }}>1. Generate Vendor Access Credentials</h3>
+                <p>
+                    Each vendor requires an exclusive 256-bit access token. 
+                    To generate one, navigate to the main <strong>Master Catalog → Vendors</strong> module, select an approved vendor, and click <strong>Grant Portal Access</strong>. The token will then appear in the <em>Vendor Access</em> tab here.
+                </p>
+
+                <h3 style={{ color: 'white', marginTop: 25, marginBottom: 10 }}>2. Connecting to the API</h3>
+                <p>
+                    Vendors must configure their ERP systems (e.g., SAP, Oracle, NetSuite) or custom B2B scripts to interface with the Trier OS Vendor Edge API.
+                </p>
+                <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: 8, padding: 15, marginTop: 10, fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                    <strong style={{ color: '#94a3b8' }}>Base URL:</strong> <br/>
+                    <code style={{ fontSize: '0.9rem', color: '#10b981' }}>https://[your-trier-os-server]/api/vendor-portal</code><br/><br/>
+                    <strong style={{ color: '#94a3b8' }}>Authentication:</strong> <br/>All API requests must include the following HTTP header:<br/>
+                    <code style={{ fontSize: '0.9rem', color: '#3b82f6' }}>x-vendor-token: &lt;VENDOR_ACCESS_TOKEN&gt;</code>
+                </div>
+
+                <h3 style={{ color: 'white', marginTop: 30, marginBottom: 15 }}>3. Core Integration Workflows</h3>
+                
+                <div style={{ padding: '15px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 15, borderLeft: '3px solid #3b82f6' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <strong style={{ color: '#3b82f6', fontSize: '1rem' }}>A. RFQ Polling & Retrieval</strong>
+                        <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(59,130,246,0.2)', color: '#3b82f6', fontSize: '0.7rem', fontWeight: 600, fontFamily: 'monospace' }}>GET /rfq</span>
+                    </div>
+                    <p style={{ margin: 0 }}>Vendors call this endpoint periodically to pull a list of open RFQs assigned specifically to their Vendor ID. It returns full header data including Due Dates and Line Items.</p>
+                </div>
+
+                <div style={{ padding: '15px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 15, borderLeft: '3px solid #f59e0b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <strong style={{ color: '#f59e0b', fontSize: '1rem' }}>B. Submitting a Quote (Pricing)</strong>
+                        <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', fontSize: '0.7rem', fontWeight: 600, fontFamily: 'monospace' }}>PUT /rfq/:id/items/:itemId</span>
+                    </div>
+                    <p style={{ margin: 0 }}>To submit pricing, vendors push an update payload containing <code>QuotedPrice</code> and <code>LeadTimeDays</code> to each line item inside the target RFQ. Once submitted, the RFQ shifts to &quot;Quoted&quot; status for internal review.</p>
+                </div>
+
+                <div style={{ padding: '15px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, borderLeft: '3px solid #10b981' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <strong style={{ color: '#10b981', fontSize: '1rem' }}>C. Threaded Vendor Messaging</strong>
+                        <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.2)', color: '#10b981', fontSize: '0.7rem', fontWeight: 600, fontFamily: 'monospace' }}>POST /messages</span>
+                    </div>
+                    <p style={{ margin: 0 }}>For discrepancies regarding lead times, specifications, or stock availability, vendors can POST directly to the messaging endpoint. All messages thread directly into the &quot;Messages&quot; tab within this internal portal for your Supply Chain team to review and respond.</p>
+                </div>
+                
+                <div style={{ marginTop: 30, paddingTop: 20, borderTop: '1px dashed var(--glass-border)', fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
+                    Confidential & Proprietary • Distributed via Trier OS Enterprise Integration Services
+                </div>
+            </div>
+            
+            <style dangerouslySetInnerHTML={{__html:`
+                @media print {
+                    .no-print { display: none !important; }
+                    body { background: white !important; color: black !important; }
+                    .glass-card { background: none !important; border: none !important; box-shadow: none !important; color: black !important; padding: 0 !important; }
+                    .printable-content { color: black !important; max-width: 100% !important; }
+                    .printable-content h3 { color: black !important; }
+                    .printable-content div[style*="background: rgba(255, 255, 255, 0.03)"] { border: 1px solid #ddd !important; background: #fafafa !important; }
+                    .printable-content div[style*="background: rgba(0, 0, 0, 0.3)"] { border: 1px solid #ddd !important; background: #eee !important; color: black !important; }
+                    code { color: #333 !important; font-weight: bold; }
+                }
+            `}} />
         </div>
     );
 }
