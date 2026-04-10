@@ -35,6 +35,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BarChart3, Factory, Wrench, Cog, Package, Truck, ShieldCheck, Server, Users, AlertTriangle, DollarSign, Calendar, Target, Crown, RefreshCw, Plus, X, Search, ChevronRight, ChevronDown, Printer, ArrowUpRight, ArrowDownRight, Lock, Key, Zap, Droplets, Flame, Lightbulb, TrendingDown, TrendingUp, CheckCircle2, Activity, Archive, Layers, Clock, Box, Scale, Map } from 'lucide-react';
 import { printRecord, infoGridHTML, tableHTML } from '../utils/printRecord';
 import { useTranslation } from '../i18n/index.jsx';
+import EquipmentIntelligenceSection from './EquipmentIntelligenceSection';
 
 const API = (path, opts = {}) => fetch('/api/corp-analytics' + path, {
     ...opts,
@@ -414,6 +415,7 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
         { id: 'plants', label: 'Plant Rankings', icon: Factory },
         { id: 'financial', label: 'Financial', icon: DollarSign },
         { id: 'opex', label: 'OpEx Intel', icon: TrendingDown },
+        { id: 'equipment', label: 'Equipment Intel', icon: Zap },
         { id: 'risk', label: 'Risk Matrix', icon: AlertTriangle },
         { id: 'forecast', label: 'Forecast', icon: Calendar },
         { id: 'workforce', label: 'Workforce', icon: Users },
@@ -747,6 +749,13 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                     </>
                 );
             })()}
+
+            {/* ═══════════ EQUIPMENT INTELLIGENCE ═══════════ */}
+            {activeSection === 'equipment' && (
+                <div className="glass-card" style={{ padding: 20 }}>
+                    <EquipmentIntelligenceSection />
+                </div>
+            )}
 
             {/* ═══════════ RISK MATRIX SECTION ═══════════ */}
             {activeSection === 'risk' && risks && (

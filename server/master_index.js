@@ -12,10 +12,13 @@
  * Populated by crawl_engine.js on a 15-minute interval.
  *
  * TABLES:
- *   PlantStats       - Per-plant aggregate counts (WOs, assets, parts, costs, urgent WOs)
- *   MasterAssetIndex - All assets across all plants with predictive health metrics
- *   PredictiveAlerts - Generated alerts for assets showing chronic failure patterns
- *   MasterPartIndex  - All parts across all plants for global search
+ *   PlantStats          - Per-plant aggregate counts (WOs, assets, parts, costs, urgent WOs)
+ *   MasterAssetIndex    - All assets across all plants with predictive health metrics
+ *   PredictiveAlerts    - Generated alerts for assets showing chronic failure patterns
+ *   MasterPartIndex     - All parts across all plants for global search
+ *   PlantMetricSummary  - Pre-aggregated OT/SCADA sensor rollups (daily snapshots per plant,
+ *                         per metric bucket). Populated by metric-rollup.js at 8am and 3pm.
+ *                         Powers the Equipment Intelligence tile in OpEx / Corporate Analytics.
  *
  * This DB is the backbone of the "All Sites" dashboard, Enterprise Intelligence,
  * and the global search engine.
@@ -83,6 +86,29 @@ masterDb.exec(`
 
     CREATE INDEX IF NOT EXISTS idx_asset_name ON MasterAssetIndex(assetName);
     CREATE INDEX IF NOT EXISTS idx_part_num ON MasterPartIndex(partNumber);
+
+    -- ── Plant Metric Summary ──────────────────────────────────────────────────
+    -- Pre-aggregated OT sensor snapshots rolled up from each plant's SensorReadings
+    -- table by metric-rollup.js (runs at 08:00 and 15:00 daily + manual sync).
+    -- One row per plant × metric bucket × period date × period type.
+    -- The UNIQUE constraint lets the rollup use ON CONFLICT DO UPDATE (upsert)
+    -- so re-running the same period never creates duplicates.
+    CREATE TABLE IF NOT EXISTS PlantMetricSummary (
+        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        PlantID TEXT NOT NULL,
+        MetricBucket TEXT NOT NULL,    -- temperature | speed | level | oee | pressure | flow
+        PeriodDate TEXT NOT NULL,      -- YYYY-MM-DD
+        PeriodType TEXT DEFAULT 'daily', -- daily | shift
+        AvgValue REAL,
+        MinValue REAL,
+        MaxValue REAL,
+        SampleCount INTEGER DEFAULT 0,
+        Unit TEXT,
+        UpdatedAt TEXT DEFAULT (datetime('now')),
+        UNIQUE(PlantID, MetricBucket, PeriodDate, PeriodType)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pms_plant ON PlantMetricSummary(PlantID);
+    CREATE INDEX IF NOT EXISTS idx_pms_bucket ON PlantMetricSummary(MetricBucket, PeriodDate);
 `);
 
 // Safe migrations for new predictive columns on existing databases

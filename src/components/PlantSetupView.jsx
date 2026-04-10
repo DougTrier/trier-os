@@ -50,6 +50,7 @@ import {
     FileText, ClipboardList, TrendingUp, ChevronDown, ChevronRight,
     Link, Wifi, WifiOff, Database, FlaskConical, Truck, BarChart3, ArrowRightLeft,
 } from 'lucide-react';
+import DeviceRegistryTab from './DeviceRegistryTab';
 
 const API = (path, o = {}) => fetch(`/api/plant-setup${path}`, {
     ...o,
@@ -236,8 +237,8 @@ const buildTabs = (t) => [
     { id: 'general',      label: t('plantSetup.tabGeneral', 'General'),              icon: Settings },
     { id: 'units',        label: t('plantSetup.tabProductionUnits', 'Production Units'), icon: Cpu },
     { id: 'skus',         label: t('plantSetup.tabSkuCatalog', 'SKU Catalog'),         icon: Box },
-    { id: 'calendar',     label: t('plantSetup.tabPlantCalendar', 'Plant Calendar'),   icon: Calendar },
-    // { id: 'import', label: t('plantSetup.tabProductionImport', 'Production Import'), icon: Upload }, // hidden until ready
+    { id: 'calendar',     label: t('plantSetup.tabPlantCalendar', 'Plant Calendar'),     icon: Calendar },
+    { id: 'devices',      label: t('plantSetup.tabDevices', 'Devices'),                  icon: Database },
     { id: 'integrations', label: t('plantSetup.tabApiIntegrations', 'API Integrations'), icon: Link },
 ];
 
@@ -286,9 +287,10 @@ export default function PlantSetupView({ plantId, plantLabel }) {
                 {tab === 'general'  && <GeneralTab       plantId={plantId} plantLabel={plantLabel} summary={summary} setSummary={setSummary} />}
                 {tab === 'units'    && <UnitsTab         plantId={plantId} plantLabel={plantLabel} />}
                 {tab === 'skus'     && <SKUsTab          plantId={plantId} plantLabel={plantLabel} />}
-                {tab === 'calendar' && <CalendarTab      plantId={plantId} plantLabel={plantLabel} />}
-                {tab === 'import'   && <ProductionImportTab plantId={plantId} plantLabel={plantLabel} />}
-                {tab === 'integrations' && <ApiIntegrationsTab plantId={plantId} plantLabel={plantLabel} />}
+                {tab === 'calendar'     && <CalendarTab         plantId={plantId} plantLabel={plantLabel} />}
+                {tab === 'devices'      && <DeviceRegistryTab  plantId={plantId} plantLabel={plantLabel} />}
+                {tab === 'import'       && <ProductionImportTab plantId={plantId} plantLabel={plantLabel} />}
+                {tab === 'integrations' && <ApiIntegrationsTab  plantId={plantId} plantLabel={plantLabel} />}
             </div>
         </div>
     );

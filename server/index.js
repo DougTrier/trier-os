@@ -239,6 +239,25 @@ setInterval(() => {
 }, 15 * 60 * 1000);
 setImmediate(() => { try { runUtilityAnomalyCheck(); } catch (_) {} });
 
+// ── Metric Rollup Cron (8:00 AM and 3:00 PM daily) ────────────────────────────
+// Sweeps plant DBs → aggregates SensorReadings → upserts PlantMetricSummary
+// in corporate_master.db so the Equipment Intelligence tile stays current.
+// The dedup guard (lastRollupDate) prevents double-firing when the check
+// interval happens to tick twice within the same minute.
+console.log('[BOOT] Stage 5.8: Equipment metric rollup cron configured (08:00 + 15:00)');
+const { runMetricRollup } = require('./services/metric-rollup');
+let _lastRollupHour = null;  // tracks last hour that fired to prevent double-fire
+setInterval(() => {
+    const now  = new Date();
+    const hour = now.getHours();
+    const min  = now.getMinutes();
+    // Fire at 08:xx and 15:xx, but only once per hour
+    if ((hour === 8 || hour === 15) && min < 5 && _lastRollupHour !== `${now.toDateString()}_${hour}`) {
+        _lastRollupHour = `${now.toDateString()}_${hour}`;
+        runMetricRollup().catch(err => console.warn('[MetricRollup] Cron failed:', err.message));
+    }
+}, 60 * 1000);  // Check every minute — minimal overhead
+
 console.log('[BOOT] Stage 6: Creating Express app...');
 const app = express();
 const helmet = require('helmet');
@@ -793,7 +812,57 @@ app.delete('/api/network-info/override', (req, res) => {
     }
 });
 
-// â”€â”€ Delta Sync Endpoint (PWA Offline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Static IP Configuration ────────────────────────────────────────────────
+// PUT /api/network-config/static-ip
+// Applies static IP or DHCP to a named network adapter using OS commands.
+// Windows: netsh   |   Linux: nmcli   |   Requires admin/root privileges.
+app.put('/api/network-config/static-ip', (req, res) => {
+    const { interface: iface, mode, ip, subnet, gateway, dns1, dns2 } = req.body || {};
+    if (!iface) return res.status(400).json({ error: 'interface is required' });
+    if (mode !== 'dhcp' && mode !== 'static') return res.status(400).json({ error: 'mode must be dhcp or static' });
+    if (mode === 'static' && (!ip || !subnet)) return res.status(400).json({ error: 'ip and subnet are required for static mode' });
+
+    const { execSync } = require('child_process');
+    const platform = process.platform;
+
+    try {
+        if (platform === 'win32') {
+            if (mode === 'dhcp') {
+                execSync(`netsh interface ip set address “${iface}” dhcp`, { timeout: 10000 });
+                execSync(`netsh interface ip set dns “${iface}” dhcp`, { timeout: 10000 });
+            } else {
+                const gwPart = gateway ? ` ${gateway}` : '';
+                execSync(`netsh interface ip set address “${iface}” static ${ip} ${subnet}${gwPart}`, { timeout: 10000 });
+                if (dns1) execSync(`netsh interface ip set dns “${iface}” static ${dns1}`, { timeout: 10000 });
+                if (dns2) execSync(`netsh interface ip add dns “${iface}” ${dns2} index=2`, { timeout: 10000 });
+            }
+        } else if (platform === 'linux') {
+            if (mode === 'dhcp') {
+                execSync(`nmcli con mod “${iface}” ipv4.method auto && nmcli con up “${iface}”`, { timeout: 15000 });
+            } else {
+                const prefix = subnet ? `/${_subnetToPrefix(subnet)}` : '/24';
+                const gwArg = gateway ? `ipv4.gateway ${gateway}` : '';
+                const dnsArg = [dns1, dns2].filter(Boolean).join(',');
+                execSync(`nmcli con mod “${iface}” ipv4.method manual ipv4.addresses ${ip}${prefix} ${gwArg} ${dnsArg ? 'ipv4.dns ' + dnsArg : ''} && nmcli con up “${iface}”`, { timeout: 15000 });
+            }
+        } else {
+            return res.status(501).json({ error: `Static IP configuration not supported on platform: ${platform}` });
+        }
+
+        console.log(`[+] [Network] ${mode.toUpperCase()} applied to interface “${iface}”`);
+        res.json({ success: true, message: `${mode === 'dhcp' ? 'DHCP' : `Static IP ${ip}`} applied to ${iface}. If using static, reconnect at ${ip}:${PORT}.` });
+    } catch (err) {
+        const msg = err.stderr?.toString() || err.message || 'Command failed';
+        console.error('[Network] Static IP error:', msg);
+        res.status(500).json({ error: `Failed to apply network config: ${msg}. Ensure the server is running as Administrator (Windows) or root (Linux).` });
+    }
+});
+
+function _subnetToPrefix(subnet) {
+    return subnet.split('.').reduce((acc, octet) => acc + parseInt(octet, 10).toString(2).split('').filter(b => b === '1').length, 0);
+}
+
+// ── Delta Sync Endpoint (PWA Offline) ────────────────────────────────────────────────────────────
 // Returns only records modified since the given timestamp for efficient sync
 app.get('/api/sync/delta', (req, res) => {
     try {
@@ -944,6 +1013,7 @@ app.use('/api/storeroom',   require('./routes/storeroom'));                   //
 app.use('/api/training',    require('./routes/training'));                    // Employee Training & Certification Tracking (OSHA, LOTO, HACCP, etc.)
 app.use('/api/warranty',    require('./routes/warranty'));                    // Warranty Claims Lifecycle (File, Track, Recover)
 app.use('/api/plant-setup', require('./routes/plant_setup'));               // Plant Setup: Production Model, Units, SKUs, Calendar
+app.use('/api/devices',    require('./routes/device-registry'));            // Device Registry: PLC/SCADA onboarding, ARP discovery, Modbus probe
 app.use('/api/production-import', require('./routes/production_import'));   // AS400 Number 9 Report Import & Production Planning Engine
 
 

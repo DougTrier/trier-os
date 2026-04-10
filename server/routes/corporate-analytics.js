@@ -1224,12 +1224,12 @@ router.get('/opex-intelligence', requireCorpAccess, (req, res) => {
                     const lbrRow = db.prepare(`
                         SELECT 
                             COALESCE(SUM(COALESCE(wl.HrReg,0)*CAST(COALESCE(wl.PayReg,'0') AS REAL)),0) as reg,
-                            COALESCE(SUM(COALESCE(wl.HrOver,0)*CAST(COALESCE(wl.PayOver,'0') AS REAL)),0) as over,
-                            COALESCE(SUM(COALESCE(wl.HrDouble,0)*CAST(COALESCE(wl.PayDouble,'0') AS REAL)),0) as dbl,
-                            COALESCE(SUM(CASE WHEN COALESCE(CAST(w.ActDown AS REAL), 0) > 0 THEN 
+                            COALESCE(SUM(COALESCE(wl.HrOver,0)*(CASE WHEN CAST(COALESCE(wl.PayOver,'0') AS REAL)>0 THEN CAST(COALESCE(wl.PayOver,'0') AS REAL) ELSE CAST(COALESCE(wl.PayReg,'0') AS REAL)*1.5 END)),0) as over,
+                            COALESCE(SUM(COALESCE(wl.HrDouble,0)*(CASE WHEN CAST(COALESCE(wl.PayDouble,'0') AS REAL)>0 THEN CAST(COALESCE(wl.PayDouble,'0') AS REAL) ELSE CAST(COALESCE(wl.PayReg,'0') AS REAL)*2.0 END)),0) as dbl,
+                            COALESCE(SUM(CASE WHEN COALESCE(CAST(w.ActDown AS REAL), 0) > 0 THEN
                                 COALESCE(wl.HrReg,0)*CAST(COALESCE(wl.PayReg,'0') AS REAL)+
-                                COALESCE(wl.HrOver,0)*CAST(COALESCE(wl.PayOver,'0') AS REAL)+
-                                COALESCE(wl.HrDouble,0)*CAST(COALESCE(wl.PayDouble,'0') AS REAL) 
+                                COALESCE(wl.HrOver,0)*(CASE WHEN CAST(COALESCE(wl.PayOver,'0') AS REAL)>0 THEN CAST(COALESCE(wl.PayOver,'0') AS REAL) ELSE CAST(COALESCE(wl.PayReg,'0') AS REAL)*1.5 END)+
+                                COALESCE(wl.HrDouble,0)*(CASE WHEN CAST(COALESCE(wl.PayDouble,'0') AS REAL)>0 THEN CAST(COALESCE(wl.PayDouble,'0') AS REAL) ELSE CAST(COALESCE(wl.PayReg,'0') AS REAL)*2.0 END)
                             ELSE 0 END),0) as downWages
                         FROM WorkLabor wl
                         INNER JOIN Work w ON wl.WoID = w.ID
@@ -1299,7 +1299,7 @@ router.get('/opex-intelligence', requireCorpAccess, (req, res) => {
                             CAST(COALESCE(a.InstallCost, 0) AS REAL) as insCost,
                             COALESCE(SUM(
                                 COALESCE(wl.HrReg,0)*CAST(COALESCE(wl.PayReg,'0') AS REAL)+
-                                COALESCE(wl.HrOver,0)*CAST(COALESCE(wl.PayOver,'0') AS REAL)
+                                COALESCE(wl.HrOver,0)*(CASE WHEN CAST(COALESCE(wl.PayOver,'0') AS REAL)>0 THEN CAST(COALESCE(wl.PayOver,'0') AS REAL) ELSE CAST(COALESCE(wl.PayReg,'0') AS REAL)*1.5 END)
                             ),0) as laborSpend,
                             COUNT(DISTINCT w.ID) as woCount
                         FROM Asset a
@@ -1333,9 +1333,9 @@ router.get('/opex-intelligence', requireCorpAccess, (req, res) => {
                         const annualRunRate = Math.round(totalMaintCost / 3);
                         let estimatedReplVal = a.repCost > 0 ? a.repCost : (a.insCost > 0 ? a.insCost : 0);
                         if (estimatedReplVal === 0) {
-                            // Under IRS Tangible Property Regulations, the Safe Harbor capitalization limit is
-                            // $5,000 for manufacturing operations possessing an Applicable Financial Statement (AFS).
-                            estimatedReplVal = Math.max(5000, Math.round((a.assetName?.length || 15) * 600) + 2000);
+                            // Estimate replacement value from WO count — independent of maintenance spend,
+                            // avoiding circular math. Each WO implies operational importance (~$3.5K/WO proxy).
+                            estimatedReplVal = Math.max(8000, a.woCount * 3500 + 5000);
                         }
                         if (totalMaintCost < estimatedReplVal * 0.45) continue; // Flag only if > 45% of replacement
 
@@ -1764,9 +1764,9 @@ router.get('/opex-intelligence', requireCorpAccess, (req, res) => {
         const highResolutionPlants = wrenchByPlant.filter(p => p.avgDays > enterpriseAvgResolution * 1.5 && p.avgDays > 0);
         const efficientPlants = wrenchByPlant.filter(p => p.avgDays > 0 && p.avgDays < enterpriseAvgResolution * 0.7);
 
-        // Deduplicate overlapping Overtime labor costs dynamically absorbed by Shrink/Accidents
-        const rawLaborSavings = Math.round((totalLaborOver + totalLaborDouble) * 0.5 + (totalDowntimeWages * 0.2));
-        const laborOptimizationSavings = Math.max(0, Math.round(rawLaborSavings - (totalAccidentCost * 0.15) - (shrinkEstimate * 0.05)));
+        // Labor optimization: 50% of OT+DT spend is addressable through scheduling/PM improvements;
+        // 20% of downtime wages represent pure drag eliminable through reliability investment.
+        const laborOptimizationSavings = Math.max(0, Math.round((totalLaborOver + totalLaborDouble) * 0.5 + (totalDowntimeWages * 0.2)));
 
         // Compute SKU Standardization & Fragmentation Savings
         const skuStandardizationAlerts = [];
@@ -1894,6 +1894,66 @@ router.get('/opex-intelligence', requireCorpAccess, (req, res) => {
     } catch (e) {
         console.error('[Corp Analytics] opex-intelligence error:', e);
         res.status(500).json({ error: e.message });
+    }
+});
+
+// ── Equipment Intelligence ────────────────────────────────────────────────────
+
+const masterDb          = require('../master_index');
+const { runMetricRollup } = require('../services/metric-rollup');
+
+/**
+ * GET /equipment-intelligence
+ * Returns PlantMetricSummary rows for the requested date range (default: last 7 days).
+ * One row per plant × metric bucket × day. The frontend groups by bucket/plant
+ * to render trend sparklines and the KPI card grid.
+ *
+ * Query params:
+ *   from  YYYY-MM-DD  (default: 7 days ago)
+ *   to    YYYY-MM-DD  (default: today)
+ */
+router.get('/equipment-intelligence', requireCorpAccess, (req, res) => {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        const from = req.query.from || weekAgo;
+        const to   = req.query.to   || today;
+
+        const rows = masterDb.prepare(`
+            SELECT PlantID, MetricBucket, PeriodDate, PeriodType,
+                   AvgValue, MinValue, MaxValue, SampleCount, Unit, UpdatedAt
+            FROM PlantMetricSummary
+            WHERE PeriodDate BETWEEN ? AND ?
+            ORDER BY PeriodDate DESC, PlantID, MetricBucket
+        `).all(from, to);
+
+        // Summarize distinct plants + buckets that have data
+        const plants  = [...new Set(rows.map(r => r.PlantID))];
+        const buckets = [...new Set(rows.map(r => r.MetricBucket))];
+
+        res.json({ from, to, plants, buckets, rows });
+    } catch (err) {
+        console.error('[Corp Analytics] equipment-intelligence error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * POST /sync
+ * Manually triggers a metric rollup for today (or a specified date).
+ * Useful when the corporate office wants current data outside the 8am/3pm
+ * scheduled windows.
+ *
+ * Body (optional): { date: "YYYY-MM-DD" }
+ */
+router.post('/sync', requireCorpAccess, async (req, res) => {
+    try {
+        const date   = req.body?.date || null;  // null → runMetricRollup uses today
+        const result = await runMetricRollup(date);
+        res.json({ ok: true, ...result });
+    } catch (err) {
+        console.error('[Corp Analytics] sync error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 

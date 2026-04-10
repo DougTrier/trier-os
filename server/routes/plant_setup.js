@@ -37,6 +37,16 @@
  *   POST   /integrations/worker/stop       Stop a running EdgeAgent sync worker
  *   GET    /integrations/worker/status     All worker and simulator states for this plant
  *   GET    /integrations/worker/data       Recent SensorReadings from the plant DB (up to 200 rows)
+ *   GET    /devices                        List all PlantDevices for this plant
+ *   GET    /devices/:id                    Single device detail + metric map
+ *   POST   /devices/lookup-serial          Check if a serial/barcode already exists
+ *   POST   /devices/arp-probe              ARP network scan to resolve MAC → IP
+ *   POST   /devices/modbus-probe           Modbus FC03 probe to confirm device is live
+ *   POST   /devices                        Create a new device record (saves DeviceMetricMap)
+ *   PUT    /devices/:id                    Update a device record
+ *   DELETE /devices/:id                    Remove a device and its metric map
+ *   POST   /devices/:id/start-worker       Start an EdgeAgent worker for this device
+ *   POST   /devices/:id/stop-worker        Stop the running EdgeAgent worker for this device
  *
  * PRODUCTION MODELS:
  *   'fluid-process'  — Dairy/beverage (continuous flow, volume-based — the Trier default)
@@ -133,6 +143,52 @@ function initPlantSetupTables() {
             Label TEXT NOT NULL,
             ProductionCapacityPct REAL DEFAULT 0,
             AppliesToAll INTEGER DEFAULT 1,
+            CreatedAt TEXT DEFAULT (datetime('now'))
+        );
+
+        -- ── Device Registry ──────────────────────────────────────────────────
+        -- One row per physical OT device (PLC, SCADA, Sensor, HMI) at this plant.
+        -- Populated by the Device Registry wizard: barcode scan → MAC entry →
+        -- ARP discovery → Modbus probe → function / asset linkage.
+        CREATE TABLE IF NOT EXISTS PlantDevices (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            PlantID TEXT NOT NULL,
+            SerialNumber TEXT,          -- barcode / QR scan payload
+            BarcodeRaw TEXT,            -- raw scan value before normalization
+            MACAddress TEXT,            -- XX:XX:XX:XX:XX:XX (normalized on save)
+            IPAddress TEXT,             -- populated by ARP network scan
+            Port INTEGER DEFAULT 502,   -- Modbus TCP port (default 502)
+            DeviceType TEXT DEFAULT 'PLC', -- PLC | SCADA | Sensor | HMI | Other
+            Manufacturer TEXT,
+            Model TEXT,
+            FirmwareVersion TEXT,
+            Function TEXT,              -- human label, e.g. "Line 1 PLC"
+            AssetID TEXT,               -- FK → CMMS assets table
+            PartID TEXT,                -- FK → parts catalog
+            IntegrationID TEXT,         -- FK → PlantIntegrations.IntegrationID
+            Status TEXT DEFAULT 'Pending', -- Pending | Active | Offline | Decommissioned
+            LastSeenAt TEXT,
+            LastProbeAt TEXT,
+            ProbeResult TEXT,           -- JSON from most recent Modbus probe
+            Notes TEXT,
+            CreatedAt TEXT DEFAULT (datetime('now')),
+            UpdatedAt TEXT DEFAULT (datetime('now'))
+        );
+
+        -- ── Device Metric Map ─────────────────────────────────────────────────
+        -- Maps each device's TAG_DEFINITION tag names to corporate metric buckets
+        -- (e.g. "line1_temp_c" → "temperature"). Created automatically when a
+        -- device is saved so it appears in corporate PlantMetricSummary rollups
+        -- without any manual wiring step.
+        CREATE TABLE IF NOT EXISTS DeviceMetricMap (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            PlantID TEXT NOT NULL,
+            DeviceID INTEGER NOT NULL,  -- FK → PlantDevices.ID
+            TagName TEXT NOT NULL,      -- matches TAG_DEFINITIONS[n].name
+            MetricBucket TEXT NOT NULL, -- corporate bucket: temperature | speed | level | oee | pressure | flow
+            Scale REAL DEFAULT 1.0,     -- multiplier to normalize to corporate unit
+            Offset REAL DEFAULT 0.0,
+            Unit TEXT,                  -- display unit, e.g. "°C", "RPM", "m³/h"
             CreatedAt TEXT DEFAULT (datetime('now'))
         );
     `);
