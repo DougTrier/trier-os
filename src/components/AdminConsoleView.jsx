@@ -35,7 +35,7 @@ import UserAccountsView from './UserAccountsView';
 import SnapshotRollbackView from './SnapshotRollbackView';
 import SAPIntegrationView from './SAPIntegrationView';
 import BackupPrivilegesView from './BackupPrivilegesView';
-import OnboardingWizard from './OnboardingWizard';
+
 import ApprovalQueue from './ApprovalQueue';
 import EnrollmentQueue from './EnrollmentQueue';
 import APIDocsPanel from './APIDocsPanel';
@@ -1493,7 +1493,7 @@ export default function AdminConsoleView({ plantId, plantLabel, plants }) {
     const [isReindexing, setIsReindexing] = useState(false);
     const [isVacuuming, setIsVacuuming] = useState(false);
     const [showSAP, setShowSAP] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(false);
+
     const [branding, setBranding] = useState({ dashboardLogo: null, documentLogo: null });
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
@@ -1673,15 +1673,7 @@ export default function AdminConsoleView({ plantId, plantLabel, plants }) {
                         <UserAccountsView />
                         <ApprovalQueue />
                         <EnrollmentQueue />
-                        <div className="glass-card" style={{ padding: 'var(--card-padding)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(16,185,129,0.05))' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <div style={{ background: 'var(--primary)', padding: '10px', borderRadius: '10px' }}><Globe color="#fff" size={24} /></div>
-                                    <div><h3 style={{ margin: 0 }}>{t('settings.enterpriseOnboardingConsole')}</h3><p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('settings.provisionThisSiteUsing')}</p></div>
-                                </div>
-                                <button className="btn-primary" onClick={() => setShowOnboarding(true)}>{t('settings.openOnboardingConsole')}</button>
-                            </div>
-                        </div>
+                        {/* Enterprise Onboarding moved to Facilities & Floor Plans → plant-setup-group portal */}
                     </div>
                 )}
 
@@ -1755,7 +1747,6 @@ export default function AdminConsoleView({ plantId, plantLabel, plants }) {
             </div>
 
             {showSAP && <SAPIntegrationView onClose={() => setShowSAP(false)} />}
-            {showOnboarding && <OnboardingWizard onClose={() => setShowOnboarding(false)} plantId={currentPlant.id} plantLabel={currentPlant.label} mode="audit" />}
         </div>
     );
 }

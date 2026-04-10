@@ -30,6 +30,13 @@
  *   GET    /integrations            Configured third-party integrations (SAP, ERP, SCADA)
  *   POST   /integrations            Register a new integration endpoint
  *   POST   /integrations/test       Live HTTP probe to verify integration connectivity
+ *   POST   /products/import         Bulk-insert pre-mapped SKU rows from CSV or DB import
+ *   POST   /products/import-db      Upload a .db/.sqlite file; scans tables for SKU data, returns preview
+ *   POST   /integrations/simulator/toggle  Start or stop the built-in Modbus TCP simulator for an integration
+ *   POST   /integrations/worker/start      Launch an EdgeAgent sync worker for a plant × integration
+ *   POST   /integrations/worker/stop       Stop a running EdgeAgent sync worker
+ *   GET    /integrations/worker/status     All worker and simulator states for this plant
+ *   GET    /integrations/worker/data       Recent SensorReadings from the plant DB (up to 200 rows)
  *
  * PRODUCTION MODELS:
  *   'fluid-process'  — Dairy/beverage (continuous flow, volume-based — the Trier default)
@@ -49,6 +56,35 @@
 const express = require('express');
 const router = express.Router();
 const { db: logisticsDb } = require('../logistics_db');
+const integrationManager = require('../integrations/integration-manager');
+const { TAG_DEFINITIONS } = require('../integrations/modbus-simulator');
+const path = require('path');
+const fs = require('fs');
+const Database = require('better-sqlite3');
+const dataDir = require('../resolve_data_dir');
+const multer = require('multer');
+
+// ── SKU Import — File Upload Middleware ───────────────────────────────────────
+// Multer diskStorage for .db/.sqlite uploads from the SKUImportModal wizard.
+// CSV files are parsed entirely client-side (PapaParse) and never hit this middleware.
+// Uploaded files land in {dataDir}/uploads/sku-imports/ and are auto-deleted
+// after 10 minutes by the import-db route handler.
+const skuUploadDir = path.join(dataDir, 'uploads', 'sku-imports');
+const skuUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            if (!fs.existsSync(skuUploadDir)) fs.mkdirSync(skuUploadDir, { recursive: true });
+            cb(null, skuUploadDir);
+        },
+        filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`),
+    }),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (['.db', '.sqlite', '.sqlite3'].includes(ext)) cb(null, true);
+        else cb(new Error('Only .db / .sqlite files are accepted here'));
+    },
+});
 
 // ── Table Init ───────────────────────────────────────────────────────────────
 function initPlantSetupTables() {
@@ -114,6 +150,7 @@ const addCols = [
     "ALTER TABLE PlantProducts ADD COLUMN ChangeoverFromPrev TEXT DEFAULT 'none'",
 ];
 for (const sql of addCols) { try { logisticsDb.exec(sql); } catch (_) {} }
+try { logisticsDb.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_plantproducts_sku ON PlantProducts(PlantID, SKU)'); } catch (_) {}
 
 const getPlantId = (req) => req.headers['x-plant-id'] || 'Plant_1';
 
@@ -571,6 +608,186 @@ router.post('/integrations/test', async (req, res) => {
     // Cannot test — no host/endpoint configured
     if (!host) return res.json({ ok: false, message: 'No host or endpoint configured — fill in connection details first.' });
     return res.json({ ok: true, message: 'Configuration saved. Live test requires a reachable host IP or URL.' });
+});
+
+// ── SKU Bulk Import ───────────────────────────────────────────────────────────
+
+// POST /products/import — Bulk insert pre-mapped rows from the SKUImportModal wizard.
+// Body: { rows: MappedRow[], mode: 'skip' | 'overwrite' }
+//   skip      — duplicate (PlantID, SKU) pairs are silently skipped (safe default)
+//   overwrite — duplicates are updated via ON CONFLICT DO UPDATE (intentional re-import)
+// Returns: { inserted, skipped, errors[] } — first 20 errors included for UI feedback.
+router.post('/products/import', (req, res) => {
+    try {
+        const plantId = getPlantId(req);
+        const { rows, mode = 'skip' } = req.body; // mode: 'skip' | 'overwrite'
+        if (!Array.isArray(rows) || rows.length === 0)
+            return res.status(400).json({ error: 'rows array required' });
+
+        const insert = logisticsDb.prepare(`
+            INSERT INTO PlantProducts
+                (PlantID, SKU, ProductName, ProductFamily, BaselineDailyQty, HolidayQty, UOM, SizeCode, Notes, Active)
+            VALUES (?,?,?,?,?,?,?,?,?,1)
+        `);
+        const upsert = logisticsDb.prepare(`
+            INSERT INTO PlantProducts
+                (PlantID, SKU, ProductName, ProductFamily, BaselineDailyQty, HolidayQty, UOM, SizeCode, Notes, Active)
+            VALUES (?,?,?,?,?,?,?,?,?,1)
+            ON CONFLICT(PlantID, SKU) DO UPDATE SET
+                ProductName=excluded.ProductName,
+                ProductFamily=excluded.ProductFamily,
+                BaselineDailyQty=excluded.BaselineDailyQty,
+                UOM=excluded.UOM,
+                SizeCode=excluded.SizeCode,
+                Notes=excluded.Notes,
+                UpdatedAt=datetime('now')
+        `);
+
+        let inserted = 0, skipped = 0, errors = [];
+        const stmt = mode === 'overwrite' ? upsert : insert;
+
+        const run = logisticsDb.transaction(() => {
+            for (const row of rows) {
+                if (!row.sku || !row.productName) { errors.push(`Skipped: missing SKU or Name`); skipped++; continue; }
+                try {
+                    stmt.run(
+                        plantId,
+                        String(row.sku).trim(),
+                        String(row.productName).trim(),
+                        row.productFamily || null,
+                        parseFloat(row.baselineDailyQty) || 0,
+                        parseFloat(row.holidayQty) || 0,
+                        row.uom || 'cases',
+                        row.sizeCode || null,
+                        row.notes || null,
+                    );
+                    inserted++;
+                } catch (e) {
+                    if (mode === 'skip' && e.message.includes('UNIQUE')) { skipped++; }
+                    else { errors.push(`${row.sku}: ${e.message}`); skipped++; }
+                }
+            }
+        });
+        run();
+        res.json({ success: true, inserted, skipped, errors: errors.slice(0, 20) });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /products/import-db — Upload a SQLite .db/.sqlite file and scan it for SKU data.
+// Opens the file read-only, scores each table by name similarity to SKU/product/catalog
+// keywords, and returns column headers + first 50 rows for the top 6 matching tables.
+// The temp file is auto-deleted after 10 minutes regardless of outcome.
+router.post('/products/import-db', skuUpload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const filePath = req.file.path;
+    try {
+        const db = new Database(filePath, { readonly: true });
+        const tables = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`).all().map(r => r.name);
+
+        // Score tables by likelihood of containing SKU data
+        const SKU_SIGNALS = ['sku', 'product', 'item', 'catalog', 'parts', 'inventory'];
+        const scored = tables.map(name => {
+            const lower = name.toLowerCase();
+            const score = SKU_SIGNALS.reduce((s, sig) => s + (lower.includes(sig) ? 1 : 0), 0);
+            return { name, score };
+        }).sort((a, b) => b.score - a.score);
+
+        const result = [];
+        for (const { name } of scored.slice(0, 6)) {
+            try {
+                const cols = db.prepare(`PRAGMA table_info(${JSON.stringify(name)})`).all().map(c => c.name);
+                const rows = db.prepare(`SELECT * FROM ${JSON.stringify(name)} LIMIT 50`).all();
+                result.push({ table: name, columns: cols, rows });
+            } catch {}
+        }
+        db.close();
+
+        // Clean up temp file after 10 minutes
+        setTimeout(() => { try { fs.unlinkSync(filePath); } catch {} }, 10 * 60 * 1000);
+        res.json({ tables: result });
+    } catch (err) {
+        try { fs.unlinkSync(filePath); } catch {}
+        res.status(500).json({ error: 'Could not read database file: ' + err.message });
+    }
+});
+
+// ── Integration Simulator & Worker Control ────────────────────────────────────
+
+// Toggle simulator on/off for a given integration
+router.post('/integrations/simulator/toggle', async (req, res) => {
+    try {
+        const { integrationId, enable } = req.body;
+        if (!integrationId) return res.status(400).json({ error: 'integrationId required' });
+        const result = enable
+            ? await integrationManager.startSimulator(integrationId)
+            : await integrationManager.stopSimulator(integrationId);
+        res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Start a sync worker for a plant × integration
+router.post('/integrations/worker/start', (req, res) => {
+    try {
+        const plantId       = req.headers['x-plant-id'] || 'Plant_1';
+        const { integrationId, config } = req.body;
+        if (!integrationId) return res.status(400).json({ error: 'integrationId required' });
+        const cfg = config || {};
+        // Merge saved integration config with request overrides
+        try {
+            const saved = logisticsDb.prepare('SELECT IntegrationConfig FROM PlantConfiguration WHERE PlantID=?').get(plantId);
+            if (saved?.IntegrationConfig) {
+                const all = JSON.parse(saved.IntegrationConfig);
+                Object.assign(cfg, all[integrationId] || {}, config || {});
+            }
+        } catch {}
+        const result = integrationManager.startWorker(plantId, integrationId, cfg);
+        res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Stop a sync worker
+router.post('/integrations/worker/stop', (req, res) => {
+    try {
+        const plantId      = req.headers['x-plant-id'] || 'Plant_1';
+        const { integrationId } = req.body;
+        if (!integrationId) return res.status(400).json({ error: 'integrationId required' });
+        res.json(integrationManager.stopWorker(plantId, integrationId));
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get status of all workers + simulators for this plant
+router.get('/integrations/worker/status', (req, res) => {
+    try {
+        const plantId = req.headers['x-plant-id'] || 'Plant_1';
+        const workers = integrationManager.getAllStatuses(plantId);
+        // Attach simulator status for each known integration
+        const simStatus = {};
+        ['scada','erp','lims','edi','coldchain','route'].forEach(id => {
+            simStatus[id] = integrationManager.simulatorStatus(id);
+        });
+        res.json({ workers, simulators: simStatus });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get recent sensor readings from the plant DB
+router.get('/integrations/worker/data', (req, res) => {
+    try {
+        const plantId = req.headers['x-plant-id'] || 'Plant_1';
+        const limit   = Math.min(parseInt(req.query.limit) || 32, 200);
+        const dbPath  = path.join(dataDir, `${plantId}.db`);
+        const db      = new Database(dbPath, { readonly: true });
+        let readings  = [];
+        try {
+            readings = db.prepare(`
+                SELECT TagName, Value, Unit, ReadingTime, Source
+                FROM SensorReadings
+                ORDER BY ReadingTime DESC, ID DESC
+                LIMIT ?
+            `).all(limit);
+        } catch { /* table may not exist yet */ }
+        db.close();
+        res.json({ readings, tagDefinitions: TAG_DEFINITIONS });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

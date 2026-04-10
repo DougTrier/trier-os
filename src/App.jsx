@@ -136,6 +136,23 @@ import StoreroomView from './components/StoreroomView';
 import TrainingView from './components/TrainingView';
 import PlantSetupView from './components/PlantSetupView';
 import useHardwareScanner from './hooks/useHardwareScanner';
+/**
+ * PlantOnboardingRoute — thin route wrapper for the Enterprise Onboarding Wizard.
+ * Renders the OnboardingWizard full-screen (it uses modal-overlay / position:fixed)
+ * and navigates back to the Facilities & Floor Plans group portal on close.
+ */
+function PlantOnboardingRoute({ plantId, plantLabel }) {
+    const navigate = useNavigate();
+    return (
+        <OnboardingWizard
+            mode="import"
+            plantId={plantId}
+            plantLabel={plantLabel}
+            onClose={() => navigate('/portal/plant-setup-group')}
+        />
+    );
+}
+
 function App() {
     const isOnline = useOnlineStatus();
     const { t, lang, setLang, LANGUAGES } = useTranslation();
@@ -1057,6 +1074,7 @@ function App() {
                         <Route path="/training" element={<TrainingView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/work-request-portal" element={<WorkRequestPortal />} />
                         <Route path="/plant-setup" element={<PlantSetupView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
+                        <Route path="/plant-onboarding" element={<PlantOnboardingRoute plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/portal/:groupKey" element={
                             <GroupPortalView
                                 plantId={selectedPlant}

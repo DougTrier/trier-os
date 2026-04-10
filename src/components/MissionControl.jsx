@@ -109,6 +109,8 @@ const ALL_TILES = {
     'storeroom':       { icon: Warehouse,      accent: '#f59e0b', title: 'Storeroom Intelligence', desc: 'ABC classification, dead stock alerts, slow-moving parts, carrying cost analysis, and total capital tied up in inventory.', pills: ['ABC', 'Dead Stock', 'Carrying Cost'], route: '/storeroom' },
     'training':        { icon: GraduationCap,  accent: '#10b981', title: 'Training & Certifications', desc: 'Track employee training completions, certification expiry alerts, compliance scorecard, and the full skills matrix across the workforce.', pills: ['Records', 'Expiring', 'Compliance', 'Matrix'], route: '/training' },
     'work-request-portal': { icon: ClipboardList, accent: '#10b981', title: 'Work Request Portal', desc: 'Submit a maintenance or repair request on behalf of an operator. No scanner needed — fill it out directly from any device.', pills: ['Submit', 'Status Check', 'No Login Needed'], workspace: 'work-request-portal' },
+    'plant-setup':         { icon: Factory,       accent: '#0ea5e9', title: 'Plant Setup',          desc: 'Configure production model, units, SKUs, shifts, scheduling calendar, network settings, and facility parameters for this plant.', pills: ['Production', 'SKUs', 'Shifts', 'Network'], route: '/plant-setup' },
+    'plant-onboarding':    { icon: Globe,         accent: '#6366f1', title: 'Enterprise Onboarding', desc: 'Provision a new facility using corporate master data — vendors, assets, SOPs, and parts pulled from the enterprise catalog.', pills: ['Vendors', 'Assets', 'SOPs', 'Parts'], route: '/plant-onboarding' },
 };
 
 const ROLE_TILES = {
@@ -125,10 +127,10 @@ const ROLE_TILES = {
     engineer:   ['engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'sops', 'supply-chain', 'comms', 'floor-plans', 'maps', 'work-request-portal'],
     lab_tech:   ['quality-log', 'sops', 'safety', 'compliance', 'comms', 'floor-plans', 'maps', 'utilities'],
     manager:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps',
+                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'work-request-portal'],
     plant_manager: ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps',
+                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'work-request-portal'],
     maintenance_manager: ['maintenance', 'my-work-orders', 'parts-needed', 'storeroom', 'asset-metrics', 'tool-crib', 'contractors', 'analytics', 'sops', 'loto', 'safety', 'floor-plans', 'maps', 'work-request-portal'],
     corporate:  ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'storeroom', 'sops',
@@ -138,11 +140,11 @@ const ROLE_TILES = {
                  'asset-metrics', 'logistics-fleet', 'supply-chain', 'floor-plans', 'maps',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'underwriter'],
     it_admin:   ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps',
+                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics'],
     creator:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps',
+                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'corp-analytics', 'work-request-portal'],
     employee:   ['plant-overview', 'directory', 'comms', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
@@ -162,7 +164,7 @@ const TILE_GROUPS = {
     'safety-group': { icon: ShieldAlert, accent: '#ef4444', title: 'Safety & Risk', desc: 'Hot work permits, confined space, safety incidents, LOTO, compliance, OSHA tracking, and insurance risk scoring.', pills: ['Permits', 'LOTO', 'Compliance', 'Risk Score'], children: ['safety', 'loto', 'compliance', 'underwriter'] },
     'people-comms': { icon: Users, accent: '#6366f1', title: 'People & Comms', desc: 'Knowledge exchange messaging and enterprise directory.', pills: ['Chat', 'Directory'], children: ['comms', 'directory'] },
     'it-group': { icon: Server, accent: '#6366f1', title: 'Information Technology', desc: 'IT asset management, software licensing, system administration, governance, and data integration.', pills: ['Assets', 'Metrics', 'Admin', 'Governance'], children: ['it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard'] },
-    'plant-setup-group': { icon: Factory, accent: '#0ea5e9', title: 'Facilities & Floor Plans', desc: 'Interactive facility floor plans, equipment placement zones, LiDAR 3D scanning, and site maps.', pills: ['Floor Plans', 'Campus Maps', 'CAD Models'], children: ['floor-plans', 'maps'] },
+    'plant-setup-group': { icon: Factory, accent: '#0ea5e9', title: 'Facilities & Floor Plans', desc: 'Interactive facility floor plans, equipment placement zones, LiDAR 3D scanning, and site maps.', pills: ['Floor Plans', 'Campus Maps', 'CAD Models'], children: ['floor-plans', 'maps', 'plant-setup', 'plant-onboarding'] },
 };
 
 function buildDisplayList(tileKeys) {
