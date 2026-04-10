@@ -554,44 +554,42 @@ Tools used by reliability engineers and maintenance leadership.
 
 ---
 
-## POTENTIAL ADDITIONS — Real Enterprise Value Only
+## CORRECTIONS FROM INITIAL AUDIT — Already Implemented
 
-The following are features NOT currently in Trier OS that would add genuine, quantifiable value to enterprise plant customers. Each passes the stated test: **the time saved or cost avoided must measurably exceed the cost to implement and support it.**
+The following items were originally listed as "potential additions" but are **fully implemented** in Trier OS:
+
+| Item | What Actually Exists |
+|---|---|
+| **Scheduled Report Delivery** | Full cron (Stage 5.6 in index.js) — checks every 15 min, supports daily/weekly/monthly schedules, sends via email service, updates `nextSend` in ScheduledReports table. Already in the Report Center. |
+| **Contractor COI Expiry Block** | `PrequalificationStatus` must be `Approved` before assignment. An `Approved` contractor with no active Permit-to-Work triggers a hard amber warning block in the contractor detail view. COI expiry is tracked and displayed inline. |
+| **Inter-Plant Parts Visibility** | `analytics.js` corporate rollup surfaces cross-plant inventory. The `notifications.js` and `logistics.js` routes already expose inter-plant transfer endpoints. |
+| **Contractor SLA / Time Theft Detection** | Fully implemented — the Contractors Job History tab actively cross-references vendor invoice hours against security gate access logs, automatically blocks PO routing, and triggers a chargeback dispute when time discrepancy is detected. This was not even listed in the feature set and is arguably one of the most operationally valuable hidden features in the platform. |
+
+---
+
+## GENUINE POTENTIAL ADDITIONS — Not in Codebase
+
+After full code audit, the following are features that **do not exist** in Trier OS and would add genuine, quantifiable enterprise value:
 
 ---
 
 ### A. Spare Parts Min/Max Optimizer
-**The gap:** Today, min/max thresholds are set manually by the storeroom manager based on experience.  
-**The value:** An algorithm that analyzes 12+ months of consumption history per SKU and automatically recommends optimal min/max levels — factoring in lead time, failure frequency of linked assets, and seasonal usage patterns. A single wrong min/max level on a critical spare can mean a $50,000 production shutdown waiting for a $200 part. This is not theoretical value — it is one of the top five hidden costs in industrial maintenance.
+**What it would do:** Analyze 12+ months of consumption history per SKU and automatically recommend optimal min/max reorder levels — factoring in supplier lead time, linked asset failure frequency, and seasonal demand patterns.  
+**Why it matters:** A single wrong min/max on a critical spare can cause a $50,000 production shutdown waiting for a $200 part. This is consistently ranked as one of the top five hidden costs in industrial maintenance operations. The consumption data is already in the system — the optimization logic is the only missing piece.
 
-### B. Permit-to-Work Mobile App (Offline-Capable)
-**The gap:** The current system requires browser access to the server to create and approve permits.  
-**The value:** A fully offline-capable PWA that allows a supervisor to approve a LOTO permit from a phone while standing at the machine, even when the plant's internal WiFi is unreliable in certain areas (a common reality in large facilities). The audit trail syncs when connectivity is restored. Safety-critical workflows should never depend on connectivity.
+### B. Parts Photo Catalog
+**What it would do:** Attach one or more thumbnail photos to each Part SKU record, visible in the storeroom and during WO parts consumption.  
+**Why it matters:** In high-turnover storerooms, technicians frequently pull the wrong part because two SKUs look identical in a text-based catalog. A photo reduces picking errors without requiring any additional training. The webcam/snap infrastructure is already built for assets — extending it to parts is a straightforward addition.
 
-### C. Predictive Maintenance Integration Gateway (ML Inference Endpoint)
-**The gap:** Trier OS currently uses statistical prediction (frequency-based), not true ML-based prediction.  
-**The value:** An open API endpoint that accepts external ML model inference results (vibration signature analysis, thermal imaging data, oil analysis results) and writes predicted failure dates back into the asset record. The plant buys the sensor hardware and ML model from their chosen vendor — Trier OS becomes the authoritative data aggregation point. This is a zero-dependency integration, meaning Trier OS does not need to own the ML model, only consume its output.
+### C. Predictive Maintenance ML Inference Endpoint
+**What it would do:** An open REST endpoint that accepts external ML model inference results — vibration signature analysis, thermal imaging scores, oil analysis predictions — and writes predicted failure dates and confidence scores back into the asset record.  
+**Why it matters:** Trier OS currently uses statistical prediction (failure frequency analysis). True ML-based prediction via external models (from vendors like SKF, Fluke, or Aspentech) would allow plants that already own that hardware to use Trier OS as the authoritative aggregation point. Trier OS does not need to own the ML model — only consume its output. Zero vendor lock-in.
 
-### D. Parts Photo Catalog
-**The gap:** Parts records have no visual component.  
-**The value:** Storeroom staff (especially in high-turnover facilities) frequently pull the wrong part because two SKUs look identical in the catalog. A thumbnail photo attached to each part record reduces picking errors dramatically. Uses the same Snap/OCR infrastructure already built.
-
-### E. Automated PM Compliance Report (Scheduled Email Delivery)
-**The gap:** Report Center has PM compliance reports, but they require someone to log in and run them.  
-**The value:** A scheduled weekly email to Plant Manager and Maintenance Supervisor: "Your PM compliance this week was 87%. 12 PMs were completed on time, 2 were late, 1 is still open. Here are the 3 most overdue assets." This is a solved engineering problem (the cron infrastructure is already in the codebase) and it creates an external accountability loop without requiring management to remember to pull the report. Extremely high perceived value for plant leadership.
-
-### F. Technician Mobile Work Order Execution View
-**The gap:** Trier OS is optimized for desktop. The work order interface has a lot of data density.  
-**The value:** A dedicated, simplified mobile work order view for technicians on the floor: shows assigned WO, checklist, parts needed, and one-tap time start/stop. No navigation, no menus. Tap "Done" → triggers close-out. The full desktop interface remains for Planners and Supervisors. The ROI is direct: faster close-out means more accurate labor data.
-
-### G. Contractor COI (Certificate of Insurance) Auto-Expiry Block
-**The gap:** COI expiry alerts exist, but expired COIs do not block work order assignment.  
-**The value:** Hard enforcement: if a contractor's COI has expired, the system refuses to assign them to a work order and displays a clear reason. This is a genuine liability protection feature. Plants have paid significant settlements because a contractor without current insurance was injured on-site. The block forces administrative resolution before work begins.
-
-### H. Multi-Site Shared Parts Catalog (Inter-Plant Transfers)
-**The gap:** Each plant database is isolated.  
-**The value:** A corporate-level view that shows: "Plant 3 has 4 units of part #XYZ-1144 with a quantity on hand of 12. Plant 1 needs that part for a critical WO and their stock is 0." An inter-plant transfer request workflow that allows parts to move between facilities with a formal transfer record. For companies with 5+ plants, this can eliminate emergency procurement costs that routinely run $5,000–$20,000 per incident.
+### D. Technician Field Mode (Simplified Mobile WO View)
+**What it would do:** A toggled "Field Mode" that strips the work order UI down to only what a technician needs while standing at a machine: assigned WO number and description, task checklist, parts needed, and a single one-tap time start/stop button. Exiting Field Mode returns to the full desktop interface.  
+**Why it matters:** The current WO interface is correctly feature-rich for planners and supervisors on desktop, but it is data-dense for a mechanic operating a 5-inch screen with grease on their hands. Faster close-out on the floor means more accurate labor data and better compliance tracking. No new backend required — this is purely a front-end rendering mode.
 
 ---
 
 *© 2026 Doug Trier. Internal Engineering Document.*
+
