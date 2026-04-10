@@ -195,6 +195,18 @@ const AboutView = () => {
                         t('manual.item.57', 'Custom Report Builder (Drag & Drop) — Trier [YES] | Fiix [YES] | UpKeep [PARTIAL] | Limble [PARTIAL] | MaintainX [NO] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
                         'Built-In Operational Intelligence Manual — Trier [YES+UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'
                     ]
+                },
+                {
+                    title: t('manual.cat.7', 'Zero-Keystroke Workflows'),
+                    items: [
+                        t('manual.item.1570', 'Scan-to-Consume (Parts on WOs) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1571', 'Badge-and-Scan Employee Tool Checkout — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1572', 'Blind Vendor Receive / Cycle Counts — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1573', 'Voice-to-Text Native Shift Narratives — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1574', 'Fleet DVIR & Fuel Scan-and-Type — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1575', 'Utility Meter Direct Scan-and-Read — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1576', 'LOTO Scan-to-Lock & Autofill Procedure — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
+                    ]
                 }
             ]
         },
