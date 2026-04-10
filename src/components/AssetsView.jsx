@@ -1,31 +1,26 @@
 // Copyright © 2026 Trier OS. All Rights Reserved.
 
 /**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
-/**
- * Trier OS — Asset Management View
+ * AssetsView.jsx — Asset Management View
  * =====================================
  * Full-featured equipment registry and lifecycle management interface.
- * One of the largest components in the application (1700+ lines).
+ * One of the largest components in the application.
  *
- * KEY FEATURES:
- *   Asset Table       — Searchable/sortable/filterable with type and status filters
- *   Detail Panel      — Full asset record: description, model, install date, criticality
- *   Asset Hierarchy   — Parent/child relationships (system → subsystem → component)
- *   Meter Readings    — Track runtime hours, cycles, or distance; trigger PM on threshold
- *   Maintenance History — Linked WO history with labor, parts, and downtime totals
- *   Tribal Knowledge  — TribalKnowledge panel: notes and tips from experienced techs
- *   Digital Twin      — DigitalTwinView: interactive schematic with live sensor pins
- *   BOM Panel         — Bill of Materials: associated spare parts and consumables
- *   Attachments       — Photos, manuals, and spec sheets per asset
- *   Timeline          — AssetTimeline: visual event history (WOs, PMs, readings)
- *   Status Toggle     — In Production | Spare | Retired (affects PM scheduling)
+ * -- API DEPENDENCIES ------------------------------------------
+ *   GET  /api/assets                   — List paginated assets w/ search limits
+ *   GET  /api/assets/:id               — Single asset detail query
+ *   POST /api/assets                   — Create brand new asset profile
+ *   PUT  /api/assets/:id               — Update asset fields inline
+ *   POST /api/assets/:id/photos/ocr    — Hardware Camera OCR text extraction
+ *   GET  /api/assets/:id/photos        — Fetch attachments and diagrams
+ *   GET  /api/assets/:id/meter/history — Fetch run hours/counts
  *
- * FILTER PROPS: Accepts assetTypeFilter, statusFilter for pre-filtered contexts
- *   (e.g. "Show only Rotating Equipment" from the analytics dashboard).
+ * -- KEY STATE -------------------------------------------------
+ *   assets         — Paginated array of assets
+ *   selectedAsset  — Currently open detail record model
+ *   tab            — Active sub-tab rendered inside the detail modal
+ *   cameraMode     — Invokes the custom native browser web-cam modal
+ *   hierarchy      — Parent/child organizational arrays
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';

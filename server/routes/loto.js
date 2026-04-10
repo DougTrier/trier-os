@@ -1,28 +1,25 @@
 // Copyright © 2026 Trier OS. All Rights Reserved.
 
 /**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
-/**
- * Trier OS — LOTO (Lockout/Tagout) Digital Permit System
+ * loto.js — LOTO (Lockout/Tagout) Digital Permit System
  * ========================================================
  * OSHA 29 CFR 1910.147-compliant energy isolation permit management.
  * Tracks energy control points, digital signatures, and auto-expiry.
  * All LOTO data lives in trier_logistics.db (cross-plant audit trail).
  * Mounted at /api/loto in server/index.js.
  *
- * ENDPOINTS:
- *   GET    /permits               List LOTO permits (filter: plant, status, asset, date)
- *   GET    /permits/:id           Full permit detail with energy points + signatures
- *   POST   /permits               Create permit (auto-generates LOTO-{PLANT3}-{DATE}-{SEQ})
- *   POST   /permits/:id/sign      Add digital signature (ISSUER or WORKER role)
+ * -- ROUTES ----------------------------------------------------
+ *   GET    /permits                    List LOTO permits (filter: plant, status, asset, date)
+ *   GET    /permits/history/:assetId   Fetch historical LOTO for asset autocompletion
+ *   GET    /permits/:id                Full permit detail with energy points + signatures
+ *   POST   /permits                    Create permit (auto-generates LOTO-{PLANT3}-{DATE}-{SEQ})
+ *   POST   /permits/:id/sign           Add digital signature (ISSUER or WORKER role)
  *   POST   /permits/:id/verify-point   Technician checks off an energy isolation point
- *   POST   /permits/:id/close     Close permit — energy restored, work complete
- *   POST   /permits/:id/void      Void permit with reason (immediate energy stop)
- *   PUT    /permits/:id           Update permit metadata
- *   GET    /energy-types          List all energy type definitions (Electrical, Hydraulic…)
+ *   POST   /permits/:id/close          Close permit — energy restored, work complete
+ *   POST   /permits/:id/void           Void permit with reason (immediate energy stop)
+ *   PUT    /permits/:id                Update permit metadata
+ *   GET    /energy-types               List all energy type definitions (Electrical, Hydraulic…)
+ */
  *
  * PERMIT LIFECYCLE:
  *   DRAFT → ACTIVE (after issuer signs) → CLOSED (normal completion)

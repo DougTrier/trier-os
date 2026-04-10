@@ -1,33 +1,27 @@
 // Copyright © 2026 Trier OS. All Rights Reserved.
 
 /**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
-/**
- * Trier OS — LOTO Digital Permits Panel
- * =======================================
+ * LotoPanel.jsx — LOTO Digital Permits Panel
+ * ==========================================
  * Lockout/Tagout (LOTO) permit management system. Creates, tracks, and closes
  * digital LOTO permits with energy isolation points, digital signatures,
  * and a complete audit trail — replacing paper-based LOTO binders.
  *
- * KEY FEATURES:
- *   - Active permit dashboard: all open LOTO permits with live status
- *   - Create permit: asset selection, isolation points list, responsible tech
- *   - Energy isolation checklist: each point requires tech confirmation
- *   - Digital signature capture: tech and supervisor sign-off on screen
- *   - Close permit workflow: verification checklist before permit release
- *   - Void permit: emergency cancellation with mandatory reason entry
- *   - Full audit trail: every status change logged with timestamp and user
- *   - Print permit: ANSI Z244-compliant paper backup for the lockout point
- *   - ActionBar integration: View / Edit / Save / Print (platform standard)
+ * -- API DEPENDENCIES ------------------------------------------
+ *   GET  /api/loto/permits                 — List all LOTO permits (filtered)
+ *   GET  /api/loto/permits/:id             — Full detail of single LOTO permit
+ *   GET  /api/loto/permits/history/:assetId— Fetch historical LOTO for asset autocompletion
+ *   POST /api/loto/permits                 — Create newly authored LOTO permit
+ *   POST /api/loto/permits/:id/sign        — Post digital signature to active permit
+ *   POST /api/loto/permits/:id/verify-point— Authed field scan-to-lock point validation
+ *   POST /api/loto/permits/:id/close       — Conclude LOTO logic sequence
+ *   POST /api/loto/permits/:id/void        — Void LOTO permit natively
  *
- * API CALLS:
- *   GET    /api/loto                — Load all LOTO permits (plant-scoped)
- *   POST   /api/loto                — Create new permit
- *   PUT    /api/loto/:id            — Update permit (close, void, add signature)
- *   GET    /api/loto/:id/audit      — Audit trail for a specific permit
+ * -- KEY STATE -------------------------------------------------
+ *   permits        — Array of fetched permits
+ *   selectedPermit — Detail object including active locking points & sigs
+ *   tab            — Core render controller ('active' | 'create' | 'closed')
+ *   form           — Editable state map for drafting new LOTO checklists
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
