@@ -19,7 +19,6 @@
  *   POST   /permits/:id/void           Void permit with reason (immediate energy stop)
  *   PUT    /permits/:id                Update permit metadata
  *   GET    /energy-types               List all energy type definitions (Electrical, Hydraulic…)
- */
  *
  * PERMIT LIFECYCLE:
  *   DRAFT → ACTIVE (after issuer signs) → CLOSED (normal completion)
