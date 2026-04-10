@@ -157,6 +157,27 @@ export default function LotoPanel() {
         } catch (e) { window.trierToast?.error('Error signing'); }
     };
 
+    const handleVerifyPoint = async (pointId, method) => {
+        if (method === 'scan') {
+            const targetPoint = selectedPermit.points.find(p => p.ID === pointId);
+            const code = window.prompt(`[Scanner Active]\nPlease scan NFC/QR Tag for Isolation Point #${targetPoint.PointNumber} at ${targetPoint.Location}...\n\n(Or manually type tag ID to simulate hardware scan)`);
+            if (!code) return; // cancelled
+        }
+        
+        try {
+            const r = await fetch(`/api/loto/permits/${selectedPermit.permit.ID}/verify-point`, { 
+                method: 'POST', headers, 
+                body: JSON.stringify({ pointId, verifiedBy: currentUser }) 
+            });
+            if (r.ok) { 
+                window.trierToast?.success(`Point physically verified by ${method}`); 
+                viewPermit(selectedPermit.permit.ID); 
+            } else {
+                window.trierToast?.error('Failed to verify point');
+            }
+        } catch (e) { window.trierToast?.error('Error verifying point'); }
+    };
+
     const viewPermit = async (id) => {
         try {
             const r = await fetch(`/api/loto/permits/${id}`, { headers });
@@ -434,6 +455,26 @@ export default function LotoPanel() {
                                                         {ENERGY_ICONS[pt.EnergyType] || '⚡'} {pt.EnergyType} at {pt.Location}
                                                         {pt.LockNumber && <span style={{ color: '#ef4444' }}> · Lock: {pt.LockNumber}</span>}
                                                         {pt.TagNumber && <span style={{ color: '#f59e0b' }}> · Tag: {pt.TagNumber}</span>}
+                                                        
+                                                        {pt.VerifiedBy ? (
+                                                            <div style={{ color: '#10b981', marginTop: 6, fontWeight: 700, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                                ✅ Verified by {pt.VerifiedBy} on {new Date(pt.VerifiedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
+                                                                <button onClick={() => handleVerifyPoint(pt.ID, 'scan')} style={{ 
+                                                                    padding: '4px 12px', background: 'rgba(59,130,246,0.15)', color: '#3b82f6', 
+                                                                    border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, cursor: 'pointer', 
+                                                                    fontSize: '0.75rem', fontWeight: 700, display: 'flex', gap: 4, alignItems: 'center' 
+                                                                }} title="Scan NFC/QR tag at the physical isolation point">
+                                                                    📡 Scan-to-Lock
+                                                                </button>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: '#94a3b8', cursor: 'pointer' }} title="Manual fallback for missing tags">
+                                                                    <input type="checkbox" onChange={(e) => { if (e.target.checked) handleVerifyPoint(pt.ID, 'manual checkbox'); }} />
+                                                                    Manual Verification (Fallback)
+                                                                </label>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <span style={{
                                                         padding: '2px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 800,

@@ -54,7 +54,7 @@ This list is ordered by the **highest time savings and frequency of use**.
   * Trier OS runs basic OCR to extract `Serial No:`, `Model:`, and `Volts:` and auto-fills the creation form.
   * *Time Saved: 5 minutes per asset during heavy plant-buildout phases.*
 
-## 8. LOTO (Lockout/Tagout) Execution (LotoView)
+## 8. [DONE] LOTO (Lockout/Tagout) Execution (LotoView)
 * **The Pain Point:** Verifying a LOTO procedure step-by-step using checkboxes, requiring tech to read text and manually verify.
 * **The Automation:** **"Scan-to-Lock"**
   * Every physical isolation point (Valves, Breakers) gets an NFC or QR tag.
