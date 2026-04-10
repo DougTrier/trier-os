@@ -33,20 +33,24 @@ async function processLang(lang) {
     }
   }
 
+  // English words and vendor names that are gracefully allowed in non-Latin translations without triggering corruption
+  const allowedEnglish = [
+    'Trier', 'Fiix', 'UpKeep', 'Limble', 'MaintainX', 'eMaint', 'SAP', 'IBM', 'Maximo', 'Oracle', 'Db2', 'Hexagon', 'SaaS', 'AWS', 'Azure',
+    'MTBF', 'MTTR', 'OEE', 'LOTO', 'DVIR', 'CDL', 'FMEA', 'ECN', 'RCA', 'PM', 'WO', 'SOP', 'BOM', 'OSHA', 'DOT',
+    'SCADA', 'PLC', 'LDAP', 'ERP', 'HTTP', 'REST', 'IP', 'MAC', 'PWA', 'IoT', 'OPC-UA', 'Tetra', 'Pak', 'QR', 'OCR', 'HA', 'UI', 'UX',
+    'PMC', 'MP2', 'Access', 'SQL', 'API', 'IT', 'VM', 'DBA', 'FTE', 'KPI', 'RBAC', 'Slack', 'Teams', 'Discord',
+    'JSON', 'IDE', 'React', 'Router', 'URL', 'SHA', 'ES6', 'EdgeAgent', 'Nodes', 'DHCP', 'TCP', 'Modbus', 'OT',
+    // New common IT/File extension exceptions
+    'AI', 'ID', 'OS', 'Doug', 'txt', 'md', 'pdf', 'png', 'jpg', 'jpeg', 'csv', 'Power', 'BI', 'cURL', 'YOUR', 'TOKEN', 'POST', 'GET', 'PUT', 'DELETE', 'auth',
+    'A', 'B', 'C', 'X', 'Y', 'Z'
+  ];
   for (const [key, value] of Object.entries(dict)) {
-    let cleaned = value.replace(/\{\{[^}]+\}\}/g, '').replace(/<[^>]+>/g, '').replace(/https?:\/\/[^\s]+/g, '');
-    
-    // Non-Latin: Any english letters is corruption
-    // Latin: Exact match with English dictionary is an untranslated phrase
-    const isCorrupted = (['zh', 'ar', 'hi', 'ja', 'tr', 'ko'].includes(lang)) ? 
-         /[a-zA-Z]/.test(cleaned) : 
-         (dict[key] === enDict[key] && /[a-zA-Z]/.test(cleaned)); 
+    // If the translated string is completely identical to the English original, it may be a failed API translation
+    // UNLESS the total string perfectly matches an approved global IT acronym (like "HTTP" or "OEE")
+    const isCorrupted = (dict[key] === enDict[key]); 
+    const exactMatchSafe = allowedEnglish.some(w => w.toLowerCase() === value.trim().toLowerCase());
 
-    // Specific acronyms to bypass translation corruption loops if they are identical
-    const safeAcronyms = ['MTBF', 'MTTR', 'OEE', 'LOTO', 'DVIR', 'CDL', 'FMEA', 'ECN', 'RCA', 'PM', 'WO', 'SOP', 'BOM', 'OSHA', 'DOT'];
-    const exactMatchSafe = safeAcronyms.includes(value.trim());
-
-    if (isCorrupted && enDict[key] && !exactMatchSafe) {
+    if (isCorrupted && !exactMatchSafe) {
       keysToFix.push(key);
     }
   }

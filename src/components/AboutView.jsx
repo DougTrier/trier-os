@@ -202,74 +202,74 @@ const AboutView = () => {
             section: 'TCO Analysis: True Cost vs. Market Leaders',
             id: 'tco-analysis',
             icon: <Cloud size={22} />,
-            content: 'Trier OS is free — forever. It installs in under 10 minutes on any existing Windows server or VM, requires no database license (SQLite is built-in), no cloud hosting, no integration middleware, no dedicated IT staff, and no training budget (every user is onboarded automatically with a built-in guided tour). There are no per-user fees, no annual contracts, and no vendor price escalations. The comparison below shows what a company must spend to get each competing platform operational vs. the true cost of Trier OS. All competitor figures are USD, 2025–2026 market rates.',
+            content: t('manual.tco.content', 'Trier OS is free — forever. It installs in under 10 minutes on any existing Windows server or VM, requires no database license (SQLite is built-in), no cloud hosting, no integration middleware, no dedicated IT staff, and no training budget (every user is onboarded automatically with a built-in guided tour). There are no per-user fees, no annual contracts, and no vendor price escalations. The comparison below shows what a company must spend to get each competing platform operational vs. the true cost of Trier OS. All competitor figures are USD, 2025–2026 market rates.'),
             subsections: [
                 {
                     title: t('manual.tco.0.title', '1 — The Full Dependency Stack'),
-                    tcoNote: 'Before a single user logs in, competing platforms require this entire supporting ecosystem. Trier OS requires none of it — install takes under 10 minutes on existing infrastructure.',
+                    tcoNote: t('manual.tco.0.note', 'Before a single user logs in, competing platforms require this entire supporting ecosystem. Trier OS requires none of it — install takes under 10 minutes on existing infrastructure.'),
                     tcoTable: {
-                        headers: ['Dependency', 'SAP S/4HANA', 'IBM Maximo', 'Oracle Fusion', 'Hexagon EAM', 'UpKeep / Fiix', 'Trier OS'],
+                        headers: [t('tco.col.dep', 'Dependency'), 'SAP S/4HANA', 'IBM Maximo', 'Oracle Fusion', 'Hexagon EAM', 'UpKeep / Fiix', 'Trier OS'],
                         highlight: 6,
                         rows: [
-                            ['Application License', '$200/user/mo', 'Custom quote', '$500–625/user/mo', '~$7,000+/mo flat', '$45–75/user/mo', '$0 — free forever'],
-                            ['Database Engine', 'SQL Server / HANA', 'Db2 / SQL Server', 'Oracle DB Enterprise', 'SQL Server', 'Vendor-managed', 'SQLite — built-in, $0'],
-                            ['Cloud Infrastructure', 'Azure / AWS required', 'AWS / IBM Cloud req.', 'Oracle Cloud (OCI)', 'Azure / AWS required', 'SaaS only (vendor cloud)', 'Not required — existing VM or server'],
-                            ['Integration Middleware', 'SAP BTP / MuleSoft', 'IBM App Connect', 'Oracle Integration', 'MuleSoft / Boomi', 'Limited APIs', 'Built-in REST API, $0'],
-                            ['Dedicated IT / DBA Staff', 'SAP BASIS Admin req.', 'Maximo Admin req.', 'Oracle DBA req.', 'EAM Admin req.', 'None', 'None — no specialized staff needed'],
-                            ['Annual Support Contract', '22% of license/yr', '18–22%/yr', '22%/yr', '18–22%/yr', 'Included in SaaS', '$0 — no support fees ever'],
-                            ['Implementation Timeline', '6–18 months + SI partner', '3–12 months + partner', '6–18 months + partner', '3–9 months + partner', '1–4 weeks', '10-minute install — no partner'],
-                            ['User Onboarding / Training', '$1,000–$3,000/user', '$1,200–$2,500/user', '$1,500–$2,500/user', '$1,000–$2,000/user', '$200–500/user', 'Built-in guided tour — $0'],
-                            ['Per-Plant License', 'Per-plant SKU', 'Per-plant SKU', 'Per-plant SKU', 'Per-plant add-on', 'Per-plant add-on', 'Unlimited plants — $0'],
-                            ['Mobile App License', 'Add-on cost', 'Included (MAS)', 'Add-on cost', 'Add-on cost', 'Included', '$0 — unlimited users'],
-                            ['Vendor Lock-In Risk', 'High — proprietary formats', 'High — proprietary DB', 'High — Oracle Cloud', 'Medium', 'Medium — SaaS', 'None — open SQLite, you own the data'],
+                            [t('tco.0.1.0', 'Application License'), t('tco.0.1.1', '$200/user/mo'), t('tco.0.1.2', 'Custom quote'), t('tco.0.1.3', '$500–625/user/mo'), t('tco.0.1.4', '~$7,000+/mo flat'), t('tco.0.1.5', '$45–75/user/mo'), t('tco.free', '$0 — free forever')],
+                            [t('tco.0.2.0', 'Database Engine'), 'SQL Server / HANA', 'Db2 / SQL Server', 'Oracle DB Enterprise', 'SQL Server', t('tco.0.2.5', 'Vendor-managed'), t('tco.sqlite', 'SQLite — built-in, $0')],
+                            [t('tco.0.3.0', 'Cloud Infrastructure'), t('tco.req1', 'Azure / AWS required'), t('tco.req2', 'AWS / IBM Cloud req.'), t('tco.req3', 'Oracle Cloud (OCI)'), t('tco.req1', 'Azure / AWS required'), t('tco.req4', 'SaaS only (vendor cloud)'), t('tco.req5', 'Not required — existing VM or server')],
+                            [t('tco.0.4.0', 'Integration Middleware'), 'SAP BTP / MuleSoft', 'IBM App Connect', 'Oracle Integration', 'MuleSoft / Boomi', t('tco.0.4.5', 'Limited APIs'), t('tco.api', 'Built-in REST API, $0')],
+                            [t('tco.0.5.0', 'Dedicated IT / DBA Staff'), t('tco.0.5.1', 'SAP BASIS Admin req.'), t('tco.0.5.2', 'Maximo Admin req.'), t('tco.0.5.3', 'Oracle DBA req.'), t('tco.0.5.4', 'EAM Admin req.'), t('tco.none', 'None'), t('tco.nonestaff', 'None — no specialized staff needed')],
+                            [t('tco.0.6.0', 'Annual Support Contract'), t('tco.0.6.1', '22% of license/yr'), t('tco.0.6.2', '18–22%/yr'), t('tco.0.6.3', '22%/yr'), t('tco.0.6.4', '18–22%/yr'), t('tco.inc', 'Included in SaaS'), t('tco.nofee', '$0 — no support fees ever')],
+                            [t('tco.0.7.0', 'Implementation Timeline'), t('tco.0.7.1', '6–18 months + SI partner'), t('tco.0.7.2', '3–12 months + partner'), t('tco.0.7.3', '6–18 months + partner'), t('tco.0.7.4', '3–9 months + partner'), t('tco.0.7.5', '1–4 weeks'), t('tco.0.7.6', '10-minute install — no partner')],
+                            [t('tco.0.8.0', 'User Onboarding / Training'), t('tco.0.8.1', '$1,000–$3,000/user'), t('tco.0.8.2', '$1,200–$2,500/user'), t('tco.0.8.3', '$1,500–$2,500/user'), t('tco.0.8.4', '$1,000–$2,000/user'), t('tco.0.8.5', '$200–500/user'), t('tco.0.8.6', 'Built-in guided tour — $0')],
+                            [t('tco.0.9.0', 'Per-Plant License'), t('tco.sku', 'Per-plant SKU'), t('tco.sku', 'Per-plant SKU'), t('tco.sku', 'Per-plant SKU'), t('tco.addon', 'Per-plant add-on'), t('tco.addon', 'Per-plant add-on'), t('tco.upl', 'Unlimited plants — $0')],
+                            [t('tco.0.10.0', 'Mobile App License'), t('tco.addoncost', 'Add-on cost'), t('tco.inc_mas', 'Included (MAS)'), t('tco.addoncost', 'Add-on cost'), t('tco.addoncost', 'Add-on cost'), t('tco.inc2', 'Included'), t('tco.unl', '$0 — unlimited users')],
+                            [t('tco.0.11.0', 'Vendor Lock-In Risk'), t('tco.0.11.1', 'High — proprietary formats'), t('tco.0.11.2', 'High — proprietary DB'), t('tco.0.11.3', 'High — Oracle Cloud'), t('tco.med', 'Medium'), t('tco.medsaas', 'Medium — SaaS'), t('tco.0.11.6', 'None — open SQLite, you own the data')],
                         ]
                     }
                 },
                 {
                     title: t('manual.tco.1.title', '2 — Infrastructure Cost Before Any Software Is Purchased'),
-                    tcoNote: 'These costs exist regardless of user count. They appear on separate purchase orders — never in the software quote.',
+                    tcoNote: t('manual.tco.1.note', 'These costs exist regardless of user count. They appear on separate purchase orders — never in the software quote.'),
                     tcoTable: {
-                        headers: ['Component', 'One-Time Cost', 'Annual Recurring', '5-Year Total', 'Trier OS'],
+                        headers: [t('tco.col.comp', 'Component'), t('tco.col.one', 'One-Time Cost'), t('tco.col.ann', 'Annual Recurring'), t('tco.col.5y', '5-Year Total'), 'Trier OS'],
                         highlight: 4,
                         rows: [
-                            ['SQL Server Enterprise (16-core server)', '$120,984', '$30,246/yr (SA)', '$242,214', '$0'],
-                            ['Oracle Database Enterprise (4 processors)', '$190,000', '$41,800/yr support', '$399,200', '$0'],
-                            ['IBM Db2 (mid-size PVU licensing)', '$50,000', '$10,000–12,500/yr', '$100,000–$112,500', '$0'],
-                            ['Azure cloud hosting — SAP mid-size', '—', '$96,000–$144,000/yr', '$480K–$720K', 'Not required — existing VM'],
-                            ['AWS / IBM Cloud — Maximo', '—', '$60,000–$96,000/yr', '$300K–$480K', '$0'],
-                            ['SAP BTP / MuleSoft integration middleware', '—', '$50,000–$150,000/yr', '$250K–$750K', '$0'],
-                            ['SAP BASIS Administrator (1 FTE salary)', '—', '$130,000–$184,000/yr', '$650K–$920K', '$0'],
-                            ['Oracle DBA (1 FTE salary)', '—', '$120,000–$165,000/yr', '$600K–$825K', '$0'],
-                            ['Maximo / EAM Platform Admin (1 FTE)', '—', '$100,000–$150,000/yr', '$500K–$750K', '$0'],
+                            [t('tco.1.1.0', 'SQL Server Enterprise (16-core server)'), t('tco.1.1.1', '$120,984'), t('tco.1.1.2', '$30,246/yr (SA)'), t('tco.1.1.3', '$242,214'), '$0'],
+                            [t('tco.1.2.0', 'Oracle Database Enterprise (4 processors)'), t('tco.1.2.1', '$190,000'), t('tco.1.2.2', '$41,800/yr support'), t('tco.1.2.3', '$399,200'), '$0'],
+                            [t('tco.1.3.0', 'IBM Db2 (mid-size PVU licensing)'), t('tco.1.3.1', '$50,000'), t('tco.1.3.2', '$10,000–12,500/yr'), t('tco.1.3.3', '$100,000–$112,500'), '$0'],
+                            [t('tco.1.4.0', 'Azure cloud hosting — SAP mid-size'), '—', t('tco.1.4.2', '$96,000–$144,000/yr'), t('tco.1.4.3', '$480K–$720K'), t('tco.req5', 'Not required — existing VM')],
+                            [t('tco.1.5.0', 'AWS / IBM Cloud — Maximo'), '—', t('tco.1.5.2', '$60,000–$96,000/yr'), t('tco.1.5.3', '$300K–$480K'), '$0'],
+                            [t('tco.1.6.0', 'SAP BTP / MuleSoft integration middleware'), '—', t('tco.1.6.2', '$50,000–$150,000/yr'), t('tco.1.6.3', '$250K–$750K'), '$0'],
+                            [t('tco.1.7.0', 'SAP BASIS Administrator (1 FTE salary)'), '—', t('tco.1.7.2', '$130,000–$184,000/yr'), t('tco.1.7.3', '$650K–$920K'), '$0'],
+                            [t('tco.1.8.0', 'Oracle DBA (1 FTE salary)'), '—', t('tco.1.8.2', '$120,000–$165,000/yr'), t('tco.1.8.3', '$600K–$825K'), '$0'],
+                            [t('tco.1.9.0', 'Maximo / EAM Platform Admin (1 FTE)'), '—', t('tco.1.9.2', '$100,000–$150,000/yr'), t('tco.1.9.3', '$500K–$750K'), '$0'],
                         ]
                     }
                 },
                 {
                     title: t('manual.tco.2.title', '3 — Year 1 Total Cost of Ownership — 75 Users, 1 Plant'),
-                    tcoNote: 'All costs required to get each platform operational for 75 users at a single facility. Trier OS installs in 10 minutes on existing infrastructure — no licenses, no partners, no training budget, no hosting fees.',
+                    tcoNote: t('manual.tco.2.note', 'All costs required to get each platform operational for 75 users at a single facility. Trier OS installs in 10 minutes on existing infrastructure — no licenses, no partners, no training budget, no hosting fees.'),
                     tcoTable: {
-                        headers: ['Cost Category', 'SAP S/4HANA', 'IBM Maximo', 'Oracle Fusion', 'Hexagon EAM', 'UpKeep Pro', 'Trier OS'],
+                        headers: [t('tco.col.cat', 'Cost Category'), 'SAP S/4HANA', 'IBM Maximo', 'Oracle Fusion', 'Hexagon EAM', 'UpKeep Pro', 'Trier OS'],
                         highlight: 6,
                         isTotals: true,
                         rows: [
-                            ['Software License (Year 1)', '$180,000', '$175,000', '$506,250', '$150,000', '$67,500', '$0'],
-                            ['Database License (one-time)', '$120,984', '$50,000', '$190,000', '$90,000', '$0', '$0'],
-                            ['Cloud Hosting (annual)', '$120,000', '$78,000', '$96,000', '$66,000', '$0', '$0'],
-                            ['Implementation / Consulting', '$300,000', '$250,000', '$350,000', '$150,000', '$5,000', '$0'],
-                            ['Integration Middleware', '$60,000', '$35,000', '$45,000', '$35,000', '$0', '$0'],
-                            ['IT Admin Staff (incremental FTE)', '$140,000', '$110,000', '$130,000', '$100,000', '$0', '$0'],
-                            ['Training', '$45,000', '$40,000', '$50,000', '$35,000', '$10,000', '$0'],
-                            ['Annual Support Contract', 'Included', '$35,000', '$111,375', '$30,000', 'Included', '$0'],
-                            ['Mobile & Add-on Licensing', '$15,000', 'Included', '$18,000', '$12,000', 'Included', '$0'],
-                            ['YEAR 1 TOTAL', '$980,984', '$773,000', '$1,496,625', '$668,000', '$82,500', '$0'],
+                            [t('tco.2.1.0', 'Software License (Year 1)'), '$180,000', '$175,000', '$506,250', '$150,000', '$67,500', '$0'],
+                            [t('tco.2.2.0', 'Database License (one-time)'), '$120,984', '$50,000', '$190,000', '$90,000', '$0', '$0'],
+                            [t('tco.2.3.0', 'Cloud Hosting (annual)'), '$120,000', '$78,000', '$96,000', '$66,000', '$0', '$0'],
+                            [t('tco.2.4.0', 'Implementation / Consulting'), '$300,000', '$250,000', '$350,000', '$150,000', '$5,000', '$0'],
+                            [t('tco.2.5.0', 'Integration Middleware'), '$60,000', '$35,000', '$45,000', '$35,000', '$0', '$0'],
+                            [t('tco.2.6.0', 'IT Admin Staff (incremental FTE)'), '$140,000', '$110,000', '$130,000', '$100,000', '$0', '$0'],
+                            [t('tco.2.7.0', 'Training'), '$45,000', '$40,000', '$50,000', '$35,000', '$10,000', '$0'],
+                            [t('tco.2.8.0', 'Annual Support Contract'), t('tco.inc3', 'Included'), '$35,000', '$111,375', '$30,000', t('tco.inc3', 'Included'), '$0'],
+                            [t('tco.2.9.0', 'Mobile & Add-on Licensing'), '$15,000', t('tco.inc3', 'Included'), '$18,000', '$12,000', t('tco.inc3', 'Included'), '$0'],
+                            [t('tco.2.10.0', 'YEAR 1 TOTAL'), '$980,984', '$773,000', '$1,496,625', '$668,000', '$82,500', '$0'],
                         ]
                     }
                 },
                 {
                     title: t('manual.tco.3.title', '4 — 5-Year Total Cost of Ownership'),
-                    tcoNote: 'Year 1 costs plus four years of recurring fees with standard 4–6% annual vendor price escalation. Trier OS has no recurring costs — the 5-year total is the same as year one: $0.',
+                    tcoNote: t('manual.tco.3.note', 'Year 1 costs plus four years of recurring fees with standard 4–6% annual vendor price escalation. Trier OS has no recurring costs — the 5-year total is the same as year one: $0.'),
                     tcoTable: {
-                        headers: ['Platform', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', '5-Year Total'],
+                        headers: [t('tco.col.plat', 'Platform'), t('tco.col.y1', 'Year 1'), t('tco.col.y2', 'Year 2'), t('tco.col.y3', 'Year 3'), t('tco.col.y4', 'Year 4'), t('tco.col.y5', 'Year 5'), t('tco.col.y5tot', '5-Year Total')],
                         triRow: 'Trier OS',
                         rows: [
                             ['SAP S/4HANA', '$980,984', '$470,000', '$490,000', '$511,000', '$532,000', '$2,983,984'],
@@ -284,9 +284,9 @@ const AboutView = () => {
                 },
                 {
                     title: t('manual.tco.4.title', '5 — 5-Year Savings vs. Trier OS'),
-                    tcoNote: 'Total money returned to operations over 5 years by choosing Trier OS. Trier OS costs $0 — every dollar the competitor charges is a dollar saved.',
+                    tcoNote: t('manual.tco.4.note', 'Total money returned to operations over 5 years by choosing Trier OS. Trier OS costs $0 — every dollar the competitor charges is a dollar saved.'),
                     tcoTable: {
-                        headers: ['Competitor', '5-Year Competitor Cost', '5-Year Trier OS Cost', 'Total Savings', 'Savings %'],
+                        headers: [t('tco.col.comp2', 'Competitor'), t('tco.col.c5', '5-Year Competitor Cost'), t('tco.col.c5t', '5-Year Trier OS Cost'), t('tco.col.sav', 'Total Savings'), t('tco.col.per', 'Savings %')],
                         savingsHighlight: true,
                         rows: [
                             ['SAP S/4HANA', '$2,983,984', '$0', '$2,983,984', '100%'],
@@ -300,9 +300,9 @@ const AboutView = () => {
                 },
                 {
                     title: t('manual.tco.5.title', '6 — Per-Employee & Per-User Cost (5-Year)'),
-                    tcoNote: '200-employee plant, 75 system users, 5-year horizon. Trier OS is free — the per-employee and per-user cost is $0.',
+                    tcoNote: t('manual.tco.5.note', '200-employee plant, 75 system users, 5-year horizon. Trier OS is free — the per-employee and per-user cost is $0.'),
                     tcoTable: {
-                        headers: ['Platform', '5-Year TCO', 'Cost / Employee / Year', 'Cost / User / Month'],
+                        headers: [t('tco.col.plat', 'Platform'), t('tco.col.y5tot', '5-Year TCO'), t('tco.col.cem', 'Cost / Employee / Year'), t('tco.col.cum', 'Cost / User / Month')],
                         triRow: 'Trier OS',
                         rows: [
                             ['SAP S/4HANA', '$2,983,984', '$2,984', '$664'],
@@ -317,55 +317,55 @@ const AboutView = () => {
                 },
                 {
                     title: t('manual.tco.6.title', '7 — Multi-Plant Scale Economics'),
-                    tcoNote: 'Trier OS has no per-plant licensing and no cost at any scale. Every competitor multiplies their fees per plant. Trier OS stays at $0 whether the company has 1 plant or 100.',
+                    tcoNote: t('manual.tco.6.note', 'Trier OS has no per-plant licensing and no cost at any scale. Every competitor multiplies their fees per plant. Trier OS stays at $0 whether the company has 1 plant or 100.'),
                     tcoTable: {
-                        headers: ['Platform', '1 Plant (5yr)', '3 Plants (5yr)', '10 Plants (5yr)', 'Savings vs. Trier OS at 10 Plants'],
+                        headers: [t('tco.col.plat', 'Platform'), t('tco.col.1p', '1 Plant (5yr)'), t('tco.col.3p', '3 Plants (5yr)'), t('tco.col.10p', '10 Plants (5yr)'), t('tco.col.sav10', 'Savings vs. Trier OS at 10 Plants')],
                         triRow: 'Trier OS',
                         rows: [
-                            ['SAP S/4HANA', '$2,983,984', '~$7,500,000', '~$22,000,000', 'Save ~$22M'],
-                            ['IBM Maximo', '$2,406,000', '~$6,000,000', '~$18,000,000', 'Save ~$18M'],
-                            ['Oracle Fusion', '$4,657,625', '~$11,600,000', '~$35,000,000', 'Save ~$35M'],
-                            ['Hexagon EAM', '$1,900,000', '~$4,750,000', '~$14,000,000', 'Save ~$14M'],
-                            ['UpKeep / Fiix', '$398,500', '~$995,000', '~$3,000,000', 'Save ~$3M'],
-                            ['Trier OS', '$0', '$0', '$0', 'No cost at any scale'],
+                            ['SAP S/4HANA', '$2,983,984', '~$7,500,000', '~$22,000,000', t('tco.sav22', 'Save ~$22M')],
+                            ['IBM Maximo', '$2,406,000', '~$6,000,000', '~$18,000,000', t('tco.sav18', 'Save ~$18M')],
+                            ['Oracle Fusion', '$4,657,625', '~$11,600,000', '~$35,000,000', t('tco.sav35', 'Save ~$35M')],
+                            ['Hexagon EAM', '$1,900,000', '~$4,750,000', '~$14,000,000', t('tco.sav14', 'Save ~$14M')],
+                            ['UpKeep / Fiix', '$398,500', '~$995,000', '~$3,000,000', t('tco.sav3', 'Save ~$3M')],
+                            ['Trier OS', '$0', '$0', '$0', t('tco.nocost', 'No cost at any scale')],
                         ]
                     }
                 },
                 {
                     title: t('manual.tco.7.title', '8 — What Trier OS Eliminates Entirely'),
-                    tcoNote: 'Every item below is a real line item on a competitor\'s total invoice that simply does not exist with Trier OS.',
+                    tcoNote: t('manual.tco.7.note', 'Every item below is a real line item on a competitor\'s total invoice that simply does not exist with Trier OS.'),
                     tcoItems: [
-                        { label: 'Software license fees', value: '$45–$625/user/month with every competitor — Trier OS is free forever, no user cap, no seat fees' },
-                        { label: 'Database engine license (SQL Server / Oracle / Db2)', value: '$60,000–$399,000 one-time + $15–42K/yr — Trier OS uses SQLite, which is built in and free' },
-                        { label: 'Mandatory cloud hosting (Azure / AWS / IBM Cloud)', value: '$36,000–$720,000/yr — Trier OS runs on your existing VM or server, no cloud account required' },
-                        { label: 'Integration middleware (MuleSoft, Boomi, SAP BTP)', value: '$20,000–$250,000/yr — Trier OS has a built-in REST API, no middleware needed' },
-                        { label: 'Dedicated ERP IT staff (BASIS Admin, DBA, EAM Admin)', value: '$100,000–$280,000/yr permanently — Trier OS requires no specialized platform staff' },
-                        { label: 'Implementation partner fees', value: '$75,000–$1,000,000+ — Trier OS installs in under 10 minutes by any IT generalist' },
-                        { label: 'User training and onboarding programs', value: '$1,000–$3,000/user — Trier OS includes a built-in guided tour that onboards every user automatically' },
-                        { label: 'Annual vendor support contracts', value: '18–22% of license cost per year, compounding indefinitely — Trier OS has no support fees' },
-                        { label: 'Per-plant expansion licensing', value: 'Every competitor multiplies costs per plant — Trier OS supports unlimited plants at no additional cost' },
-                        { label: 'Add-on module purchases (floor plans, energy advisor, shift logbook, OCR)', value: '$15,000–$100,000/yr per module — every feature is included in Trier OS at no cost' },
-                        { label: 'Mandatory upgrade and migration projects', value: '$100,000–$500,000 per major version — Trier OS updates are free' },
-                        { label: 'Multi-year vendor lock-in contracts', value: '3-year minimum with SAP and Oracle — Trier OS has no contract, no commitment, you own the software and data' },
-                        { label: 'Annual vendor price escalation', value: '4–15%/yr compounding with SaaS and enterprise vendors — Trier OS has no price to escalate' },
+                        { label: t('tco.elim.1l', 'Software license fees'), value: t('tco.elim.1v', '$45–$625/user/month with every competitor — Trier OS is free forever, no user cap, no seat fees') },
+                        { label: t('tco.elim.2l', 'Database engine license (SQL Server / Oracle / Db2)'), value: t('tco.elim.2v', '$60,000–$399,000 one-time + $15–42K/yr — Trier OS uses SQLite, which is built in and free') },
+                        { label: t('tco.elim.3l', 'Mandatory cloud hosting (Azure / AWS / IBM Cloud)'), value: t('tco.elim.3v', '$36,000–$720,000/yr — Trier OS runs on your existing VM or server, no cloud account required') },
+                        { label: t('tco.elim.4l', 'Integration middleware (MuleSoft, Boomi, SAP BTP)'), value: t('tco.elim.4v', '$20,000–$250,000/yr — Trier OS has a built-in REST API, no middleware needed') },
+                        { label: t('tco.elim.5l', 'Dedicated ERP IT staff (BASIS Admin, DBA, EAM Admin)'), value: t('tco.elim.5v', '$100,000–$280,000/yr permanently — Trier OS requires no specialized platform staff') },
+                        { label: t('tco.elim.6l', 'Implementation partner fees'), value: t('tco.elim.6v', '$75,000–$1,000,000+ — Trier OS installs in under 10 minutes by any IT generalist') },
+                        { label: t('tco.elim.7l', 'User training and onboarding programs'), value: t('tco.elim.7v', '$1,000–$3,000/user — Trier OS includes a built-in guided tour that onboards every user automatically') },
+                        { label: t('tco.elim.8l', 'Annual vendor support contracts'), value: t('tco.elim.8v', '18–22% of license cost per year, compounding indefinitely — Trier OS has no support fees') },
+                        { label: t('tco.elim.9l', 'Per-plant expansion licensing'), value: t('tco.elim.9v', 'Every competitor multiplies costs per plant — Trier OS supports unlimited plants at no additional cost') },
+                        { label: t('tco.elim.10l', 'Add-on module purchases (floor plans, energy advisor, shift logbook, OCR)'), value: t('tco.elim.10v', '$15,000–$100,000/yr per module — every feature is included in Trier OS at no cost') },
+                        { label: t('tco.elim.11l', 'Mandatory upgrade and migration projects'), value: t('tco.elim.11v', '$100,000–$500,000 per major version — Trier OS updates are free') },
+                        { label: t('tco.elim.12l', 'Multi-year vendor lock-in contracts'), value: t('tco.elim.12v', '3-year minimum with SAP and Oracle — Trier OS has no contract, no commitment, you own the software and data') },
+                        { label: t('tco.elim.13l', 'Annual vendor price escalation'), value: t('tco.elim.13v', '4–15%/yr compounding with SaaS and enterprise vendors — Trier OS has no price to escalate') },
                     ]
                 },
                 {
                     title: t('manual.tco.8.title', '9 — Data Sources'),
-                    tcoNote: 'All figures are based on published vendor pricing and verified analyst reports (2025–2026).',
+                    tcoNote: t('manual.tco.8.note', 'All figures are based on published vendor pricing and verified analyst reports (2025–2026).'),
                     tcoItems: [
-                        { label: 'SAP S/4HANA $200/user/mo', value: 'SAP RISE published pricing, Top10ERP 2026' },
-                        { label: 'SQL Server Enterprise $15,123/2-core pack', value: 'Microsoft official price list 2025' },
-                        { label: 'Azure / AWS hosting ranges', value: 'Intercept Cloud, TrustRadius 2025 pricing review, Cloudburn.io' },
-                        { label: 'IBM Maximo AppPoints estimate', value: 'Capterra analyst averages, G2 verified buyer reports 2025' },
-                        { label: 'Oracle Fusion $500–625/user/mo', value: 'Top10ERP Oracle Fusion guide 2026' },
-                        { label: 'Oracle DB Enterprise $47,500/processor', value: 'Oracle published technology price list' },
-                        { label: 'SAP BASIS Administrator salary $130K–$184K', value: 'Payscale US 2025, Glassdoor cross-reference' },
-                        { label: 'SAP annual maintenance 22%', value: 'SAP official maintenance policy, SAPRiseNegotiations.com' },
-                        { label: 'MuleSoft / Boomi middleware pricing', value: 'Vendor pricing pages + APIX-Drive comparison 2025' },
-                        { label: 'UpKeep / Fiix $75/user/mo Professional tier', value: 'UpKeep and Fiix published pricing pages (April 2025)' },
-                        { label: 'Hexagon EAM $7,000+/mo', value: 'G2 verified buyer reports and analyst estimates 2025' },
-                        { label: 'Infor / Hexagon implementation $75K–$200K', value: 'Dynaway EAM implementation cost guide, eworkorders.com' },
+                        { label: 'SAP S/4HANA $200/user/mo', value: t('tco.src.1', 'SAP RISE published pricing, Top10ERP 2026') },
+                        { label: 'SQL Server Enterprise $15,123/2-core pack', value: t('tco.src.2', 'Microsoft official price list 2025') },
+                        { label: 'Azure / AWS hosting ranges', value: t('tco.src.3', 'Intercept Cloud, TrustRadius 2025 pricing review, Cloudburn.io') },
+                        { label: 'IBM Maximo AppPoints estimate', value: t('tco.src.4', 'Capterra analyst averages, G2 verified buyer reports 2025') },
+                        { label: 'Oracle Fusion $500–625/user/mo', value: t('tco.src.5', 'Top10ERP Oracle Fusion guide 2026') },
+                        { label: 'Oracle DB Enterprise $47,500/processor', value: t('tco.src.6', 'Oracle published technology price list') },
+                        { label: 'SAP BASIS Administrator salary $130K–$184K', value: t('tco.src.7', 'Payscale US 2025, Glassdoor cross-reference') },
+                        { label: 'SAP annual maintenance 22%', value: t('tco.src.8', 'SAP official maintenance policy, SAPRiseNegotiations.com') },
+                        { label: 'MuleSoft / Boomi middleware pricing', value: t('tco.src.9', 'Vendor pricing pages + APIX-Drive comparison 2025') },
+                        { label: 'UpKeep / Fiix $75/user/mo Professional tier', value: t('tco.src.10', 'UpKeep and Fiix published pricing pages (April 2025)') },
+                        { label: 'Hexagon EAM $7,000+/mo', value: t('tco.src.11', 'G2 verified buyer reports and analyst estimates 2025') },
+                        { label: 'Infor / Hexagon implementation $75K–$200K', value: t('tco.src.12', 'Dynaway EAM implementation cost guide, eworkorders.com') },
                     ]
                 },
             ]
@@ -3506,131 +3506,181 @@ const AboutView = () => {
             ]
         },
         {
-            section: 'Part XXX: Live Studio — In-App IDE & DevOps Console',
+            section: t('manual.studio.title', 'Part XXX: Live Studio — In-App IDE & DevOps Console'),
             id: 'live-studio',
             icon: <Server size={22} />,
             filePath: 'server/routes/live_studio.js',
             adminOnly: true,
-            content: 'Live Studio is a fully integrated, browser-based code editor and deployment pipeline built directly into Trier OS. It allows authorized Creators and IT Admins to inspect, edit, and deploy source code changes without ever leaving the platform — with zero-downtime deployment, financial impact analysis, historical simulation, and a blast-radius consequence mapper built in.',
+            content: t('manual.studio.content', 'Live Studio is a fully integrated, browser-based code editor and deployment pipeline built directly into Trier OS. It allows authorized Creators and IT Admins to inspect, edit, and deploy source code changes without ever leaving the platform — with zero-downtime deployment, financial impact analysis, historical simulation, and a blast-radius consequence mapper built in.'),
             subsections: [
                 {
-                    title: '30.1 Access & Security Model',
+                    title: t('manual.studio.1', '30.1 Access & Security Model'),
                     items: [
-                        'Live Studio is restricted to two roles: Creator (Doug Trier) and IT Admin. It is completely invisible to all other users — no tile, no button, no route.',
-                        'Access is enforced at three layers: (1) the indigo Code icon in the header only renders for authorized sessions, (2) every API endpoint is gated by the requireStudio middleware on the server, and (3) the Monaco editor bundle is never transmitted to technician endpoints (Zebra TC77, mobile devices) because those sessions never pass the RBAC check.',
-                        'The "Human Airgap" mandate is architecturally enforced: no AI model, API, or automated code-generation system has any access to Live Studio endpoints. All code is written by humans and pasted in manually.',
-                        'A persistent red legal banner is displayed on every Studio session: "Caution: Operations in this workspace will permanently modify the running Trier OS environment."',
-                        'To open Live Studio: click the indigo </> Code icon in the top navigation bar. Alternatively, open any section of this manual and click the indigo </> Go to Code button — the Studio opens with that exact file pre-loaded in the editor.'
+                        t('manual.studio.items.1', 'Live Studio is restricted to two roles: Creator (Doug Trier) and IT Admin. It is completely invisible to all other users — no tile, no button, no route.'),
+                        t('manual.studio.items.2', 'Access is enforced at three layers: (1) the indigo Code icon in the header only renders for authorized sessions, (2) every API endpoint is gated by the requireStudio middleware on the server, and (3) the Monaco editor bundle is never transmitted to technician endpoints (Zebra TC77, mobile devices) because those sessions never pass the RBAC check.'),
+                        t('manual.studio.items.3', 'The "Human Airgap" mandate is architecturally enforced: no AI model, API, or automated code-generation system has any access to Live Studio endpoints. All code is written by humans and pasted in manually.'),
+                        t('manual.studio.items.4', 'A persistent red legal banner is displayed on every Studio session: "Caution: Operations in this workspace will permanently modify the running Trier OS environment."'),
+                        t('manual.studio.items.5', 'To open Live Studio: click the indigo </> Code icon in the top navigation bar. Alternatively, open any section of this manual and click the indigo </> Go to Code button — the Studio opens with that exact file pre-loaded in the editor.')
                     ]
                 },
                 {
-                    title: '30.2 The Monaco Editor (Editor Tab)',
+                    title: t('manual.studio.2', '30.2 The Monaco Editor (Editor Tab)'),
                     items: [
-                        'Live Studio embeds Monaco Editor — the same engine that powers Visual Studio Code. It is lazy-loaded only when the Studio modal opens, so it never impacts page load time for standard users.',
-                        'File scope is hard-whitelisted to two directories only: src/components/ (React frontend) and server/routes/ (backend API routes). No other files can be read, written, or accessed.',
-                        'Critical pipeline files (vite.config.js, package.json, index.js) are blocked from direct writes. Modifications to these require going through the deploy pipeline.',
-                        'File writes are capped at 1MB. Symlinks are explicitly rejected. Binary files are blocked.',
-                        'The file browser sidebar on the left groups files by section (components vs. routes). Clicking a file loads it into Monaco immediately.',
-                        'Save with Ctrl+S (or the Save button). Unsaved changes are flagged with a yellow dot. If you try to switch files with unsaved changes, the system asks you to confirm before discarding them.',
-                        'Editor features: real-time syntax highlighting, minimap, word wrap, 4-space tabs, JetBrains Mono font, and automatic layout adjustment.'
+                        t('manual.studio.items.6', 'Live Studio embeds Monaco Editor — the same engine that powers Visual Studio Code. It is lazy-loaded only when the Studio modal opens, so it never impacts page load time for standard users.'),
+                        t('manual.studio.items.7', 'File scope is hard-whitelisted to two directories only: src/components/ (React frontend) and server/routes/ (backend API routes). No other files can be read, written, or accessed.'),
+                        t('manual.studio.items.8', 'Critical pipeline files (vite.config.js, package.json, index.js) are blocked from direct writes. Modifications to these require going through the deploy pipeline.'),
+                        t('manual.studio.items.9', 'File writes are capped at 1MB. Symlinks are explicitly rejected. Binary files are blocked.'),
+                        t('manual.studio.items.10', 'The file browser sidebar on the left groups files by section (components vs. routes). Clicking a file loads it into Monaco immediately.'),
+                        t('manual.studio.items.11', 'Save with Ctrl+S (or the Save button). Unsaved changes are flagged with a yellow dot. If you try to switch files with unsaved changes, the system asks you to confirm before discarding them.'),
+                        t('manual.studio.items.12', 'Editor features: real-time syntax highlighting, minimap, word wrap, 4-space tabs, JetBrains Mono font, and automatic layout adjustment.')
                     ]
                 },
                 {
-                    title: '30.3 Git Branch Management & Deploy Pipeline (Deploy Tab)',
+                    title: t('manual.studio.3', '30.3 Git Branch Management & Deploy Pipeline (Deploy Tab)'),
                     items: [
-                        'Before making changes, create a sandbox branch following the naming convention: studio/<your-name>/<descriptor> — for example, studio/doug/fix-calendar-bug. The Studio will reject branch names that do not match this pattern.',
-                        'The Deploy tab shows the current Git branch, whether the working tree is dirty (files changed), the number of changed files, and the last stable-* recovery tag.',
-                        'The deploy pipeline is a 4-step sequence: (1) Stage all changes in src/components/ and server/routes/, (2) Commit to the sandbox branch, (3) Run npm run build with a 120-second timeout, (4) Auto-tag the commit stable-YYYY-MM-DD.',
-                        'To trigger a deploy, type DEPLOY NOW exactly in the confirmation field — the server rejects any other string. This is a deliberate friction gate.',
-                        'Deploy responds immediately with a ledger ID. The client then polls the server with exponential backoff (starting at 2 seconds, capped at 10 seconds) and streams the live build log into the log panel in real time.',
-                        'Deploy states: Idle → Building → Success or Failed. If the build fails, the full error output is captured in the log panel and the ledger entry is marked FAILED.',
-                        'A mutex lock prevents two users from deploying simultaneously — if another deploy is BUILDING when you trigger one, the system blocks yours with a 409 and tells you who has the lock.',
-                        'Emergency Revert: the "Revert to Stable Tag" button rolls the entire working tree back to the most recent stable-* tag. This is the Boot Safe Mode recovery path — no guessing, no judgment calls required.'
+                        t('manual.studio.items.13', 'Before making changes, create a sandbox branch following the naming convention: studio/<your-name>/<descriptor> — for example, studio/doug/fix-calendar-bug. The Studio will reject branch names that do not match this pattern.'),
+                        t('manual.studio.items.14', 'The Deploy tab shows the current Git branch, whether the working tree is dirty (files changed), the number of changed files, and the last stable-* recovery tag.'),
+                        t('manual.studio.items.15', 'The deploy pipeline is a 4-step sequence: (1) Stage all changes in src/components/ and server/routes/, (2) Commit to the sandbox branch, (3) Run npm run build with a 120-second timeout, (4) Auto-tag the commit stable-YYYY-MM-DD.'),
+                        t('manual.studio.items.16', 'To trigger a deploy, type DEPLOY NOW exactly in the confirmation field — the server rejects any other string. This is a deliberate friction gate.'),
+                        t('manual.studio.items.17', 'Deploy responds immediately with a ledger ID. The client then polls the server with exponential backoff (starting at 2 seconds, capped at 10 seconds) and streams the live build log into the log panel in real time.'),
+                        t('manual.studio.items.18', 'Deploy states: Idle → Building → Success or Failed. If the build fails, the full error output is captured in the log panel and the ledger entry is marked FAILED.'),
+                        t('manual.studio.items.19', 'A mutex lock prevents two users from deploying simultaneously — if another deploy is BUILDING when you trigger one, the system blocks yours with a 409 and tells you who has the lock.'),
+                        t('manual.studio.items.20', 'Emergency Revert: the "Revert to Stable Tag" button rolls the entire working tree back to the most recent stable-* tag. This is the Boot Safe Mode recovery path — no guessing, no judgment calls required.')
                     ]
                 },
                 {
-                    title: '30.4 Contextual "Go to Code" from This Manual',
+                    title: t('manual.studio.4', '30.4 Contextual "Go to Code" from This Manual'),
                     items: [
-                        'Every section of this Operations Manual that corresponds to a specific source file has a blue </> Go to Code button displayed next to the "Go There" navigation button.',
-                        'This button is only visible to Creator and IT Admin roles — standard users never see it.',
-                        'Clicking it fires a browser event that opens the Studio and pre-loads the exact source file in Monaco. You do not need to navigate the file browser.',
-                        '22 manual sections are currently mapped to their source files, covering: login, shift handoff, work orders, storeroom, PM schedules, chat, fleet, settings, data bridge, reports, floor plans, safety, engineering, contractors, OEE, mission control, IT department, LOTO, compliance, SCADA sensors, and the Live Studio backend itself.',
-                        'This pattern separates concerns cleanly: the Manual is the entry point for context-driven editing. The Admin Console tile (Settings → Admin Console → Live Studio / DevOps) is the control room for managing running deploys and reading the audit ledger.'
+                        t('manual.studio.items.21', 'Every section of this Operations Manual that corresponds to a specific source file has a blue </> Go to Code button displayed next to the "Go There" navigation button.'),
+                        t('manual.studio.items.22', 'This button is only visible to Creator and IT Admin roles — standard users never see it.'),
+                        t('manual.studio.items.23', 'Clicking it fires a browser event that opens the Studio and pre-loads the exact source file in Monaco. You do not need to navigate the file browser.'),
+                        t('manual.studio.items.24', '22 manual sections are currently mapped to their source files, covering: login, shift handoff, work orders, storeroom, PM schedules, chat, fleet, settings, data bridge, reports, floor plans, safety, engineering, contractors, OEE, mission control, IT department, LOTO, compliance, SCADA sensors, and the Live Studio backend itself.'),
+                        t('manual.studio.items.25', 'This pattern separates concerns cleanly: the Manual is the entry point for context-driven editing. The Admin Console tile (Settings → Admin Console → Live Studio / DevOps) is the control room for managing running deploys and reading the audit ledger.')
                     ]
                 },
                 {
-                    title: '30.5 Frictional Cost Engine (Friction Tab)',
+                    title: t('manual.studio.5', '30.5 Frictional Cost Engine (Friction Tab)'),
                     items: [
-                        'The Frictional Cost Engine is a deterministic UX financial analyzer. Before you deploy a UI change, it calculates the real-world dollar cost — or savings — of adding or removing interactive elements.',
-                        'It works by comparing the current editor content against the git HEAD baseline of the same file, counting the delta in interactive elements using physics-based time constants:',
-                        '  • Text input field: 3.0 seconds (locate, tap, type, confirm)',
-                        '  • Number input: 2.0 seconds',
-                        '  • Dropdown select: 1.0 second',
-                        '  • Checkbox / Radio: 0.3 seconds',
-                        '  • Button click: 0.5 seconds',
-                        '  • Barcode scan: 1.5 seconds (raise scanner, aim, trigger, wait for beep)',
-                        '  • Textarea: 5.0 seconds',
-                        'The delta time is projected across: estimated daily workflow usage (derived from AuditLog), 250 working days per year, 40 plants, and a $25/hr operator wage.',
-                        'The verdict is shown as a banner: green (savings) if you removed friction, red (cost warning) if you added friction, or neutral if no interactive elements changed.',
-                        'Example: Adding 2 text inputs to a form used 30 times/day across 40 plants = +60 seconds/day = 250 hours/year = -$6,250/yr in operator productivity. The engine shows you this number before you deploy.',
-                        'To run it: open a file in the Editor tab, switch to Friction, and click "Run Friction Analysis".'
+                        t('manual.studio.items.26', 'The Frictional Cost Engine is a deterministic UX financial analyzer. Before you deploy a UI change, it calculates the real-world dollar cost — or savings — of adding or removing interactive elements.'),
+                        t('manual.studio.items.27', 'It works by comparing the current editor content against the git HEAD baseline of the same file, counting the delta in interactive elements using physics-based time constants:'),
+                        t('manual.studio.items.28', '  • Text input field: 3.0 seconds (locate, tap, type, confirm)'),
+                        t('manual.studio.items.29', '  • Number input: 2.0 seconds'),
+                        t('manual.studio.items.30', '  • Dropdown select: 1.0 second'),
+                        t('manual.studio.items.31', '  • Checkbox / Radio: 0.3 seconds'),
+                        t('manual.studio.items.32', '  • Button click: 0.5 seconds'),
+                        t('manual.studio.items.33', '  • Barcode scan: 1.5 seconds (raise scanner, aim, trigger, wait for beep)'),
+                        t('manual.studio.items.34', '  • Textarea: 5.0 seconds'),
+                        t('manual.studio.items.35', 'The delta time is projected across: estimated daily workflow usage (derived from AuditLog), 250 working days per year, 40 plants, and a $25/hr operator wage.'),
+                        t('manual.studio.items.36', 'The verdict is shown as a banner: green (savings) if you removed friction, red (cost warning) if you added friction, or neutral if no interactive elements changed.'),
+                        t('manual.studio.items.37', 'Example: Adding 2 text inputs to a form used 30 times/day across 40 plants = +60 seconds/day = 250 hours/year = -$6,250/yr in operator productivity. The engine shows you this number before you deploy.'),
+                        t('manual.studio.items.38', 'To run it: open a file in the Editor tab, switch to Friction, and click "Run Friction Analysis".')
                     ]
                 },
                 {
-                    title: '30.6 Parallel Universe — Future Simulation Engine (Universe Tab)',
+                    title: t('manual.studio.6', '30.6 Parallel Universe — Future Simulation Engine (Universe Tab)'),
                     items: [
-                        'The Parallel Universe engine lets you safely test how a change would have affected a plant by running historical event data through a cloned database stripped to a specific point in time.',
-                        'Select a plant and a cutoff date. The engine copies that plant\'s SQLite database to a temporary file, strips all Work Orders, Schedule records, and AuditLog entries added after the cutoff date, and presents a split-screen KPI comparison.',
-                        'The comparison shows 6 KPIs side-by-side between the live database and the simulation snapshot:',
-                        '  • Open Work Orders (total active WOs)',
-                        '  • Completed Work Orders',
-                        '  • Overdue Work Orders (past scheduled date, still open)',
-                        '  • Active PM Schedules',
-                        '  • PM Compliance % (on-time completions vs. total PMs)',
-                        '  • Total Assets',
-                        'Delta badges below the split-screen highlight every metric that differs between the two states, colored green (improved) or red (regressed).',
-                        'Simulation sessions auto-expire after 30 minutes and are deleted from the temp directory. Click "Destroy Simulation & Reset" to clean up immediately.',
-                        'Use case: if you are refactoring the PM scheduling logic, you can clone Plant 5 at a date 3 months ago and verify the new logic produces the same (or better) compliance numbers as the live system did at that time.'
+                        t('manual.studio.items.39', 'The Parallel Universe engine lets you safely test how a change would have affected a plant by running historical event data through a cloned database stripped to a specific point in time.'),
+                        t('manual.studio.items.40', 'Select a plant and a cutoff date. The engine copies that plant\'s SQLite database to a temporary file, strips all Work Orders, Schedule records, and AuditLog entries added after the cutoff date, and presents a split-screen KPI comparison.'),
+                        t('manual.studio.items.41', 'The comparison shows 6 KPIs side-by-side between the live database and the simulation snapshot:'),
+                        t('manual.studio.items.42', '  • Open Work Orders (total active WOs)'),
+                        t('manual.studio.items.43', '  • Completed Work Orders'),
+                        t('manual.studio.items.44', '  • Overdue Work Orders (past scheduled date, still open)'),
+                        t('manual.studio.items.45', '  • Active PM Schedules'),
+                        t('manual.studio.items.46', '  • PM Compliance % (on-time completions vs. total PMs)'),
+                        t('manual.studio.items.47', '  • Total Assets'),
+                        t('manual.studio.items.48', 'Delta badges below the split-screen highlight every metric that differs between the two states, colored green (improved) or red (regressed).'),
+                        t('manual.studio.items.49', 'Simulation sessions auto-expire after 30 minutes and are deleted from the temp directory. Click "Destroy Simulation & Reset" to clean up immediately.'),
+                        t('manual.studio.items.50', 'Use case: if you are refactoring the PM scheduling logic, you can clone Plant 5 at a date 3 months ago and verify the new logic produces the same (or better) compliance numbers as the live system did at that time.')
                     ]
                 },
                 {
-                    title: '30.7 Visual Change Consequence Analyzer (Impact Tab)',
+                    title: t('manual.studio.7', '30.7 Visual Change Consequence Analyzer (Impact Tab)'),
                     items: [
-                        'The Impact tab traces your code changes through ES6 import chains to the React Router routes that expose them to users — answering the question: "If I deploy this, which screens in the app does it touch?"',
-                        'Scope: if a file is open in the Editor tab, the analysis uses that file. If no file is open, it scans all files in git diff HEAD (all uncommitted changes).',
-                        'The engine reads App.jsx to extract the full route map — every <Route path="..." element={<Component />} pair — then checks whether any changed component appears directly in that map (direct hit) or is imported by a component that does (indirect hit).',
-                        'Results are shown in three panels:',
-                        '  • Changed Components: the files identified as modified',
-                        '  • Affected Routes: each route that will be impacted, with its URL path, component name, and a "direct" or "indirect" badge',
-                        '  • Downstream Importers: other components that import the changed file, even if they are not directly on a route',
-                        'A red summary banner appears if any routes are affected. An indigo banner appears if the changed file is a utility/shared component not directly mounted on any route.',
-                        'Click "Map Blast Radius" to run the analysis. Every run is logged to the AuditLog.'
+                        t('manual.studio.items.51', 'The Impact tab traces your code changes through ES6 import chains to the React Router routes that expose them to users — answering the question: "If I deploy this, which screens in the app does it touch?"'),
+                        t('manual.studio.items.52', 'Scope: if a file is open in the Editor tab, the analysis uses that file. If no file is open, it scans all files in git diff HEAD (all uncommitted changes).'),
+                        t('manual.studio.items.53', 'The engine reads App.jsx to extract the full route map — every <Route path="..." element={<Component />} pair — then checks whether any changed component appears directly in that map (direct hit) or is imported by a component that does (indirect hit).'),
+                        t('manual.studio.items.54', 'Results are shown in three panels:'),
+                        t('manual.studio.items.55', '  • Changed Components: the files identified as modified'),
+                        t('manual.studio.items.56', '  • Affected Routes: each route that will be impacted, with its URL path, component name, and a "direct" or "indirect" badge'),
+                        t('manual.studio.items.57', '  • Downstream Importers: other components that import the changed file, even if they are not directly on a route'),
+                        t('manual.studio.items.58', 'A red summary banner appears if any routes are affected. An indigo banner appears if the changed file is a utility/shared component not directly mounted on any route.'),
+                        t('manual.studio.items.59', 'Click "Map Blast Radius" to run the analysis. Every run is logged to the AuditLog.')
                     ]
                 },
                 {
-                    title: '30.8 Executive Intelligence Audit Ledger (Ledger Tab)',
+                    title: t('manual.studio.8', '30.8 Executive Intelligence Audit Ledger (Ledger Tab)'),
                     items: [
-                        'The Ledger tab is a permanent, immutable record of every deployment, revert, and failed build attempt. Records cannot be deleted.',
-                        'Each ledger entry shows: entry number, status badge (Success / Failed / Building / Reverted), deployed-by user, sandbox branch name, stable tag applied, commit SHA (12 characters), started timestamp, completed timestamp, and deploy notes.',
-                        'SHA copy-to-clipboard: click the copy icon next to any commit SHA to copy the full 40-character hash. A green checkmark confirms the copy for 2 seconds.',
-                        'Search & Filter: the search panel supports 5 simultaneous filters:',
-                        '  • Free text (q): searches notes, branch name, SHA, and user name',
-                        '  • User: filter by who deployed',
-                        '  • Date From / Date To: filter by deploy start date',
-                        '  • Status: Success, Failed, Reverted, or Building',
-                        'Press Enter in any filter field or click Search to run the query. Click "All" to reload the last 50 unfiltered entries.',
-                        'Export PDF: opens a print-ready HTML page in a new tab with the current filtered ledger as a formatted table. Click "Print / Save as PDF" in that window to produce a court-ready PDF with all columns: #, Status, Deployed By, Branch, Tag, Commit SHA, Started, Notes.',
-                        'The ledger is stored in prairie_logistics.db (StudioDeployLedger table) — it survives server restarts, deploys, and reverts.'
+                        t('manual.studio.items.60', 'The Ledger tab is a permanent, immutable record of every deployment, revert, and failed build attempt. Records cannot be deleted.'),
+                        t('manual.studio.items.61', 'Each ledger entry shows: entry number, status badge (Success / Failed / Building / Reverted), deployed-by user, sandbox branch name, stable tag applied, commit SHA (12 characters), started timestamp, completed timestamp, and deploy notes.'),
+                        t('manual.studio.items.62', 'SHA copy-to-clipboard: click the copy icon next to any commit SHA to copy the full 40-character hash. A green checkmark confirms the copy for 2 seconds.'),
+                        t('manual.studio.items.63', 'Search & Filter: the search panel supports 5 simultaneous filters:'),
+                        t('manual.studio.items.64', '  • Free text (q): searches notes, branch name, SHA, and user name'),
+                        t('manual.studio.items.65', '  • User: filter by who deployed'),
+                        t('manual.studio.items.66', '  • Date From / Date To: filter by deploy start date'),
+                        t('manual.studio.items.67', '  • Status: Success, Failed, Reverted, or Building'),
+                        t('manual.studio.items.68', 'Press Enter in any filter field or click Search to run the query. Click "All" to reload the last 50 unfiltered entries.'),
+                        t('manual.studio.items.69', 'Export PDF: opens a print-ready HTML page in a new tab with the current filtered ledger as a formatted table. Click "Print / Save as PDF" in that window to produce a court-ready PDF with all columns: #, Status, Deployed By, Branch, Tag, Commit SHA, Started, Notes.'),
+                        t('manual.studio.items.70', 'The ledger is stored in prairie_logistics.db (StudioDeployLedger table) — it survives server restarts, deploys, and reverts.')
                     ]
                 },
                 {
-                    title: '30.9 Boot Safe Mode & Disaster Recovery',
+                    title: t('manual.studio.9', '30.9 Boot Safe Mode & Disaster Recovery'),
                     items: [
-                        'Every successful deploy is automatically tagged with the convention stable-YYYY-MM-DD. This tag is the deterministic recovery anchor for Boot Safe Mode.',
-                        'If a cascading failure locks out the UI after a bad deploy, start the server with NODE_ENV=safe_mode. This bypasses the latest commit and loads the most recent stable-* tag automatically — no human judgment required during an incident.',
-                        'The Emergency Revert button in the Deploy tab executes the same recovery path from inside the UI: it resolves the latest stable-* tag via git tag --list "stable-*" --sort=-version:refname and checks it out.',
-                        'Every revert is recorded in the ledger with Status=REVERTED, the tag that was restored, and the user who triggered it.',
-                        'If the tag already exists for today (e.g., you deploy twice in one day), the pipeline skips re-tagging without error — the first deploy of the day holds the stable anchor.'
+                        t('manual.studio.items.71', 'Every successful deploy is automatically tagged with the convention stable-YYYY-MM-DD. This tag is the deterministic recovery anchor for Boot Safe Mode.'),
+                        t('manual.studio.items.72', 'If a cascading failure locks out the UI after a bad deploy, start the server with NODE_ENV=safe_mode. This bypasses the latest commit and loads the most recent stable-* tag automatically — no human judgment required during an incident.'),
+                        t('manual.studio.items.73', 'The Emergency Revert button in the Deploy tab executes the same recovery path from inside the UI: it resolves the latest stable-* tag via git tag --list "stable-*" --sort=-version:refname and checks it out.'),
+                        t('manual.studio.items.74', 'Every revert is recorded in the ledger with Status=REVERTED, the tag that was restored, and the user who triggered it.'),
+                        t('manual.studio.items.75', 'If the tag already exists for today (e.g., you deploy twice in one day), the pipeline skips re-tagging without error — the first deploy of the day holds the stable anchor.')
+                    ]
+                }
+            ]
+        },
+        {
+            section: t('manual.s6.title', 'Part VI: Integration & Enterprise Automation'),
+            id: 'integration-enterprise-automation',
+            icon: <Server size={22} />,
+            content: t('manual.s6.content', 'Connecting Trier OS to the outside world: ERP systems, Active Directory, and OT floor devices like PLCs and sensors.'),
+            subsections: [
+                {
+                    title: t('manual.sub.31', '6.1 SCADA / PLC EdgeAgents & Device Registry (OT Network)'),
+                    items: [
+                        t('manual.item.1580', 'The Device Registry allows Plant Admins to quickly ingest and monitor OT assets connected to the local network via Modbus TCP.'),
+                        t('manual.item.1581', 'Device Discovery Wizard: In the Plant Setup > Integrations view, you can perform a subnet sweep to discover open Modbus devices (port 502).'),
+                        t('manual.item.1582', 'A background MAC→IP resolution worker maps IP addresses back to MAC addresses, guaranteeing device telemetry persists through DHCP renewals.'),
+                        t('manual.item.1583', 'The internal SCADA EdgeAgent automatically initializes mapped registers and streams telemetry back to the Trier OS interface.')
+                    ]
+                },
+                {
+                    title: t('manual.sub.32', '6.2 Sensor Thresholds & Automated Work Orders'),
+                    items: [
+                        t('manual.item.1584', 'Plant Setup > Integrations tracks all incoming sensor telemetry from the SCADA EdgeAgents.'),
+                        t('manual.item.1585', 'You can attach operational thresholds to any mapped analog input (e.g., Temp > 150F).'),
+                        t('manual.item.1586', 'When a threshold violation occurs, the edge agent dispatches a hardcoded Auto-Work Order using Priority 1 or 2 as designated.'),
+                        t('manual.item.1587', 'Cooldowns automatically engage to prevent duplicating work orders if a machine bounces its temperature repeatedly.')
+                    ]
+                },
+                {
+                    title: t('manual.sub.33', '6.3 Corporate Supply Chain "All Sites" Rollup'),
+                    items: [
+                        t('manual.item.1588', 'Corporate Directors can switch their context to "All Sites" from the navigation header.'),
+                        t('manual.item.1589', 'This loads the Corporate Rollup dashboard within the Supply Chain View.'),
+                        t('manual.item.1590', 'Data pulls asynchronously across all attached plant databases to surface network-wide open/overdue POs and MTD spend profiles.')
+                    ]
+                },
+                {
+                    title: t('manual.sub.34', '6.4 ERP Synchronization Pipeline & Output Outbox'),
+                    items: [
+                        t('manual.item.1591', 'Trier OS operates a dual-bridge methodology for SAP/ERP interactions: Pull Integrations and Push Outboxes.'),
+                        t('manual.item.1592', 'ERP Pull Worker: Executes over standard HTTP REST. Routinely fetches new parts and purchase structures dropping from the central ERP.'),
+                        t('manual.item.1593', 'ERP Write-Back Outbox: Consumed parts and closed work orders queue seamlessly inside local erp_outbox tables automatically.'),
+                        t('manual.item.1594', 'A dedicated background drain loop transmits those events (Status 50, Status 99, Issue, Receive) off to the ERP, protecting local performance while guaranteeing sequence delivery.')
+                    ]
+                },
+                {
+                    title: t('manual.sub.35', '6.5 IT Admin Configurations (LDAP, SQL Server, Access Imports)'),
+                    items: [
+                        t('manual.item.1595', 'LDAP: Enable Active Directory integration to centralize logins. This removes the need to provision new mechanics manually.'),
+                        t('manual.item.1596', 'Legacy Migration: Import utility scripts allow bringing in direct relational data stores from MS Access (.accdb, .mdb), SQL Server exports, and obsolete systems directly into modern SQLite instances.')
                     ]
                 }
             ]
@@ -3897,10 +3947,10 @@ const AboutView = () => {
                                                 };
                                                 const badge = (val) => {
                                                     const s = normalizeStatus(val);
-                                                    if (s === 'YES_UNIQUE') return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(234,179,8,0.2)', color: '#eab308', fontWeight: 800, fontSize: '0.7rem', whiteSpace: 'nowrap' }}>{'\u2605'} YES</span>;
-                                                    if (s === 'YES')        return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(16,185,129,0.15)', color: '#34d399', fontWeight: 700, fontSize: '0.7rem' }}>YES</span>;
-                                                    if (s === 'PARTIAL')    return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(245,158,11,0.12)', color: '#fbbf24', fontWeight: 600, fontSize: '0.7rem' }}>PARTIAL</span>;
-                                                    if (s === 'NO')         return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: '#f87171', fontSize: '0.7rem' }}>NO</span>;
+                                                    if (s === 'YES_UNIQUE') return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(234,179,8,0.2)', color: '#eab308', fontWeight: 800, fontSize: '0.7rem', whiteSpace: 'nowrap' }}>{'\u2605'} {t('matrix.yes', 'YES')}</span>;
+                                                    if (s === 'YES')        return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(16,185,129,0.15)', color: '#34d399', fontWeight: 700, fontSize: '0.7rem' }}>{t('matrix.yes', 'YES')}</span>;
+                                                    if (s === 'PARTIAL')    return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(245,158,11,0.12)', color: '#fbbf24', fontWeight: 600, fontSize: '0.7rem' }}>{t('matrix.partial', 'PARTIAL')}</span>;
+                                                    if (s === 'NO')         return <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: '#f87171', fontSize: '0.7rem' }}>{t('matrix.no', 'NO')}</span>;
                                                     return <span style={{ color: '#475569', fontSize: '0.7rem' }}>{'\u2014'}</span>;
                                                 };
                                                 return (
