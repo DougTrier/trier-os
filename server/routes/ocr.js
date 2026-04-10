@@ -53,7 +53,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Tesseract = require('tesseract.js');
-const Jimp = require('jimp');
+const { Jimp } = require('jimp');
 
 const dataDir = require('../resolve_data_dir');
 const tmpDir = path.join(dataDir, 'uploads', 'ocr_tmp');
@@ -88,8 +88,8 @@ function binaryThreshold(image, threshold = 128) {
 async function preprocessMultiStrategy(filePath) {
     const image = await Jimp.read(filePath);
     const maxDim = 2000;
-    if (image.getWidth() > maxDim || image.getHeight() > maxDim) {
-        image.scaleToFit(maxDim, maxDim);
+    if (image.width > maxDim || image.height > maxDim) {
+        image.scaleToFit({ w: maxDim, h: maxDim });
     }
 
     const results = [];
@@ -97,21 +97,21 @@ async function preprocessMultiStrategy(filePath) {
     // Strategy 1: Soft — grayscale + contrast (good for paper labels)
     const soft = image.clone().greyscale().contrast(0.5).normalize();
     const softPath = filePath + '_soft.jpg';
-    await soft.quality(95).writeAsync(softPath);
+    await soft.write(softPath);
     results.push({ path: softPath, name: 'soft' });
 
     // Strategy 2: Hard threshold — pure B/W (good for metal plates)
     const hard = image.clone().greyscale().contrast(0.3).normalize();
     binaryThreshold(hard, 140);
     const hardPath = filePath + '_hard.jpg';
-    await hard.quality(95).writeAsync(hardPath);
+    await hard.write(hardPath);
     results.push({ path: hardPath, name: 'threshold-140' });
 
     // Strategy 3: Aggressive threshold — lower cutoff (darker plates)
     const aggr = image.clone().greyscale().normalize();
     binaryThreshold(aggr, 110);
     const aggrPath = filePath + '_aggr.jpg';
-    await aggr.quality(95).writeAsync(aggrPath);
+    await aggr.write(aggrPath);
     results.push({ path: aggrPath, name: 'threshold-110' });
 
     return results;
@@ -152,7 +152,7 @@ async function detectAllBarcodes(filePath) {
             // Try original and rotated 90°
             for (const deg of [0, 90]) {
                 try {
-                    let crop = image.clone().crop(region.x, region.y, region.w, region.h);
+                    let crop = image.clone().crop({ x: region.x, y: region.y, w: region.w, h: region.h });
                     if (deg !== 0) crop = crop.rotate(deg);
                     
                     // Also try enhanced
@@ -286,7 +286,7 @@ async function ocrMultiStrategy(strategies) {
         const bestStrat = strategies.find(s => s.name === bestResult.label) || strategies[0];
         const image = await Jimp.read(bestStrat.path);
         const rotPath = bestStrat.path + '_rot90.jpg';
-        await image.clone().rotate(90).quality(95).writeAsync(rotPath);
+        await image.clone().rotate(90).write(rotPath);
         const rot90 = await ocrSingle(rotPath, bestResult.label + '@90°');
         try { fs.unlinkSync(rotPath); } catch(e) { /* Intentional: temp rotation file cleanup */ }
         if (rot90.confidence > bestResult.confidence) {
