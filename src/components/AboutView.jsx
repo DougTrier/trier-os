@@ -3729,8 +3729,6 @@ const AboutView = () => {
     const isMatch = (item, query) => {
         const terms = parseSearchTerms(query);
         if (terms.length === 0) return true;
-        // Exclude the feature comparison section from search — it's a highlight reel
-        if (item.id === 'competitive-comparison') return false;
         if (textMatchesAny(item.section, terms)) return true;
         if (textMatchesAny(item.content, terms)) return true;
         if (item.subsections && item.subsections.some(s =>
