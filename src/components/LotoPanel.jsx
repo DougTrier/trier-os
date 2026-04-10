@@ -738,7 +738,7 @@ export default function LotoPanel() {
 
             {/* Info Modal */}
             {showInfo && createPortal((
-                <div style={{
+                <div className="modal-overlay no-print" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.7)', zIndex: 10000,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
