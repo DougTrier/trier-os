@@ -319,6 +319,87 @@ export default function AssetsView({ plantId, plantLabel }) {
         }
     };
 
+    const handlePreCreateOcrUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingPhoto(true);
+        window.trierToast?.info('Scanning Nameplate (OCR)...');
+        try {
+            const formData = new FormData();
+            formData.append('photo', file);
+            formData.append('type', 'asset');
+
+            const res = await fetch('/api/ocr/scan', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'x-plant-id': localStorage.getItem('selectedPlantId')
+                },
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                
+                const updates = {};
+                let foundPart = null;
+
+                if (data.asset?.serial) updates.Serial = data.asset.serial;
+                if (data.asset?.model) updates.Model = data.asset.model;
+                if (data.asset?.partNumber) updates.PartNumber = data.asset.partNumber;
+
+                // Attempt to enrich from the master catalog if a PartNumber or Model is found
+                const lookupTerm = data.asset?.partNumber || data.asset?.model;
+                if (lookupTerm) {
+                    try {
+                        const partRes = await fetch(`/api/parts?search=${encodeURIComponent(lookupTerm)}&limit=1`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                                'x-plant-id': localStorage.getItem('selectedPlantId')
+                            }
+                        });
+                        if (partRes.ok) {
+                            const partData = await partRes.json();
+                            const partsList = partData.data || partData;
+                            if (partsList && partsList.length > 0) {
+                                foundPart = partsList[0];
+                                updates.PartNumber = foundPart.ID || foundPart.PartID || updates.PartNumber;
+                                if (foundPart.Manufacturer) updates.Manufacturer = foundPart.Manufacturer;
+                                if (foundPart.VendorID) updates.VendorID = foundPart.VendorID;
+                                if (foundPart.Description && !editData.Description) {
+                                    updates.Description = foundPart.Description;
+                                }
+                                window.trierToast?.success(`Enriched specs from Master Catalog: ${foundPart.Description}`);
+                            }
+                        }
+                    } catch (enrichErr) {
+                        console.warn('Enrichment failed:', enrichErr);
+                    }
+                }
+
+                if (!foundPart && data.asset?.description && (!editData || !editData.Description)) {
+                    updates.Description = data.asset.description;
+                }
+                
+                if (data.asset?.manufacturer && (!updates.Manufacturer && (!editData || !editData.Manufacturer))) {
+                    updates.Manufacturer = data.asset.manufacturer;
+                }
+
+                setEditData(prev => ({ ...prev, ...updates }));
+                window.trierToast?.success('Nameplate OCR processed.');
+            } else {
+                window.trierToast?.error('Failed to run OCR. Try again.');
+            }
+        } catch (err) {
+            console.error('OCR scan error:', err);
+            window.trierToast?.error('Network error during OCR');
+        } finally {
+            setUploadingPhoto(false);
+            e.target.value = null; // reset input
+        }
+    };
+
     const handlePhotoUpload = async (e) => {
         const file = e.target.files[0];
         if (!file || !selectedAsset) return;
@@ -998,18 +1079,22 @@ export default function AssetsView({ plantId, plantLabel }) {
                         onDelete={handleDelete}
                         onCancel={() => { setIsEditing(false); setEditData(selectedAsset); }}
                         showDelete={!isForeignPlant}
-                        extraButtons={!isEditing && !isCreating ? [
+                        extraButtons={(!isEditing && !isCreating) || isCreating ? [
                             {
                                 label: '🏷️ QR Label',
-                                onClick: () => window.triggerTrierPrint('asset-qr-label', { ...selectedAsset, plantLabel: plantLabel || localStorage.getItem('selectedPlantId') }),
-                                title: 'Print a QR code label for this asset',
+                                onClick: () => {
+                                    const assetToPrint = isCreating ? { ...editData, Description: editData.Description || 'New Asset' } : selectedAsset;
+                                    if (!assetToPrint.ID) { window.trierToast?.info('Enter an Asset ID first to print.'); return; }
+                                    window.triggerTrierPrint('asset-qr-label', { ...assetToPrint, plantLabel: plantLabel || localStorage.getItem('selectedPlantId') });
+                                },
+                                title: isCreating ? 'Print a QR code up-front before installing' : 'Print a QR code label for this asset',
                                 style: { background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981' },
                                 icon: <QrCode size={14} />
                             }
                         ] : []}
                     >
-                        {/* Camera upload button in view mode */}
-                        {!isEditing && !isCreating && (
+                        {/* Camera upload button in view or creation mode for Nameplate Capture */}
+                        {(!isEditing && !isCreating || isCreating) && (
                             <label style={{ 
                                 height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 borderRadius: '8px', cursor: 'pointer',
@@ -1018,14 +1103,14 @@ export default function AssetsView({ plantId, plantLabel }) {
                                 opacity: uploadingPhoto ? 0.6 : 1,
                                 flexShrink: 0
                             }}
-                            title={t('assets.uploadAPhotoOfThisTip')}
+                            title={isCreating ? 'Snap Nameplate (OCR)' : t('assets.uploadAPhotoOfThisTip')}
                             >
                                 <Camera size={18} />
                                 <input 
                                     type="file" 
                                     accept="image/*" 
                                     capture="environment"
-                                    onChange={handlePhotoUpload}
+                                    onChange={isCreating ? handlePreCreateOcrUpload : handlePhotoUpload}
                                     disabled={uploadingPhoto}
                                     style={{ display: 'none' }} 
                                     title={t('assets.selectOrCaptureAPhotoTip')}

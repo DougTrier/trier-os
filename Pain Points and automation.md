@@ -47,7 +47,7 @@ This list is ordered by the **highest time savings and frequency of use**.
   * Action: Scan Meter QR -> Form instantly opens for *that specific meter*. Enter reading (or snap a photo for OCR).
   * *Time Saved: 15 minutes of data entry daily.*
 
-## 7. Asset Onboarding & Nameplate Capture (AssetsView)
+## 7. [x] Asset Onboarding & Nameplate Capture (AssetsView)
 * **The Pain Point:** Commissioning a new asset requires manually typing the manufacturer, model, serial number, voltage, phase, etc., from a tiny metal nameplate.
 * **The Automation:** **"Nameplate OCR Engine"**
   * Take a photo of the equipment nameplate holding specs.
