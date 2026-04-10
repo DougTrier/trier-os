@@ -113,6 +113,50 @@ export default function LotoPanel() {
     }));
     const removePoint = (i) => setForm(f => ({ ...f, points: f.points.filter((_, idx) => idx !== i) }));
 
+    const handleAssetAutoFill = async () => {
+        const scanAssetId = window.prompt('[Scanner Active]\nScan Asset NFC/QR Tag or enter Asset ID to pull history:');
+        if (!scanAssetId) return;
+        
+        try {
+            const ar = await fetch(`/api/assets/${encodeURIComponent(scanAssetId)}`);
+            const asset = await ar.json();
+            
+            let newDesc = '';
+            if (asset && !asset.error) {
+                window.trierToast?.success(`Identified Asset: ${asset.Description}`);
+                newDesc = asset.Description;
+            }
+
+            const hr = await fetch(`/api/loto/permits/history/${encodeURIComponent(scanAssetId)}`);
+            const history = await hr.json();
+            
+            let updates = { assetId: scanAssetId, assetDescription: newDesc || form.assetDescription };
+            
+            if (hr.ok && history && history.permit) {
+                window.trierToast?.info(`Loaded historical LOTO procedures from Permit ${history.permit.PermitNumber}`);
+                updates.hazardousEnergy = history.permit.HazardousEnergy || 'Electrical';
+                updates.isolationMethod = history.permit.IsolationMethod || '';
+                if (history.points && history.points.length > 0) {
+                    updates.points = history.points.map(p => ({
+                        energyType: p.EnergyType || 'Electrical',
+                        location: p.Location || '',
+                        isolationDevice: p.IsolationDevice || '',
+                        lockNumber: '',
+                        tagNumber: p.TagNumber || ''
+                    }));
+                }
+            } else {
+                if(newDesc) {
+                    window.trierToast?.warn(`No previous LOTO history found. Procedures must be authored manually.`);
+                }
+            }
+            
+            setForm(f => ({ ...f, ...updates }));
+        } catch(e) {
+            window.trierToast?.error('Failed to pull asset data.');
+        }
+    };
+
     const handleCreate = async () => {
         if (!form.description) { window.trierToast?.warn('Description is required'); return; }
         try {
@@ -568,7 +612,15 @@ export default function LotoPanel() {
                                 </select>
                             </div>
                             <div>
-                                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Asset ID</label>
+                                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                    <span>Asset ID</span>
+                                    <button type="button" onClick={handleAssetAutoFill} style={{
+                                        background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', 
+                                        color: '#3b82f6', cursor: 'pointer', fontSize: '0.65rem', borderRadius: 4, padding: '2px 6px', fontWeight: 'bold'
+                                    }} title="Scan Asset QR to auto-fill procedures from historical permits">
+                                        📡 Scan Asset QR
+                                    </button>
+                                </label>
                                 <input value={form.assetId} onChange={e => setForm({ ...form, assetId: e.target.value })}
                                     placeholder={t('loto.optionalEgConv001Placeholder')} style={inputStyle} />
                             </div>

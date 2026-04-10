@@ -136,7 +136,24 @@ const ENERGY_TYPES = [
     'Chemical', 'Gravity', 'Steam', 'Radiation', 'Stored Energy'
 ];
 
-// ── GET /api/loto/permits — List all permits (with filters) ──────────
+// 🔍 GET /api/loto/permits/history/:assetId - Get latest permit for an asset to auto-populate procedures
+router.get('/permits/history/:assetId', (req, res) => {
+    try {
+        const permit = logisticsDb.prepare(`SELECT * FROM LotoPermits WHERE AssetID = ? ORDER BY IssuedAt DESC LIMIT 1`).get(req.params.assetId);
+        if (!permit) return res.status(404).json({ error: 'No previous LOTO history for this asset.' });
+
+        const points = logisticsDb.prepare(
+            `SELECT * FROM LotoIsolationPoints WHERE PermitID = ? ORDER BY PointNumber`
+        ).all(permit.ID);
+
+        res.json({ permit, points });
+    } catch (err) {
+        console.error('[LOTO] GET history error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch LOTO history' });
+    }
+});
+
+// 📋 GET /api/loto/permits — List all permits (with filters) 📋──────────
 router.get('/permits', (req, res) => {
     try {
         const { plant, status, limit } = req.query;
