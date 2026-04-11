@@ -115,7 +115,8 @@ test.describe('Navigation � Desktop vs Mobile Layout', () => {
 
     // These are the exact visible tile labels from the MC grid
     const expectedTiles = [
-      'Safety', 'Operations', 'Asset Metrics', 'Logistics',
+      // asset-metrics collapses into the Operations group for it_admin — use Quality instead
+      'Safety', 'Operations', 'Quality', 'Logistics',
       'Supply Chain', 'Information Technology', 'Reports',
     ];
 
@@ -240,7 +241,7 @@ test.describe('Assets � Registry & Downtime Logs', () => {
     if (await plantSelect.isVisible({ timeout: 2000 })) {
       const currentValue = await plantSelect.inputValue();
       if (!currentValue || currentValue === 'all_sites') {
-        await plantSelect.selectOption('Demo_Plant_1');
+        await plantSelect.selectOption({ index: 1 }); // Plant_1 — Demo_Plant_1 not in plants.json
         await page.waitForTimeout(1500);
       }
     }

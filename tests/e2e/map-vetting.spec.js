@@ -29,11 +29,12 @@ test.describe('Corporate Analytics & Map Verification', () => {
         console.log('Found map pins:', count);
         expect(count).toBeGreaterThan(0);
 
-        // Click a pin to open editor
-        await mapPins.first().click({ force: true });
+        // Click a pin to open editor — use evaluate to bypass viewport constraints
+        // (leaflet markers can be at map positions outside the current viewport bounds)
+        await mapPins.first().evaluate(el => el.click());
         console.log('Clicked first map pin');
         // Give the editor panel time to animate open
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(2000);
 
         // Check for Property Value label in the editor panel
         await expect(page.getByText('Est. Value', { exact: false }).first()).toBeVisible({ timeout: 15000 });
