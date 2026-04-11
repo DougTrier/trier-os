@@ -15,14 +15,14 @@
 
 | Metric | Value |
 |---|---|
-| Total Lines of Code (full repository) | **265,000+** |
-| Core Application Logic (`.js`, `.jsx`) | **153,741** |
-| React UI Components | **134 modular interfaces** |
-| Backend API Routes | **53,000+ lines of core server logic** |
+| Total Lines of Code (full repository) | **247,853** |
+| Core Application Logic (`.js`, `.jsx`) | **124,668** |
+| React UI Components | **136 modular interfaces** |
+| Backend API Routes | **80 route modules · 46,000+ lines of server logic** |
 | Production Dependencies | **34 vetted packages** |
 | Languages Supported | **11** (EN, DE, ES, FR, JA, KO, PT, AR, HI, TR, ZH) |
 | Database Architecture | **Multi-tenant SQLite sharding** (one `.db` per plant) |
-| E2E Test Coverage | **3,000+ lines of automated Playwright logic** |
+| E2E Test Coverage | **3,557 lines · 17 spec files · 470 passing tests** |
 | Development Started | **March 7, 2026** |
 | Public Release | **April 9, 2026** |
 | Total Build Time | **33 days** (pure Agentic Coding, single developer) |

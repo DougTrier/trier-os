@@ -9,9 +9,9 @@
 | | |
 |---|---|
 | **15 Core Modules** | Mission Control, Asset Registry, Work Orders, Parts & Inventory, Safety & Compliance, Fleet & Truck Shop, SOP Library, Engineering Tools, Corporate Analytics, Underwriter Portal, Sensor Gateway, Floor Plans, IT Department, Live Studio IDE, and more |
-| **134 React Components** | Full React 19 frontend with offline PWA support |
+| **136 React Components** | Full React 19 frontend with offline PWA support |
 | **11 Languages** | English, German, Spanish, French, Japanese, Korean, Portuguese, Arabic, Hindi, Turkish, Chinese |
-| **50,000+ Lines of Server Logic** | Express 5 backend with 78 API route modules |
+| **46,000+ Lines of Server Logic** | Express 5 backend with 80 API route modules |
 | **Multi-tenant Architecture** | One SQLite database per plant — zero cross-tenant data leakage |
 | **Offline PWA** | Technicians keep working when the server is unreachable |
 | **Live Studio IDE** | Embedded Monaco editor (VS Code engine) — inspect, edit, and hot-reload the app from inside the UI |

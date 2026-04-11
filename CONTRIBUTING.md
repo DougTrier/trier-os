@@ -1,6 +1,6 @@
 # Contributing to Trier OS
 
-153,000 lines of core logic in 33 days. Built fast. We pushed every button, broke things, fixed them faster, and didn't stop until it was right.
+124,668 lines of core logic in 33 days. Built fast. We pushed every button, broke things, fixed them faster, and didn't stop until it was right.
 
 That's the standard this codebase was built to. Not perfection on the first try — persistence until it was right. If that sounds like how you build software, you'll fit in here.
 

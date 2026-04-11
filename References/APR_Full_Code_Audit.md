@@ -2,7 +2,7 @@
 ## April 2026 — Comprehensive Codebase Review
 
 > **Audited:** 2026-04-03  
-> **Codebase Size:** 132,886 lines of code  
+> **Codebase Size:** 124,668 lines of core logic (JSX + JS) · 247,853 total repository lines  
 > **Scope:** All server routes, frontend components, hooks, utilities, migrations, databases, and services  
 > **Auditor:** Claude Code / Doug Trier  
 > **Overall Grade: B+**
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-TrierOS_Platform is a **large-scale, enterprise-grade Enterprise System** written in JavaScript / React 19 / Node.js with a synchronous better-sqlite3 backend. The application spans **165+ active components, 118+ API route modules, 27 database migrations, 7 hooks, 9 frontend utilities, and 11 translation files**, supporting **40+ plant facilities** in a multi-tenant architecture.
+TrierOS_Platform is a **large-scale, enterprise-grade Enterprise System** written in JavaScript / React 19 / Node.js with a synchronous better-sqlite3 backend. The application spans **136 active components, 80 API route modules, 19 database migrations, 6 hooks, 9 frontend utilities, and 11 translation files**, supporting **40+ plant facilities** in a multi-tenant architecture.
 
 **Key Strengths:**
 - Comprehensive copyright header compliance (98% of files)

@@ -248,4 +248,4 @@ JWT in `Authorization: Bearer <token>` header. Secret in `.env JWT_SECRET`.
 - Line 1: `// Copyright © 2026 Trier OS. All Rights Reserved.`
 - JSDoc header block with description, endpoint list (routes), or component description (components)
 - Section dividers: `// ── Section Name ─────────────...`
-- ~10% comment density (Contextual Density Ratio)
+- ~12% comment density (Contextual Density Ratio)
