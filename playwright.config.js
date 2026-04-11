@@ -9,7 +9,7 @@ export default defineConfig({
   retries: 1,
   timeout: 60000,
   expect: { timeout: 25000 },
-  workers: 1,
+  workers: 2,
   reporter: [
       ['html', { open: 'never', outputFolder: 'playwright-report' }],
       ['list'],

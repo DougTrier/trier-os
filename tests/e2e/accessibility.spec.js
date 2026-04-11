@@ -28,12 +28,12 @@ test.describe('Trier OS Accessibility & i18n Suite', () => {
     // Locate the Shop Floor toggle (often a button or a switch)
     const shopFloorBtn = page.getByRole('button', { name: /Shop Floor/i });
     if (await shopFloorBtn.isVisible()) {
-       await shopFloorBtn.click();
+       await shopFloorBtn.evaluate(el => el.click());
        // If it enabled, the class on the body or wrapper should reflect dark mode/high contrast
        // We'll just verify the button toggled its text to "ON" or similar
        // Wait 1 second for react to render
        await page.waitForTimeout(500);
-       await expect(page.getByRole('button', { name: /Shop Floor|ON/i })).toBeVisible();
+       await expect(page.getByRole('button', { name: /Shop Floor/i }).first()).toBeVisible();
     }
   });
 

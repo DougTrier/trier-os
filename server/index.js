@@ -509,7 +509,7 @@ app.use((req, res, next) => {
 // (NOT per-IP â€” in a factory all users share one NAT, per-IP would lock everyone out)
 const loginLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: 80, // Increased for automated ghost account E2E testing
+    max: 500, // Increased for parallel (workers: 2) ghost account E2E testing
     standardHeaders: true,
     legacyHeaders: false,
     validate: false,

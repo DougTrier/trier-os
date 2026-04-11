@@ -35,6 +35,7 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const dbPath = path.join(dataDir, 'trier_auth.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
+db.pragma('busy_timeout = 5000'); // Wait up to 5s on lock contention instead of throwing immediately
 
 // Seed schema for RBAC Security Model
 db.exec(`

@@ -87,7 +87,7 @@ async function loginAs(page, account = ADMIN) {
     await page.locator('button').filter({ hasText: /Save|Update|Change/i }).first().click();
   } catch { /* No forced reset — proceed normally */ }
 
-  await expect(page.getByText('Mission Control', { exact: false }).first()).toBeVisible({ timeout: 40000 });
+  await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 40000 });
   // Force tests into a specific plant context so deeper module asserts have valid data
   await page.evaluate(() => localStorage.setItem('selectedPlantId', 'examples'));
 }
@@ -422,7 +422,7 @@ test.describe('00 · Demo Account RBAC Gauntlet', () => {
       const blocked = await Promise.race([
         page.getByText(/Restricted|Access Denied|Executive Systems/i).first()
           .waitFor({ state: 'visible', timeout: 6000 }).then(() => true),
-        page.getByText('Mission Control', { exact: false }).first()
+        page.getByRole('heading', { name: /mission control/i })
           .waitFor({ state: 'visible', timeout: 6000 }).then(() => true),
       ]).catch(() => true); // if nothing matches, page didn't crash = acceptable
       expect(blocked).toBe(true);
@@ -517,7 +517,7 @@ test.describe('01 · Auth & Header', () => {
 
   test('ghost_admin can log in and land on Mission Control', async ({ page }) => {
     await loginAs(page);
-    await expect(page.getByText('Mission Control', { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible();
   });
 
   test('Header renders all core controls after login', async ({ page }) => {
@@ -645,7 +645,7 @@ test.describe('03 · Safety & Risk Portal', () => {
   test('Compliance sub-tile is visible', async ({ page }) => { await seeText(page, 'Compliance'); });
   test('Underwriter Portal sub-tile is visible', async ({ page }) => { await seeText(page, 'Underwriter Portal'); });
   test('← Mission Control back link is rendered', async ({ page }) => {
-    await expect(page.getByText('Mission Control', { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /mission control/i }).first()).toBeVisible();
   });
 
 });
@@ -921,6 +921,11 @@ test.describe('14 · Corporate Analytics', () => {
   });
 
   test('OpEx Intel tab loads', async ({ page }) => {
+    // requireCorpAccess blocks it_admin — re-login as ghost_exec (CEO) who passes the check
+    await page.context().clearCookies();
+    await loginAs(page, { username: 'ghost_exec', password: 'Trier7969!' });
+    await page.goto('/corp-analytics');
+    await seeText(page, 'Corporate Analytics');
     await page.locator('button, a').filter({ hasText: /OpEx Intel/i }).first().click();
     await page.waitForTimeout(800);
     await seeText(page, 'OpEx Intelligence');
@@ -1147,12 +1152,12 @@ test.describe('20 · Portal Widget & Breadcrumbs', () => {
 
   test('Mission Control text renders on sub-pages', async ({ page }) => {
     await page.goto('/jobs');
-    await expect(page.getByText('Mission Control', { exact: false }).first()).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: /mission control/i }).first()).toBeVisible({ timeout: 8000 });
   });
 
   test('Back link on group portals returns to Mission Control', async ({ page }) => {
     await page.goto('/portal/safety-group');
-    const backLink = page.getByText('Mission Control', { exact: false }).first();
+    const backLink = page.getByRole('button', { name: /mission control/i }).first();
     await backLink.click();
     await expect(page).toHaveURL('/', { timeout: 6000 });
   });

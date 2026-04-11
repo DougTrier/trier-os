@@ -165,6 +165,7 @@ function getDb(requestedPlantId = null) {
         // WAL (Write-Ahead Logging) allows concurrent reads during writes — critical
         // for a multi-user maintenance system where technicians hit the DB simultaneously.
         db.pragma('journal_mode = WAL');
+        db.pragma('busy_timeout = 5000'); // Wait up to 5s on lock contention instead of throwing immediately
         // Enforce referential integrity between tables (e.g., WorkParts -> Part)
         db.pragma('foreign_keys = ON');
 
