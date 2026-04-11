@@ -2292,6 +2292,89 @@ const AboutView = () => {
                         t('manual.item.971', '   • Custom JSAs can be created for site-specific procedures.'),
                         '   • JSAs can be linked to work orders — technicians review before starting work.'
                     ]
+                },
+                {
+                    title: t('manual.sub.99', '17.1 Downtime Logging & Analysis'),
+                    items: [
+                        t('manual.item.1150', 'The Downtime Logs module aggregates downtime data from closed work orders to show equipment reliability.'),
+                        '',
+                        t('manual.item.1151', 'ACCESSING DOWNTIME LOGS:'),
+                        t('manual.item.1152', '   \u2022 Navigate to Downtime Logs from the Portal tile or navigation menu.'),
+                        t('manual.item.1153', '   \u2022 Data is auto-populated from work orders with ActDown > 0.'),
+                        '',
+                        'VIEWS:',
+                        t('manual.item.1154', '   \u2022 Summary View \u2014 KPI cards showing total downtime hours, affected assets, and cost impact.'),
+                        t('manual.item.1155', '   \u2022 Detail View \u2014 Per-asset breakdown with expandable rows.'),
+                        t('manual.item.1156', '   \u2022 Click any asset row to expand and see individual downtime events.'),
+                        '',
+                        'KPI CARDS:',
+                        t('manual.item.1157', '   \u2022 Total Downtime Hours \u2014 Across all assets in the selected period.'),
+                        t('manual.item.1158', '   \u2022 Assets Affected \u2014 Count of unique assets with downtime.'),
+                        t('manual.item.1159', '   \u2022 Avg Downtime per Event \u2014 Average hours per downtime incident.'),
+                        t('manual.item.1160', '   \u2022 Cost Impact \u2014 Estimated production loss from downtime.'),
+                        '',
+                        t('manual.item.1161', 'Use the search bar to filter by asset name or ID.'),
+                        '',
+                        t('manual.item.1162', 'TROUBLESHOOTING:'),
+                        t('manual.item.1163', '   \u2022 No data showing? \u2014 Ensure work orders have downtime hours entered in ActDown.'),
+                        '   \u2022 Cost impact inaccurate? \u2014 Verify the hourly production cost in Settings.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.100', '17.2 Digital Twin Interactive Schematic'),
+                    items: [
+                        t('manual.item.1164', 'The Digital Twin viewer provides interactive equipment schematics with live health overlays.'),
+                        '',
+                        'FEATURES:',
+                        t('manual.item.1165', '   \u2022 Upload equipment schematics, piping diagrams, or wiring layouts.'),
+                        t('manual.item.1166', '   \u2022 Place draggable pins on component locations \u2014 pins show live health status.'),
+                        t('manual.item.1167', '   \u2022 Pin Types: Component (\u2699\ufe0f), Sensor (\ud83d\udce1), Lubrication (\ud83d\udee2\ufe0f), Electrical (\u26a1), Inspection (\ud83d\udd0d).'),
+                        '',
+                        t('manual.item.1168', 'HOW TO USE:'),
+                        t('manual.item.1169', '1. Upload a schematic image (engineering drawing, photo, or diagram).'),
+                        t('manual.item.1170', '2. Click "+ Add Pin" and click on the schematic to place a health-monitoring pin.'),
+                        t('manual.item.1171', '3. Link each pin to an asset \u2014 it will show real-time work order status.'),
+                        t('manual.item.1172', '4. Pin colors: Green = Healthy, Yellow = Warning, Red = Critical, Purple = Unknown.'),
+                        '',
+                        t('manual.item.1173', 'ZOOM & PAN:'),
+                        t('manual.item.1174', '   \u2022 Mouse wheel to zoom in/out.'),
+                        t('manual.item.1175', '   \u2022 Click and drag to pan the schematic.'),
+                        t('manual.item.1176', '   \u2022 "Fit" button resets the view.'),
+                        '',
+                        t('manual.item.1177', 'LAYERS: Toggle pin visibility by layer type (Components, Sensors, Lube Points, etc.).'),
+                        '',
+                        t('manual.item.1178', 'TROUBLESHOOTING:'),
+                        t('manual.item.1179', '   \u2022 Schematic blurry? \u2014 Upload a higher resolution image (2000px+ recommended).'),
+                        '   \u2022 Pins not updating? \u2014 Ensure the linked asset has work orders in the system.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.101', '17.3 Governance & Security Dashboard'),
+                    items: [
+                        t('manual.item.1180', 'The Governance module provides audit trail visibility, security monitoring, and RBAC compliance.'),
+                        '',
+                        'FEATURES:',
+                        t('manual.item.1181', '   \u2022 Audit Trail \u2014 Complete log of all user actions (logins, changes, deletions).'),
+                        t('manual.item.1182', '   \u2022 Activity Timeline \u2014 Visual timeline of system events.'),
+                        t('manual.item.1183', '   \u2022 Security Events \u2014 Failed logins, permission violations, suspicious activity.'),
+                        t('manual.item.1184', '   \u2022 User Activity \u2014 Per-user action counts and last-seen timestamps.'),
+                        t('manual.item.1185', '   \u2022 RBAC Monitoring \u2014 Role-based access control overview.'),
+                        '',
+                        t('manual.item.1186', 'HOW TO USE:'),
+                        t('manual.item.1187', '   \u2022 Use filters to narrow events by date, user, or event type.'),
+                        t('manual.item.1188', '   \u2022 Click "Refresh" to get the latest data.'),
+                        t('manual.item.1189', '   \u2022 Export audit logs for compliance reporting.'),
+                        t('manual.item.1190', '   \u2022 Security events are color-coded by severity.'),
+                        '',
+                        t('manual.item.1191', 'COMMON USE CASES:'),
+                        t('manual.item.1192', '   \u2022 Investigate who changed a work order status \u2014 filter by WO number.'),
+                        t('manual.item.1193', '   \u2022 Monitor for unauthorized access attempts \u2014 check Security Events.'),
+                        t('manual.item.1194', '   \u2022 Compliance audits \u2014 export full audit trail with timestamps.'),
+                        '',
+                        t('manual.item.1195', 'TROUBLESHOOTING:'),
+                        t('manual.item.1196', '   \u2022 Not seeing events? \u2014 Audit logging may be disabled in Settings. Contact IT.'),
+                        '   \u2022 Export failing? \u2014 Large date ranges may time out. Narrow the filter.'
+                    ]
                 }
             ]
         },
@@ -2623,101 +2706,6 @@ const AboutView = () => {
                         t('manual.item.1149', '   \u2022 LDAP login failing? \u2014 Verify server URL, port, and Base DN with IT.'),
                         '   \u2022 Escalation not triggering? \u2014 Check that rules are active and thresholds are correctly set.'
                     ]
-                }
-            ]
-        },
-        {
-            section: t('manual.s23.title', 'Part XIX: Email Notifications & SMTP Relay'),
-            id: 'email-notifications',
-            navigateTo: '/settings',
-            adminOnly: true,
-            filePath: 'src/components/SettingsView.jsx',
-            icon: <MessageCircle size={22} />,
-            content: t('manual.s23.content', 'Organization-wide email alerts with per-user subscription control. IT configures SMTP once, each user picks their own alerts.'),
-            subsections: [
-
-                {
-                    title: t('manual.sub.99', '17.1 Downtime Logging & Analysis'),
-                    items: [
-                        t('manual.item.1150', 'The Downtime Logs module aggregates downtime data from closed work orders to show equipment reliability.'),
-                        '',
-                        t('manual.item.1151', 'ACCESSING DOWNTIME LOGS:'),
-                        t('manual.item.1152', '   \u2022 Navigate to Downtime Logs from the Portal tile or navigation menu.'),
-                        t('manual.item.1153', '   \u2022 Data is auto-populated from work orders with ActDown > 0.'),
-                        '',
-                        'VIEWS:',
-                        t('manual.item.1154', '   \u2022 Summary View \u2014 KPI cards showing total downtime hours, affected assets, and cost impact.'),
-                        t('manual.item.1155', '   \u2022 Detail View \u2014 Per-asset breakdown with expandable rows.'),
-                        t('manual.item.1156', '   \u2022 Click any asset row to expand and see individual downtime events.'),
-                        '',
-                        'KPI CARDS:',
-                        t('manual.item.1157', '   \u2022 Total Downtime Hours \u2014 Across all assets in the selected period.'),
-                        t('manual.item.1158', '   \u2022 Assets Affected \u2014 Count of unique assets with downtime.'),
-                        t('manual.item.1159', '   \u2022 Avg Downtime per Event \u2014 Average hours per downtime incident.'),
-                        t('manual.item.1160', '   \u2022 Cost Impact \u2014 Estimated production loss from downtime.'),
-                        '',
-                        t('manual.item.1161', 'Use the search bar to filter by asset name or ID.'),
-                        '',
-                        t('manual.item.1162', 'TROUBLESHOOTING:'),
-                        t('manual.item.1163', '   \u2022 No data showing? \u2014 Ensure work orders have downtime hours entered in ActDown.'),
-                        '   \u2022 Cost impact inaccurate? \u2014 Verify the hourly production cost in Settings.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.100', '17.2 Digital Twin Interactive Schematic'),
-                    items: [
-                        t('manual.item.1164', 'The Digital Twin viewer provides interactive equipment schematics with live health overlays.'),
-                        '',
-                        'FEATURES:',
-                        t('manual.item.1165', '   \u2022 Upload equipment schematics, piping diagrams, or wiring layouts.'),
-                        t('manual.item.1166', '   \u2022 Place draggable pins on component locations \u2014 pins show live health status.'),
-                        t('manual.item.1167', '   \u2022 Pin Types: Component (\u2699\ufe0f), Sensor (\ud83d\udce1), Lubrication (\ud83d\udee2\ufe0f), Electrical (\u26a1), Inspection (\ud83d\udd0d).'),
-                        '',
-                        t('manual.item.1168', 'HOW TO USE:'),
-                        t('manual.item.1169', '1. Upload a schematic image (engineering drawing, photo, or diagram).'),
-                        t('manual.item.1170', '2. Click "+ Add Pin" and click on the schematic to place a health-monitoring pin.'),
-                        t('manual.item.1171', '3. Link each pin to an asset \u2014 it will show real-time work order status.'),
-                        t('manual.item.1172', '4. Pin colors: Green = Healthy, Yellow = Warning, Red = Critical, Purple = Unknown.'),
-                        '',
-                        t('manual.item.1173', 'ZOOM & PAN:'),
-                        t('manual.item.1174', '   \u2022 Mouse wheel to zoom in/out.'),
-                        t('manual.item.1175', '   \u2022 Click and drag to pan the schematic.'),
-                        t('manual.item.1176', '   \u2022 "Fit" button resets the view.'),
-                        '',
-                        t('manual.item.1177', 'LAYERS: Toggle pin visibility by layer type (Components, Sensors, Lube Points, etc.).'),
-                        '',
-                        t('manual.item.1178', 'TROUBLESHOOTING:'),
-                        t('manual.item.1179', '   \u2022 Schematic blurry? \u2014 Upload a higher resolution image (2000px+ recommended).'),
-                        '   \u2022 Pins not updating? \u2014 Ensure the linked asset has work orders in the system.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.101', '17.3 Governance & Security Dashboard'),
-                    items: [
-                        t('manual.item.1180', 'The Governance module provides audit trail visibility, security monitoring, and RBAC compliance.'),
-                        '',
-                        'FEATURES:',
-                        t('manual.item.1181', '   \u2022 Audit Trail \u2014 Complete log of all user actions (logins, changes, deletions).'),
-                        t('manual.item.1182', '   \u2022 Activity Timeline \u2014 Visual timeline of system events.'),
-                        t('manual.item.1183', '   \u2022 Security Events \u2014 Failed logins, permission violations, suspicious activity.'),
-                        t('manual.item.1184', '   \u2022 User Activity \u2014 Per-user action counts and last-seen timestamps.'),
-                        t('manual.item.1185', '   \u2022 RBAC Monitoring \u2014 Role-based access control overview.'),
-                        '',
-                        t('manual.item.1186', 'HOW TO USE:'),
-                        t('manual.item.1187', '   \u2022 Use filters to narrow events by date, user, or event type.'),
-                        t('manual.item.1188', '   \u2022 Click "Refresh" to get the latest data.'),
-                        t('manual.item.1189', '   \u2022 Export audit logs for compliance reporting.'),
-                        t('manual.item.1190', '   \u2022 Security events are color-coded by severity.'),
-                        '',
-                        t('manual.item.1191', 'COMMON USE CASES:'),
-                        t('manual.item.1192', '   \u2022 Investigate who changed a work order status \u2014 filter by WO number.'),
-                        t('manual.item.1193', '   \u2022 Monitor for unauthorized access attempts \u2014 check Security Events.'),
-                        t('manual.item.1194', '   \u2022 Compliance audits \u2014 export full audit trail with timestamps.'),
-                        '',
-                        t('manual.item.1195', 'TROUBLESHOOTING:'),
-                        t('manual.item.1196', '   \u2022 Not seeing events? \u2014 Audit logging may be disabled in Settings. Contact IT.'),
-                        '   \u2022 Export failing? \u2014 Large date ranges may time out. Narrow the filter.'
-                    ]
                 },
                 {
                     title: t('manual.sub.102', '18.1 Purchase Orders'),
@@ -2806,7 +2794,17 @@ const AboutView = () => {
                         '   \u2022 SAP timeout? \u2014 Reduce batch size in sync settings.'
                     ]
                 }
-,
+            ]
+        },
+        {
+            section: t('manual.s23.title', 'Part XIX: Email Notifications & SMTP Relay'),
+            id: 'email-notifications',
+            navigateTo: '/settings',
+            adminOnly: true,
+            filePath: 'src/components/SettingsView.jsx',
+            icon: <MessageCircle size={22} />,
+            content: t('manual.s23.content', 'Organization-wide email alerts with per-user subscription control. IT configures SMTP once, each user picks their own alerts.'),
+            subsections: [
                 {
                     title: t('manual.sub.105', '19.1 How Email Notifications Work'),
                     items: [
@@ -3746,15 +3744,15 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s6.title', 'Part VI: Integration & Enterprise Automation'),
+            section: t('manual.s33.title', 'Part XXXII: Integration & Enterprise Automation'),
             id: 'integration-enterprise-automation',
             navigateTo: '/settings',
             filePath: 'src/components/DataBridge.jsx',
             icon: <Server size={22} />,
-            content: t('manual.s6.content', 'Connecting Trier OS to the outside world: ERP systems, Active Directory, and OT floor devices like PLCs and sensors.'),
+            content: t('manual.s33.content', 'Connecting Trier OS to the outside world: ERP systems, Active Directory, and OT floor devices like PLCs and sensors.'),
             subsections: [
                 {
-                    title: t('manual.sub.31', '6.1 SCADA / PLC EdgeAgents & Device Registry (OT Network)'),
+                    title: t('manual.sub.160', 'XXXII.1 SCADA / PLC EdgeAgents & Device Registry (OT Network)'),
                     items: [
                         t('manual.item.1580', 'The Device Registry allows Plant Admins to quickly ingest and monitor OT assets connected to the local network via Modbus TCP.'),
                         t('manual.item.1581', 'Device Discovery Wizard: In the Plant Setup > Integrations view, you can perform a subnet sweep to discover open Modbus devices (port 502).'),
@@ -3763,7 +3761,7 @@ const AboutView = () => {
                     ]
                 },
                 {
-                    title: t('manual.sub.32', '6.2 Sensor Thresholds & Automated Work Orders'),
+                    title: t('manual.sub.161', 'XXXII.2 Sensor Thresholds & Automated Work Orders'),
                     items: [
                         t('manual.item.1584', 'Plant Setup > Integrations tracks all incoming sensor telemetry from the SCADA EdgeAgents.'),
                         t('manual.item.1585', 'You can attach operational thresholds to any mapped analog input (e.g., Temp > 150F).'),
@@ -3772,7 +3770,7 @@ const AboutView = () => {
                     ]
                 },
                 {
-                    title: t('manual.sub.33', '6.3 Corporate Supply Chain "All Sites" Rollup'),
+                    title: t('manual.sub.162', 'XXXII.3 Corporate Supply Chain "All Sites" Rollup'),
                     items: [
                         t('manual.item.1588', 'Corporate Directors can switch their context to "All Sites" from the navigation header.'),
                         t('manual.item.1589', 'This loads the Corporate Rollup dashboard within the Supply Chain View.'),
@@ -3780,7 +3778,7 @@ const AboutView = () => {
                     ]
                 },
                 {
-                    title: t('manual.sub.34', '6.4 ERP Synchronization Pipeline & Output Outbox'),
+                    title: t('manual.sub.163', 'XXXII.4 ERP Synchronization Pipeline & Output Outbox'),
                     items: [
                         t('manual.item.1591', 'Trier OS operates a dual-bridge methodology for SAP/ERP interactions: Pull Integrations and Push Outboxes.'),
                         t('manual.item.1592', 'ERP Pull Worker: Executes over standard HTTP REST. Routinely fetches new parts and purchase structures dropping from the central ERP.'),
@@ -3789,7 +3787,7 @@ const AboutView = () => {
                     ]
                 },
                 {
-                    title: t('manual.sub.35', '6.5 IT Admin Configurations (LDAP, SQL Server, Access Imports)'),
+                    title: t('manual.sub.164', 'XXXII.5 IT Admin Configurations (LDAP, SQL Server, Access Imports)'),
                     items: [
                         t('manual.item.1595', 'LDAP: Enable Active Directory integration to centralize logins. This removes the need to provision new mechanics manually.'),
                         t('manual.item.1596', 'Legacy Migration: Import utility scripts allow bringing in direct relational data stores from MS Access (.accdb, .mdb), SQL Server exports, and obsolete systems directly into modern SQLite instances.')
