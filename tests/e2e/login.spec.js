@@ -6,7 +6,7 @@ test.describe('Trier OS Zebra TC77 Login Simulation', () => {
 
   test('Should render the login perimeter properly', async ({ page }) => {
     // 1. Visit the actual development server URL (the ghost user opens chrome)
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
 
     // 2. We assert that the title proves we are at Trier OS
     await expect(page).toHaveTitle(/Trier OS/i);
@@ -18,7 +18,7 @@ test.describe('Trier OS Zebra TC77 Login Simulation', () => {
   });
 
   test('Should reject fake credentials with an error', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
 
     // Find the login inputs (assuming basic text search or standard semantic inputs)
     const usernameInput = page.getByPlaceholder('Username');
@@ -38,7 +38,7 @@ test.describe('Trier OS Zebra TC77 Login Simulation', () => {
     // After logging in with a new 'Temp Pass', the system will likely redirect
     // to a "Change Password" or "Dashboard" screen.
     // For now, we will verify that the URL changed away from the login perimeter.
-    await expect(page).not.toHaveURL('http://localhost:5173/login');
+    await expect(page).not.toHaveURL('/login');
   });
 
 });

@@ -70,7 +70,7 @@ test('Trier OS YouTube Promo Reel', async ({ browser }) => {
   const page = await context.newPage();
 
   // ----- 1. Start up and Login -----
-  await page.goto('https://localhost:5173/'); // Adjust to your actual dev server port
+  await page.goto('/');
   
   await showCaption(page, 'Welcome to Trier OS (Open Source Release)', 4000);
   

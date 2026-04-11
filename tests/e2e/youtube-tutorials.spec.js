@@ -38,7 +38,7 @@ async function showCaption(page, text, durationMs = 3000) {
 
 // Global setup for bypassing onboarding and logging in
 async function prepareContext(page) {
-    await page.goto('https://localhost:5173/'); 
+    await page.goto('/'); 
     await page.waitForTimeout(500);
     
     // Inject localStorage completions so the Joyride tour NEVER pops up
@@ -66,7 +66,7 @@ test.describe('Process Feature Tutorials', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/assets');
+    await page.goto('/assets');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Step 1: Navigate to the Assets & Machinery Registry', 4000);
     
@@ -87,7 +87,7 @@ test.describe('Process Feature Tutorials', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/parts');
+    await page.goto('/parts');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Step 1: Open the Enterprise Parts Dashboard', 4000);
     
@@ -108,7 +108,7 @@ test.describe('Process Feature Tutorials', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/underwriter');
+    await page.goto('/underwriter');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Step 1: Access the Safety Compliance Modules', 4000);
     

@@ -51,7 +51,7 @@ test('Trier OS Cinematic Feature Highlights', async ({ browser }) => {
   const page = await context.newPage();
 
   // ----- 1. Start up and Login -----
-  await page.goto('https://localhost:5173/'); 
+  await page.goto('/'); 
   
   await showCaption(page, 'Trier OS 3.3.0 \nEnterprise-Grade Plant Operations Platform', 4000);
   
@@ -86,7 +86,7 @@ test('Trier OS Cinematic Feature Highlights', async ({ browser }) => {
   await page.mouse.move(960, 540); // Move mouse roughly center screen
 
   // ----- 3. Corporate Analytics Dashboard -----
-  await page.goto('https://localhost:5173/corp-analytics');
+  await page.goto('/corp-analytics');
   await page.waitForTimeout(1000);
   await showCaption(page, 'High-Level Corporate Analytics & Executive Portals', 4500);
   // Scroll down a bit to show data
@@ -94,25 +94,25 @@ test('Trier OS Cinematic Feature Highlights', async ({ browser }) => {
   await page.waitForTimeout(2000);
 
   // ----- 4. Assets & Machinery Registry -----
-  await page.goto('https://localhost:5173/assets');
+  await page.goto('/assets');
   await page.waitForTimeout(1000);
   await showCaption(page, 'Massive Asset Registries with AI Predictive Risk Models', 4500);
   await page.mouse.wheel(0, 400);
   await page.waitForTimeout(2000);
 
   // ----- 5. SOP & AI Methods Library -----
-  await page.goto('https://localhost:5173/procedures');
+  await page.goto('/procedures');
   await page.waitForTimeout(1000);
   await showCaption(page, 'SOP & Methods Library with Generative AI Structuring', 4500);
   await page.waitForTimeout(1500);
 
   // ----- 6. Safety & Underwriter Dashboards -----
-  await page.goto('https://localhost:5173/underwriter');
+  await page.goto('/underwriter');
   await page.waitForTimeout(1000);
   await showCaption(page, 'Built-in Underwriter Auditing and Compliance Lockdowns', 4500);
 
   // ----- 7. Interactive Manual & IDE -----
-  await page.goto('https://localhost:5173/about?manual=true');
+  await page.goto('/about?manual=true');
   await page.waitForTimeout(1500);
   await showCaption(page, 'Built-In Operations Manual Linked Directly to Source Code', 4500);
   
@@ -127,7 +127,7 @@ test('Trier OS Cinematic Feature Highlights', async ({ browser }) => {
   }
 
   // ----- Wrap up -----
-  await page.goto('https://localhost:5173/');
+  await page.goto('/');
   await showCaption(page, 'Available Now on GitHub.', 5000);
 
   await context.close();

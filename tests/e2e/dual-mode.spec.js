@@ -364,10 +364,10 @@ test.describe('Security � API Boundary & Auth Guards', () => {
   });
 
   test('Authenticated routes redirect to login without valid JWT', async ({ page }) => {
-    // Clear any existing auth state
+    // Clear any existing auth state — POST logout to clear the httpOnly cookie
     await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
-    
+    await page.request.post('/api/auth/logout');
+
     // Try to access a protected route directly
     await page.goto('/assets');
     await page.waitForTimeout(2000);

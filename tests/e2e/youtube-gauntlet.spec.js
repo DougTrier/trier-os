@@ -52,7 +52,7 @@ test('Trier OS Cinematic Enterprise Gauntlet', async ({ browser }) => {
   const page = await context.newPage();
 
   // ----- 1. Start up and Login -----
-  await page.goto('https://localhost:5173/'); 
+  await page.goto('/'); 
   
   await showCaption(page, 'Initiating The V4.0 Enterprise Gauntlet (Stress Suite)', 3000);
   

@@ -169,8 +169,53 @@ demoAccounts.forEach(acc => {
 });
 // ----------------------------------------------
 
-// NOTE: ghost_admin (Playwright test account) has been removed.
-// E2E tests should authenticate as 'creator' or 'demo_*' accounts instead.
+// --- E2E TEST ACCOUNTS (ghost_*) ---
+// These accounts cover roles not represented by demo_* (it_admin, executive).
+// They are seeded idempotently; passwords are fixed so Playwright tests can rely on them.
+// ghost_tech  → technician on Demo_Plant_1  (password: Trier3292!)
+// ghost_admin → it_admin, GlobalAccess=1    (password: Trier3652!)
+// ghost_exec  → executive, GlobalAccess=1   (password: Trier7969!)
+const ghostAccounts = [
+    {
+        user: 'ghost_tech', hash: bcrypt.hashSync('Trier3292!', 10),
+        role: 'technician', name: 'Ghost Technician', title: 'E2E Test Tech',
+        plantId: 'Demo_Plant_1',
+        globalAccess: 0, canDash: 0, canImport: 0, canSAP: 0,
+        canSensorConfig: 0, canSensorThresh: 0, canSensorView: 1, canAnalytics: 0
+    },
+    {
+        user: 'ghost_admin', hash: bcrypt.hashSync('Trier3652!', 10),
+        role: 'it_admin', name: 'Ghost IT Admin', title: 'E2E Test IT Admin',
+        plantId: 'all_sites',
+        globalAccess: 1, canDash: 1, canImport: 1, canSAP: 1,
+        canSensorConfig: 1, canSensorThresh: 1, canSensorView: 1, canAnalytics: 1
+    },
+    {
+        user: 'ghost_exec', hash: bcrypt.hashSync('Trier7969!', 10),
+        role: 'executive', name: 'Ghost Executive', title: 'E2E Test Executive',
+        plantId: 'all_sites',
+        globalAccess: 1, canDash: 1, canImport: 0, canSAP: 0,
+        canSensorConfig: 0, canSensorThresh: 0, canSensorView: 1, canAnalytics: 1
+    }
+];
+
+ghostAccounts.forEach(acc => {
+    const exists = db.prepare('SELECT 1 FROM Users WHERE Username = ?').get(acc.user);
+    if (!exists) {
+        const result = db.prepare(`
+            INSERT INTO Users (Username, PasswordHash, DefaultRole, MustChangePassword, DisplayName, Title,
+                               GlobalAccess, CanAccessDashboard, CanImport, CanSAP,
+                               CanSensorConfig, CanSensorThresholds, CanSensorView, CanViewAnalytics)
+            VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            acc.user, acc.hash, acc.role, acc.name, acc.title,
+            acc.globalAccess, acc.canDash, acc.canImport, acc.canSAP,
+            acc.canSensorConfig, acc.canSensorThresh, acc.canSensorView, acc.canAnalytics
+        );
+        db.prepare('INSERT INTO UserPlantRoles (UserID, PlantID, RoleLevel) VALUES (?, ?, ?)').run(result.lastInsertRowid, acc.plantId, acc.role);
+    }
+});
+// -------------------------------------------
 
 // Map existing auth.json locations to distinct user accounts, providing a clean upgrade path.
 const authJsonPath = path.join(dataDir, 'auth.json');
@@ -204,9 +249,9 @@ if (fs.existsSync(authJsonPath)) {
 }
 
 // ── PERMANENT ACCOUNT PURGE ──────────────────────────────────────────────────
-// These accounts are removed on every boot. They were internal dev/test accounts
-// that are not part of the public open-source release.
-const purgeAccounts = ['it_admin', 'ghost_admin', 'ghost_exec', 'ghost_tech'];
+// it_admin is a legacy account from the pre-RBAC era; remove it so users create
+// a named admin via Settings → Accounts & Permissions instead.
+const purgeAccounts = ['it_admin'];
 purgeAccounts.forEach(username => {
     const u = db.prepare('SELECT UserID FROM Users WHERE Username = ?').get(username);
     if (u) {

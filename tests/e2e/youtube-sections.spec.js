@@ -37,7 +37,7 @@ async function showCaption(page, text, durationMs = 3000) {
 
 // Reusable login that forcefully suppresses the UI onboarding
 async function prepareContext(page) {
-    await page.goto('https://localhost:5173/'); 
+    await page.goto('/'); 
     await page.waitForTimeout(500);
     
     await page.evaluate(() => {
@@ -64,7 +64,7 @@ test.describe('Module Feature Showcase', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/jobs');
+    await page.goto('/jobs');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Work Order Management Engine', 4000);
     
@@ -85,7 +85,7 @@ test.describe('Module Feature Showcase', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/procedures');
+    await page.goto('/procedures');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Standard Operating Procedures Library', 4000);
     
@@ -106,7 +106,7 @@ test.describe('Module Feature Showcase', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/corp-analytics');
+    await page.goto('/corp-analytics');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Corporate Executive Analytics', 4000);
     
@@ -133,7 +133,7 @@ test.describe('Module Feature Showcase', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/fleet');
+    await page.goto('/fleet');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Integrated Fleet & Heavy Equipment Logistics', 4000);
     
@@ -153,7 +153,7 @@ test.describe('Module Feature Showcase', () => {
     const page = await context.newPage();
     await prepareContext(page);
 
-    await page.goto('https://localhost:5173/quality-log');
+    await page.goto('/quality-log');
     await page.waitForTimeout(1500);
     await showCaption(page, 'Quality Control & Produce Loss Log', 4000);
     

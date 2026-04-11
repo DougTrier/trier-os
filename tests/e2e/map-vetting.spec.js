@@ -5,7 +5,7 @@ test.use({ ignoreHTTPSErrors: true });
 test.describe('Corporate Analytics & Map Verification', () => {
     test.beforeEach(async ({ page }) => {
         // Authenticate using ghost credentials used in other suites
-        await page.goto('https://localhost:5173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30000 });
         console.log('Got to page');
         
         await expect(page.getByPlaceholder('Username')).toBeVisible({ timeout: 15000 });
@@ -15,13 +15,13 @@ test.describe('Corporate Analytics & Map Verification', () => {
         await page.getByPlaceholder('Password').fill('Trier3292!');
         await page.click('button[type="submit"]');
         
-        // Wait 2 seconds for authentication JWT to stick inside local storage
+        // Wait 2 seconds for authentication cookie to be set and app to initialize
         await page.waitForTimeout(2000);
     });
 
     test('Verify Map Pins & Property Value rendering', async ({ page }) => {
         console.log('Going to /maps...');
-        await page.goto('https://localhost:5173/maps', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto('/maps', { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(5000); // Give Cesium time
 
         const mapPins = page.locator('.leaflet-marker-icon');
