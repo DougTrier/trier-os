@@ -54,7 +54,16 @@ const Database = require('better-sqlite3');
 const authDb = require('../auth_db');
 const { db: logDb, logAudit } = require('../logistics_db');
 const dataDir = require('../resolve_data_dir');
+const { getAllPlantDbs } = require('../utils/plantDbs');
+const Cache = require('../cache');
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// ── Corporate Analytics Cache ────────────────────────────────────────────────
+// 10-minute TTL. All authorized users see the same cross-plant rollup, so no
+// per-user scoping is needed — the cache key is just the endpoint name + params.
+// Set DISABLE_CORP_CACHE=1 in .env to bypass (required for Playwright E2E runs
+// where tests modify plant data and immediately assert on dashboard values).
+const corpCache = new Cache(10);
 
 // ── Schema ──────────────────────────────────────────────────────────────────
 logDb.exec(`
@@ -180,43 +189,7 @@ router.delete('/access/revoke/:userId', requireCorpAccess, (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Non-plant DB files that should be excluded from the plant scan
-const NON_PLANT_DBS = new Set([
-    'schema_template', 'corporate_master', 'Corporate_Office', 'dairy_master', 'it_master',
-    'logistics', 'trier_auth', 'trier_chat', 'trier_logistics',
-    'schema_template', 'examples'
-]);
-
-// Helper: get all plant databases using the canonical resolve_data_dir
-function getAllPlantDbs() {
-    const plantDbs = [];
-    try {
-        if (!fs.existsSync(dataDir)) return plantDbs;
-        const files = fs.readdirSync(dataDir).filter(f => {
-            if (!f.endsWith('.db')) return false;
-            const plantId = f.replace('.db', '');
-            if (NON_PLANT_DBS.has(plantId)) return false;
-            if (f.startsWith('trier_') || f.startsWith('logistics')) return false;
-            return true;
-        });
-        for (const f of files) {
-            try {
-                const plantId = f.replace('.db', '');
-                const dbPath = path.join(dataDir, f);
-                const db = new Database(dbPath, { readonly: true });
-                // Quick sanity check: must have a Work table to be a plant DB
-                const hasWork = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Work'").get();
-                if (hasWork) {
-                    plantDbs.push({ plantId, db });
-                } else {
-                    db.close();
-                }
-            } catch (e) { /* skip broken or locked DBs */ }
-        }
-    } catch (e) {
-        console.error('[Corp Analytics] getAllPlantDbs error:', e.message);
-    }
-    return plantDbs;
-}
+// getAllPlantDbs() — canonical implementation lives in server/utils/plantDbs.js
 
 // Safe count helper — returns 0 if table/column doesn't exist
 function safeCount(db, sql, params = []) {
@@ -228,6 +201,11 @@ function safeValue(db, sql, params = []) {
 
 // ── Executive Summary — All KPIs ──
 router.get('/executive-summary', requireCorpAccess, (req, res) => {
+    const _cacheKey = 'corp_executive-summary';
+    if (!process.env.DISABLE_CORP_CACHE) {
+        const _cached = corpCache.get(_cacheKey);
+        if (_cached) return res.json(_cached);
+    }
     try {
         const plants = getAllPlantDbs();
         let totalWOs = 0, openWOs = 0, overdueWOs = 0, completedWOs = 0;
@@ -238,15 +216,40 @@ router.get('/executive-summary', requireCorpAccess, (req, res) => {
 
         for (const { plantId, db } of plants) {
             try {
-                const wo = safeCount(db, "SELECT COUNT(*) as c FROM Work");
-                const open = safeCount(db, "SELECT COUNT(*) as c FROM Work WHERE StatusID < 40");
-                const overdue = safeCount(db, "SELECT COUNT(*) as c FROM Work WHERE StatusID < 40 AND SchDate IS NOT NULL AND SchDate != '' AND date(SchDate) < date('now')");
-                const completed = safeCount(db, "SELECT COUNT(*) as c FROM Work WHERE StatusID >= 40");
-                const assets = safeCount(db, "SELECT COUNT(*) as c FROM Asset");
+                // ── Consolidated Work query: 4 COUNT queries → 1 ──────────────
+                let wo = 0, open = 0, overdue = 0, completed = 0;
+                try {
+                    const wRow = db.prepare(`
+                        SELECT
+                            COUNT(*) as total,
+                            SUM(CASE WHEN StatusID < 40 THEN 1 ELSE 0 END) as open,
+                            SUM(CASE WHEN StatusID < 40 AND SchDate IS NOT NULL AND SchDate != ''
+                                     AND date(SchDate) < date('now') THEN 1 ELSE 0 END) as overdue,
+                            SUM(CASE WHEN StatusID >= 40 THEN 1 ELSE 0 END) as completed
+                        FROM Work
+                    `).get();
+                    wo = wRow?.total || 0;
+                    open = wRow?.open || 0;
+                    overdue = wRow?.overdue || 0;
+                    completed = wRow?.completed || 0;
+                } catch (_) {}
 
-                const partsCount = safeCount(db, "SELECT COUNT(*) as c FROM Part");
-                const partsValue = safeValue(db, "SELECT ROUND(COALESCE(SUM(CAST(Stock AS REAL) * CAST(UnitCost AS REAL)), 0), 2) as v FROM Part WHERE Stock IS NOT NULL AND UnitCost IS NOT NULL");
-                const lowStock = safeCount(db, "SELECT COUNT(*) as c FROM Part WHERE Stock <= OrdPoint AND OrdPoint > 0");
+                // ── Consolidated Part query: 3 queries → 1 ───────────────────
+                let partsCount = 0, partsValue = 0, lowStock = 0;
+                try {
+                    const pRow = db.prepare(`
+                        SELECT
+                            COUNT(*) as cnt,
+                            ROUND(COALESCE(SUM(CAST(Stock AS REAL) * CAST(UnitCost AS REAL)), 0), 2) as val,
+                            COALESCE(SUM(CASE WHEN Stock <= OrdPoint AND OrdPoint > 0 THEN 1 ELSE 0 END), 0) as low
+                        FROM Part
+                    `).get();
+                    partsCount = pRow?.cnt || 0;
+                    partsValue = pRow?.val || 0;
+                    lowStock = pRow?.low || 0;
+                } catch (_) {}
+
+                const assets = safeCount(db, "SELECT COUNT(*) as c FROM Asset");
                 const procs = safeCount(db, "SELECT COUNT(*) as c FROM Procedures");
 
                 totalWOs += wo;
@@ -259,11 +262,36 @@ router.get('/executive-summary', requireCorpAccess, (req, res) => {
                 lowStockParts += lowStock;
                 totalProcedures += procs;
 
-                // Operating Spend from WorkLabor/WorkParts/WorkMisc (OpEx Only)
+                // ── Consolidated OpEx spend: 3 queries → 1 CTE ───────────────
+                // WorkLabor + WorkParts + WorkMisc joined in a single statement.
+                // PROJECT-type WOs excluded per OpEx definition.
                 let plantLabor = 0, plantParts = 0, plantMisc = 0;
-                try { plantLabor = db.prepare(`SELECT COALESCE(SUM(COALESCE(wl.HrReg,0)*CAST(COALESCE(wl.PayReg,'0') AS REAL)+COALESCE(wl.HrOver,0)*CAST(COALESCE(wl.PayOver,'0') AS REAL)+COALESCE(wl.HrDouble,0)*CAST(COALESCE(wl.PayDouble,'0') AS REAL)),0) as v FROM WorkLabor wl INNER JOIN Work w ON wl.WoID = w.ID WHERE w.TypeID != 'PROJECT'`).get().v || 0; } catch (e) { }
-                try { plantParts = db.prepare(`SELECT COALESCE(SUM(COALESCE(wp.ActQty,0)*CAST(COALESCE(wp.UnitCost,'0') AS REAL)),0) as v FROM WorkParts wp INNER JOIN Work w ON wp.WoID = w.ID WHERE w.TypeID != 'PROJECT'`).get().v || 0; } catch (e) { }
-                try { plantMisc = db.prepare(`SELECT COALESCE(SUM(CAST(COALESCE(wm.ActCost,'0') AS REAL)),0) as v FROM WorkMisc wm INNER JOIN Work w ON wm.WoID = w.ID WHERE w.TypeID != 'PROJECT'`).get().v || 0; } catch (e) { }
+                try {
+                    const spendRow = db.prepare(`
+                        WITH
+                        labor AS (
+                            SELECT COALESCE(SUM(
+                                COALESCE(wl.HrReg,0)*CAST(COALESCE(wl.PayReg,'0') AS REAL)+
+                                COALESCE(wl.HrOver,0)*CAST(COALESCE(wl.PayOver,'0') AS REAL)+
+                                COALESCE(wl.HrDouble,0)*CAST(COALESCE(wl.PayDouble,'0') AS REAL)
+                            ),0) as v FROM WorkLabor wl INNER JOIN Work w ON wl.WoID=w.ID WHERE w.TypeID!='PROJECT'
+                        ),
+                        parts AS (
+                            SELECT COALESCE(SUM(
+                                COALESCE(wp.ActQty,0)*CAST(COALESCE(wp.UnitCost,'0') AS REAL)
+                            ),0) as v FROM WorkParts wp INNER JOIN Work w ON wp.WoID=w.ID WHERE w.TypeID!='PROJECT'
+                        ),
+                        misc AS (
+                            SELECT COALESCE(SUM(CAST(COALESCE(wm.ActCost,'0') AS REAL)),0) as v
+                            FROM WorkMisc wm INNER JOIN Work w ON wm.WoID=w.ID WHERE w.TypeID!='PROJECT'
+                        )
+                        SELECT labor.v as labor, parts.v as parts, misc.v as misc
+                        FROM labor, parts, misc
+                    `).get();
+                    plantLabor = spendRow?.labor || 0;
+                    plantParts = spendRow?.parts || 0;
+                    plantMisc = spendRow?.misc || 0;
+                } catch (_) {}
                 totalLabor += plantLabor;
                 totalPartsCost += plantParts;
                 totalMisc += plantMisc;
@@ -360,7 +388,7 @@ router.get('/executive-summary', requireCorpAccess, (req, res) => {
         }
         qualityByPlant.sort((a, b) => b.lossValue - a.lossValue);
 
-        res.json({
+        const _payload = {
             plants: {
                 count: plants.length,
                 summaries: plantSummaries.sort((a, b) => b.totalWOs - a.totalWOs),
@@ -385,7 +413,9 @@ router.get('/executive-summary', requireCorpAccess, (req, res) => {
                 labSamples: qualityLabSamples,
                 topLossPlants: qualityByPlant.slice(0, 5),
             },
-        });
+        };
+        if (!process.env.DISABLE_CORP_CACHE) corpCache.set(_cacheKey, _payload);
+        res.json(_payload);
     } catch (e) {
         console.error('Corp analytics executive-summary error:', e);
         res.status(500).json({ error: 'Internal server error' });
@@ -394,6 +424,11 @@ router.get('/executive-summary', requireCorpAccess, (req, res) => {
 
 // ── Plant Rankings — Side-by-side comparison ──
 router.get('/plant-rankings', requireCorpAccess, (req, res) => {
+    const _cacheKey = 'corp_plant-rankings';
+    if (!process.env.DISABLE_CORP_CACHE) {
+        const _cached = corpCache.get(_cacheKey);
+        if (_cached) return res.json(_cached);
+    }
     try {
         const plants = getAllPlantDbs();
         const rankings = [];
@@ -445,7 +480,9 @@ router.get('/plant-rankings', requireCorpAccess, (req, res) => {
                 db.close();
             } catch (e) { try { db.close(); } catch { } }
         }
-        res.json(rankings.sort((a, b) => b.score - a.score));
+        const _payload = rankings.sort((a, b) => b.score - a.score);
+        if (!process.env.DISABLE_CORP_CACHE) corpCache.set(_cacheKey, _payload);
+        res.json(_payload);
     } catch (e) {
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -455,6 +492,11 @@ router.get('/plant-rankings', requireCorpAccess, (req, res) => {
 // ── Financial Rollup — IT + Plant = Corporate Overview ──
 // Uses SAME cost calculation as Deep Insights (WorkLabor, WorkParts, WorkMisc)
 router.get('/financial', requireCorpAccess, (req, res) => {
+    const _cacheKey = 'corp_financial';
+    if (!process.env.DISABLE_CORP_CACHE) {
+        const _cached = corpCache.get(_cacheKey);
+        if (_cached) return res.json(_cached);
+    }
     try {
         const plants = getAllPlantDbs();
         let totals = { labor: 0, parts: 0, misc: 0, inventoryValue: 0, partsCount: 0 };
@@ -560,7 +602,7 @@ router.get('/financial', requireCorpAccess, (req, res) => {
         // Calculate monthly avg spend for trend estimation
         const monthlyAvgSpend = trendData.length > 0 ? Math.round(operatingSpend / Math.max(trendData.length, 12)) : 0;
 
-        res.json({
+        const _payload = {
             // Top-level KPIs
             operatingSpend: Math.round(operatingSpend),
             labor: Math.round(totals.labor),
@@ -578,7 +620,9 @@ router.get('/financial', requireCorpAccess, (req, res) => {
             allPlants: plantSpend,
             // Monthly trend
             monthlyTrend: trendData,
-        });
+        };
+        if (!process.env.DISABLE_CORP_CACHE) corpCache.set(_cacheKey, _payload);
+        res.json(_payload);
     } catch (e) {
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -751,6 +795,11 @@ router.get('/risk-matrix', requireCorpAccess, (req, res) => {
 
 // ── Forecast — PM schedule, parts velocity, fleet replacement ──
 router.get('/forecast', requireCorpAccess, (req, res) => {
+    const _cacheKey = 'corp_forecast';
+    if (!process.env.DISABLE_CORP_CACHE) {
+        const _cached = corpCache.get(_cacheKey);
+        if (_cached) return res.json(_cached);
+    }
     try {
         const plants = getAllPlantDbs();
         // PM forecast: upcoming scheduled PMs via Schedule table
@@ -798,10 +847,12 @@ router.get('/forecast', requireCorpAccess, (req, res) => {
             }));
         } catch (e) { }
 
-        res.json({
+        const _payload = {
             preventiveMaintenance: { upcoming: upcomingPMs, byMonth: Object.entries(pmForecast).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count })) },
             fleetReplacement,
-        });
+        };
+        if (!process.env.DISABLE_CORP_CACHE) corpCache.set(_cacheKey, _payload);
+        res.json(_payload);
     } catch (e) {
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -809,6 +860,11 @@ router.get('/forecast', requireCorpAccess, (req, res) => {
 
 // ── Workforce Analytics ──
 router.get('/workforce', requireCorpAccess, (req, res) => {
+    const _cacheKey = 'corp_workforce';
+    if (!process.env.DISABLE_CORP_CACHE) {
+        const _cached = corpCache.get(_cacheKey);
+        if (_cached) return res.json(_cached);
+    }
     try {
         // Active users
         let totalUsers = 0;
@@ -838,12 +894,14 @@ router.get('/workforce', requireCorpAccess, (req, res) => {
             } catch (e) { try { db.close(); } catch { } }
         }
 
-        res.json({
+        const _payload = {
             totalUsers,
             roleDistribution,
             contractors: { total: contractorTotal, active: contractorActive },
             labor: { totalAssigned, byPlant: plantLabor.sort((a, b) => b.activeWorkers - a.activeWorkers) },
-        });
+        };
+        if (!process.env.DISABLE_CORP_CACHE) corpCache.set(_cacheKey, _payload);
+        res.json(_payload);
     } catch (e) {
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -1021,19 +1079,18 @@ router.get('/spend-overview', requireCorpAccess, (req, res) => {
         const prevFY = currentFY - 1;
         const plants = getAllPlantDbs();
 
-        // Aggregate current fiscal year
+        // Aggregate current fiscal year (closes all plant DB handles internally)
         const current = aggregateFiscalYear(plants, logDb, currentFY);
 
-        // Quick aggregate previous FY just for utility total (for YoY comparison)
-        // Re-open plants for prev year
-        const prevPlants = getAllPlantDbs();
+        // Previous FY utility total for YoY comparison — single fresh sweep,
+        // scoped to one query per plant to minimise open-handle duration.
+        const { start: prevStart, end: prevEnd } = getFiscalYearRange(prevFY);
         let prevUtilTotal = 0;
-        for (const { plantId, db } of prevPlants) {
+        for (const { plantId, db } of getAllPlantDbs()) {
             try {
-                const { start, end } = getFiscalYearRange(prevFY);
                 const hasUtilities = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Utilities'").get();
                 if (hasUtilities) {
-                    const row = db.prepare(`SELECT COALESCE(SUM(CAST(BillAmount AS REAL)),0) as v FROM Utilities WHERE ReadingDate IS NOT NULL AND date(ReadingDate) BETWEEN ? AND ?`).get(start, end);
+                    const row = db.prepare(`SELECT COALESCE(SUM(CAST(BillAmount AS REAL)),0) as v FROM Utilities WHERE ReadingDate IS NOT NULL AND date(ReadingDate) BETWEEN ? AND ?`).get(prevStart, prevEnd);
                     prevUtilTotal += (row?.v || 0);
                 }
                 db.close();

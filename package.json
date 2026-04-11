@@ -52,9 +52,7 @@
   "type": "commonjs",
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@vitejs/plugin-basic-ssl": "^2.2.0",
     "@zxing/library": "^0.21.3",
-    "accessdb-parser": "^1.0.1",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^11.9.1",
     "cesium": "^1.139.1",
@@ -75,7 +73,6 @@
     "mdb-reader": "^3.2.0",
     "mssql": "^12.2.1",
     "multer": "^2.1.1",
-    "node-adodb": "^5.0.3",
     "otpauth": "^9.5.0",
     "papaparse": "^5.5.3",
     "pdf-parse": "^2.4.5",

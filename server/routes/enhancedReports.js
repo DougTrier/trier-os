@@ -37,18 +37,7 @@
 
 const express = require('express');
 const router = express.Router();
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
-
-function getPlantDbs(dataDir) {
-    return fs.readdirSync(dataDir)
-        .filter(f => f.endsWith('.db') && !f.includes('trier_') && !f.includes('auth'))
-        .map(f => ({
-            name: f.replace('.db', ''),
-            path: path.join(dataDir, f)
-        }));
-}
+const { getAllPlantDbs } = require('../utils/plantDbs');
 
 function safeQuery(db, sql, params = []) {
     try { return db.prepare(sql).all(...params); } catch { return []; }
@@ -61,15 +50,11 @@ function safeGet(db, sql, params = []) {
 // ── Plant vs Plant Cost Comparison ───────────────────────────────────────────
 router.get('/enterprise/cost-comparison', (req, res) => {
     try {
-        const dataDir = require('../resolve_data_dir');
-        const plants = getPlantDbs(dataDir);
+        const plants = getAllPlantDbs();
         const results = [];
 
-        for (const plant of plants) {
-            let db;
+        for (const { plantId, db } of plants) {
             try {
-                db = new Database(plant.path, { readonly: true });
-
                 const totalWOs = safeGet(db, 'SELECT COUNT(*) as c FROM Work') || { c: 0 };
                 const completedWOs = safeGet(db, "SELECT COUNT(*) as c FROM Work WHERE CompDate IS NOT NULL") || { c: 0 };
                 const laborCost = safeGet(db, 'SELECT SUM(CAST(COALESCE(TotalCost, 0) AS REAL)) as total FROM Work') || { total: 0 };
@@ -77,7 +62,7 @@ router.get('/enterprise/cost-comparison', (req, res) => {
                 const assetCount = safeGet(db, 'SELECT COUNT(*) as c FROM Asset') || { c: 0 };
 
                 results.push({
-                    plant: plant.name,
+                    plant: plantId,
                     totalWOs: totalWOs.c,
                     completedWOs: completedWOs.c,
                     completionRate: totalWOs.c > 0 ? Math.round((completedWOs.c / totalWOs.c) * 100) : 0,
@@ -89,7 +74,7 @@ router.get('/enterprise/cost-comparison', (req, res) => {
 
                 db.close();
             } catch (e) {
-                if (db) db.close();
+                try { db.close(); } catch {}
             }
         }
 
@@ -115,14 +100,11 @@ router.get('/enterprise/cost-comparison', (req, res) => {
 // ── PM Compliance Report ─────────────────────────────────────────────────────
 router.get('/enterprise/pm-compliance', (req, res) => {
     try {
-        const dataDir = require('../resolve_data_dir');
-        const plants = getPlantDbs(dataDir);
+        const plants = getAllPlantDbs();
         const results = [];
 
-        for (const plant of plants) {
-            let db;
+        for (const { plantId, db } of plants) {
             try {
-                db = new Database(plant.path, { readonly: true });
 
                 const totalPMs = safeGet(db, "SELECT COUNT(*) as c FROM Schedule") || { c: 0 };
                 const activePMs = safeGet(db, "SELECT COUNT(*) as c FROM Schedule WHERE Active = 1 OR Active IS NULL") || { c: 0 };
@@ -144,7 +126,7 @@ router.get('/enterprise/pm-compliance', (req, res) => {
                 const complianceRate = pmWOs.c > 0 ? Math.round((pmCompleted.c / pmWOs.c) * 100) : 100;
 
                 results.push({
-                    plant: plant.name,
+                    plant: plantId,
                     totalSchedules: totalPMs.c,
                     activeSchedules: activePMs.c,
                     pmGenerated: pmWOs.c,
@@ -155,7 +137,7 @@ router.get('/enterprise/pm-compliance', (req, res) => {
 
                 db.close();
             } catch (e) {
-                if (db) db.close();
+                try { db.close(); } catch {}
             }
         }
 
@@ -181,14 +163,11 @@ router.get('/enterprise/pm-compliance', (req, res) => {
 // ── Asset Reliability (MTBF) ─────────────────────────────────────────────────
 router.get('/enterprise/asset-reliability', (req, res) => {
     try {
-        const dataDir = require('../resolve_data_dir');
-        const plants = getPlantDbs(dataDir);
+        const plants = getAllPlantDbs();
         const results = [];
 
-        for (const plant of plants) {
-            let db;
+        for (const { plantId, db } of plants) {
             try {
-                db = new Database(plant.path, { readonly: true });
 
                 const assets = safeQuery(db, `
                     SELECT 
@@ -209,7 +188,7 @@ router.get('/enterprise/asset-reliability', (req, res) => {
                     const age = asset.ageYears || 5;
                     const mtbf = asset.failures > 0 ? Math.round((age * 8760) / asset.failures) : null; // hours
                     results.push({
-                        plant: plant.name,
+                        plant: plantId,
                         assetId: asset.ID,
                         description: asset.Description,
                         failures: asset.failures,
@@ -221,7 +200,7 @@ router.get('/enterprise/asset-reliability', (req, res) => {
 
                 db.close();
             } catch (e) {
-                if (db) db.close();
+                try { db.close(); } catch {}
             }
         }
 
@@ -246,14 +225,11 @@ router.get('/enterprise/asset-reliability', (req, res) => {
 // ── Labor Utilization ────────────────────────────────────────────────────────
 router.get('/enterprise/labor-utilization', (req, res) => {
     try {
-        const dataDir = require('../resolve_data_dir');
-        const plants = getPlantDbs(dataDir);
+        const plants = getAllPlantDbs();
         const techMap = {};
 
-        for (const plant of plants) {
-            let db;
+        for (const { plantId, db } of plants) {
             try {
-                db = new Database(plant.path, { readonly: true });
 
                 const techs = safeQuery(db, `
                     SELECT 
@@ -272,7 +248,7 @@ router.get('/enterprise/labor-utilization', (req, res) => {
                     if (!techMap[key]) {
                         techMap[key] = { tech: key, plants: [], totalWOs: 0, completed: 0, totalCost: 0 };
                     }
-                    techMap[key].plants.push(plant.name);
+                    techMap[key].plants.push(plantId);
                     techMap[key].totalWOs += t.woCount;
                     techMap[key].completed += t.completed;
                     techMap[key].totalCost += (t.totalCost || 0);
@@ -280,7 +256,7 @@ router.get('/enterprise/labor-utilization', (req, res) => {
 
                 db.close();
             } catch (e) {
-                if (db) db.close();
+                try { db.close(); } catch {}
             }
         }
 

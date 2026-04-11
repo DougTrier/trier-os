@@ -169,6 +169,22 @@ function getDb(requestedPlantId = null) {
         // Enforce referential integrity between tables (e.g., WorkParts -> Part)
         db.pragma('foreign_keys = ON');
 
+        // ── Performance Indexes ─────────────────────────────────────────────
+        // Created once per connection (IF NOT EXISTS = idempotent).
+        // Covers the highest-frequency filter columns used in corporate rollup
+        // and per-plant analytics queries. Matches the logistics_db.js pattern.
+        try {
+            db.exec(`
+                CREATE INDEX IF NOT EXISTS idx_work_status    ON Work(Status);
+                CREATE INDEX IF NOT EXISTS idx_work_statusid  ON Work(StatusID);
+                CREATE INDEX IF NOT EXISTS idx_work_typeid    ON Work(TypeID);
+                CREATE INDEX IF NOT EXISTS idx_work_schdate   ON Work(SchDate);
+                CREATE INDEX IF NOT EXISTS idx_work_compdate  ON Work(CompDate);
+                CREATE INDEX IF NOT EXISTS idx_part_stock     ON Part(Stock, OrdPoint);
+                CREATE INDEX IF NOT EXISTS idx_asset_type     ON Asset(AssetType);
+            `);
+        } catch (_) { /* tables may not exist on non-plant DBs — safe to skip */ }
+
         // Ensure SiteLeadership table exists
         db.prepare(`
             CREATE TABLE IF NOT EXISTS SiteLeadership (
