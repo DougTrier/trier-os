@@ -56,19 +56,9 @@ test.describe('Metrics Math & Calculation Consistency (Corporate & Plant)', () =
   });
 
   test('Corporate Metrics allows access and correctly rolls up executive intelligence without math errors', async ({ page }) => {
-    await page.goto('/');
-    
-    // Ensure we are viewing Enterprise / All sites
-    const plantSelect = page.locator('select').first();
-    if (await plantSelect.isVisible({ timeout: 2000 })) {
-      await plantSelect.selectOption('all_sites');
-      await page.waitForTimeout(1000);
-    }
-
-    // Open Corporate Analytics
-    const corpTile = page.locator('[draggable]').filter({ hasText: /Corporate Analytics/i }).first();
-    await corpTile.waitFor({ state: 'visible', timeout: 5000 });
-    await corpTile.click();
+    // Navigate directly — corp-analytics tile is only in the creator tile set,
+    // but the page itself is accessible to it_admin and executive roles.
+    await page.goto('/corp-analytics');
 
     // Verify the page renders successfully
     await expect(page.locator('h1').filter({ hasText: /Corporate Analytics/i }).first()).toBeVisible({ timeout: 15000 });

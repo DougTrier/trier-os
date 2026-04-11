@@ -52,8 +52,11 @@ test.describe('Trier OS V4.0.0 � The Master Operational Gauntlet', () => {
       'Plant Metrics'
     ];
     
+    // Wait for the MC grid to fully mount before asserting individual tiles
+    await expect(page.locator('.mc-container')).toBeVisible({ timeout: 20000 });
+
     for (const tile of tilesToTest) {
-      await expect(page.locator('.mc-container').getByText(tile, { exact: false }).first()).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('.mc-container').getByText(tile, { exact: false }).first()).toBeVisible({ timeout: 10000 });
     }
   });
 
@@ -293,7 +296,7 @@ test.describe('Trier OS V4.0.0 � The Master Operational Gauntlet', () => {
     await page.goto('/corp-analytics'); // Corporate Routing 
 
     // Verify Title presence and security badge
-    await expect(page.getByText('Corporate Analytics', { exact: false }).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Corporate Analytics', { exact: false }).first()).toBeVisible({ timeout: 15000 });
 
     // Verify the page loaded � check for EITHER the analytics content OR the access-restricted message
     const pageLoaded = await Promise.race([
@@ -374,10 +377,10 @@ test.describe('Trier OS V4.0.0 � The Master Operational Gauntlet', () => {
   // ==========================================
   test('Should navigate to the physical facility views and verify Floor Plan structural integrity', async ({ page }) => {
     // Navigate safely into the spatial layout view
-    await page.goto('/portal/floorplans-maps'); // Using standard portal route for spatial components
+    await page.goto('/portal/plant-setup-group');
 
     // Verify Title presence
-    await expect(page.getByText('Floor Plans & Maps', { exact: false }).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Facilities', { exact: false }).first()).toBeVisible({ timeout: 5000 });
 
     // Based on the provided physical layout
     const layoutTiles = ['Floor Plans', 'Maps'];

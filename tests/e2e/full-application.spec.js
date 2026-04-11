@@ -32,7 +32,7 @@ test.describe('V4.0 Complete Application Operations Suite (The Full Run)', () =>
   // ==========================================
   test('Should successfully create a new Work Order from scratch', async ({ page }) => {
     // Navigate to the Work Orders Module
-    await page.goto('/work-orders');
+    await page.goto('/jobs');
     
     // Ghost User looks for the specific "Create" or "New" or "+" button
     const createBtn = page.locator('button, a').filter({ hasText: /New Work Order|Create|Add \+/i }).first();
@@ -68,7 +68,7 @@ test.describe('V4.0 Complete Application Operations Suite (The Full Run)', () =>
   // PHASE 2: PURCHASE ORDER ACQUISITION
   // ==========================================
   test('Should successfully generate a new Supply Chain Purchase Order', async ({ page }) => {
-    await page.goto('/purchase-orders');
+    await page.goto('/supply-chain');
 
     const createBtn = page.locator('button, a').filter({ hasText: /New Purchase|Create PO|Add PO/i }).first();
     await createBtn.click();

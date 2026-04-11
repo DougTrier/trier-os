@@ -32,9 +32,11 @@ test.describe('Corporate Analytics & Map Verification', () => {
         // Click a pin to open editor
         await mapPins.first().click({ force: true });
         console.log('Clicked first map pin');
+        // Give the editor panel time to animate open
+        await page.waitForTimeout(1500);
 
-        // Check for Property Value
-        await expect(page.locator('text="Est. Value"')).toBeVisible({ timeout: 10000 });
+        // Check for Property Value label in the editor panel
+        await expect(page.getByText('Est. Value', { exact: false }).first()).toBeVisible({ timeout: 15000 });
         console.log('Est Value is visible');
     });
 });

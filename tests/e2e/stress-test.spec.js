@@ -1061,10 +1061,13 @@ test.describe('17 · API Health Checks', () => {
     expect([200, 404]).toContain(res.status());
   });
 
-  test('Unauthenticated request to /api/dashboard returns 401', async ({ page }) => {
-    const res = await page.request.get('/api/dashboard', {
+  test('Unauthenticated request to /api/dashboard returns 401', async ({ playwright }) => {
+    // Use a fresh API context with no cookies — page.request inherits the browser's httpOnly cookie
+    const freshCtx = await playwright.request.newContext({ baseURL: 'https://localhost:5173', ignoreHTTPSErrors: true });
+    const res = await freshCtx.get('/api/dashboard', {
       headers: { 'x-plant-id': 'all_sites' },
     });
+    await freshCtx.dispose();
     expect(res.status()).toBe(401);
   });
 

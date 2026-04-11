@@ -37,7 +37,7 @@ test.describe('Trier OS Core Navigation Suite', () => {
         await workOrdersLink.click();
     } else {
         // Fallback for direct routing if Mission Control tile is obscure
-        await page.goto('/work-orders');
+        await page.goto('/jobs');
     }
 
     // Verify the page actually loaded by checking for standard Work Order headers

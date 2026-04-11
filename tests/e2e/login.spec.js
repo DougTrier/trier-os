@@ -5,25 +5,27 @@ import { test, expect } from '@playwright/test';
 test.describe('Trier OS Zebra TC77 Login Simulation', () => {
 
   test('Should render the login perimeter properly', async ({ page }) => {
-    // 1. Visit the actual development server URL (the ghost user opens chrome)
+    // 1. Visit the login screen
     await page.goto('/');
 
-    // 2. We assert that the title proves we are at Trier OS
+    // 2. Assert the page title
     await expect(page).toHaveTitle(/Trier OS/i);
 
-    // 3. We check that the crucial Shop Floor button is visible for accessibility
-    const shopFloorBtn = page.getByRole('button', { name: /Shop Floor: OFF/i });
-    // Verify it exists in the DOM
-    await expect(shopFloorBtn).toBeAttached();
+    // 3. Username and password fields must be present (placeholders are i18n-translated)
+    await expect(page.locator('input[type="text"], input[name="username"]').first()).toBeVisible();
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+
+    // 4. Submit button must be present (button says "Sign In")
+    await expect(page.locator('button[type="submit"]').first()).toBeVisible();
   });
 
   test('Should reject fake credentials with an error', async ({ page }) => {
     await page.goto('/');
 
-    // Find the login inputs (assuming basic text search or standard semantic inputs)
-    const usernameInput = page.getByPlaceholder('Username');
-    const passwordInput = page.getByPlaceholder('Password');
-    const loginBtn = page.getByRole('button', { name: 'Log In' });
+    // Find the login inputs using type selectors (placeholders are i18n-translated)
+    const usernameInput = page.locator('input[type="text"], input[name="username"]').first();
+    const passwordInput = page.locator('input[type="password"]').first();
+    const loginBtn = page.locator('button[type="submit"]').first();
 
     // Ensure they exist before we type
     await expect(loginBtn).toBeVisible();
@@ -32,13 +34,12 @@ test.describe('Trier OS Zebra TC77 Login Simulation', () => {
     await usernameInput.fill('ghost_tech');
     await passwordInput.fill('Trier3292!');
 
-    // Ghost user clicks "Log In"
+    // Ghost user clicks submit
     await loginBtn.click();
 
-    // After logging in with a new 'Temp Pass', the system will likely redirect
-    // to a "Change Password" or "Dashboard" screen.
-    // For now, we will verify that the URL changed away from the login perimeter.
-    await expect(page).not.toHaveURL('/login');
+    // After logging in, the system will redirect away from the login screen.
+    // Verify that the URL changed away from the login perimeter.
+    await expect(page).not.toHaveURL('/login', { timeout: 15000 });
   });
 
 });

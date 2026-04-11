@@ -121,7 +121,8 @@ test.describe('Navigation � Desktop vs Mobile Layout', () => {
 
     for (const tile of expectedTiles) {
       // Look broadly � tiles may be in divs, anchors, or buttons
-      const el = page.locator('a, button, div[class*="tile"], div[class*="card"], div[class*="mc"]')
+      // MC tiles render as draggable divs with inline styles (no CSS class names)
+      const el = page.locator('[draggable]')
         .filter({ hasText: new RegExp(tile, 'i') }).first();
       await expect(el).toBeVisible({ timeout: 12000 });
 

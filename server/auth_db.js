@@ -192,7 +192,7 @@ const ghostAccounts = [
     },
     {
         user: 'ghost_exec', hash: bcrypt.hashSync('Trier7969!', 10),
-        role: 'executive', name: 'Ghost Executive', title: 'E2E Test Executive',
+        role: 'executive', name: 'Ghost Executive', title: 'CEO',
         plantId: 'all_sites',
         globalAccess: 1, canDash: 1, canImport: 0, canSAP: 0,
         canSensorConfig: 0, canSensorThresh: 0, canSensorView: 1, canAnalytics: 1
