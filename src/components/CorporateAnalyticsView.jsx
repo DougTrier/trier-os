@@ -32,7 +32,7 @@
  * PRINT: Exports full corporate intelligence report via window.triggerTrierPrint().
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { BarChart3, Factory, Wrench, Cog, Package, Truck, ShieldCheck, Server, Users, AlertTriangle, DollarSign, Calendar, Target, RefreshCw, X, Printer, Key, Zap, Droplets, Flame, Lightbulb, TrendingDown, TrendingUp, CheckCircle2, Activity, Archive, Layers, Clock, Box, Scale, Map } from 'lucide-react';
+import { BarChart3, Factory, Wrench, Cog, Package, Truck, ShieldCheck, Server, Users, AlertTriangle, DollarSign, Calendar, Target, RefreshCw, X, Printer, Key, Zap, Droplets, Flame, Lightbulb, TrendingDown, TrendingUp, CheckCircle2, Activity, Archive, Layers, Clock, Box, Scale, Map, Crown } from 'lucide-react';
 import { printRecord, infoGridHTML, tableHTML } from '../utils/printRecord';
 import { useTranslation } from '../i18n/index.jsx';
 import EquipmentIntelligenceSection from './EquipmentIntelligenceSection';
