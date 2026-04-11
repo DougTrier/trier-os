@@ -42,7 +42,7 @@ export default function EnterpriseIntelligence({ setSelectedPlant, setActiveTab 
 
     useEffect(() => {
         fetch('/api/logistics/enterprise-insights', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: {  }
         })
         .then(res => res.json())
         .then(data => {

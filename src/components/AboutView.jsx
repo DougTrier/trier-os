@@ -15,7 +15,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud } from 'lucide-react';
+import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud, Github, Star } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
 const AboutView = () => {
@@ -4351,11 +4351,21 @@ const AboutView = () => {
                         href="https://github.com/sponsors/DougTrier"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-primary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)', textDecoration: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 600, transition: 'all 0.2s' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)', textDecoration: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 600, fontSize: '0.875rem', lineHeight: '1.25rem', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
                         title={t('about.sponsorProject', 'Sponsor Trier OS Open Source Development')}
                     >
                         💖 {t('about.sponsor', 'Sponsor Trier OS')}
+                    </a>
+                    <a
+                        href="https://github.com/DougTrier/trier-os"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.3)', textDecoration: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 600, fontSize: '0.875rem', lineHeight: '1.25rem', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+                        title="Star Trier OS on GitHub"
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.2)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.5)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)'; }}
+                    >
+                        <Star size={15} fill="#fbbf24" /> Star on GitHub
                     </a>
                     <button 
                         onClick={() => setViewingManual(true)}

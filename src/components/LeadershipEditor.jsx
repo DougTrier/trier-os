@@ -45,7 +45,7 @@ export default function LeadershipEditor({ onClose, onSaved, plantId, plantLabel
     useEffect(() => {
         if (initialLeaders) return;
         
-        const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` };
+        const headers = {  };
         if (plantId) headers['x-plant-id'] = plantId;
 
         fetch('/api/leadership', { headers })
@@ -74,8 +74,7 @@ export default function LeadershipEditor({ onClose, onSaved, plantId, plantLabel
     const handleSave = async () => {
         try {
             const headers = { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Content-Type': 'application/json'
             };
             if (plantId) headers['x-plant-id'] = plantId;
 

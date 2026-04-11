@@ -109,10 +109,10 @@ export default function PartsView({ plantId, plantLabel }) {
         
         // Fetch lookups and stats
         Promise.all([
-            fetch('/api/v2/lookups/part-classes', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } }).then(r => safeJson(r)),
-            fetch('/api/v2/lookups/part-order-rules', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } }).then(r => safeJson(r)),
-            fetch('/api/parts/stats', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': localStorage.getItem('selectedPlantId') } }).then(r => safeJson(r, { totalValue: 0, lowStockCount: 0 })),
-            fetch('/api/enrichment/manufacturers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } }).then(r => safeJson(r))
+            fetch('/api/v2/lookups/part-classes', { headers: {  } }).then(r => safeJson(r)),
+            fetch('/api/v2/lookups/part-order-rules', { headers: {  } }).then(r => safeJson(r)),
+            fetch('/api/parts/stats', { headers: { 'x-plant-id': localStorage.getItem('selectedPlantId') } }).then(r => safeJson(r, { totalValue: 0, lowStockCount: 0 })),
+            fetch('/api/enrichment/manufacturers', { headers: {  } }).then(r => safeJson(r))
         ]).then(([classData, ruleData, statsData, manufData]) => {
             setClasses(classData || []);
             setOrderRules(ruleData || []);
@@ -124,7 +124,7 @@ export default function PartsView({ plantId, plantLabel }) {
         const currentSite = localStorage.getItem('selectedPlantId');
         if (currentSite) {
             fetch(`/api/v2/network/ignored-prices/${currentSite}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             })
                 .then(r => r.json())
                 .then(data => setIgnoredParts(data || []))
@@ -146,7 +146,6 @@ export default function PartsView({ plantId, plantLabel }) {
             });
             const res = await fetch(`/api/parts?${params}`, {
                 headers: { 
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -182,7 +181,7 @@ export default function PartsView({ plantId, plantLabel }) {
     const pollBulkStatus = useCallback(async () => {
         try {
             const res = await fetch('/api/enrichment/bulk/status', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setBulkStatus(data);
@@ -205,7 +204,6 @@ export default function PartsView({ plantId, plantLabel }) {
             const res = await fetch('/api/enrichment/bulk/start', { 
                 method: 'POST',
                 headers: { 
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -242,7 +240,7 @@ export default function PartsView({ plantId, plantLabel }) {
         setAlignmentPrompt(null);
         try {
             const res = await fetch(`/api/parts/${encodeURIComponent(id)}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setSelectedPart(data);
@@ -271,7 +269,6 @@ export default function PartsView({ plantId, plantLabel }) {
         try {
             const res = await fetch(`/api/catalog/enrich/${encodeURIComponent(partId)}/compare`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -298,7 +295,6 @@ export default function PartsView({ plantId, plantLabel }) {
         try {
             const res = await fetch(`/api/catalog/enrich/${encodeURIComponent(partId)}/intelligence`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -317,8 +313,7 @@ export default function PartsView({ plantId, plantLabel }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                },
+                    },
                 body: JSON.stringify({ masterData: alignmentPrompt.masterData }),
             });
             if (res.ok) {
@@ -369,7 +364,6 @@ export default function PartsView({ plantId, plantLabel }) {
         try {
             const res = await fetch(`/api/catalog/enrich/${encodeURIComponent(partIdValue)}?description=${encodeURIComponent(editData.Description || '')}&manufacturer=${encodeURIComponent(editData.Manufacturer || '')}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -481,7 +475,7 @@ export default function PartsView({ plantId, plantLabel }) {
         setEnriching(true);
         try {
             const res = await fetch(`/api/enrichment/${editData.ID}?manufacturer=${encodeURIComponent(editData.Manufacturer || '')}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             if (data.attributes) {
@@ -522,8 +516,7 @@ export default function PartsView({ plantId, plantLabel }) {
             const res = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}`, {
                 method: 'PUT',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ EnrichmentConflict: 0 })
             });
@@ -557,8 +550,7 @@ export default function PartsView({ plantId, plantLabel }) {
             const res = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}`, {
                 method: 'PUT',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(updates)
             });
@@ -758,7 +750,7 @@ export default function PartsView({ plantId, plantLabel }) {
         try {
             const res = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             if (res.ok) {
                 setSelectedPart(null);
@@ -1702,13 +1694,13 @@ export default function PartsView({ plantId, plantLabel }) {
                                                     try {
                                                         const res = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}/substitutes`, {
                                                             method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                                                            headers: { 'Content-Type': 'application/json' },
                                                             body: JSON.stringify({ substituteId: newSubId.trim(), comment: newSubComment.trim() })
                                                         });
                                                         if (res.ok) {
                                                             setNewSubId(''); setNewSubComment(''); setAddSubMode(false);
                                                             // Refresh substitutes
-                                                            const subRes = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}/substitutes`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } });
+                                                            const subRes = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}/substitutes`, { headers: {  } });
                                                             if (subRes.ok) setSubstitutes(await subRes.json());
                                                             setStatus({ type: 'success', message: 'Substitute linked successfully.' });
                                                         } else {
@@ -1769,9 +1761,9 @@ export default function PartsView({ plantId, plantLabel }) {
                                                             onClick={async () => {
                                                                 try {
                                                                     await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}/substitutes/${encodeURIComponent(sub.partNumber)}`, {
-                                                                        method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                                                                        method: 'DELETE', headers: {  }
                                                                     });
-                                                                    const subRes = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}/substitutes`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } });
+                                                                    const subRes = await fetch(`/api/parts/${encodeURIComponent(selectedPart.ID)}/substitutes`, { headers: {  } });
                                                                     if (subRes.ok) setSubstitutes(await subRes.json());
                                                                 } catch (e) { /* ignore */ }
                                                             }}

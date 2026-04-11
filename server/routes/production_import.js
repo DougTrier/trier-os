@@ -238,7 +238,7 @@ router.post('/parse', (req, res) => {
         res.json({ success: true, summary, lines });
     } catch (err) {
         console.error('[PRODUCTION_IMPORT] parse error:', err);
-        res.status(500).json({ error: 'Parse failed: ' + err.message });
+        res.status(500).json({ error: 'Parse failed: ' });
     }
 });
 
@@ -292,7 +292,7 @@ router.post('/import', (req, res) => {
         res.json({ success: true, ...result });
     } catch (err) {
         console.error('[PRODUCTION_IMPORT] import error:', err);
-        res.status(500).json({ error: 'Import failed: ' + err.message });
+        res.status(500).json({ error: 'Import failed: ' });
     }
 });
 
@@ -318,7 +318,7 @@ router.get('/orders', (req, res) => {
 
         res.json({ orders, batch });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch orders: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch orders: ' });
     }
 });
 
@@ -348,7 +348,7 @@ router.put('/orders/:id', (req, res) => {
 
         res.json({ success: true, finalQty });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update order: ' + err.message });
+        res.status(500).json({ error: 'Failed to update order: ' });
     }
 });
 
@@ -361,7 +361,7 @@ router.get('/batches', (req, res) => {
         ).all(plantId);
         res.json(batches);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch batches: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch batches: ' });
     }
 });
 
@@ -372,7 +372,7 @@ router.get('/pads', (req, res) => {
         const pads = logisticsDb.prepare('SELECT * FROM ProductionPads WHERE PlantID=? ORDER BY ProdNumber, SizeCode').all(plantId);
         res.json(pads);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch pads: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch pads: ' });
     }
 });
 
@@ -394,7 +394,7 @@ router.put('/pads', (req, res) => {
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to save pad: ' + err.message });
+        res.status(500).json({ error: 'Failed to save pad: ' });
     }
 });
 
@@ -426,7 +426,7 @@ router.get('/summary', (req, res) => {
 
         res.json({ date, totalOrdered, totalFinal, byFamily, orderCount: orders.length });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch summary: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch summary: ' });
     }
 });
 
@@ -474,7 +474,7 @@ router.get('/history', (req, res) => {
         });
 
         res.json({ weeks: parseInt(weeks), cutoff: cutoffStr, items: summary });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // ── Rolling History — summary for all SKUs on a given date (sidebar context) ─
@@ -510,7 +510,7 @@ router.get('/history-bulk', (req, res) => {
             };
         }
         res.json(map);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // ── Add / Cut manual order lines ─────────────────────────────────────────────
@@ -535,7 +535,7 @@ router.post('/orders/add', (req, res) => {
             finalQty
         );
         res.status(201).json({ success: true, id: r.lastInsertRowid, finalQty });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // POST /api/production-import/orders/:id/cut — mark a line as cut (zero out final)
@@ -554,7 +554,7 @@ router.post('/orders/:id/cut', (req, res) => {
         `).run(newFinal, newFinal - order.TotQty, reason || 'Cut', newFinal === 0 ? 'cut' : 'partial-cut', req.params.id, plantId);
 
         res.json({ success: true, finalQty: newFinal });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // DELETE /api/production-import/orders/:id — remove a manual-add line entirely
@@ -566,7 +566,7 @@ router.delete('/orders/:id', (req, res) => {
         if (order.Status !== 'manual-add') return res.status(400).json({ error: 'Only manually-added lines can be deleted' });
         logisticsDb.prepare('DELETE FROM ProductionOrders WHERE ID=? AND PlantID=?').run(req.params.id, plantId);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // POST /api/production-import/orders/:id/restore — un-cut a line
@@ -581,7 +581,7 @@ router.post('/orders/:id/restore', (req, res) => {
             WHERE ID=? AND PlantID=?
         `).run(finalQty, req.params.id, plantId);
         res.json({ success: true, finalQty });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // ── Pad auto-apply — apply saved day-of-week pads to all orders for a date ───
@@ -618,7 +618,7 @@ router.post('/apply-pads', (req, res) => {
         });
         tx();
         res.json({ success: true, updated, date, dayOfWeek: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dow] });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // ── Pad Manager — upsert + delete ────────────────────────────────────────────
@@ -626,7 +626,7 @@ router.delete('/pads/:id', (req, res) => {
     try {
         logisticsDb.prepare('DELETE FROM ProductionPads WHERE ID=? AND PlantID=?').run(req.params.id, getPlantId(req));
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // GET /api/production-import/pads/suggest?date=YYYY-MM-DD — suggest pads from rolling history
@@ -651,7 +651,7 @@ router.get('/pads/suggest', (req, res) => {
         })).filter(s => s.suggestedPad > 0);
 
         res.json(suggestions);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 module.exports = router;

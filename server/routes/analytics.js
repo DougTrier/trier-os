@@ -52,6 +52,17 @@ const Cache = require('../cache');
 
 const narrativeCache = new Cache(15); // 15 minute cache for expensive sweep
 
+// SEC-05: Sanitize plant identifiers from query params and headers.
+// Allows alphanumeric, underscores, hyphens, and spaces (plant names like "Plant 2").
+// Returns null for anything that looks like a traversal or injection attempt.
+function sanitizePlantId(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    const s = raw.trim();
+    // Allow all_sites and Corporate_Office as special sentinel values
+    if (s === 'all_sites' || s === 'Corporate_Office') return s;
+    return /^[a-zA-Z0-9 _-]{1,64}$/.test(s) ? s : null;
+}
+
 // ── GET /api/analytics/narrative ──────────────────────────────────────────
 // Manager-only asynchronous query sweeping SQLite databases.
 // When x-plant-id is set to a specific plant, only that plant's data is returned.
@@ -223,7 +234,7 @@ router.get('/narrative', (req, res) => {
 
     } catch (err) {
         console.error('Failed to compile narrative analytics:', err.message, err.stack);
-        res.status(500).json({ error: 'Failed to crawl enterprise data', details: err.message });
+        res.status(500).json({ error: 'Failed to crawl enterprise data' });
     }
 });
 
@@ -254,7 +265,7 @@ router.post('/pay-scales', (req, res) => {
             }
         })();
         res.json({ success: true });
-    } catch (err) { res.status(500).json({error:err.message}); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // ── GET /api/analytics/audit ──────────────────────────────────────────────
@@ -789,7 +800,7 @@ router.get('/budget-forecast', (req, res) => {
         });
     } catch (err) {
         console.error('[Budget Forecast] Error:', err.message);
-        res.status(500).json({ error: 'Forecast calculation failed', details: err.message });
+        res.status(500).json({ error: 'Forecast calculation failed' });
     }
 });
 
@@ -995,7 +1006,12 @@ router.get('/plant-weather', (req, res) => {
 // Mean Time To Repair (average ActDown or ActualHours on corrective WOs).
 const mtbfCache = new Cache(5);
 router.get('/mtbf-dashboard', (req, res) => {
-    const plantFilter = req.query.plantId || req.headers['x-plant-id'];
+    // SEC-05: sanitize both param sources before using in queries or cache key
+    const rawPlant  = req.query.plantId || req.headers['x-plant-id'];
+    const plantFilter = sanitizePlantId(rawPlant);
+    if (rawPlant && !plantFilter) {
+        return res.status(400).json({ error: 'Invalid plant identifier' });
+    }
     const cacheKey = `mtbf_${plantFilter || 'enterprise'}`;
     const cached = mtbfCache.get(cacheKey);
     if (cached) return res.json(cached);

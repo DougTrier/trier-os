@@ -39,7 +39,6 @@ import ActionBar from './ActionBar.jsx';
 // ── Shared helpers ────────────────────────────────────────────────────────────
 const authHeaders = (plantId) => ({
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     'x-plant-id': plantId || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
 });
 const API = (path, plantId, opts = {}) => fetch(`/api${path}`, { headers: authHeaders(plantId), ...opts });

@@ -66,7 +66,6 @@ export default function TribalKnowledge({ entityType, entityId, entityLabel, com
     const currentUser = localStorage.getItem('currentUser') || 'system';
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
     };
 

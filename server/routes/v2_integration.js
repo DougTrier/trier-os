@@ -468,7 +468,7 @@ router.get('/reports/:id', (req, res) => {
         });
     } catch (err) {
         console.error(`[V2] Report execution failed: ${req.params.id}`, err.message);
-        res.status(500).json({ error: 'Failed to run report', details: err.message });
+        res.status(500).json({ error: 'Failed to run report' });
     }
 });
 
@@ -524,7 +524,7 @@ router.post('/reports/dynamic/:id', (req, res) => {
         });
     } catch (err) {
         console.error(`[V2] Dynamic report execution failed: ${req.params.id}`, err.message);
-        res.status(500).json({ error: 'Failed to run dynamic report', details: err.message });
+        res.status(500).json({ error: 'Failed to run dynamic report' });
     }
 });
 
@@ -548,7 +548,7 @@ router.patch('/reports/update', (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error(`[V2] Row update failed for table ${req.body.table}:`, err.message);
-        res.status(500).json({ error: 'Update failed', details: err.message });
+        res.status(500).json({ error: 'Update failed' });
     }
 });
 
@@ -630,10 +630,7 @@ router.post('/work-orders/:id/close', async (req, res) => {
         });
     } catch (err) {
         console.error('[V2] Close-out failure:', err);
-        res.status(500).json({ 
-            error: 'Failed to close work order', 
-            details: err.message
-        });
+        res.status(500).json({ error: 'Failed to close work order' });
     }
 });
 
@@ -652,7 +649,7 @@ router.get('/lookups/part-classes', async (req, res) => {
         res.json(data);
     } catch (err) {
         console.error('[V2] PartClasses fetch error:', err.message);
-        res.status(500).json({ error: err.message, table: 'PartClasses/PartClass' });
+        res.status(500).json({ error: 'An internal server error occurred', table: 'PartClasses/PartClass' });
     }
 });
 
@@ -670,7 +667,7 @@ router.get('/lookups/part-order-rules', async (req, res) => {
         res.json(data);
     } catch (err) {
         console.error('[V2] OrdQty fetch error:', err.message);
-        res.status(500).json({ error: err.message, table: 'PartOrderRules/OrdQty' });
+        res.status(500).json({ error: 'An internal server error occurred', table: 'PartOrderRules/OrdQty' });
     }
 });
 
@@ -687,7 +684,7 @@ router.get('/lookups/adj-types', async (req, res) => {
         }
         res.json(data);
     } catch (err) {
-        res.status(500).json({ error: err.message, table: 'AdjustmentTypes/Reason' });
+        res.status(500).json({ error: 'An internal server error occurred', table: 'AdjustmentTypes/Reason' });
     }
 });
 
@@ -721,7 +718,7 @@ router.get('/reports/lookup/:table', async (req, res) => {
         }
         res.json(data);
     } catch (err) {
-        res.status(500).json({ error: 'Lookup failed', details: err.message });
+        res.status(500).json({ error: 'Lookup failed' });
     }
 });
 
@@ -829,7 +826,7 @@ router.get('/network/sync/:partId', async (req, res) => {
         });
     } catch (err) {
         console.error('[Network Sync] Error:', err);
-        res.status(500).json({ error: 'Network sync failure', details: err.message });
+        res.status(500).json({ error: 'Network sync failure' });
     }
 });
 

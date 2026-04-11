@@ -8,15 +8,15 @@
  * unless explicitly listed in the auth middleware's public allowlist.
  */
 
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright ï¿½ 2026 Trier OS. All Rights Reserved.
 
 /**
- * © 2026 Doug Trier. All Rights Reserved.
+ * ï¿½ 2026 Doug Trier. All Rights Reserved.
  * Trier OS is proprietary software. Unauthorized copying,
  * distribution, or reverse engineering is strictly prohibited.
  */
 /**
- * Trier OS — Ultra-Wideband (UWB) Indoor Positioning Routes
+ * Trier OS ï¿½ Ultra-Wideband (UWB) Indoor Positioning Routes
  * ==========================================================
  * Full REST API for UWB tag registry, live position ingestion,
  * exclusion zone management, safety alerting, coordinate calibration,
@@ -142,7 +142,7 @@ router.get('/tags', (req, res) => {
         sql += ' ORDER BY ID ASC';
         res.json({ tags: logisticsDb.prepare(sql).all(...params) });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch UWB tags: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch UWB tags: ' });
     }
 });
 
@@ -167,7 +167,7 @@ router.post('/tags', (req, res) => {
         try { logAudit('UWB_TAG_CREATED', assignedTo, plantId, { tagId, entityType, entityId }); } catch { /**/ }
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create UWB tag: ' + err.message });
+        res.status(500).json({ error: 'Failed to create UWB tag: ' });
     }
 });
 
@@ -190,7 +190,7 @@ router.put('/tags/:tagId', (req, res) => {
         try { logAudit('UWB_TAG_UPDATED', assignedTo, plantId, { tagId }); } catch { /**/ }
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update UWB tag: ' + err.message });
+        res.status(500).json({ error: 'Failed to update UWB tag: ' });
     }
 });
 
@@ -203,7 +203,7 @@ router.delete('/tags/:tagId', (req, res) => {
         try { logAudit('UWB_TAG_DEACTIVATED', null, existing.PlantID, { tagId }); } catch { /**/ }
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to deactivate UWB tag: ' + err.message });
+        res.status(500).json({ error: 'Failed to deactivate UWB tag: ' });
     }
 });
 
@@ -217,7 +217,7 @@ router.get('/tags/:tagId', (req, res) => {
         ).get(tagId);
         res.json({ ...tag, latestPosition: latest || null });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch UWB tag: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch UWB tag: ' });
     }
 });
 
@@ -243,7 +243,7 @@ router.get('/live', (req, res) => {
         sql += ' ORDER BY p.Ts DESC';
         res.json(logisticsDb.prepare(sql).all(...params));
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch live positions: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch live positions: ' });
     }
 });
 
@@ -254,7 +254,7 @@ router.get('/history/:tagId', (req, res) => {
         ).all(req.params.tagId);
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch position history: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch position history: ' });
     }
 });
 
@@ -273,7 +273,7 @@ router.post('/position', (req, res) => {
         ).run(tagId);
         res.status(204).end();
     } catch (err) {
-        res.status(500).json({ error: 'Failed to ingest position: ' + err.message });
+        res.status(500).json({ error: 'Failed to ingest position: ' });
     }
 });
 
@@ -284,7 +284,7 @@ router.delete('/positions', (req, res) => {
         ).run();
         res.json({ success: true, deleted: result.changes });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to purge positions: ' + err.message });
+        res.status(500).json({ error: 'Failed to purge positions: ' });
     }
 });
 
@@ -300,7 +300,7 @@ router.get('/zones', (req, res) => {
         sql += ' ORDER BY ID ASC';
         res.json({ zones: logisticsDb.prepare(sql).all(...params) });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch exclusion zones: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch exclusion zones: ' });
     }
 });
 
@@ -313,7 +313,7 @@ router.post('/zones', (req, res) => {
         ).run(plantId, floorId || null, label || null, typeof polygon === 'string' ? polygon : JSON.stringify(polygon), assetId || null, activeWhenLotoed ? 1 : 0);
         res.json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create exclusion zone: ' + err.message });
+        res.status(500).json({ error: 'Failed to create exclusion zone: ' });
     }
 });
 
@@ -332,7 +332,7 @@ router.put('/zones/:id', (req, res) => {
         `).run(label ?? null, polygonStr, assetId ?? null, activeWhenLotoed != null ? (activeWhenLotoed ? 1 : 0) : null, active != null ? (active ? 1 : 0) : null, req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update exclusion zone: ' + err.message });
+        res.status(500).json({ error: 'Failed to update exclusion zone: ' });
     }
 });
 
@@ -341,7 +341,7 @@ router.delete('/zones/:id', (req, res) => {
         logisticsDb.prepare('DELETE FROM uwb_exclusion_zones WHERE ID = ?').run(req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to delete exclusion zone: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete exclusion zone: ' });
     }
 });
 
@@ -352,7 +352,7 @@ router.post('/zones/:id/acknowledge', (req, res) => {
         ).run(req.params.id);
         res.json({ success: true, acknowledged: result.changes });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to acknowledge zone alerts: ' + err.message });
+        res.status(500).json({ error: 'Failed to acknowledge zone alerts: ' });
     }
 });
 
@@ -368,7 +368,7 @@ router.get('/alerts', (req, res) => {
         sql += ' ORDER BY Ts DESC LIMIT 500';
         res.json({ alerts: logisticsDb.prepare(sql).all(...params) });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch safety alerts: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch safety alerts: ' });
     }
 });
 
@@ -381,7 +381,7 @@ router.post('/alerts', (req, res) => {
         ).run(tagId, zoneId ?? null, alertType, message || null, plantId || null);
         res.json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to insert safety alert: ' + err.message });
+        res.status(500).json({ error: 'Failed to insert safety alert: ' });
     }
 });
 
@@ -393,7 +393,7 @@ const _ackAlert = (req, res) => {
         if (!result.changes) return res.status(404).json({ error: 'Alert not found' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to acknowledge alert: ' + err.message });
+        res.status(500).json({ error: 'Failed to acknowledge alert: ' });
     }
 };
 router.put('/alerts/:id/acknowledge', _ackAlert);
@@ -404,10 +404,10 @@ router.post('/alerts/:id/acknowledge', _ackAlert);
 router.get('/calibration/:floorId', (req, res) => {
     try {
         const row = logisticsDb.prepare('SELECT * FROM uwb_calibration WHERE FloorID = ?').get(req.params.floorId);
-        // Return defaults when no calibration has been saved yet — 404 would be misleading
+        // Return defaults when no calibration has been saved yet ï¿½ 404 would be misleading
         res.json(row || { FloorID: req.params.floorId, OriginX: 0, OriginY: 0, ScaleX: 100, ScaleY: 100 });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch calibration: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch calibration: ' });
     }
 });
 
@@ -428,7 +428,7 @@ router.put('/calibration/:floorId', (req, res) => {
         `).run(plantId || null, floorId, originX ?? 0, originY ?? 0, scaleX ?? 100, scaleY ?? 100);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to save calibration: ' + err.message });
+        res.status(500).json({ error: 'Failed to save calibration: ' });
     }
 });
 
@@ -442,7 +442,7 @@ router.post('/checkin', (req, res) => {
         loneWorkerCheckins.set(tagId, now);
         res.json({ success: true, tagId, checkedInAt: now });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to record check-in: ' + err.message });
+        res.status(500).json({ error: 'Failed to record check-in: ' });
     }
 });
 

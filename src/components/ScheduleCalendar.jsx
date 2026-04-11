@@ -107,7 +107,6 @@ export default function ScheduleCalendar({ onNavigateToWO }) {
     const fetchEvents = async () => {
         setLoading(true);
         const headers = {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
         };
         try {
@@ -211,7 +210,6 @@ export default function ScheduleCalendar({ onNavigateToWO }) {
             if (evt.date === targetDate) return; // same day, no-op
 
             const headers = {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
                 'Content-Type': 'application/json'
             };
@@ -262,7 +260,6 @@ export default function ScheduleCalendar({ onNavigateToWO }) {
                     await fetch(`/api/work-orders/${deleteId}`, {
                         method: 'PUT',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                             'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
                             'Content-Type': 'application/json'
                         },
@@ -289,7 +286,6 @@ export default function ScheduleCalendar({ onNavigateToWO }) {
             await fetch(`/api/calendar/reminders/${reminder.id}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
                     'Content-Type': 'application/json'
                 },
@@ -790,7 +786,6 @@ function CalendarQuickActions({ date, onClose, onRefresh }) {
 
     const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
         'Content-Type': 'application/json'
     };

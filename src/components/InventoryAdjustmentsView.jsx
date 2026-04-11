@@ -471,7 +471,7 @@ function SmartScannerModal({ onClose }) {
         try {
             const adjRes = await fetch(`/api/parts/${encodeURIComponent(part.ID)}/adjust`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
                 body: JSON.stringify({
                     qty: parseFloat(qty),
                     type: type,
@@ -515,14 +515,14 @@ function SmartScannerModal({ onClose }) {
             // 2. Fetch the newly scanned part
             try {
                 const searchRes = await fetch(`/api/parts?search=${encodeURIComponent(code)}&field=VendorPartNumber&match=exact`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' } 
+                    headers: { 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' } 
                 });
                 let parts = [];
                 if (searchRes.ok) parts = await searchRes.json();
                 
                 if (!parts || parts.length === 0) {
                     const broadRes = await fetch(`/api/parts/${encodeURIComponent(code)}`, {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' }
+                        headers: { 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' }
                     });
                     if (broadRes.ok) parts = [await broadRes.json()];
                 }

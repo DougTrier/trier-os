@@ -257,7 +257,7 @@ router.get('/', (req, res) => {
         res.json(buildScore(plantId || null));
     } catch (err) {
         console.error('[RISK-SCORING] GET /:', err);
-        res.status(500).json({ error: 'Failed to calculate risk score: ' + err.message });
+        res.status(500).json({ error: 'Failed to calculate risk score: ' });
     }
 });
 
@@ -285,7 +285,7 @@ router.get('/:plantId', (req, res) => {
         res.json(buildScore(req.params.plantId));
     } catch (err) {
         console.error('[RISK-SCORING] GET /:plantId:', err);
-        res.status(500).json({ error: 'Failed to calculate risk score: ' + err.message });
+        res.status(500).json({ error: 'Failed to calculate risk score: ' });
     }
 });
 
@@ -319,7 +319,7 @@ router.put('/:plantId', (req, res) => {
         res.json({ success: true, score: finalScore, grade, status });
     } catch (err) {
         console.error('[RISK-SCORING] PUT /:plantId:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 

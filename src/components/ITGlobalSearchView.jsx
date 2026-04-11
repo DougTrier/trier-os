@@ -31,7 +31,7 @@ import { statusClass } from '../utils/formatDate';
 import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path) => fetch(`/api/it${path}`, {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
 });
 
 const Badge = ({ color, children }) => (

@@ -204,7 +204,7 @@ router.get('/files', (req, res) => {
         });
         res.json({ files });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to list files: ' + err.message });
+        res.status(500).json({ error: 'Failed to list files: ' });
     }
 });
 
@@ -222,7 +222,7 @@ router.get('/file', (req, res) => {
         const content = fs.readFileSync(abs, 'utf8');
         res.json({ content, path: relPath, size: stats.size });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to read file: ' + err.message });
+        res.status(500).json({ error: 'Failed to read file: ' });
     }
 });
 
@@ -249,7 +249,7 @@ router.post('/file', (req, res) => {
         logAudit(req.user.Username, 'STUDIO_FILE_WRITE', null, { path: relPath, bytes: byteSize }, 'INFO', req.ip);
         res.json({ success: true, message: 'File saved' });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to write file: ' + err.message });
+        res.status(500).json({ error: 'Failed to write file: ' });
     }
 });
 
@@ -272,7 +272,7 @@ router.get('/git/status', (req, res) => {
         // Return a graceful degraded response instead of a hard 500 so the
         // studio still opens — the branch badge simply won't appear.
         console.error('[Live Studio] git/status failed:', err.message);
-        res.json({ branch: 'unknown', isDirty: false, changedFiles: 0, lastStableTag: null, warning: err.message });
+        res.json({ branch: 'unknown', isDirty: false, changedFiles: 0, lastStableTag: null, warning: 'Unavailable' });
     }
 });
 
@@ -296,7 +296,7 @@ router.post('/git/branch', (req, res) => {
             res.json({ success: true, action: 'created', branch: branchName });
         }
     } catch (err) {
-        res.status(500).json({ error: 'Branch operation failed: ' + err.message });
+        res.status(500).json({ error: 'Branch operation failed: ' });
     }
 });
 
@@ -317,7 +317,7 @@ router.post('/git/commit', (req, res) => {
         logAudit(req.user.Username, 'STUDIO_COMMIT', null, { message: message.trim(), hash }, 'INFO', req.ip);
         res.json({ success: true, hash, message: message.trim() });
     } catch (err) {
-        res.status(500).json({ error: 'Commit failed: ' + err.message });
+        res.status(500).json({ error: 'Commit failed: ' });
     }
 });
 
@@ -497,7 +497,7 @@ router.post('/deploy/revert', (req, res) => {
             ).run(ledgerEntry.lastInsertRowid);
         });
     } catch (err) {
-        res.status(500).json({ error: 'Revert failed: ' + err.message });
+        res.status(500).json({ error: 'Revert failed: ' });
     }
 });
 
@@ -508,7 +508,7 @@ router.get('/ledger', (req, res) => {
         const entries = logDb.prepare('SELECT * FROM StudioDeployLedger ORDER BY ID DESC LIMIT 50').all();
         res.json({ entries });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch ledger: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch ledger: ' });
     }
 });
 
@@ -537,7 +537,7 @@ router.get('/ledger/search', (req, res) => {
         const entries = logDb.prepare(sql).all(...params);
         res.json({ entries, count: entries.length });
     } catch (err) {
-        res.status(500).json({ error: 'Ledger search failed: ' + err.message });
+        res.status(500).json({ error: 'Ledger search failed: ' });
     }
 });
 
@@ -660,7 +660,7 @@ router.post('/analyze/friction', (req, res) => {
             assumptions: { dailyUsage, HOURLY_WAGE, WORKING_DAYS, PLANT_COUNT },
         });
     } catch (err) {
-        res.status(500).json({ error: 'Friction analysis failed: ' + err.message });
+        res.status(500).json({ error: 'Friction analysis failed: ' });
     }
 });
 
@@ -767,7 +767,7 @@ router.post('/analyze/blast-radius', (req, res) => {
         logAudit(req.user.Username, 'STUDIO_BLAST_RADIUS', null, { changedCount: changedComponents.length, routeCount: affectedRoutes.length }, 'INFO', req.ip);
         res.json({ changedComponents, affectedRoutes, importingComponents, routeMap, summary });
     } catch (err) {
-        res.status(500).json({ error: 'Blast-radius analysis failed: ' + err.message });
+        res.status(500).json({ error: 'Blast-radius analysis failed: ' });
     }
 });
 
@@ -831,7 +831,7 @@ router.post('/simulation/create', (req, res) => {
         res.json({ success: true, simId, plantId, cutoffDate, message: 'Simulation DB cloned and stripped to cutoff date' });
     } catch (err) {
         try { fs.unlinkSync(simPath); } catch {}
-        res.status(500).json({ error: 'Simulation create failed: ' + err.message });
+        res.status(500).json({ error: 'Simulation create failed: ' });
     }
 });
 
@@ -881,7 +881,7 @@ router.get('/simulation/:simId/compare', (req, res) => {
 
         res.json({ simId: req.params.simId, plantId: session.plantId, cutoffDate: session.cutoffDate, live, sim, deltas });
     } catch (err) {
-        res.status(500).json({ error: 'Comparison failed: ' + err.message });
+        res.status(500).json({ error: 'Comparison failed: ' });
     }
 });
 
@@ -903,7 +903,7 @@ router.get('/plants', (req, res) => {
         const plants    = JSON.parse(fs.readFileSync(plantsFile, 'utf8'));
         res.json({ plants: plants.map(p => ({ id: p.id, label: p.label })) });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to load plants: ' + err.message });
+        res.status(500).json({ error: 'Failed to load plants: ' });
     }
 });
 

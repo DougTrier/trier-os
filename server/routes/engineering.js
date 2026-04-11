@@ -518,7 +518,7 @@ router.post('/repair-replace', (req, res) => {
         const r = logisticsDb.prepare('INSERT INTO repair_replace_analyses (AssetID, Title, CurrentAge, UsefulLife, ReplacementCost, AnnualRepairCost, RepairCostTrend, DowntimeCostPerHour, AvgDowntimeHours, BreakEvenYear, Recommendation, AnalyzedBy, PlantID, Notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(assetId || null, title, age, life, rc, arc, trend, dtCost, dtHrs, breakEvenYear, recommendation, analyzedBy || null, plantId || null, notes || null);
 
         res.status(201).json({ success: true, id: r.lastInsertRowid, breakEvenYear, recommendation });
-    } catch (err) { res.status(500).json({ error: 'Failed to run analysis: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to run analysis: ' }); }
 });
 
 router.get('/repair-replace', (req, res) => {

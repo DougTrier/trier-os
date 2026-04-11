@@ -19,9 +19,10 @@
  *   Enrollment       — New users submit name, plant, role request → admin approval queue
  *   Password Reset   — Admin-initiated reset link or invite code entry
  *
- * TOKEN STORAGE: JWT stored in localStorage as 'authToken'.
- *   Plant selection stored as 'selectedPlantId'.
- *   Both cleared on logout or token expiry (401 response).
+ * TOKEN STORAGE: Auth JWT is stored in an httpOnly cookie set by the server on
+ *   successful login — invisible to JavaScript, never touches localStorage.
+ *   Plant selection stored as 'selectedPlantId' in localStorage.
+ *   Cookie cleared server-side on logout (POST /api/auth/logout) or token expiry (401).
  *
  * BRANDING: Logo and primary color loaded from /api/branding before the
  *   login form renders, so each plant can show its own identity on the login screen.
@@ -29,7 +30,7 @@
  * @param {Function} onLoginSuccess — Callback fired after successful auth; receives user object
  */
 import React, { useState, useEffect } from 'react';
-import { Lock, User, UserPlus, X, MapPin, KeyRound, CheckCircle2, Send, Briefcase, Mail, Phone, Shield, Cpu } from 'lucide-react';
+import { Lock, User, UserPlus, X, MapPin, KeyRound, CheckCircle2, Send, Briefcase, Mail, Phone, Shield, Cpu, Github, Star } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
 const ROLE_OPTIONS = [
@@ -138,9 +139,8 @@ export default function LoginView({ onLoginSuccess }) {
             }
 
             if (res.ok && data.success) {
-                localStorage.setItem('authToken', data.token);
                 localStorage.setItem('userRole', data.role);
-                localStorage.setItem('currentUser', username);
+                localStorage.setItem('currentUser', data.username || username);
                 localStorage.setItem('PF_USER_IS_CREATOR', 'false');
                 localStorage.setItem('canAccessDashboard', data.canAccessDashboard ? 'true' : 'false');
                 localStorage.setItem('globalAccess', data.globalAccess ? 'true' : 'false');
@@ -175,9 +175,8 @@ export default function LoginView({ onLoginSuccess }) {
 
             const data = await res.json();
             if (res.ok && data.success) {
-                localStorage.setItem('authToken', data.token);
                 localStorage.setItem('userRole', data.role);
-                localStorage.setItem('currentUser', username);
+                localStorage.setItem('currentUser', data.username || username);
                 localStorage.setItem('PF_USER_IS_CREATOR', 'false');
                 localStorage.setItem('canAccessDashboard', data.canAccessDashboard ? 'true' : 'false');
                 localStorage.setItem('globalAccess', data.globalAccess ? 'true' : 'false');
@@ -302,7 +301,7 @@ export default function LoginView({ onLoginSuccess }) {
                 display: 'flex', flexDirection: 'column', gap: '20px'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                    <img src="/assets/TrierLogo.png" alt="Trier OS" style={{ height: '240px', display: 'block', margin: '0 auto 10px auto', position: 'relative', left: '-30px' }} />
+                    <img src="/assets/TrierLogo.png" alt="Trier OS" style={{ height: '240px', display: 'block', margin: '0 auto 10px auto' }} />
                     <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>{t('login.trierOS')}</h1>
                     <p style={{ margin: '5px 0 0 0', color: 'var(--text-muted)' }}>{t('login.secureAccessPortal')}</p>
                 </div>
@@ -411,6 +410,47 @@ export default function LoginView({ onLoginSuccess }) {
                     </div>
                 </form>
                 )}
+
+                {/* Open Source footer */}
+                <div style={{
+                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                    paddingTop: '18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    <a
+                        href="https://github.com/DougTrier/trier-os"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '7px',
+                            color: '#cbd5e1', textDecoration: 'none', fontSize: '0.875rem',
+                            fontWeight: 500, transition: 'color 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#f1f5f9'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
+                    >
+                        <Github size={15} />
+                        github.com/DougTrier/trier-os
+                    </a>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', textAlign: 'center', lineHeight: 1.6 }}>
+                        If this brings you value,{' '}
+                        <a
+                            href="https://github.com/DougTrier/trier-os"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', verticalAlign: 'middle' }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#fde68a'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#fbbf24'}
+                        >
+                            <Star size={13} fill="#fbbf24" /> star the repo
+                        </a>
+                        {' '}— it helps fund development.
+                    </p>
+                </div>
+
             </div>
 
             {/* 2FA Verification Modal (TOTP / Authenticator App) */}

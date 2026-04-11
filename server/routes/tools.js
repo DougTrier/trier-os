@@ -145,7 +145,7 @@ router.post('/', (req, res) => {
         if (existing) return res.status(409).json({ error: `Tool ${toolId} already exists` });
         const r = logisticsDb.prepare('INSERT INTO tools_inventory (ToolID, Description, Category, SerialNumber, Manufacturer, Location, PlantID, Condition, PurchaseDate, PurchaseCost, CalibrationDue, Notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(toolId, description, category || 'General', serialNumber || null, manufacturer || null, location || null, plantId || null, condition || 'Good', purchaseDate || null, purchaseCost || null, calibrationDue || null, notes || null);
         res.status(201).json({ success: true, id: r.lastInsertRowid });
-    } catch (err) { res.status(500).json({ error: 'Failed to add tool: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to add tool: ' }); }
 });
 
 router.put('/:id', (req, res) => {

@@ -42,7 +42,7 @@ import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path, opts = {}) => fetch(`/api/creator${path}`, {
     ...opts,
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', ...opts.headers },
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
 });
 
 export default function CreatorConsole({ isOpen, onClose }) {

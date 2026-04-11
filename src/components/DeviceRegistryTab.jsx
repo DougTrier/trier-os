@@ -44,7 +44,6 @@ import {
 const API = (path, opts = {}) => fetch(`/api/devices${path}`, {
     ...opts,
     headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Plant_1',
         ...opts.headers,

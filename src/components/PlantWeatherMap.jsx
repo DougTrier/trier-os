@@ -45,7 +45,6 @@ export default function PlantWeatherMap({ setSelectedPlant, setActiveTab }) {
     const [refreshing, setRefreshing] = useState(false);
 
     const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
     };
 

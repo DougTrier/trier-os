@@ -221,7 +221,7 @@ router.post('/ai-test', async (req, res) => {
         const result = await aiService.testConnection();
         res.json(result);
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: 'An internal server error occurred' });
     }
 });
 
@@ -349,7 +349,7 @@ router.post('/clone', (req, res) => {
         res.json({ success: true, message: `Procedure "${procedureId}" successfully implemented to ${targetPlantId}` });
     } catch (err) {
         console.error('Cloning error:', err);
-        res.status(500).json({ error: 'Failed to clone procedure', details: err.message });
+        res.status(500).json({ error: 'Failed to clone procedure' });
     }
 });
 
@@ -400,7 +400,7 @@ router.post('/', (req, res) => {
         }
     } catch (err) {
         console.error('Error provisioning procedure:', err.message);
-        res.status(500).json({ error: 'Failed to create procedure: ' + err.message });
+        res.status(500).json({ error: 'Failed to create procedure: ' });
     }
 });
 
@@ -489,7 +489,7 @@ router.post('/ai-generate', async (req, res) => {
         res.json({ success: true, sop: result });
     } catch (err) {
         console.error('[AI Generate] Error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -598,7 +598,7 @@ router.post('/extract-text', pdfUpload.single('file'), async (req, res) => {
         // Cleanup on error
         if (req.file?.path) try { fs.unlinkSync(req.file.path); } catch (e) { /* Intentional: error-path temp cleanup */ }
         console.error('Text extraction error:', err);
-        res.status(500).json({ error: 'Failed to extract text: ' + err.message });
+        res.status(500).json({ error: 'Failed to extract text: ' });
     }
 });
 

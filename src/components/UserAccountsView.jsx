@@ -62,7 +62,7 @@ export default function UserAccountsView() {
     const fetchUsers = () => {
         setLoading(true);
         fetch('/api/auth/users/list', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: {  }
         })
             .then(res => res.json())
             .then(data => {
@@ -126,8 +126,7 @@ export default function UserAccountsView() {
             const res = await fetch('/api/auth/users/update-access', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     targetUsername: editingUser.Username,
@@ -155,8 +154,7 @@ export default function UserAccountsView() {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ targetUsername: username })
             });
@@ -184,8 +182,7 @@ export default function UserAccountsView() {
             const res = await fetch('/api/auth/users/delete', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ targetUsername: user.Username })
             });
@@ -639,8 +636,7 @@ function AddUserPanel({ plants, onCreated, onError, onCancel }) {
             const res = await fetch('/api/auth/users/create', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(form)
             });

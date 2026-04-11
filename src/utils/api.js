@@ -40,7 +40,6 @@
 
 function getHeaders(extra = {}) {
     return {
-        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
         'Content-Type': 'application/json',
         ...extra,
@@ -53,6 +52,7 @@ async function request(path, options = {}) {
     try {
         res = await fetch(url, {
             ...options,
+            credentials: 'include',
             headers: getHeaders(options.headers),
         });
     } catch (networkErr) {
@@ -93,7 +93,6 @@ export const api = {
         method: 'POST',
         body: formData,
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
             'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
             // NO Content-Type — browser must set the multipart boundary automatically
         },

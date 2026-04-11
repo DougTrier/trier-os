@@ -76,7 +76,7 @@ router.get('/', (req, res) => {
         ).all(plantId);
         res.json(devices);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to list devices', detail: err.message });
+        res.status(500).json({ error: 'Failed to list devices'});
     }
 });
 
@@ -96,7 +96,7 @@ router.get('/:id', (req, res) => {
 
         res.json({ ...device, metricMap });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch device', detail: err.message });
+        res.status(500).json({ error: 'Failed to fetch device'});
     }
 });
 
@@ -116,7 +116,7 @@ router.post('/lookup-serial', (req, res) => {
 
         res.json({ found: existing.length > 0, matches: existing });
     } catch (err) {
-        res.status(500).json({ error: 'Lookup failed', detail: err.message });
+        res.status(500).json({ error: 'Lookup failed'});
     }
 });
 
@@ -131,7 +131,7 @@ router.post('/arp-probe', async (req, res) => {
         try {
             normalizedMac = normalizeMac(mac);
         } catch (err) {
-            return res.status(400).json({ error: err.message });
+            return res.status(400).json({ error: 'An internal server error occurred' });
         }
 
         // Derive subnetHint from any hint provided, or from the server's own
@@ -149,7 +149,7 @@ router.post('/arp-probe', async (req, res) => {
             error: result.error || null,
         });
     } catch (err) {
-        res.status(500).json({ error: 'ARP probe failed', detail: err.message });
+        res.status(500).json({ error: 'ARP probe failed'});
     }
 });
 
@@ -182,7 +182,7 @@ router.post('/modbus-probe', async (req, res) => {
             error: probeError || null,
         });
     } catch (err) {
-        res.status(500).json({ error: 'Modbus probe failed', detail: err.message });
+        res.status(500).json({ error: 'Modbus probe failed'});
     }
 });
 
@@ -268,7 +268,7 @@ router.post('/', (req, res) => {
 
         res.status(201).json({ ok: true, device, metricMapCount: TAG_DEFINITIONS.length });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create device', detail: err.message });
+        res.status(500).json({ error: 'Failed to create device'});
     }
 });
 
@@ -325,7 +325,7 @@ router.put('/:id', (req, res) => {
 
         res.json({ ok: true, device: updated });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update device', detail: err.message });
+        res.status(500).json({ error: 'Failed to update device'});
     }
 });
 
@@ -352,7 +352,7 @@ router.delete('/:id', (req, res) => {
 
         res.json({ ok: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to delete device', detail: err.message });
+        res.status(500).json({ error: 'Failed to delete device'});
     }
 });
 
@@ -386,7 +386,7 @@ router.post('/:id/start-worker', (req, res) => {
 
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to start worker', detail: err.message });
+        res.status(500).json({ error: 'Failed to start worker'});
     }
 });
 
@@ -407,7 +407,7 @@ router.post('/:id/stop-worker', (req, res) => {
 
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to stop worker', detail: err.message });
+        res.status(500).json({ error: 'Failed to stop worker'});
     }
 });
 

@@ -19,6 +19,10 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [Demo Data](./docs/DEMO_DATA.md) •
   [Quick Facts](./docs/QUICK_FACTS.md) •
   [Docs](./docs/ARCHITECTURE.md)
+
+  ---
+
+  *If this project creates value, please star the repo — it helps unlock funding to continue development.*
 </div>
 
 ---

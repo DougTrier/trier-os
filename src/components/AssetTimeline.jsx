@@ -60,7 +60,6 @@ export default function AssetTimeline({ assetId, onClose }) {
             const plantId = localStorage.getItem('selectedPlantId') || 'Demo_Plant_1';
             const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}/timeline`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': plantId
                 }
             });

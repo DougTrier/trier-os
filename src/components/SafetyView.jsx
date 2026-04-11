@@ -55,9 +55,9 @@ import { statusClass, formatDate } from '../utils/formatDate';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
 
-const API_P = (path, o = {}) => fetch(`/api/safety-permits${path}`, { ...o, headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
-const API_I = (path, o = {}) => fetch(`/api/safety-incidents${path}`, { ...o, headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
-const API_C = (path, o = {}) => fetch(`/api/calibration${path}`, { ...o, headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
+const API_P = (path, o = {}) => fetch(`/api/safety-permits${path}`, { ...o, headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
+const API_I = (path, o = {}) => fetch(`/api/safety-incidents${path}`, { ...o, headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
+const API_C = (path, o = {}) => fetch(`/api/calibration${path}`, { ...o, headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
 
 const Badge = ({ color, children }) => (
     <span style={{ display:'inline-block', padding:'3px 10px', borderRadius:12, fontSize:'0.72rem', fontWeight:600, background:`${color}22`, color, border:`1px solid ${color}44` }}>{children}</span>
@@ -186,7 +186,7 @@ function PermitsTab({ search, plantId }) {
     const [contractors, setContractors] = useState([]);
 
     useEffect(()=>{
-        fetch('/api/contractors', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': localStorage.getItem('selectedPlantId') || '' } })
+        fetch('/api/contractors', { headers: { 'x-plant-id': localStorage.getItem('selectedPlantId') || '' } })
             .then(r=>r.json()).then(d=>setContractors(Array.isArray(d)?d:[])).catch(()=>{});
     },[]);
 

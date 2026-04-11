@@ -188,7 +188,7 @@ router.post('/', upload.single('floorplan'), (req, res) => {
         ).run(plantId, name, imagePath, req.user?.username || 'system', planType || 'facility', floorLevel || '', buildingName || '');
         res.status(201).json({ success: true, id: result.lastInsertRowid, imagePath });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to upload floor plan: ' + err.message });
+        res.status(500).json({ error: 'Failed to upload floor plan: ' });
     }
 });
 
@@ -213,7 +213,7 @@ router.post('/:id/blueprint', upload.single('blueprint'), (req, res) => {
         logisticsDb.prepare('UPDATE FloorPlans SET blueprintPath = ? WHERE id = ?').run(blueprintPath, req.params.id);
         res.json({ success: true, blueprintPath });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to save blueprint: ' + err.message });
+        res.status(500).json({ error: 'Failed to save blueprint: ' });
     }
 });
 
@@ -275,7 +275,7 @@ router.post('/import-url', async (req, res) => {
         logisticsDb.prepare('INSERT INTO FloorPlans (name, imagePath, plantId) VALUES (?, ?, ?)').run(name, '/' + relativePath, plantId);
         res.status(201).json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to import from URL: ' + err.message });
+        res.status(500).json({ error: 'Failed to import from URL: ' });
     }
 });
 
@@ -294,7 +294,7 @@ router.put('/:id', (req, res) => {
         logisticsDb.prepare('UPDATE FloorPlans SET ' + fields.join(', ') + ' WHERE id = ?').run(...values);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update floor plan: ' + err.message });
+        res.status(500).json({ error: 'Failed to update floor plan: ' });
     }
 });
 
@@ -308,7 +308,7 @@ router.get('/:id/versions', (req, res) => {
         ).all(req.params.id);
         res.json(versions);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to get version history: ' + err.message });
+        res.status(500).json({ error: 'Failed to get version history: ' });
     }
 });
 
@@ -320,7 +320,7 @@ router.post('/:id/versions', (req, res) => {
         if (!ver) return res.status(404).json({ error: 'Floor plan not found' });
         res.json({ success: true, versionNumber: ver });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create version: ' + err.message });
+        res.status(500).json({ error: 'Failed to create version: ' });
     }
 });
 
@@ -342,7 +342,7 @@ router.post('/:id/revert/:versionId', (req, res) => {
 
         res.json({ success: true, revertedTo: version.versionNumber });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to revert: ' + err.message });
+        res.status(500).json({ error: 'Failed to revert: ' });
     }
 });
 
@@ -366,7 +366,7 @@ router.post('/:id/reupload', upload.single('floorplan'), (req, res) => {
         logisticsDb.prepare('UPDATE FloorPlans SET imagePath = ? WHERE id = ?').run(imagePath, req.params.id);
         res.json({ success: true, imagePath });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to re-upload: ' + err.message });
+        res.status(500).json({ error: 'Failed to re-upload: ' });
     }
 });
 
@@ -501,7 +501,7 @@ router.post('/:id/annotations', (req, res) => {
         );
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to add annotation: ' + err.message });
+        res.status(500).json({ error: 'Failed to add annotation: ' });
     }
 });
 
@@ -594,7 +594,7 @@ router.post('/:id/zones', (req, res) => {
         );
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create zone: ' + err.message });
+        res.status(500).json({ error: 'Failed to create zone: ' });
     }
 });
 
@@ -669,7 +669,7 @@ router.get('/:id/sensors', (req, res) => {
         ).all(req.params.id);
         res.json(sensors);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to get sensors: ' + err.message });
+        res.status(500).json({ error: 'Failed to get sensors: ' });
     }
 });
 
@@ -691,7 +691,7 @@ router.post('/:id/sensors', (req, res) => {
               scadaEndpoint || '', scadaTag || '', pollIntervalSec || 30, notes || '');
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to add sensor: ' + err.message });
+        res.status(500).json({ error: 'Failed to add sensor: ' });
     }
 });
 
@@ -709,7 +709,7 @@ router.put('/:id/sensors/:sensorId', (req, res) => {
               pollIntervalSec || 30, notes || '', req.params.sensorId);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update sensor: ' + err.message });
+        res.status(500).json({ error: 'Failed to update sensor: ' });
     }
 });
 
@@ -719,7 +719,7 @@ router.delete('/:id/sensors/:sensorId', (req, res) => {
         logisticsDb.prepare('DELETE FROM FloorPlanSensors WHERE id = ?').run(req.params.sensorId);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to delete sensor: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete sensor: ' });
     }
 });
 
@@ -769,7 +769,7 @@ router.get('/:id/sensors/live', async (req, res) => {
         });
         res.json(readings);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to get live data: ' + err.message });
+        res.status(500).json({ error: 'Failed to get live data: ' });
     }
 });
 
@@ -823,7 +823,7 @@ router.get('/:id/lidar-source', (req, res) => {
         res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
         res.sendFile(filePath);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to serve LiDAR file: ' + err.message });
+        res.status(500).json({ error: 'Failed to serve LiDAR file: ' });
     }
 });
 

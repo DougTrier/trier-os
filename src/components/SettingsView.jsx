@@ -73,7 +73,6 @@ function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': targetPlantId || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
                     'x-user-role': userRole,
                     'x-is-creator': localStorage.getItem('PF_USER_IS_CREATOR')
@@ -196,10 +195,7 @@ function DesktopDownloadSection({ platform }) {
     const [downloading, setDownloading] = React.useState(false);
 
     React.useEffect(() => {
-        const token = localStorage.getItem('token');
-        fetch('/api/desktop/status', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        fetch('/api/desktop/status')
             .then(r => r.json())
             .then(data => { setStatus(data); setLoading(false); })
             .catch(() => { setStatus({ available: false }); setLoading(false); });
@@ -530,8 +526,7 @@ function NetworkConfigPanel() {
             const res = await fetch('/api/network-info/override', {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ address: overrideAddr.trim() })
             });
@@ -556,7 +551,7 @@ function NetworkConfigPanel() {
         try {
             const res = await fetch('/api/network-config/static-ip', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ interface: staticIface, mode: staticMode, ip: staticIp.trim(), subnet: staticSubnet.trim(), gateway: staticGateway.trim(), dns1: staticDns1.trim(), dns2: staticDns2.trim() })
             });
             const data = await res.json();
@@ -578,7 +573,7 @@ function NetworkConfigPanel() {
         try {
             const res = await fetch('/api/network-info/override', {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             if (data.success) {
@@ -954,8 +949,7 @@ function SettingsView({
         setIsExporting(true);
         const isCreator = localStorage.getItem('PF_USER_IS_CREATOR') === 'true';
         const username = localStorage.getItem('currentUser') || ''; 
-        const token = localStorage.getItem('authToken') || '';
-        const url = `/api/database/export?role=${userRole}&is_creator=${isCreator}&plantId=${exportPlant}&username=${encodeURIComponent(username)}&token=${token}`;
+        const url = `/api/database/export?role=${userRole}&is_creator=${isCreator}&plantId=${exportPlant}&username=${encodeURIComponent(username)}`;
         
         try {
             const response = await fetch(url);
@@ -993,8 +987,7 @@ function SettingsView({
             headers: {
                 'x-plant-id': exportPlant,
                 'x-user-role': userRole,
-                'x-is-creator': localStorage.getItem('PF_USER_IS_CREATOR'),
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'x-is-creator': localStorage.getItem('PF_USER_IS_CREATOR')
             }
         })
         .then(res => res.json())
@@ -1214,7 +1207,7 @@ function WebhookIntegrationPanel() {
     const fetchWebhooks = async () => {
         try {
             const res = await fetch('/api/integrations/webhooks', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setWebhooks(Array.isArray(data) ? data : []);
@@ -1229,7 +1222,7 @@ function WebhookIntegrationPanel() {
         try {
             await fetch('/api/integrations/webhooks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newHook)
             });
             setNewHook({ platform: 'slack', webhook_url: '', label: '' });
@@ -1242,7 +1235,7 @@ function WebhookIntegrationPanel() {
         try {
             await fetch(`/api/integrations/webhooks/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: !currentEnabled })
             });
             fetchWebhooks();
@@ -1253,7 +1246,7 @@ function WebhookIntegrationPanel() {
         try {
             await fetch(`/api/integrations/webhooks/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ [field]: !currentVal })
             });
             fetchWebhooks();
@@ -1264,7 +1257,7 @@ function WebhookIntegrationPanel() {
         try {
             await fetch(`/api/integrations/webhooks/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             fetchWebhooks();
         } catch (e) { console.warn('[SettingsView] caught:', e); }
@@ -1275,7 +1268,7 @@ function WebhookIntegrationPanel() {
         try {
             const res = await fetch(`/api/integrations/webhooks/${id}/test`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setTestResults(prev => ({ ...prev, [id]: data.success ? 'success' : 'failed' }));
@@ -1466,7 +1459,7 @@ function AIConfigPanel() {
     const [testResult, setTestResult] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` };
+    const headers = { 'Content-Type': 'application/json' };
 
     useEffect(() => {
         fetch('/api/procedures/ai-config', { headers })
@@ -1605,7 +1598,7 @@ function DataExportPanel() {
         setDownloading(type);
         try {
             const res = await fetch(`/api/bi/${type}?format=csv`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             if (!res.ok) throw new Error('Download failed');
             const blob = await res.blob();
@@ -1627,7 +1620,7 @@ function DataExportPanel() {
         setDownloading(type + '-json');
         try {
             const res = await fetch(`/api/bi/${type}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1727,7 +1720,7 @@ function HAConfigPanel() {
     const [showFailover, setShowFailover] = useState(false);
     const [failoverPassword, setFailoverPassword] = useState('');
     const [isPromoting, setIsPromoting] = useState(false);
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` };
+    const headers = { 'Content-Type': 'application/json' };
 
     // Load current HA config on mount
     useEffect(() => {

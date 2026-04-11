@@ -36,7 +36,6 @@ import { useTranslation } from '../i18n/index.jsx';
 const API = (path, plant) =>
     fetch(path, {
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'x-plant-id': plant || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
             'Content-Type': 'application/json',
         }

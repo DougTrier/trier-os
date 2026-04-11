@@ -74,12 +74,10 @@ const MonacoEditor = lazy(() => import('@monaco-editor/react').then(m => ({ defa
 
 // ── API helper ───────────────────────────────────────────────────────────────
 function apiFetch(path, options = {}) {
-    const token = localStorage.getItem('authToken');
     return fetch(path, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
             ...(options.headers || {}),
         },
     }).then(r => r.json());

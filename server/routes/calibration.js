@@ -151,7 +151,7 @@ router.post('/instruments', (req, res) => {
 
         try { logAudit('CALIBRATION_INSTRUMENT_ADDED', req.user?.Username || 'system', plantId, { instrumentId, description }); } catch(e) {}
         res.status(201).json({ success: true, id: result.lastInsertRowid });
-    } catch (err) { res.status(500).json({ error: 'Failed to add instrument: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to add instrument: ' }); }
 });
 
 router.put('/instruments/:id', (req, res) => {
@@ -198,7 +198,7 @@ router.post('/instruments/:id/calibrate', (req, res) => {
         try { logAudit('CALIBRATION_PERFORMED', req.user?.Username || 'system', inst.PlantID, { instrumentId: inst.InstrumentID, result, certificateNumber }); } catch(e) {}
         console.log(`[CALIBRATION] ✅ ${inst.InstrumentID} calibrated: ${result}`);
         res.status(201).json({ success: true, id: r.lastInsertRowid, nextDue });
-    } catch (err) { res.status(500).json({ error: 'Failed to log calibration: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to log calibration: ' }); }
 });
 
 // ── Dashboard Stats ─────────────────────────────────────────────

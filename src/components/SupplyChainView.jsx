@@ -181,7 +181,7 @@ function PhotoUploadSection({ itemId, plantId, currentPhoto, onUploaded }) {
         try {
             const fd = new FormData();
             fd.append('photo', file);
-            const headers = { Authorization: `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': plantId };
+            const headers = { 'x-plant-id': plantId };
             const r = await fetch(`/api/supply-chain/items/${itemId}/photo`, { method: 'POST', headers, body: fd });
             const d = await r.json();
             if (d.error) throw new Error(d.error);
@@ -528,7 +528,6 @@ function EditPOModal({ po, plantId, vendors, onClose, onSaved }) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const authHeaders = (plantId) => ({
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     'x-plant-id': plantId || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
 });
 const API = (path, plantId, opts = {}) => fetch(`/api/supply-chain${path}`, { headers: authHeaders(plantId), ...opts });
@@ -1494,7 +1493,7 @@ function AllSitesView() {
         setLoading(true);
         try {
             const r = await fetch('/api/supply-chain/all-sites', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             if (r.ok) setData(await r.json());
         } catch { /* network error */ } finally { setLoading(false); }

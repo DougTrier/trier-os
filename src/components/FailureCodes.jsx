@@ -48,9 +48,8 @@ export default function FailureCodes({ woId }) {
         severity: 'Medium'
     });
 
-    const token = localStorage.getItem('authToken');
     const plantId = localStorage.getItem('activePlant') || 'Demo_Plant_1';
-    const headers = { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId, 'Content-Type': 'application/json' };
+    const headers = { 'x-plant-id': plantId, 'Content-Type': 'application/json' };
 
     useEffect(() => {
         if (!woId) return;

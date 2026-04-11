@@ -55,8 +55,7 @@ const NotificationCenter = ({ plantId }) => {
         try {
             const res = await fetch('/api/notifications', {
                 headers: {
-                    'x-plant-id': plantId,
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'x-plant-id': plantId
                 }
             });
             const data = await res.json();

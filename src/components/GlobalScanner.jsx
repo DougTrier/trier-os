@@ -354,8 +354,7 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
 
         try {
             const authHeaders = { 
-                'x-plant-id': plantId,
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'x-plant-id': plantId
             };
 
             // Safe fetch wrapper: if the endpoint doesn't exist (returns HTML 404), do not crash on JSON.parse
@@ -465,8 +464,7 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json', 
-                    'x-plant-id': plantId,
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'x-plant-id': plantId
                 },
                 body: JSON.stringify({ qty: invAdjust, reason: 'Global Scan Quick Adjust', type: invAdjust < 0 ? '1' : '2' })
             });
@@ -496,13 +494,13 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
             
             await fetch('/api/v2/network/vendor/import', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                 body: JSON.stringify({ vendorData })
             });
             
             await fetch(`/api/parts/${scannedId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                 body: JSON.stringify({ VendID: priceAlert.vendId, UnitCost: priceAlert.betterPrice })
             });
             
@@ -699,7 +697,7 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
         setLoading(true);
         try {
             const res = await fetch(`/api/v2/network/site-contacts/${encodeURIComponent(priceAlert.sourcePlantId)}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             if (!res.ok) throw new Error("Failed to fetch plant managers");
             const managers = await res.json();
@@ -717,7 +715,7 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
         try {
             const res = await fetch('/api/v2/network/ignore-price', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ partId: scannedId, plantId: plantId })
             });
             if (res.ok) {
@@ -779,7 +777,7 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
 
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                 body: JSON.stringify(payload)
             });
 
@@ -801,7 +799,7 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
                     // Global Notification for better local price
                     fetch('/api/v2/network/price-alert', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ partId: scannedId, price: localCost, plantId })
                     });
                 }

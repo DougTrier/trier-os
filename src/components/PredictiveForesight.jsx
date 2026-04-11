@@ -53,7 +53,7 @@ const PredictiveForesight = ({ selectedPlant, setActiveTab, setSelectedPlant }) 
             setLoading(true);
             try {
                 const res = await fetch('/api/analytics/predictive', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                    headers: {  }
                 });
                 if (!res.ok) {
                     console.warn('Predictive API returned', res.status);

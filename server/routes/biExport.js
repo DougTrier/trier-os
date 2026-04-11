@@ -112,7 +112,7 @@ router.get('/work-orders', (req, res) => {
         const data = db.queryAll(sql, params);
         sendResponse(res, data, format, 'work_orders');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 });
 
@@ -137,7 +137,7 @@ router.get('/assets', (req, res) => {
         }
         sendResponse(res, data, format, 'assets');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 });
 
@@ -170,7 +170,7 @@ const handlePmExport = (req, res) => {
         }
         sendResponse(res, data, format, 'pm_compliance');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 };
 
@@ -202,7 +202,7 @@ const handlePartsExport = (req, res) => {
         }
         sendResponse(res, data, format, 'parts_inventory');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 };
 
@@ -233,7 +233,7 @@ const handleTechExport = (req, res) => {
         `);
         sendResponse(res, data, format, 'technician_performance');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 };
 
@@ -252,7 +252,7 @@ router.get('/transfers', (req, res) => {
         } catch(e) { /* Returns empty schema gracefully if table doesn't exist yet */ }
         sendResponse(res, data, format, 'transfers');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 });
 
@@ -289,7 +289,7 @@ router.get('/reminder-insights', (req, res) => {
 
         sendResponse(res, data, format, 'reminder_insights');
     } catch (err) {
-        res.status(500).json({ error: 'Export failed', details: err.message });
+        res.status(500).json({ error: 'Export failed' });
     }
 });
 

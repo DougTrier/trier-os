@@ -54,7 +54,7 @@ export default function ComplianceTracker({ plantId, plantLabel }) {
     const [newChecklist, setNewChecklist] = useState({ framework_id: '', title: '', description: '', frequency: 'monthly', items: [''] });
     const [scheduleForm, setScheduleForm] = useState({ checklist_id: '', inspector: '', scheduled_date: '' });
 
-    const headers = { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json' };
+    const headers = { 'Content-Type': 'application/json' };
 
     const fetchAll = async () => {
         setLoading(true);

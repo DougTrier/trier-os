@@ -105,7 +105,7 @@ router.get('/', (req, res) => {
         const rows = logisticsDb.prepare(sql).all(...params);
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch approvals', details: err.message });
+        res.status(500).json({ error: 'Failed to fetch approvals' });
     }
 });
 
@@ -187,7 +187,7 @@ router.post('/', (req, res) => {
                 : `Submitted for approval (amount $${amountVal} exceeds $${thresholdVal} threshold)`
         });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to submit approval', details: err.message });
+        res.status(500).json({ error: 'Failed to submit approval' });
     }
 });
 
@@ -210,7 +210,7 @@ router.put('/:id/approve', (req, res) => {
 
         res.json({ success: true, message: `${item.type} #${item.reference_id} approved` });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to approve', details: err.message });
+        res.status(500).json({ error: 'Failed to approve' });
     }
 });
 
@@ -235,7 +235,7 @@ router.put('/:id/reject', (req, res) => {
 
         res.json({ success: true, message: `${item.type} #${item.reference_id} rejected` });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to reject', details: err.message });
+        res.status(500).json({ error: 'Failed to reject' });
     }
 });
 
@@ -270,7 +270,7 @@ router.put('/settings', (req, res) => {
         logAudit(updatedBy, 'APPROVAL_SETTINGS_UPDATED', 'system', updates);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update settings', details: err.message });
+        res.status(500).json({ error: 'Failed to update settings' });
     }
 });
 

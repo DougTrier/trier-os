@@ -36,7 +36,7 @@ import { printRecord, tableHTML } from '../utils/printRecord';
 import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path) => fetch(`/api/it${path}`, {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
 });
 
 const SEVERITY_COLORS = { critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#64748b' };

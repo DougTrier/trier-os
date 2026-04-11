@@ -347,10 +347,10 @@ router.post('/public/work-request', publicRequestLimiter, (req, res, next) => {
         if (err instanceof multer.MulterError) {
             const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File too large. Max 10 MB per file.'
                       : err.code === 'LIMIT_FILE_COUNT' ? 'Too many files. Max 3.'
-                      : err.message;
+                      : 'Upload error';
             return res.status(400).json({ error: msg });
         }
-        if (err) return res.status(400).json({ error: err.message });
+        if (err) return res.status(400).json({ error: 'An internal server error occurred' });
         next();
     });
 }, (req, res) => {
@@ -454,7 +454,8 @@ router.post('/public/work-request', publicRequestLimiter, (req, res, next) => {
         });
     } catch (err) {
         // Clean up any temp files if WO creation failed
-        (req.files || []).forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
+        // QUAL-07: log cleanup failures so leaking temp files are observable in server logs
+        (req.files || []).forEach(f => { try { fs.unlinkSync(f.path); } catch (cleanErr) { console.warn('[GapFeatures] Temp cleanup failed:', f.path, cleanErr.message); } });
         console.error('Public work request error:', err);
         res.status(500).json({ error: 'Failed to submit maintenance request' });
     }

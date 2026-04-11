@@ -115,7 +115,7 @@ export default function BluetoothPanel({ ble, plantId, onAssetFound }) {
             const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
             const r = await fetch('/api/ble/beacons', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mac, assetId: linkAssetId.trim(), plantId: plantId || localStorage.getItem('selectedPlantId'), linkedBy: user.fullName || 'Unknown' }),
             });
             if (r.ok) {

@@ -290,7 +290,6 @@ export default function USMapView({ plantId, plantLabel }) {
 
 
     const authHeaders = useMemo(() => ({
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         'x-plant-id': plantId || localStorage.getItem('selectedPlantId') || ''
     }), [plantId]);

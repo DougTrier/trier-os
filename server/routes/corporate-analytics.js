@@ -72,9 +72,10 @@ logDb.exec(`
 // ── Auth Middleware: Creator or Whitelisted ──────────────────────────────────
 function requireCorpAccess(req, res, next) {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Authentication required' });
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Authentication required' });
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const token = req.cookies?.authToken || authHeader?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
 
         // Execute auth Db lookup for Title
@@ -103,9 +104,10 @@ function requireCorpAccess(req, res, next) {
 // Check if current user has access
 router.get('/access/check', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.json({ hasAccess: false });
+    if (!authHeader && !req.cookies?.authToken) return res.json({ hasAccess: false });
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const token = req.cookies?.authToken || authHeader?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         
         const userRec = authDb.prepare('SELECT Title FROM Users WHERE UserID = ?').get(decoded.UserID);
         const title = userRec?.Title ? userRec.Title.toUpperCase() : '';
@@ -160,7 +162,7 @@ router.post('/access/grant', requireCorpAccess, (req, res) => {
         logAudit(req.user.Username, 'CORP_ANALYTICS_ACCESS_GRANTED', null, { targetUser: username, userId }, 'INFO');
         res.json({ success: true });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -386,7 +388,7 @@ router.get('/executive-summary', requireCorpAccess, (req, res) => {
         });
     } catch (e) {
         console.error('Corp analytics executive-summary error:', e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -445,7 +447,7 @@ router.get('/plant-rankings', requireCorpAccess, (req, res) => {
         }
         res.json(rankings.sort((a, b) => b.score - a.score));
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -578,7 +580,7 @@ router.get('/financial', requireCorpAccess, (req, res) => {
             monthlyTrend: trendData,
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -743,7 +745,7 @@ router.get('/risk-matrix', requireCorpAccess, (req, res) => {
 
         res.json({ risks: risks.slice(0, 100), summary, totalRisks: risks.length });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -801,7 +803,7 @@ router.get('/forecast', requireCorpAccess, (req, res) => {
             fleetReplacement,
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -843,7 +845,7 @@ router.get('/workforce', requireCorpAccess, (req, res) => {
             labor: { totalAssigned, byPlant: plantLabor.sort((a, b) => b.activeWorkers - a.activeWorkers) },
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -1107,7 +1109,7 @@ router.get('/spend-overview', requireCorpAccess, (req, res) => {
         });
     } catch (e) {
         console.error('[Corp Analytics] spend-overview error:', e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -1141,7 +1143,7 @@ router.get('/spend-comparison', requireCorpAccess, (req, res) => {
         });
     } catch (e) {
         console.error('[Corp Analytics] spend-comparison error:', e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -1893,7 +1895,7 @@ router.get('/opex-intelligence', requireCorpAccess, (req, res) => {
         });
     } catch (e) {
         console.error('[Corp Analytics] opex-intelligence error:', e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -1934,7 +1936,7 @@ router.get('/equipment-intelligence', requireCorpAccess, (req, res) => {
         res.json({ from, to, plants, buckets, rows });
     } catch (err) {
         console.error('[Corp Analytics] equipment-intelligence error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -1953,7 +1955,7 @@ router.post('/sync', requireCorpAccess, async (req, res) => {
         res.json({ ok: true, ...result });
     } catch (err) {
         console.error('[Corp Analytics] sync error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

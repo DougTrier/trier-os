@@ -57,8 +57,7 @@ export default function GroupPortalView({ plantId, plantLabel, onOpenWorkspace, 
     const [urgency, setUrgency] = useState({});
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        const headers = { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId || 'all_sites' };
+        const headers = { 'x-plant-id': plantId || 'all_sites' };
 
         fetch('/api/dashboard', { headers })
             .then(r => r.ok ? r.json() : null)

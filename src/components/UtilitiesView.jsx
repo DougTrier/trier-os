@@ -44,7 +44,6 @@ import { statusClass, formatDate } from '../utils/formatDate';
 const API = (path, opts = {}) => fetch(`/api/utilities${path}`, {
     ...opts,
     headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
         ...opts.headers

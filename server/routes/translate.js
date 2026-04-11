@@ -157,7 +157,7 @@ router.get('/stats', (req, res) => {
     try {
         res.json(cache.stats());
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 

@@ -81,7 +81,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
         try {
             const res = await fetch('/api/locks/acquire', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ recordType: 'work_order', recordId: String(recordId), userName: currentUserName })
             });
             const data = await res.json();
@@ -93,7 +93,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
                     try {
                         await fetch('/api/locks/heartbeat', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ recordType: 'work_order', recordId: String(recordId), userName: currentUserName })
                         });
                     } catch (e) { /* heartbeat failure is non-fatal */ }
@@ -117,7 +117,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
         try {
             await fetch('/api/locks/release', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ recordType: 'work_order', recordId: String(recordId), userName: currentUserName })
             });
         } catch (e) { /* release failure is non-fatal */ }

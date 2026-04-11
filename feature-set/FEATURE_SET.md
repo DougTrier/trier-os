@@ -239,6 +239,7 @@ Tools used by reliability engineers and maintenance leadership.
 - Rolling CapEx and OpEx forecast
 - What-if modeling for deferred maintenance scenarios
 - Linked to actual spend data from Parts and WO records
+- Interfaces with the **OpEx Self-Healing Loop** (Feature 77) — committed savings flow back as realized adjustments to the forecast baseline
 
 ### 31. Underwriter Portal (Insurance Intelligence)
 - Automated insurance risk score: 0–100 composite scoring
@@ -554,7 +555,70 @@ Tools used by reliability engineers and maintenance leadership.
 
 ---
 
+## TIER 11 — OpEx Self-Healing Loop
+
+### 77. OpEx Action Commitment & Outcome Tracking Engine
+
+The OpEx Self-Healing Loop is Trier OS's autonomous savings accountability engine. It closes the gap between a financial analysis identifying a savings opportunity and confirmation that the savings actually materialized. Most CMMS platforms stop at the recommendation. Trier OS executes, tracks, and validates end-to-end.
+
+#### Execution Tracking — Did the action happen?
+- Corporate or plant managers commit to a specific cost-reduction action directly from the Corporate Analytics savings card interface (energy waste, PM labor, parts spend, contractor overruns, etc.)
+- Each commitment records: plant ID, savings category, predicted dollar amount, responsible party, target date, and priority level (`CRITICAL` / `HIGH` / `NORMAL` / `LOW`)
+- Status lifecycle: `OPEN → IN_PROGRESS → COMPLETED → MISSED`
+- Overdue `OPEN` or `IN_PROGRESS` commitments are automatically marked `MISSED` by the 24-hour cron engine
+
+#### Outcome Validation — Did savings materialize?
+- Automated 30 / 60 / 90-day checkpoint engine runs every 24 hours via server cron (Stage 5.9 in `index.js`)
+- At each checkpoint, the engine:
+  1. Captures a live baseline from the plant's current energy, labor, and parts spend via `captureBaseline()`
+  2. Compares against the pre-commitment baseline snapshot taken at commitment time
+  3. Calculates the **realization rate**: `actualSavings / predictedSavings × 100`
+  4. Stores the delta in `OpExOutcomes` with timestamp and checkpoint number
+- Outcomes are classified: `ON_TRACK` (realization ≥ 80%), `PARTIAL` (40–80%), `NOT_REALIZED` (< 40%)
+- Baseline capture is guarded against `all_sites` aggregation — only real plant-scoped data is used
+
+#### Feedback Loop — How it reports back and escalates
+- `OpExAlerts` table records `MISSED_OUTCOME` events when realization falls below 40%
+- Escalation alerts (`ESCALATION` type) fire when a commitment remains unresolved past the 90-day mark
+- Alert deduplication guards prevent repeated alerts on successive cron runs for the same commitment
+- Plant operations staff see outstanding commitments in the **OpEx Action Items** dashboard widget
+- Corporate sees the enterprise-wide realization rate on the Corporate Analytics → OpEx Intel tab
+- API endpoints let plant managers update commitment status and mark actions in progress
+
+#### Data Model
+
+| Table | Purpose |
+|---|---|
+| `OpExCommitments` | One row per savings action commitment, including baseline snapshot |
+| `OpExOutcomes` | One row per 30/60/90-day checkpoint measurement |
+| `OpExAlerts` | Missed and escalation events, deduplicated per commitment |
+
+#### Security & Access Control
+- All 10 API endpoints enforce `isCorp()` role check — only corporate-role accounts can read or write
+- `plantId` parameters are sanitized with a strict alphanumeric whitelist before any DB path construction
+- Plant-scoped endpoints enforce that the requesting user's plant matches the requested `plantId`
+- N+1 query pattern eliminated — commitment list uses batch queries (3 total, regardless of dataset size)
+- Foreign key indexes on `OpExOutcomes` and `OpExAlerts` ensure query performance scales as data grows
+
+#### API Surface (mounted at `/api/opex-tracking`)
+
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/commit` | Create a new savings commitment with baseline snapshot |
+| `GET` | `/commitments` | List all commitments with status and realization rate |
+| `GET` | `/plant/:plantId` | Plant-scoped commitment view |
+| `PATCH` | `/:id/status` | Update commitment status (IN_PROGRESS, COMPLETED) |
+| `GET` | `/:id/outcomes` | View 30/60/90-day checkpoint results for a commitment |
+| `GET` | `/alerts` | All missed/escalated commitments |
+| `GET` | `/summary` | Enterprise rollup: total predicted, realized, realization rate % |
+| `POST` | `/baseline/capture/:plantId` | Manually trigger a baseline snapshot |
+| `POST` | `/cron/run` | Manually trigger the outcome measurement cron |
+| `GET` | `/commitments/export` | CSV export of all commitments with outcomes |
+
+---
+
 ## CORRECTIONS FROM INITIAL AUDIT — Already Implemented
+
 
 The following items were originally listed as "potential additions" but are **fully implemented** in Trier OS:
 
@@ -564,6 +628,7 @@ The following items were originally listed as "potential additions" but are **fu
 | **Contractor COI Expiry Block** | `PrequalificationStatus` must be `Approved` before assignment. An `Approved` contractor with no active Permit-to-Work triggers a hard amber warning block in the contractor detail view. COI expiry is tracked and displayed inline. |
 | **Inter-Plant Parts Visibility** | `analytics.js` corporate rollup surfaces cross-plant inventory. The `notifications.js` and `logistics.js` routes already expose inter-plant transfer endpoints. |
 | **Contractor SLA / Time Theft Detection** | Fully implemented — the Contractors Job History tab actively cross-references vendor invoice hours against security gate access logs, automatically blocks PO routing, and triggers a chargeback dispute when time discrepancy is detected. This was not even listed in the feature set and is arguably one of the most operationally valuable hidden features in the platform. |
+| **OpEx Self-Healing Loop** | Fully implemented as Feature 77 (Tier 11). The 24-hour cron engine, 30/60/90-day checkpoint validation, commitment lifecycle (`OPEN → MISSED`), alert deduplication, plant-scope enforcement, and all 10 hardened API endpoints are live in `server/routes/opex_tracking.js`. Security audit completed 2026-04-10: all endpoints enforce `isCorp()` RBAC, `plantId` sanitized against path traversal, N+1 query pattern eliminated. |
 
 ---
 

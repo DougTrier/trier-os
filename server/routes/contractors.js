@@ -185,7 +185,7 @@ router.post('/', (req, res) => {
         if (!companyName) return res.status(400).json({ error: 'Company name required' });
         const r = logisticsDb.prepare('INSERT INTO contractors (CompanyName, ContactName, ContactEmail, ContactPhone, Address, TradeSpecialty, HourlyRate, DayRate, InsuranceExpiry, LiabilityLimit, TaxID, Notes, PlantID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(companyName, contactName || null, contactEmail || null, contactPhone || null, address || null, tradeSpecialty || null, hourlyRate || null, dayRate || null, insuranceExpiry || null, liabilityLimit || null, taxId || null, notes || null, plantId || null);
         res.status(201).json({ success: true, id: r.lastInsertRowid });
-    } catch (err) { res.status(500).json({ error: 'Failed to add contractor: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to add contractor: ' }); }
 });
 
 router.put('/:id', (req, res) => {

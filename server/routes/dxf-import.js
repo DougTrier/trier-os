@@ -330,7 +330,7 @@ router.post('/', upload.single('dxffile'), async (req, res) => {
     } catch (err) {
         console.error('📐 [CAD Import] Error:', err);
         if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch(e) {} }
-        res.status(500).json({ error: 'DXF import failed: ' + err.message });
+        res.status(500).json({ error: 'DXF import failed: ' });
     }
 });
 

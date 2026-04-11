@@ -85,10 +85,11 @@ router.post('/enroll', (req, res) => {
 // ── Admin: List Enrollment Requests ─────────────────────────────────────────
 router.get('/enrollments', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
 
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const token = req.cookies?.authToken || authHeader?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         if (!['it_admin', 'creator'].includes(decoded.globalRole)) {
             return res.status(403).json({ error: 'Access denied' });
         }
@@ -109,10 +110,11 @@ router.get('/enrollments', (req, res) => {
 // ── Admin: Approve Enrollment ───────────────────────────────────────────────
 router.post('/enrollments/approve', async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
 
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const token = req.cookies?.authToken || authHeader?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         if (!['it_admin', 'creator'].includes(decoded.globalRole)) {
             return res.status(403).json({ error: 'Access denied' });
         }
@@ -161,17 +163,18 @@ router.post('/enrollments/approve', async (req, res) => {
         });
     } catch (err) {
         console.error('Enrollment approval error:', err);
-        res.status(500).json({ error: 'Failed to approve enrollment: ' + err.message });
+        res.status(500).json({ error: 'Failed to approve enrollment: ' });
     }
 });
 
 // ── Admin: Deny Enrollment ──────────────────────────────────────────────────
 router.post('/enrollments/deny', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
 
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const token = req.cookies?.authToken || authHeader?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         if (!['it_admin', 'creator'].includes(decoded.globalRole)) {
             return res.status(403).json({ error: 'Access denied' });
         }
@@ -195,7 +198,7 @@ router.post('/enrollments/deny', (req, res) => {
 
         res.json({ success: true, message: `Enrollment request from ${request.full_name} has been denied.` });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to deny enrollment: ' + err.message });
+        res.status(500).json({ error: 'Failed to deny enrollment: ' });
     }
 });
 

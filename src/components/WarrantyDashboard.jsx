@@ -85,7 +85,6 @@ export default function WarrantyDashboard({ plantId }) {
 
     const effectivePlant = plantId || localStorage.getItem('selectedPlantId') || 'all_sites';
     const authHeaders = () => ({
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': effectivePlant
     });
 

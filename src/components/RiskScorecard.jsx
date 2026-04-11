@@ -216,7 +216,6 @@ export default function RiskScorecard({ plantId, plantLabel, compact = false, on
     const [refreshing, setRefreshing] = useState(false);
 
     const hdrs = {
-        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': plantId
     };
 

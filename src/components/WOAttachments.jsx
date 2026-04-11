@@ -47,9 +47,8 @@ export default function WOAttachments({ woId }) {
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
 
-    const token = localStorage.getItem('authToken');
     const plantId = localStorage.getItem('activePlant') || 'Demo_Plant_1';
-    const headers = { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId };
+    const headers = { 'x-plant-id': plantId };
 
     useEffect(() => {
         if (!woId) return;
@@ -70,7 +69,7 @@ export default function WOAttachments({ woId }) {
             try {
                 const res = await fetch(`/api/work-orders/${woId}/attachments`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId },
+                    headers: { 'x-plant-id': plantId },
                     body: formData
                 });
                 const data = await res.json();

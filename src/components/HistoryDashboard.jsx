@@ -55,7 +55,6 @@ export default function HistoryDashboard({ plantId }) {
         setAuditLoading(true);
         fetch('/api/analytics/audit', {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                 'x-plant-id': plantId || localStorage.getItem('selectedPlantId') || 'all_sites'
             }
         })
@@ -86,7 +85,6 @@ export default function HistoryDashboard({ plantId }) {
         try {
             const effectivePlant = plantId || localStorage.getItem('selectedPlantId') || 'all_sites';
             const headers = {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                 'x-plant-id': effectivePlant
             };
             // Fetch ALL analytics data in parallel for the comprehensive report

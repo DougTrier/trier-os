@@ -58,7 +58,7 @@ export default function TechnicianMetrics() {
         setLoading(true);
         try {
             const res = await fetch('/api/analytics/technician-performance', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const json = await res.json();
             setData(json);

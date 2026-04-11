@@ -43,7 +43,7 @@ export default function BackupPrivilegesView() {
 
     useEffect(() => {
         fetch('/api/database/privileges/backup', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: {  }
         })
         .then(res => res.json())
         .then(data => {
@@ -77,7 +77,6 @@ export default function BackupPrivilegesView() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-user-role': localStorage.getItem('userRole'),
                     'x-is-creator': localStorage.getItem('PF_USER_IS_CREATOR')
                 },

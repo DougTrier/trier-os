@@ -69,7 +69,7 @@ export default function InvitePassPopup({ isOpen, onClose, plantId, plantLabel, 
         try {
             const res = await fetch('/api/logistics/invite/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ plantId: target, createdBy: localStorage.getItem('currentUser') || 'Admin' })
             });
             const data = await res.json();
@@ -85,7 +85,7 @@ export default function InvitePassPopup({ isOpen, onClose, plantId, plantLabel, 
     const fetchHistory = async () => {
         try {
             const res = await fetch('/api/logistics/invite/list', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             setCodeHistory(await res.json());
         } catch {}
@@ -95,7 +95,7 @@ export default function InvitePassPopup({ isOpen, onClose, plantId, plantLabel, 
         try {
             await fetch(`/api/logistics/invite/revoke/${id}`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             fetchHistory();
         } catch {}

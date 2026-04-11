@@ -379,13 +379,22 @@ router.put('/status/:id', (req, res) => {
     }
 });
 
-// ── Global Vendors Integration ───────────────────────────────────────────
+// PERF-02: Added server-side search + pagination. Max 250 per page.
+// Supports: ?page=1&limit=50&search=term
 router.get('/global-vendors/list', (req, res) => {
     try {
-        const vendors = logisticsDb.prepare('SELECT * FROM GlobalVendors ORDER BY Name ASC LIMIT 1000').all();
-        res.json(vendors);
+        const search = req.query.search ? `%${req.query.search}%` : null;
+        const limit  = Math.min(parseInt(req.query.limit) || 100, 250);
+        const offset = (Math.max(parseInt(req.query.page) || 1, 1) - 1) * limit;
+        const sql = search
+            ? 'SELECT * FROM GlobalVendors WHERE Name LIKE ? OR ID LIKE ? ORDER BY Name ASC LIMIT ? OFFSET ?'
+            : 'SELECT * FROM GlobalVendors ORDER BY Name ASC LIMIT ? OFFSET ?';
+        const params = search ? [search, search, limit, offset] : [limit, offset];
+        const total  = logisticsDb.prepare(search ? 'SELECT COUNT(*) as n FROM GlobalVendors WHERE Name LIKE ? OR ID LIKE ?' : 'SELECT COUNT(*) as n FROM GlobalVendors').get(...(search ? [search, search] : []))?.n || 0;
+        const vendors = logisticsDb.prepare(sql).all(...params);
+        res.json({ vendors, total, page: parseInt(req.query.page) || 1, limit });
     } catch (err) {
-        console.error('Failed to list global vendors:', err.message);
+        console.error('[Logistics] GET /global-vendors/list error:', err.message);
         res.status(500).json({ error: 'Failed to list global vendors' });
     }
 });
@@ -512,11 +521,22 @@ router.post('/global-sops', (req, res) => {
 });
 
 // ── Global Parts Integration ─────────────────────────────────────────────
+// PERF-02: Added server-side search + pagination. Max 250 per page.
+// Supports: ?page=1&limit=100&search=term
 router.get('/global-parts', (req, res) => {
     try {
-        const parts = logisticsDb.prepare('SELECT * FROM GlobalParts ORDER BY ID ASC LIMIT 1000').all();
-        res.json(parts);
+        const search = req.query.search ? `%${req.query.search}%` : null;
+        const limit  = Math.min(parseInt(req.query.limit) || 100, 250);
+        const offset = (Math.max(parseInt(req.query.page) || 1, 1) - 1) * limit;
+        const sql = search
+            ? 'SELECT * FROM GlobalParts WHERE ID LIKE ? OR Description LIKE ? ORDER BY ID ASC LIMIT ? OFFSET ?'
+            : 'SELECT * FROM GlobalParts ORDER BY ID ASC LIMIT ? OFFSET ?';
+        const params = search ? [search, search, limit, offset] : [limit, offset];
+        const total  = logisticsDb.prepare(search ? 'SELECT COUNT(*) as n FROM GlobalParts WHERE ID LIKE ? OR Description LIKE ?' : 'SELECT COUNT(*) as n FROM GlobalParts').get(...(search ? [search, search] : []))?.n || 0;
+        const parts  = logisticsDb.prepare(sql).all(...params);
+        res.json({ parts, total, page: parseInt(req.query.page) || 1, limit });
     } catch (err) {
+        console.error('[Logistics] GET /global-parts error:', err.message);
         res.status(500).json({ error: 'Failed to fetch global parts' });
     }
 });
@@ -616,7 +636,7 @@ router.get('/invite/validate/:code', (req, res) => {
         if (row.Status === 'revoked') return res.json({ valid: false, error: 'Code has been revoked' });
         res.json({ valid: true, plantId: row.PlantID });
     } catch (err) {
-        res.status(500).json({ valid: false, error: err.message });
+        res.status(500).json({ valid: false, error: 'An internal server error occurred' });
     }
 });
 
@@ -638,7 +658,7 @@ router.post('/invite/use', (req, res) => {
         logAudit(username, 'INVITE_CODE_USED', row.PlantID, { code }, 'INFO');
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -652,7 +672,7 @@ router.get('/invite/list', (req, res) => {
         `).all();
         res.json(codes);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -662,7 +682,7 @@ router.post('/invite/revoke/:id', (req, res) => {
         logisticsDb.prepare("UPDATE InviteCodes SET Status = 'revoked' WHERE ID = ? AND Status = 'available'").run(req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -672,7 +692,7 @@ router.get('/site-code/:plantId', (req, res) => {
         const row = logisticsDb.prepare('SELECT InviteCode FROM SiteCodes WHERE PlantID = ?').get(req.params.plantId);
         res.json({ inviteCode: row ? row.InviteCode : null });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 router.post('/site-code/generate', (req, res) => {
@@ -683,7 +703,7 @@ router.post('/site-code/generate', (req, res) => {
         logisticsDb.prepare('INSERT INTO SiteCodes (PlantID, InviteCode, CreatedBy) VALUES (?, ?, ?) ON CONFLICT(PlantID) DO UPDATE SET InviteCode = excluded.InviteCode, CreatedAt = CURRENT_TIMESTAMP').run(plantId, code, userId || 'SYSTEM');
         res.json({ inviteCode: code });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 

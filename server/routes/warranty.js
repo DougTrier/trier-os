@@ -81,7 +81,8 @@ router.get('/claims', (req, res) => {
         const claims = db.prepare(sql).all(...params);
         res.json({ claims });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Warranty] GET /claims error:', e.message);
+        res.status(500).json({ error: 'Failed to retrieve warranty claims' });
     }
 });
 
@@ -115,7 +116,8 @@ router.post('/claims', (req, res) => {
         const claim = db.prepare('SELECT * FROM WarrantyClaims WHERE ID = ?').get(result.lastInsertRowid);
         res.json({ success: true, claim });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Warranty] POST /claims error:', e.message);
+        res.status(500).json({ error: 'Failed to submit warranty claim' });
     }
 });
 
@@ -155,7 +157,8 @@ router.patch('/claims/:id/status', (req, res) => {
         if (!claim) return res.status(404).json({ error: 'Claim not found' });
         res.json({ success: true, claim });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Warranty] PATCH /claims/:id/status error:', e.message);
+        res.status(500).json({ error: 'Failed to update claim status' });
     }
 });
 
@@ -213,8 +216,9 @@ router.get('/report', (req, res) => {
                     totalDenied  += summary.denied;
                     totalPending += summary.pending;
                 }
-            } catch (_) {
-                // WarrantyClaims table not yet migrated on this plant — skip
+            } catch (skippedErr) {
+                // QUAL-06: log schema-skip reasons so issues are observable in server logs
+                console.warn(`[Warranty] Skipping ${file}: ${skippedErr.message}`);
             } finally {
                 db.close();
             }
@@ -236,7 +240,8 @@ router.get('/report', (req, res) => {
             }
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Warranty] GET /report error:', e.message);
+        res.status(500).json({ error: 'Failed to generate warranty report' });
     }
 });
 

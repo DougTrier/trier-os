@@ -109,10 +109,11 @@ try {
 // ── Auth Middleware: username MUST be 'creator' ─────────────────────────────
 function requireCreator(req, res, next) {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing authorization token' });
-    
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing authorization token' });
+
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const token = req.cookies?.authToken || authHeader?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         if (decoded.Username !== 'creator') {
             logAudit(decoded.Username, 'CREATOR_CONSOLE_DENIED', null, { attempted: req.path }, 'WARNING', req.ip);
             return res.status(403).json({ error: 'Access denied. Creator account required.' });
@@ -148,7 +149,7 @@ router.get('/settings', (req, res) => {
 
         res.json(settings);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -192,7 +193,7 @@ router.post('/settings/totp-setup', async (req, res) => {
         });
     } catch (err) {
         console.error('[TOTP Setup]', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -232,7 +233,7 @@ router.post('/settings/totp-verify', (req, res) => {
         logAudit('creator', 'TOTP_SETUP_VERIFIED', null, {}, 'INFO', req.ip);
         res.json({ success: true, message: '2FA enabled! You will need your authenticator app on every future login.' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -263,7 +264,7 @@ router.post('/settings/totp-disable', (req, res) => {
         logAudit('creator', 'TOTP_DISABLED', null, {}, 'WARNING', req.ip);
         res.json({ success: true, message: '2FA has been disabled.' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -276,7 +277,7 @@ router.get('/executives', (req, res) => {
         const list = logDb.prepare('SELECT * FROM executive_access ORDER BY GrantedAt DESC').all();
         res.json(list);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -289,7 +290,7 @@ router.post('/executives', (req, res) => {
         logAudit('creator', 'EXECUTIVE_ACCESS_GRANTED', null, { username, notes }, 'INFO', req.ip);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -299,7 +300,7 @@ router.delete('/executives/:username', (req, res) => {
         logAudit('creator', 'EXECUTIVE_ACCESS_REVOKED', null, { username: req.params.username }, 'WARNING', req.ip);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -343,7 +344,7 @@ router.get('/diagnostics', (req, res) => {
             dataDir,
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -365,7 +366,7 @@ router.get('/audit', (req, res) => {
         const rows = logDb.prepare(`SELECT * FROM AuditLog ${whereClause} ORDER BY Timestamp DESC LIMIT ?`).all(...params, parseInt(limit));
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

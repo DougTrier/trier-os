@@ -278,7 +278,7 @@ Query: ${JSON.stringify(req.query)}
 `;
         fs.appendFileSync('error_debug.log', errorDetail);
         console.error('CRITICAL: GET /api/parts error:', err);
-        res.status(500).json({ error: 'Failed to fetch parts: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch parts' });
     }
 });
 
@@ -382,7 +382,7 @@ router.post('/', (req, res) => {
         res.status(201).json({ success: true, id: fields.ID || result.lastInsertRowid });
     } catch (err) {
         console.error('POST /api/parts error:', err);
-        res.status(500).json({ error: 'Failed to create part: ' + err.message });
+        res.status(500).json({ error: 'Failed to create part: ' });
     }
 });
 
@@ -460,7 +460,7 @@ router.post('/:id/adjust', (req, res) => {
         res.status(201).json({ success: true, message: 'Inventory adjusted successfully' });
     } catch (err) {
         console.error('POST /api/parts/:id/adjust error:', err);
-        res.status(500).json({ error: 'Failed to record adjustment: ' + err.message });
+        res.status(500).json({ error: 'Failed to record adjustment: ' });
     }
 });
 
@@ -484,7 +484,7 @@ router.delete('/:id', (req, res) => {
         }
     } catch (err) {
         console.error('DELETE /api/parts/:id error:', err);
-        res.status(500).json({ error: 'Failed to delete part: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete part: ' });
     }
 });
 

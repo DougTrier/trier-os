@@ -54,7 +54,7 @@ export default function EnrollmentQueue() {
         setLoading(true);
         try {
             const res = await fetch('/api/enrollment/enrollments', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setRequests(Array.isArray(data) ? data : []);
@@ -73,8 +73,7 @@ export default function EnrollmentQueue() {
             const res = await fetch('/api/enrollment/enrollments/approve', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     requestId: req.id,
@@ -104,8 +103,7 @@ export default function EnrollmentQueue() {
             const res = await fetch('/api/enrollment/enrollments/deny', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ requestId: req.id, reason })
             });

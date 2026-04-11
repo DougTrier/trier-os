@@ -162,7 +162,7 @@ router.post('/execute', (req, res) => {
         const rows = db.queryAll(sql, params);
         res.json({ data: rows, total: rows.length, sql: sql.replace(/\?/g, '?') });
     } catch (err) {
-        res.status(500).json({ error: 'Report execution failed: ' + err.message });
+        res.status(500).json({ error: 'Report execution failed: ' });
     }
 });
 

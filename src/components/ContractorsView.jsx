@@ -34,7 +34,7 @@ import LoadingSpinner from './LoadingSpinner';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
 
-const API = (path, o = {}) => fetch(`/api/contractors${path}`, { ...o, headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
+const API = (path, o = {}) => fetch(`/api/contractors${path}`, { ...o, headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
 const Badge = ({ color, children }) => <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: `${color}22`, color, border: `1px solid ${color}44` }}>{children}</span>;
 const preqColor = (s) => ({ 'Approved': '#10b981', 'Pending': '#f59e0b', 'Conditional': '#3b82f6', 'Expired': '#ef4444', 'Suspended': '#ef4444', 'Blacklisted': '#ef4444' }[s] || '#64748b');
 const FF = ({ t, label, type='text', value, onChange, options, required }) => {

@@ -169,7 +169,7 @@ router.get('/courses', (req, res) => {
         sql += ' ORDER BY category, title';
         res.json(logisticsDb.prepare(sql).all(...params));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -188,7 +188,7 @@ router.post('/courses', (req, res) => {
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
         if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'Course code already exists' });
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -210,7 +210,7 @@ router.put('/courses/:id', (req, res) => {
                active !== undefined ? (active ? 1 : 0) : null, req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -220,7 +220,7 @@ router.delete('/courses/:id', (req, res) => {
         logisticsDb.prepare('UPDATE training_courses SET active = 0 WHERE id = ?').run(req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -261,7 +261,7 @@ router.get('/records', (req, res) => {
 
         res.json(logisticsDb.prepare(sql).all(...params));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -294,7 +294,7 @@ router.get('/records/:userId', (req, res) => {
             records,
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -346,7 +346,7 @@ router.post('/records', (req, res) => {
         console.log(`🎓 [Training] Recorded: ${user_name} → ${course.title} (expires: ${expires_date || 'no expiry'})`);
         res.status(201).json({ success: true, id: result.lastInsertRowid, expires_date });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -362,7 +362,7 @@ router.get('/record/:id', (req, res) => {
         if (!record) return res.status(404).json({ error: 'Record not found' });
         res.json({ record });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -386,7 +386,7 @@ router.put('/records/:id', (req, res) => {
                notes || null, expires_date || null, req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -396,7 +396,7 @@ router.delete('/records/:id', (req, res) => {
         logisticsDb.prepare('DELETE FROM training_records WHERE id = ?').run(req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -431,7 +431,7 @@ router.get('/expiring', (req, res) => {
         const records = logisticsDb.prepare(sql).all(...params);
         res.json({ days, count: records.length, expiring: records, records });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -453,7 +453,7 @@ router.get('/expired', (req, res) => {
         const records = logisticsDb.prepare(sql).all(...params);
         res.json({ count: records.length, records });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -514,7 +514,7 @@ router.get('/compliance', (req, res) => {
             employees: results,
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -563,7 +563,7 @@ router.get('/matrix', (req, res) => {
 
         res.json({ courses, employees: matrix });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -621,7 +621,7 @@ router.get('/dashboard', (req, res) => {
             upcomingExpiries: upcoming,
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -640,7 +640,7 @@ router.get('/assignments', (req, res) => {
         `).all();
         res.json(assignments);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -655,7 +655,7 @@ router.post('/assignments', (req, res) => {
                required !== false ? 1 : 0, grace_days || 30, req.user?.Username || 'system');
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -664,7 +664,7 @@ router.delete('/assignments/:id', (req, res) => {
         logisticsDb.prepare('DELETE FROM training_assignments WHERE id = ?').run(req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 

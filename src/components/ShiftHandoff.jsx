@@ -75,7 +75,6 @@ const ShiftHandoff = ({ selectedPlant }) => {
     const isAdmin = userRole === 'it_admin' || userRole === 'creator';
 
     const getHeaders = useCallback(() => ({
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         'x-plant-id': selectedPlant || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
         'x-user-role': userRole,

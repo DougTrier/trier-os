@@ -88,7 +88,6 @@ export default function DigitalTwinView({ assetId, assetDescription, onClose }) 
     const cameraInputRef = useRef(null);
 
     const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': localStorage.getItem('selectedPlant') || 'Demo_Plant_1'
     };
 

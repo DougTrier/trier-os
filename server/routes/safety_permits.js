@@ -367,7 +367,7 @@ router.get('/by-contractor/:contractorId', (req, res) => {
         `).all(req.params.contractorId);
         res.json({ permits });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -535,7 +535,7 @@ router.post('/permits', (req, res) => {
         res.status(201).json({ success: true, permitId, permitNumber, type, checklistItems: defaultItems.length });
     } catch (err) {
         console.error('[SAFETY] POST /permits error:', err.message);
-        res.status(500).json({ error: 'Failed to create permit: ' + err.message });
+        res.status(500).json({ error: 'Failed to create permit: ' });
     }
 });
 

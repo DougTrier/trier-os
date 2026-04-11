@@ -55,7 +55,6 @@ export default function MtbfDashboard({ plantId }) {
             try {
                 const effectivePlant = plantId || localStorage.getItem('selectedPlantId') || 'all_sites';
                 const headers = {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': effectivePlant
                 };
                 const res = await fetch('/api/analytics/mtbf-dashboard', { headers });

@@ -129,7 +129,7 @@ export default function CatalogViewer() {
     // Fetch stats
     useEffect(() => {
         fetch('/api/catalog/stats', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: {  }
         })
             .then(r => r.json())
             .then(setStats)
@@ -151,7 +151,7 @@ export default function CatalogViewer() {
         }
         try {
             const res = await fetch(`${tab.endpoint}?${params}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const json = await res.json();
             setData(json);

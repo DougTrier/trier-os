@@ -229,7 +229,7 @@ router.put('/config', (req, res) => {
             ON CONFLICT(PlantID) DO UPDATE SET ProductionModel=excluded.ProductionModel, UpdatedAt=datetime('now')
         `).run(plantId, productionModel);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed to save config: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to save config: ' }); }
 });
 
 // ── Production Units ─────────────────────────────────────────────────────────
@@ -265,7 +265,7 @@ router.post('/units', (req, res) => {
             VALUES (?,?,?,?,?,?,?,?,?,?,?)
         `).run(plantId, unitName, unitType || 'Processing', description || null, capacityPerHour || null, capacityUnit || 'units/hr', floorSpaceSqFt || null, criticalityClass || 'B', status || 'Active', sortOrder || 0, notes || null);
         res.status(201).json({ success: true, id: r.lastInsertRowid });
-    } catch (err) { res.status(500).json({ error: 'Failed to create unit: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to create unit: ' }); }
 });
 
 router.put('/units/:id', (req, res) => {
@@ -313,7 +313,7 @@ router.post('/products', (req, res) => {
             VALUES (?,?,?,?,?,?,?,?)
         `).run(plantId, sku, productName, productFamily || null, baselineDailyQty || 0, holidayQty || 0, uom || 'cases', notes || null);
         res.status(201).json({ success: true, id: r.lastInsertRowid });
-    } catch (err) { res.status(500).json({ error: 'Failed to create product: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to create product: ' }); }
 });
 
 router.put('/products/:id', (req, res) => {
@@ -351,7 +351,7 @@ router.post('/calendar', (req, res) => {
             VALUES (?,?,?,?,?,?)
         `).run(plantId, eventDate, eventType || 'holiday', label, productionCapacityPct ?? 0, appliesToAll !== false ? 1 : 0);
         res.status(201).json({ success: true, id: r.lastInsertRowid });
-    } catch (err) { res.status(500).json({ error: 'Failed to create calendar event: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to create calendar event: ' }); }
 });
 
 router.put('/calendar/:id', (req, res) => {
@@ -575,7 +575,7 @@ router.post('/seed', (req, res) => {
             success: true,
             seeded: { productionUnits: units.length, products: totalProducts, calendarEvents: calEvents.length }
         });
-    } catch (err) { res.status(500).json({ error: 'Seed failed: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Seed failed: ' }); }
 });
 
 // ── Summary stats ────────────────────────────────────────────────────────────
@@ -601,7 +601,7 @@ router.get('/integrations', (req, res) => {
         const plantId = getPlantId(req);
         const row = logisticsDb.prepare('SELECT IntegrationConfig FROM PlantConfiguration WHERE PlantID=?').get(plantId);
         res.json(row ? JSON.parse(row.IntegrationConfig || '{}') : {});
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.post('/integrations', (req, res) => {
@@ -620,7 +620,7 @@ router.post('/integrations', (req, res) => {
             ON CONFLICT(PlantID) DO UPDATE SET IntegrationConfig=excluded.IntegrationConfig, UpdatedAt=datetime('now')
         `).run(plantId, blob);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Test connection — performs a lightweight reachability check for known providers
@@ -726,7 +726,7 @@ router.post('/products/import', (req, res) => {
         });
         run();
         res.json({ success: true, inserted, skipped, errors: errors.slice(0, 20) });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // POST /products/import-db — Upload a SQLite .db/.sqlite file and scan it for SKU data.
@@ -763,7 +763,7 @@ router.post('/products/import-db', skuUpload.single('file'), (req, res) => {
         res.json({ tables: result });
     } catch (err) {
         try { fs.unlinkSync(filePath); } catch {}
-        res.status(500).json({ error: 'Could not read database file: ' + err.message });
+        res.status(500).json({ error: 'Could not read database file: ' });
     }
 });
 
@@ -778,7 +778,7 @@ router.post('/integrations/simulator/toggle', async (req, res) => {
             ? await integrationManager.startSimulator(integrationId)
             : await integrationManager.stopSimulator(integrationId);
         res.json(result);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Start a sync worker for a plant × integration
@@ -798,7 +798,7 @@ router.post('/integrations/worker/start', (req, res) => {
         } catch {}
         const result = integrationManager.startWorker(plantId, integrationId, cfg);
         res.json(result);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Stop a sync worker
@@ -808,7 +808,7 @@ router.post('/integrations/worker/stop', (req, res) => {
         const { integrationId } = req.body;
         if (!integrationId) return res.status(400).json({ error: 'integrationId required' });
         res.json(integrationManager.stopWorker(plantId, integrationId));
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Get status of all workers + simulators for this plant
@@ -822,7 +822,7 @@ router.get('/integrations/worker/status', (req, res) => {
             simStatus[id] = integrationManager.simulatorStatus(id);
         });
         res.json({ workers, simulators: simStatus });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Get recent sensor readings from the plant DB
@@ -843,7 +843,7 @@ router.get('/integrations/worker/data', (req, res) => {
         } catch { /* table may not exist yet */ }
         db.close();
         res.json({ readings, tagDefinitions: TAG_DEFINITIONS });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Get ERP sync log from the plant DB (HttpEdgeAgent writes ErpSyncLog)
@@ -864,7 +864,7 @@ router.get('/integrations/erp/log', (req, res) => {
         } catch { /* table may not exist yet */ }
         db.close();
         res.json({ rows });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // Expose available ERP presets to the UI

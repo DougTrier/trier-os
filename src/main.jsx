@@ -288,10 +288,10 @@ window.fetch = async (...args) => {
     // Check if URL belongs to our API
     const urlStr = (typeof resource === 'string' ? resource : resource.url);
     if (urlStr && urlStr.startsWith('/api')) {
+        config.credentials = config.credentials || 'include';
         config.headers = {
             ...config.headers,
             'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         };
 
         // Pass temporary cross-site authorization if it exists

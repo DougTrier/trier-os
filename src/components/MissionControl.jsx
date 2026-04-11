@@ -202,8 +202,7 @@ function useTileMetrics(plantId) {
     const [urgency, setUrgency] = useState({});
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        const headers = { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId };
+        const headers = { 'x-plant-id': plantId };
 
         fetch('/api/dashboard', { headers })
             .then(r => r.ok ? r.json() : null)
@@ -383,10 +382,8 @@ export default function MissionControl({ plantId, onOpenWorkspace }) {
     // Check for creator access
     const [corpAnalyticsAccess, setCorpAnalyticsAccess] = useState(false);
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
         fetch('/api/corp-analytics/access/check', {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: {},
         }).then(r => r.ok ? r.json() : {hasAccess:false}).then(d => {
             if (d.hasAccess) setCorpAnalyticsAccess(true);
         });

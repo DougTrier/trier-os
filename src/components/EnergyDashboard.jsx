@@ -103,7 +103,7 @@ function ArbitrageAdvisor({ plantId, onClose }) {
     const { t } = useTranslation();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const hdrs = { Authorization: `Bearer ${localStorage.getItem('authToken')}`, 'x-plant-id': plantId };
+    const hdrs = { 'x-plant-id': plantId };
 
     useEffect(() => {
         fetch(`/api/energy/arbitrage?plantId=${plantId}`, { headers: hdrs })
@@ -215,8 +215,7 @@ function EditReadingModal({ reading, onSave, onClose }) {
     });
     const [saving, setSaving] = useState(false);
     const hdrs = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('authToken')}`
+        'Content-Type': 'application/json'
     };
 
     const handleSave = async () => {
@@ -319,7 +318,6 @@ export default function EnergyDashboard({ plantId, plantLabel }) {
 
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': plantId
     };
 

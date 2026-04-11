@@ -21,3 +21,23 @@ If you discover a vulnerability, please adhere strictly to the following protoco
 3. **Response SLA:** The Core Engineering Team will acknowledge receipt of your vulnerability report within 48 hours and outline an expected timeline for deploying a patch.
 
 We take the security of manufacturing networks seriously and appreciate your responsible disclosure to keep the industrial sector safe.
+
+---
+
+## Authentication Architecture
+
+Trier OS uses httpOnly cookie-based authentication for browser sessions.
+
+| Property | Value |
+|---|---|
+| Token type | Signed JWT |
+| Storage | `httpOnly` cookie — invisible to JavaScript |
+| Cookie flags | `HttpOnly`, `SameSite: Lax`, `Secure` (on HTTPS), `Path: /` |
+| Session check | `GET /api/auth/me` on page load |
+| Logout | `POST /api/auth/logout` — clears cookie server-side |
+| CSRF | `SameSite: Lax` blocks cross-origin POST/PATCH/DELETE; sufficient for private intranet deployment |
+
+**Why httpOnly cookies?**
+Tokens in `localStorage` are readable by any JavaScript on the page (XSS, browser extensions, DevTools on shared plant-floor machines). An httpOnly cookie is never exposed to JavaScript — it cannot be read, copied, or exfiltrated by a script.
+
+**API integrations** (Power BI, http-edge-agent, HA sync agents) are not browser sessions and cannot use cookies. They pass the JWT as a `Bearer` token in the `Authorization` header. The auth middleware accepts both paths and falls back gracefully.

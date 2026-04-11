@@ -57,8 +57,7 @@ export default function PasswordChangeView() {
             const res = await fetch('/api/auth/change-password', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ currentPassword, newPassword })
             });

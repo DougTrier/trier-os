@@ -155,7 +155,7 @@ module.exports = function(authDb) {
 
                 client.on('error', (err) => {
                     clearTimeout(timer);
-                    resolve({ success: false, error: `Connection failed: ${err.message}` });
+                    resolve({ success: false, error: 'Connection failed' });
                 });
 
                 client.on('connect', () => {
@@ -199,7 +199,7 @@ module.exports = function(authDb) {
             res.json(testResult);
         } catch (err) {
             console.error('[LDAP] Test error:', err.message);
-            res.status(500).json({ success: false, error: err.message });
+            res.status(500).json({ success: false, error: 'An internal server error occurred' });
         }
     });
 
@@ -352,7 +352,7 @@ module.exports = function(authDb) {
             res.json(syncResult);
         } catch (err) {
             console.error('[LDAP] Sync error:', err.message);
-            res.status(500).json({ success: false, error: err.message });
+            res.status(500).json({ success: false, error: 'An internal server error occurred' });
         }
     });
 

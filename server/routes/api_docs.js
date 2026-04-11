@@ -27,8 +27,13 @@
  *   Keys are stored hashed (SHA-256). Only the prefix is stored in plaintext
  *   for display purposes. The full key is shown only at generation time.
  *
- * AUTHENTICATION: API keys are passed as Bearer tokens in the Authorization header.
- *   Keys can also be passed as ?api_key= query param for tools that don't support headers.
+ * AUTHENTICATION: Two paths depending on the client type:
+ *   Browser sessions — auth token is stored in an httpOnly cookie set at login.
+ *     The browser sends it automatically; no Authorization header needed.
+ *     Cookie is invisible to JavaScript (not in localStorage, not in document.cookie).
+ *   API integrations (Power BI, http-edge-agent, HA sync, scripts) — pass the token
+ *     as a Bearer token in the Authorization header, or as ?token= query param for
+ *     tools that don't support headers. Both paths are accepted by the auth middleware.
  *
  * INTEGRATION USE CASES:
  *   - Power BI Desktop: Web data source with Bearer token auth
@@ -235,7 +240,7 @@ router.post('/keys', (req, res) => {
             warning: 'Save this key now — it will not be shown again.'
         });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create key', details: err.message });
+        res.status(500).json({ error: 'Failed to create key' });
     }
 });
 

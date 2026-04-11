@@ -62,7 +62,6 @@ export default function LogisticsView({ plantId }) {
         try {
             const res = await fetch('/api/logistics/transfers', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -83,7 +82,6 @@ export default function LogisticsView({ plantId }) {
         try {
             const res = await fetch(`/api/logistics/search-all?partId=${encodeURIComponent(query)}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });
@@ -108,7 +106,6 @@ export default function LogisticsView({ plantId }) {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 },
                 body: JSON.stringify({
@@ -141,7 +138,6 @@ export default function LogisticsView({ plantId }) {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 },
                 body: JSON.stringify({ status })

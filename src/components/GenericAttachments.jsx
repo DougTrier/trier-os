@@ -44,9 +44,8 @@ export default function GenericAttachments({ entityType, entityId }) {
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
 
-    const token = localStorage.getItem('authToken');
     const plantId = localStorage.getItem('activePlant') || 'Demo_Plant_1';
-    const headers = { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId };
+    const headers = { 'x-plant-id': plantId };
 
     const baseUrl = `/api/${entityType}/${encodeURIComponent(entityId)}/attachments`;
 
@@ -67,7 +66,7 @@ export default function GenericAttachments({ entityType, entityId }) {
             try {
                 const res = await fetch(baseUrl, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'x-plant-id': plantId },
+                    headers: { 'x-plant-id': plantId },
                     body: formData
                 });
                 const data = await res.json();

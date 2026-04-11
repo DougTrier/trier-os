@@ -87,7 +87,7 @@ const InlineScanner = ({ onScan, onClose }) => {
 
 const API = (path, opts = {}) => fetch(`/api/fleet${path}`, {
     ...opts,
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...opts.headers },
+    headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...opts.headers },
 });
 
 const Badge = ({ color, children }) => (

@@ -41,11 +41,11 @@ import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path, opts = {}) => fetch(`/api/it${path}`, {
     ...opts,
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...opts.headers },
+    headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...opts.headers },
 });
 const CATALOG_API = (path, opts = {}) => fetch(`/api/it-catalog${path}`, {
     ...opts,
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', ...opts.headers },
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
 });
 
 const Badge = ({ color, children }) => (
@@ -1232,7 +1232,7 @@ function ITScanResultModal({ data, plantId, plantLabel, onClose, onRefresh }) {
     const currentUser = (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
 
     useEffect(() => {
-        fetch('/api/plants', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') } })
+        fetch('/api/plants', { headers: {  } })
             .then(r => r.json()).then(d => setPlants(Array.isArray(d) ? d : [])).catch(e => console.warn('[ITDepartmentView] fetch error:', e));
     }, []);
 
@@ -1390,7 +1390,7 @@ function BatchScanModal({ mode, category, plantId, plantLabel, onClose, onRefres
     const [shipNotes, setShipNotes] = useState('');
 
     useEffect(() => {
-        fetch('/api/plants', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') } })
+        fetch('/api/plants', { headers: {  } })
             .then(r => r.json()).then(d => setPlants(Array.isArray(d) ? d : [])).catch(e => console.warn('[ITDepartmentView] fetch error:', e));
     }, []);
 

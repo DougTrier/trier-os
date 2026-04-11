@@ -77,7 +77,6 @@ export default function EscalationRulesPanel() {
     const [status, setStatus] = useState(null);
 
     const authHeaders = {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json'
     };
 

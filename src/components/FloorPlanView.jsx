@@ -259,7 +259,6 @@ export default function FloorPlanView({ plantId, isAdmin }) {
     )];
 
     const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': plantId
     };
 

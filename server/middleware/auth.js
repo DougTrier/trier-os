@@ -49,11 +49,18 @@ module.exports = async (req, res, next) => {
     }
 
     let token = '';
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-        token = authHeader.split(' ')[1];
-    } else if (req.path === '/database/export' && req.query.token) {
-        token = req.query.token;
+    if (req.cookies?.authToken) {
+        // Primary: httpOnly cookie — browser sessions (plant floor, corporate)
+        token = req.cookies.authToken;
+    } else {
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith('Bearer ')) {
+            // Fallback: Bearer token — Power BI, http-edge-agent, HA sync agent
+            token = authHeader.split(' ')[1];
+        } else if (req.path === '/database/export' && req.query.token) {
+            // Legacy: export download link with token in query string
+            token = req.query.token;
+        }
     }
 
     if (!token) return res.status(401).json({ error: 'Missing authorization token' });
@@ -140,7 +147,7 @@ module.exports = async (req, res, next) => {
 
         next();
     } catch (err) {
-        console.log(`🔐 [Auth Error] Invalid token: ${err.message}. Requested path: ${req.path}`);
+        console.error(`🔐 [Auth] Token rejected — ${req.path}`);
         return res.status(401).json({ error: 'Invalid or expired token' });
     }
 };

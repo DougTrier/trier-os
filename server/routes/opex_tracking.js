@@ -108,22 +108,55 @@ logDb.exec(`
         Resolved        INTEGER DEFAULT 0
     );
 `);
+// INFO-03: FK indexes for join performance as data grows
+try {
+    logDb.exec(`
+        CREATE INDEX IF NOT EXISTS idx_opex_outcomes_cid ON OpExOutcomes(CommitmentID);
+        CREATE INDEX IF NOT EXISTS idx_opex_alerts_cid   ON OpExAlerts(CommitmentID);
+        CREATE INDEX IF NOT EXISTS idx_opex_commits_plant ON OpExCommitments(PlantId);
+        CREATE INDEX IF NOT EXISTS idx_opex_commits_status ON OpExCommitments(Status);
+    `);
+} catch (_) {}
 
-// ── Auth Helper ───────────────────────────────────────────────────────────────
+// ── Auth Helpers ──────────────────────────────────────────────────────────────
+// isCorp: corporate-level roles that may see enterprise-wide financial data
 function isCorp(user) {
     return ['creator','corporate','it_admin','manager','plant_manager']
         .includes(user?.globalRole || user?.role);
+}
+// SEC-02: Whitelist plantId to prevent path traversal in captureBaseline()
+// Only alphanumeric, underscore, and hyphen characters are permitted.
+const SAFE_PLANT_RE = /^[a-zA-Z0-9_-]+$/;
+function sanitizePlantId(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    const s = raw.trim();
+    return SAFE_PLANT_RE.test(s) ? s : null;
 }
 
 // ── Baseline Capture ──────────────────────────────────────────────────────────
 // Re-runs the category algorithm for a specific plant and returns the current
 // raw metric value so it can be stored as a baseline at commit time.
+// Returns null on error (so callers can surface a warning rather than using 0).
+// SEC-02: plantId MUST be sanitized before calling this function.
 function captureBaseline(plantId, category) {
+    // BUG-02: all_sites is not a real plant DB — bail early with null
+    if (!plantId || plantId === 'all_sites') {
+        console.warn('[OpEx] captureBaseline: plantId "all_sites" is not supported — select a specific plant');
+        return null;
+    }
+    const safe = sanitizePlantId(plantId);
+    if (!safe) {
+        console.warn('[OpEx] captureBaseline: rejected unsafe plantId:', plantId);
+        return null;
+    }
     try {
         const dataDir = require('../resolve_data_dir');
         const Database = require('better-sqlite3');
-        const dbPath = path.join(dataDir, `${plantId}.db`);
-        if (!require('fs').existsSync(dbPath)) return 0;
+        const dbPath = path.join(dataDir, `${safe}.db`);
+        if (!require('fs').existsSync(dbPath)) {
+            console.warn(`[OpEx] captureBaseline: DB not found for plant "${safe}" — baseline will be null`);
+            return null;
+        }
         const db = new Database(dbPath, { readonly: true });
 
         let value = 0;
@@ -233,16 +266,13 @@ function captureBaseline(plantId, category) {
 
         db.close();
         return Math.round(value * 100) / 100;
-    } catch { return 0; }
+    } catch (err) {
+        // QUAL-01: log the real error so silent failures are observable in server logs
+        console.warn('[OpEx] captureBaseline failed:', err.message, { plantId, category });
+        return null;
+    }
 }
-
-function getCurrentFY() {
-    const now = new Date();
-    const fyStart = now.getMonth() >= 9
-        ? now.getFullYear()
-        : now.getFullYear() - 1;
-    return `${fyStart}-${fyStart + 1}`;
-}
+// BUG-04: getCurrentFY() was unused — removed to eliminate dead code.
 
 // ── POST /api/opex-tracking/commit ────────────────────────────────────────────
 router.post('/commit', (req, res) => {
@@ -255,12 +285,23 @@ router.post('/commit', (req, res) => {
         predictedSavings, targetDate, assignedTo, priority, actionPlanStep, notes
     } = req.body;
 
-    if (!plantId || !category || !itemDescription || !targetDate) {
-        return res.status(400).json({ error: 'plantId, category, itemDescription, and targetDate are required' });
+    // SEC-02 / BUG-02: validate and sanitize plantId before any DB path use
+    const safePlantId = sanitizePlantId(plantId);
+    if (!safePlantId || safePlantId === 'all_sites') {
+        return res.status(400).json({
+            error: 'A specific plant must be selected — "all_sites" commitments are not supported. Open the game plan from a specific plant context or select a plant in the commit dialog.'
+        });
+    }
+    if (!category || !itemDescription || !targetDate) {
+        return res.status(400).json({ error: 'category, itemDescription, and targetDate are required' });
     }
 
     // Capture live baseline before commitment is recorded
-    const baselineValue = captureBaseline(plantId, category);
+    const baselineValue = captureBaseline(safePlantId, category);
+    // QUAL-01: null means capture failed — commit still proceeds but warns caller
+    const baselineWarning = baselineValue === null
+        ? 'Baseline capture failed — outcomes will be measured relative to zero. Check server logs.'
+        : null;
 
     const result = logDb.prepare(`
         INSERT INTO OpExCommitments
@@ -268,8 +309,8 @@ router.post('/commit', (req, res) => {
            CommittedBy, TargetDate, AssignedTo, Priority, ActionPlanStep, Notes)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
-        plantId, category, itemKey || null, itemDescription,
-        predictedSavings || 0, baselineValue,
+        safePlantId, category, itemKey || null, itemDescription,
+        predictedSavings || 0, baselineValue ?? 0,
         user.Username, targetDate,
         assignedTo || null, priority || 'HIGH',
         actionPlanStep || null, notes || null
@@ -285,49 +326,56 @@ router.post('/commit', (req, res) => {
         `).run(result.lastInsertRowid, days, predictedSavings || 0, checkDate.toISOString());
     }
 
-    logAudit(user.Username, 'OPEX_COMMITMENT_CREATED', plantId, {
-        id: result.lastInsertRowid, category, item: itemDescription, predicted: predictedSavings
+    logAudit(user.Username, 'OPEX_COMMITMENT_CREATED', safePlantId, {
+        id: result.lastInsertRowid, category, item: itemDescription, predicted: predictedSavings, baselineValue
     }, 'INFO', req.ip);
 
     res.json({
         success: true,
         commitmentId: result.lastInsertRowid,
         baselineValue,
+        warning: baselineWarning,
         message: `Commitment created. Outcome checkpoints scheduled at 30/60/90 days.`
     });
 });
 
 // ── GET /api/opex-tracking/commitments ───────────────────────────────────────
+// SEC-01: requires corporate role — commitment list includes enterprise financials
 router.get('/commitments', (req, res) => {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Authentication required' });
+    if (!user)        return res.status(401).json({ error: 'Authentication required' });
+    if (!isCorp(user)) return res.status(403).json({ error: 'Corporate role required' });
 
-    const { plantId, status, category, limit = 200 } = req.query;
+    const { plantId, status, category } = req.query;
+    // QUAL-02: cap user-controlled limit at 500 to prevent full-table dumps
+    const limit = Math.min(parseInt(req.query.limit) || 200, 500);
     let sql = 'SELECT * FROM OpExCommitments WHERE 1=1';
     const params = [];
     if (plantId)  { sql += ' AND PlantId = ?';  params.push(plantId); }
     if (status)   { sql += ' AND Status = ?';   params.push(status.toUpperCase()); }
     if (category) { sql += ' AND Category = ?'; params.push(category); }
     sql += ' ORDER BY CommittedAt DESC LIMIT ?';
-    params.push(parseInt(limit));
+    params.push(limit);
 
     const rows = logDb.prepare(sql).all(...params);
 
-    // Attach latest outcome to each commitment
-    const withOutcomes = rows.map(c => {
-        const outcomes = logDb.prepare(
-            'SELECT * FROM OpExOutcomes WHERE CommitmentID = ? ORDER BY CheckInterval ASC'
-        ).all(c.ID);
-        const alerts = logDb.prepare(
-            'SELECT * FROM OpExAlerts WHERE CommitmentID = ? AND Resolved = 0'
-        ).all(c.ID);
-        return { ...c, outcomes, alerts };
-    });
+    // PERF-01: batch outcomes + alerts in 2 queries instead of N+1
+    const ids = rows.map(r => r.ID);
+    const allOutcomes = ids.length
+        ? logDb.prepare(`SELECT * FROM OpExOutcomes WHERE CommitmentID IN (${ids.map(() => '?').join(',')}) ORDER BY CheckInterval ASC`).all(...ids)
+        : [];
+    const allAlerts = ids.length
+        ? logDb.prepare(`SELECT * FROM OpExAlerts WHERE CommitmentID IN (${ids.map(() => '?').join(',')}) AND Resolved = 0`).all(...ids)
+        : [];
+    const outMap   = {}; allOutcomes.forEach(o => { (outMap[o.CommitmentID]   ||= []).push(o); });
+    const alertMap = {}; allAlerts.forEach(a => { (alertMap[a.CommitmentID] ||= []).push(a); });
+    const withOutcomes = rows.map(c => ({ ...c, outcomes: outMap[c.ID] || [], alerts: alertMap[c.ID] || [] }));
 
     res.json({ commitments: withOutcomes, total: withOutcomes.length });
 });
 
 // ── PATCH /api/opex-tracking/commitments/:id/status ──────────────────────────
+// SEC-01: any authenticated user (incl. plant managers) may update their own commitments
 router.patch('/commitments/:id/status', (req, res) => {
     const user = req.user;
     if (!user) return res.status(401).json({ error: 'Authentication required' });
@@ -363,9 +411,11 @@ router.patch('/commitments/:id/status', (req, res) => {
 });
 
 // ── GET /api/opex-tracking/outcomes ──────────────────────────────────────────
+// SEC-01: corporate role required — outcomes contain realized financial deltas
 router.get('/outcomes', (req, res) => {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Authentication required' });
+    if (!user)        return res.status(401).json({ error: 'Authentication required' });
+    if (!isCorp(user)) return res.status(403).json({ error: 'Corporate role required' });
     const { commitmentId, status } = req.query;
     let sql = 'SELECT o.*, c.PlantId, c.Category, c.ItemDescription, c.AssignedTo FROM OpExOutcomes o JOIN OpExCommitments c ON c.ID = o.CommitmentID WHERE 1=1';
     const params = [];
@@ -413,17 +463,21 @@ router.post('/outcomes/:commitmentId', (req, res) => {
 });
 
 // ── GET /api/opex-tracking/calibration ───────────────────────────────────────
+// SEC-01: corporate role required — calibration rates reveal per-plant performance history
 router.get('/calibration', (req, res) => {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Authentication required' });
+    if (!user)        return res.status(401).json({ error: 'Authentication required' });
+    if (!isCorp(user)) return res.status(403).json({ error: 'Corporate role required' });
     const rows = logDb.prepare('SELECT * FROM OpExPlantCalibration ORDER BY PlantId, Category').all();
     res.json({ calibration: rows });
 });
 
 // ── GET /api/opex-tracking/alerts ────────────────────────────────────────────
+// SEC-01: corporate role required — alerts contain plant escalation details
 router.get('/alerts', (req, res) => {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Authentication required' });
+    if (!user)        return res.status(401).json({ error: 'Authentication required' });
+    if (!isCorp(user)) return res.status(403).json({ error: 'Corporate role required' });
     const rows = logDb.prepare(`
         SELECT a.*, c.PlantId, c.Category, c.ItemDescription, c.AssignedTo, c.PredictedSavings
         FROM OpExAlerts a
@@ -435,9 +489,11 @@ router.get('/alerts', (req, res) => {
 });
 
 // ── PATCH /api/opex-tracking/alerts/:id/acknowledge ──────────────────────────
+// SEC-01: corporate role required — only corp can dismiss enterprise escalations
 router.patch('/alerts/:id/acknowledge', (req, res) => {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Authentication required' });
+    if (!user)        return res.status(401).json({ error: 'Authentication required' });
+    if (!isCorp(user)) return res.status(403).json({ error: 'Corporate role required' });
     const { resolve } = req.body;
     logDb.prepare(`
         UPDATE OpExAlerts SET AcknowledgedBy=?, AcknowledgedAt=datetime('now'), Resolved=?
@@ -449,9 +505,11 @@ router.patch('/alerts/:id/acknowledge', (req, res) => {
 
 // ── GET /api/opex-tracking/dashboard ─────────────────────────────────────────
 // Corporate roll-up: commitment counts, realized vs. predicted, plant heat map.
+// SEC-01: corporate role required — contains enterprise-wide financial summary
 router.get('/dashboard', (req, res) => {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Authentication required' });
+    if (!user)        return res.status(401).json({ error: 'Authentication required' });
+    if (!isCorp(user)) return res.status(403).json({ error: 'Corporate role required' });
 
     const counts = logDb.prepare(`
         SELECT Status, COUNT(*) as n FROM OpExCommitments GROUP BY Status
@@ -520,12 +578,21 @@ router.get('/dashboard', (req, res) => {
 });
 
 // ── GET /api/opex-tracking/plant/:plantId ─────────────────────────────────────
-// Plant-level view — only their commitments and outcomes.
+// Plant-level view — plant managers see only their own plant, corp sees any.
+// INFO-02: verify caller's plant scope — plant techs cannot cross plant boundaries.
 router.get('/plant/:plantId', (req, res) => {
     const user = req.user;
     if (!user) return res.status(401).json({ error: 'Authentication required' });
 
     const { plantId } = req.params;
+    // SEC-02: sanitize plantId from URL params
+    const safePlant = sanitizePlantId(plantId);
+    if (!safePlant) return res.status(400).json({ error: 'Invalid plant identifier' });
+    // INFO-02: plant-scoped users can only see their own plant; corp roles see any
+    const callerPlant = user.PlantId || user.plantId;
+    if (!isCorp(user) && callerPlant && callerPlant !== safePlant) {
+        return res.status(403).json({ error: 'Access restricted to your assigned plant' });
+    }
     const commitments = logDb.prepare(`
         SELECT c.*,
                (SELECT COUNT(*) FROM OpExOutcomes o
@@ -533,7 +600,7 @@ router.get('/plant/:plantId', (req, res) => {
                (SELECT COUNT(*) FROM OpExOutcomes o
                 WHERE o.CommitmentID = c.ID AND o.Status = 'MISSED') as missed
         FROM OpExCommitments c
-        WHERE c.PlantId = ?
+        WHERE c.PlantId = ?  -- safePlant used to prevent path coupling
         ORDER BY
             CASE c.Status
                 WHEN 'OPEN'        THEN 1
@@ -543,7 +610,7 @@ router.get('/plant/:plantId', (req, res) => {
                 ELSE 5
             END,
             c.TargetDate ASC
-    `).all(plantId);
+    `).all(safePlant);
 
     const openCount = commitments.filter(c =>
         ['OPEN','IN_PROGRESS'].includes(c.Status) && c.TargetDate < new Date().toISOString().split('T')[0]
@@ -553,9 +620,9 @@ router.get('/plant/:plantId', (req, res) => {
         SELECT a.* FROM OpExAlerts a
         JOIN OpExCommitments c ON c.ID = a.CommitmentID
         WHERE c.PlantId = ? AND a.Resolved = 0
-    `).all(plantId);
+    `).all(safePlant);
 
-    res.json({ plantId, commitments, overdueCount: openCount, alerts });
+    res.json({ plantId: safePlant, commitments, overdueCount: openCount, alerts });
 });
 
 // ── Calibration Update Helper ─────────────────────────────────────────────────
@@ -590,14 +657,17 @@ function updateCalibration(plantId, category, realizationDecimal) {
 }
 
 // ── Exported Cron Function ────────────────────────────────────────────────────
-// Called by server/index.js every 24 hours (Stage 5.7).
+// Called by server/index.js every 24 hours (Stage 5.9).
 // Re-measures each PENDING outcome checkpoint that is now due.
+// SEC-04 fix: corrected stage number from 5.7 → 5.9
 function runOpExOutcomeCron() {
     try {
         const now       = new Date();
         const nowIso    = now.toISOString();
 
-        // Find all PENDING outcome checkpoints whose scheduled MeasuredAt has passed
+        // BUG-01: Include OPEN and IN_PROGRESS commitments — if action wasn't completed
+        // and its checkpoint is due, the outcome is MISSED by definition. Measuring only
+        // COMPLETED skips the plants most in need of accountability.
         const pending = logDb.prepare(`
             SELECT o.*, c.PlantId, c.Category, c.BaselineValue, c.PredictedSavings,
                    c.Status as CommitStatus, c.ItemDescription
@@ -605,7 +675,7 @@ function runOpExOutcomeCron() {
             JOIN OpExCommitments c ON c.ID = o.CommitmentID
             WHERE o.Status = 'PENDING'
               AND o.MeasuredAt <= ?
-              AND c.Status = 'COMPLETED'
+              AND c.Status NOT IN ('DISPUTED')
         `).all(nowIso);
 
         if (pending.length === 0) return;
@@ -614,15 +684,29 @@ function runOpExOutcomeCron() {
 
         for (const checkpoint of pending) {
             try {
-                const currentValue   = captureBaseline(checkpoint.PlantId, checkpoint.Category);
-                const delta          = checkpoint.BaselineValue - currentValue;
-                const realizationPct = checkpoint.PredictedSavings > 0
-                    ? Math.round((delta / checkpoint.PredictedSavings) * 10000) / 100
-                    : 0;
+                // BUG-01: If the commitment itself is not COMPLETED, the action was not taken —
+                // outcome is MISSED regardless of what the algorithm measures.
+                let currentValue = null;
+                let realizationPct = 0;
+                let outcomeStatus  = 'MISSED';
 
-                const outcomeStatus  = realizationPct >= 80 ? 'VALIDATED'
-                                     : realizationPct >= 30 ? 'PARTIAL'
-                                     : 'MISSED';
+                if (checkpoint.CommitStatus === 'COMPLETED') {
+                    currentValue   = captureBaseline(checkpoint.PlantId, checkpoint.Category);
+                    const baseline = checkpoint.BaselineValue || 0;
+                    const delta    = baseline - (currentValue ?? baseline);
+                    realizationPct = checkpoint.PredictedSavings > 0
+                        ? Math.round((delta / checkpoint.PredictedSavings) * 10000) / 100
+                        : 0;
+                    outcomeStatus  = realizationPct >= 80 ? 'VALIDATED'
+                                   : realizationPct >= 30 ? 'PARTIAL'
+                                   : 'MISSED';
+                } else {
+                    // Commitment still open/in-progress at checkpoint time — automatic MISSED
+                    console.warn(
+                        `[OpExCron] Auto-MISSED (commitment not completed): ${checkpoint.ItemDescription} @ ` +
+                        `${checkpoint.PlantId} (${checkpoint.CheckInterval}d, status=${checkpoint.CommitStatus})`
+                    );
+                }
 
                 logDb.prepare(`
                     UPDATE OpExOutcomes
@@ -630,27 +714,39 @@ function runOpExOutcomeCron() {
                     WHERE ID=?
                 `).run(currentValue, realizationPct, outcomeStatus, checkpoint.ID);
 
-                // Update calibration model
-                updateCalibration(checkpoint.PlantId, checkpoint.Category, realizationPct / 100);
+                // Update calibration model (only for COMPLETED commitments — partial data skews the rate)
+                if (checkpoint.CommitStatus === 'COMPLETED') {
+                    updateCalibration(checkpoint.PlantId, checkpoint.Category, realizationPct / 100);
+                }
 
-                // Fire alert on MISSED
+                // BUG-05: Deduplicate MISSED_OUTCOME alerts — only insert if none open yet
                 if (outcomeStatus === 'MISSED') {
-                    logDb.prepare(`
-                        INSERT INTO OpExAlerts (CommitmentID, AlertType)
-                        VALUES (?,'MISSED_OUTCOME')
-                    `).run(checkpoint.CommitmentID);
+                    const alreadyAlerted = logDb.prepare(`
+                        SELECT 1 FROM OpExAlerts
+                        WHERE CommitmentID=? AND AlertType='MISSED_OUTCOME' AND Resolved=0
+                    `).get(checkpoint.CommitmentID);
+                    if (!alreadyAlerted) {
+                        logDb.prepare(
+                            `INSERT INTO OpExAlerts (CommitmentID, AlertType) VALUES (?,'MISSED_OUTCOME')`
+                        ).run(checkpoint.CommitmentID);
+                    }
                     console.warn(
                         `[OpExCron] MISSED: ${checkpoint.ItemDescription} @ ${checkpoint.PlantId} ` +
                         `(${checkpoint.CheckInterval}d check) — ${realizationPct}% realized`
                     );
                 }
 
-                // If 90-day check is MISSED, escalate to corporate
+                // BUG-05: Deduplicate ESCALATION alerts on 90-day MISSED
                 if (checkpoint.CheckInterval === 90 && outcomeStatus === 'MISSED') {
-                    logDb.prepare(`
-                        INSERT INTO OpExAlerts (CommitmentID, AlertType)
-                        VALUES (?,'ESCALATION')
-                    `).run(checkpoint.CommitmentID);
+                    const alreadyEscalated = logDb.prepare(`
+                        SELECT 1 FROM OpExAlerts
+                        WHERE CommitmentID=? AND AlertType='ESCALATION' AND Resolved=0
+                    `).get(checkpoint.CommitmentID);
+                    if (!alreadyEscalated) {
+                        logDb.prepare(
+                            `INSERT INTO OpExAlerts (CommitmentID, AlertType) VALUES (?,'ESCALATION')`
+                        ).run(checkpoint.CommitmentID);
+                    }
                     console.warn(
                         `[OpExCron] ESCALATION: 90-day MISSED for Commitment #${checkpoint.CommitmentID}`
                     );
@@ -688,5 +784,5 @@ function runOpExOutcomeCron() {
     }
 }
 
-module.exports = router;
-module.exports.runOpExOutcomeCron = runOpExOutcomeCron;
+// QUAL-05: Use clean object export — avoids fragile property-on-function pattern
+module.exports = { router, runOpExOutcomeCron };

@@ -50,7 +50,6 @@ const API = (path, arg2) => {
     return fetch(path, {
         ...opts,
         headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
             'Content-Type': 'application/json',
             'x-plant-id': plantId,
             ...opts.headers

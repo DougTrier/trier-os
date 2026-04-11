@@ -62,7 +62,6 @@ export default function AnalyticsDashboard({ plantId }) {
             try {
                 const effectivePlant = plantId || localStorage.getItem('selectedPlantId') || 'all_sites';
                 const headers = {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': effectivePlant
                 };
                 const [narrativeRes, auditRes, utilRes] = await Promise.all([

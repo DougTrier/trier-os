@@ -86,7 +86,7 @@ router.post('/', (req, res) => {
         res.status(201).json({ success: true, message: 'PM Schedule created successfully' });
     } catch (err) {
         console.error('Error creating PM Schedule:', err.message);
-        res.status(500).json({ error: 'Failed to create PM Schedule: ' + err.message });
+        res.status(500).json({ error: 'Failed to create PM Schedule: ' });
     }
 });
 
@@ -244,7 +244,7 @@ router.put('/:id', (req, res) => {
         res.json({ success: true, message: 'PM Schedule updated successfully' });
     } catch (err) {
         console.error('Error updating PM Schedule:', err.message);
-        res.status(500).json({ error: 'Failed to update PM Schedule: ' + err.message });
+        res.status(500).json({ error: 'Failed to update PM Schedule: ' });
     }
 });
 

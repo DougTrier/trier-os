@@ -407,7 +407,6 @@ export default function AssetsView({ plantId, plantLabel }) {
             const res = await fetch('/api/ocr/scan', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId')
                 },
                 body: formData
@@ -429,7 +428,6 @@ export default function AssetsView({ plantId, plantLabel }) {
                     try {
                         const partRes = await fetch(`/api/parts?search=${encodeURIComponent(lookupTerm)}&limit=1`, {
                             headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                                 'x-plant-id': localStorage.getItem('selectedPlantId')
                             }
                         });

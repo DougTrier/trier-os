@@ -593,7 +593,7 @@ router.post('/scan', upload.single('photo'), async (req, res) => {
     } catch (err) {
         console.error('OCR scan error:', err);
         try { fs.unlinkSync(filePath); } catch (e) { /* Intentional: error-path temp upload cleanup */ }
-        res.status(500).json({ error: 'OCR scan failed: ' + err.message });
+        res.status(500).json({ error: 'OCR scan failed: ' });
     }
 });
 

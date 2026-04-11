@@ -44,7 +44,7 @@ export default function ITRouteGuard({ children }) {
         }
 
         fetch('/api/corp-analytics/access/check', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: {  }
         })
             .then(r => r.json())
             .then(d => {

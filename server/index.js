@@ -85,6 +85,7 @@ if (isMissingOrWeak) {
 
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser'); // Task 1.2: httpOnly cookie auth (INFO-01)
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 console.log('[BOOT] Stage 2: Loading database...');
@@ -243,7 +244,7 @@ setImmediate(() => { try { runUtilityAnomalyCheck(); } catch (_) {} });
 // Runs every 24 hours. Re-measures each due 30/60/90-day outcome checkpoint
 // against live plant data, updates realization rates, fires escalation alerts.
 console.log('[BOOT] Stage 5.9: OpEx self-healing outcome cron configured (every 24 hrs)');
-const { runOpExOutcomeCron } = require('./routes/opex_tracking');
+const { runOpExOutcomeCron } = require('./routes/opex_tracking'); // QUAL-05: clean object export
 setInterval(() => {
     try { runOpExOutcomeCron(); }
     catch (e) { console.warn('[OpExCron] Cron failed:', e.message); }
@@ -351,6 +352,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cookieParser()); // Task 1.2: must be before auth middleware so req.cookies.authToken is readable
 const _resolvedDataDir = require('./resolve_data_dir');
 app.use('/uploads', express.static(path.join(_resolvedDataDir, 'uploads')));
 
@@ -2009,7 +2011,7 @@ app.get('/api/address', (req, res) => {
 
 // â”€â”€ Shift Handoff Logbook (extracted to routes/shiftLog.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use('/api/shift-log',    require('./routes/shiftLog'));
-app.use('/api/opex-tracking', require('./routes/opex_tracking'));  // OpEx Self-Healing Loop (§ Tracking)
+app.use('/api/opex-tracking', require('./routes/opex_tracking').router);  // OpEx Self-Healing Loop (Tracking)
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use((req, res, next) => {

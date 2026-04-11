@@ -112,7 +112,7 @@ router.get('/consistency', (req, res) => {
         }
         res.json({ plantId, counts, serverTime: new Date().toISOString() });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -122,7 +122,7 @@ router.post('/sync-now', async (req, res) => {
         const result = await haSync.pushChangesToSecondary();
         res.json({ success: true, ...result });
     } catch (err) {
-        res.status(500).json({ error: 'Sync failed', detail: err.message });
+        res.status(500).json({ error: 'Sync failed'});
     }
 });
 
@@ -134,7 +134,7 @@ router.post('/consistency-check', async (req, res) => {
         const result = await haSync.consistencyCheck(plantId);
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -145,7 +145,7 @@ router.get('/snapshots', (req, res) => {
         const snapshots = haSync.listSnapshots(plantId);
         res.json({ snapshots });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -156,7 +156,7 @@ router.post('/rollback', (req, res) => {
         const result = haSync.rollbackToSnapshot(plantId, snapshotFile);
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -206,7 +206,7 @@ router.post('/promote', async (req, res) => {
             restartRequired: true
         });
     } catch (err) {
-        res.status(500).json({ error: 'Failover failed', detail: err.message });
+        res.status(500).json({ error: 'Failover failed'});
     }
 });
 
@@ -292,7 +292,7 @@ router.post('/config/generate-key', (req, res) => {
         console.log('  🔑 [HA] New pairing key generated via admin UI');
         res.json({ success: true, key });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to generate key', detail: err.message });
+        res.status(500).json({ error: 'Failed to generate key'});
     }
 });
 
@@ -310,7 +310,7 @@ router.post('/config/import-key', (req, res) => {
         console.log('  🔑 [HA] Pairing key imported from master via admin UI');
         res.json({ success: true, message: 'Pairing key imported successfully' });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to import key', detail: err.message });
+        res.status(500).json({ error: 'Failed to import key'});
     }
 });
 

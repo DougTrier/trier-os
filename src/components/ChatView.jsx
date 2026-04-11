@@ -119,7 +119,7 @@ export default function ChatView({ selectedPlant, plants }) {
         setIsSearching(true);
         try {
             const res = await fetch(`/api/chat/search?q=${encodeURIComponent(searchQuery.trim())}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setSearchResults(data);

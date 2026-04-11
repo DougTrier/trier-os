@@ -210,7 +210,7 @@ router.post('/', (req, res) => {
         try { logAudit('SAFETY_INCIDENT_REPORTED', reportedBy, plantId, { incidentNumber, type: incidentType, severity, title }); } catch(e) {}
         console.log(`[SAFETY] ⚠️ Incident ${incidentNumber} reported: ${title} (${severity})`);
         res.status(201).json({ success: true, id: result.lastInsertRowid, incidentNumber });
-    } catch (err) { res.status(500).json({ error: 'Failed to report incident: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to report incident: ' }); }
 });
 
 router.put('/:id', (req, res) => {

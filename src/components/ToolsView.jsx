@@ -39,7 +39,7 @@ import { statusClass, formatDate } from '../utils/formatDate';
 import LoadingSpinner from './LoadingSpinner';
 import { useTranslation } from '../i18n/index.jsx';
 
-const API = (path, o = {}) => fetch(`/api/tools${path}`, { ...o, headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
+const API = (path, o = {}) => fetch(`/api/tools${path}`, { ...o, headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
 const Badge = ({ color, children }) => <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: `${color}22`, color, border: `1px solid ${color}44` }}>{children}</span>;
 const FF = ({ t, label, type='text', value, onChange, options, required }) => {
     return (
@@ -365,7 +365,7 @@ function BadgeScannerModal({ mode, onClose }) {
             try {
                 // Find internal tool ID from ToolID string
                 const searchRes = await fetch(`/api/tools?search=${encodeURIComponent(code)}`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' }
+                    headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' }
                 });
                 const tools = await searchRes.json();
                 // Match the ToolID
@@ -381,7 +381,7 @@ function BadgeScannerModal({ mode, onClose }) {
                 if (mode === 'checkout') {
                     const res = await fetch(`/api/tools/${tool.ID}/checkout`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
                         body: JSON.stringify({ checkedOutBy: employee, dueBackDays: 7, notes: 'Quick Scan Checkout' })
                     });
                     if (res.ok) {
@@ -395,7 +395,7 @@ function BadgeScannerModal({ mode, onClose }) {
                 } else if (mode === 'checkin') {
                     const res = await fetch(`/api/tools/${tool.ID}/return`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1' },
                         body: JSON.stringify({ returnedBy: localStorage.getItem('userName') || 'scan-user', condition: 'Good', notes: 'Quick Scan Return' })
                     });
                     if (res.ok) {

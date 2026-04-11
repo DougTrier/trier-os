@@ -65,7 +65,7 @@ router.get('/', (req, res) => {
         res.json(rows);
     } catch (err) {
         console.error('Error fetching PartVendors:', err.message);
-        res.status(500).json({ error: 'Failed to fetch purchase logic: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch purchase logic: ' });
     }
 });
 
@@ -81,7 +81,7 @@ router.post('/', (req, res) => {
         res.status(201).json({ success: true, message: 'Vendor record created successfully' });
     } catch (err) {
         console.error('Error creating PartVendors record:', err.message);
-        res.status(500).json({ error: 'Failed to create vendor record: ' + err.message });
+        res.status(500).json({ error: 'Failed to create vendor record: ' });
     }
 });
 
@@ -96,7 +96,7 @@ router.put('/:partId/:vendorId', (req, res) => {
         res.json({ success: true, message: 'Vendor record updated successfully' });
     } catch (err) {
         console.error('Error updating PartVendors record:', err.message);
-        res.status(500).json({ error: 'Failed to update vendor record: ' + err.message });
+        res.status(500).json({ error: 'Failed to update vendor record: ' });
     }
 });
 
@@ -107,7 +107,7 @@ router.delete('/:partId/:vendorId', (req, res) => {
         db.getDb().prepare('DELETE FROM PartVendors WHERE PartID = ? AND VendorID = ?').run(partId, vendorId);
         res.json({ success: true, message: 'Vendor record deleted' });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to delete vendor record: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete vendor record: ' });
     }
 });
 

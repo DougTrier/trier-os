@@ -36,7 +36,7 @@ import { printRecord, infoGridHTML, tableHTML } from '../utils/printRecord';
 import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path) => fetch(`/api/it${path}`, {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'all_sites' },
+    headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'all_sites' },
 });
 
 const KPI = ({ icon: Icon, label, value, sub, color }) => (

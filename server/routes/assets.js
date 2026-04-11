@@ -155,7 +155,7 @@ router.get('/', (req, res) => {
         res.json(result);
     } catch (err) {
         console.error('GET /api/assets error:', err);
-        res.status(500).json({ error: 'Failed to fetch assets: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch assets: ' });
     }
 });
 
@@ -723,7 +723,7 @@ router.post('/', (req, res) => {
         }
     } catch (err) {
         console.error('POST /api/assets error:', err);
-        res.status(500).json({ error: 'Failed to create asset: ' + err.message });
+        res.status(500).json({ error: 'Failed to create asset: ' });
     }
 });
 
@@ -749,7 +749,7 @@ router.put('/:id', (req, res) => {
         }
     } catch (err) {
         console.error('PUT /api/assets/:id error:', err);
-        res.status(500).json({ error: 'Failed to update asset: ' + err.message });
+        res.status(500).json({ error: 'Failed to update asset: ' });
     }
 });
 
@@ -767,7 +767,7 @@ router.post('/:id/delete', (req, res) => {
         res.json({ success: true, message: 'Asset flagged as deleted' });
     } catch (err) {
         console.error('POST /api/assets/:id/delete error:', err);
-        res.status(500).json({ error: 'Failed to delete asset: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete asset: ' });
     }
 });
 
@@ -782,7 +782,7 @@ router.post('/:id/restore', (req, res) => {
         res.json({ success: true, message: 'Asset restored to active inventory' });
     } catch (err) {
         console.error('POST /api/assets/:id/restore error:', err);
-        res.status(500).json({ error: 'Failed to restore asset: ' + err.message });
+        res.status(500).json({ error: 'Failed to restore asset: ' });
     }
 });
 
@@ -998,7 +998,7 @@ router.post('/:id/photos/:filename/ocr', async (req, res) => {
         res.json(results);
     } catch (err) {
         console.error('OCR scan error:', err);
-        res.status(500).json({ error: 'OCR scan failed: ' + err.message });
+        res.status(500).json({ error: 'OCR scan failed: ' });
     }
 });
 

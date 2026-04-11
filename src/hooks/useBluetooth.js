@@ -72,9 +72,7 @@ export default function useBluetooth(onBeaconDetected) {
     // Load known beacon MACs from backend once on mount (for proximity auto-populate)
     useEffect(() => {
         const plantId = localStorage.getItem('selectedPlantId') || 'Demo_Plant_1';
-        fetch(`/api/ble/beacons?plantId=${plantId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-        })
+        fetch(`/api/ble/beacons?plantId=${plantId}`)
             .then(r => r.ok ? r.json() : [])
             .then(beacons => {
                 const map = {};
@@ -83,9 +81,7 @@ export default function useBluetooth(onBeaconDetected) {
             })
             .catch(() => {});
 
-        fetch(`/api/ble/anchors?plantId=${plantId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-        })
+        fetch(`/api/ble/anchors?plantId=${plantId}`)
             .then(r => r.ok ? r.json() : [])
             .then(data => { anchorsRef.current = Array.isArray(data) ? data : []; })
             .catch(() => {});

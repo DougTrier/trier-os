@@ -36,7 +36,7 @@ import {
 import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path, opts = {}) => fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+    headers: { 'Content-Type': 'application/json' },
     ...opts,
 });
 

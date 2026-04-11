@@ -63,7 +63,6 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
 
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'x-plant-id': plantId
     };
 
@@ -86,7 +85,6 @@ export default function AISopGenerator({ plantId, onClose, onSaved }) {
                 const res = await fetch('/api/procedures/extract-text', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                         'x-plant-id': plantId
                     },
                     body: formData

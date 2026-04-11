@@ -53,12 +53,10 @@ export default function PersonalIntelligence({ onNavigate }) {
     const [search, setSearch] = useState('');
 
     const fetchWatchlist = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) { setLoading(false); return; }
         setLoading(true);
         try {
             const res = await fetch('/api/watchlist', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {}
             });
             if (!res.ok) { setLoading(false); return; }
             const data = await res.json();
@@ -75,7 +73,7 @@ export default function PersonalIntelligence({ onNavigate }) {
         try {
             await fetch(`/api/watchlist/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             setItems(prev => prev.filter(i => i.id !== id));
         } catch (err) {
@@ -332,10 +330,8 @@ export function FollowButton({ itemType, itemId, itemLabel, itemMeta, size = 'no
 
     useEffect(() => {
         if (!itemType || !itemId) return;
-        const token = localStorage.getItem('authToken');
-        if (!token) { setLoading(false); return; }
         fetch(`/api/watchlist/check/${itemType}/${itemId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: {}
         })
             .then(r => r.ok ? r.json() : { watching: false })
             .then(data => {
@@ -353,7 +349,7 @@ export function FollowButton({ itemType, itemId, itemLabel, itemMeta, size = 'no
             if (watching) {
                 await fetch(`/api/watchlist/item/${itemType}/${itemId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                    headers: {  }
                 });
                 setWatching(false);
                 setWatchId(null);
@@ -361,8 +357,7 @@ export function FollowButton({ itemType, itemId, itemLabel, itemMeta, size = 'no
                 const res = await fetch('/api/watchlist', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ itemType, itemId: String(itemId), itemLabel, itemMeta })
                 });

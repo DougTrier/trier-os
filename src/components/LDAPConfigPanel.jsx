@@ -63,7 +63,7 @@ export default function LDAPConfigPanel() {
     const fetchConfig = async () => {
         try {
             const res = await fetch('/api/ldap/config', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setConfig(data);
@@ -91,8 +91,7 @@ export default function LDAPConfigPanel() {
             const res = await fetch('/api/ldap/config', {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     ...config,
@@ -115,7 +114,7 @@ export default function LDAPConfigPanel() {
         try {
             const res = await fetch('/api/ldap/test', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setTestResult(data);
@@ -131,7 +130,7 @@ export default function LDAPConfigPanel() {
         try {
             const res = await fetch('/api/ldap/sync', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: {  }
             });
             const data = await res.json();
             setSyncResult(data);

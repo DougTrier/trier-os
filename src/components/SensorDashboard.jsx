@@ -149,8 +149,7 @@ export default function SensorDashboard({ canConfig = false, canThresholds = fal
     });
 
     const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        'Content-Type': 'application/json'
     };
 
     const fetchAll = useCallback(async () => {

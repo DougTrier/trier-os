@@ -129,8 +129,7 @@ export default function ImportWizard({ currentPlant, onComplete, userRole }) {
             const res = await fetch('/api/database/import', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     targetTable: 'Asset',

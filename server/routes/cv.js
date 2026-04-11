@@ -147,7 +147,7 @@ Asset type context: ${assetType || 'industrial equipment'}`;
     } catch (err) {
         try { fs.unlinkSync(filePath); } catch { /**/ }
         console.error('[CV] analyze-defect error:', err.message);
-        res.status(500).json({ error: 'Defect analysis failed: ' + err.message });
+        res.status(500).json({ error: 'Defect analysis failed: ' });
     }
 });
 
@@ -191,7 +191,7 @@ If no person is visible, set personVisible to false and all PPE fields to false.
     } catch (err) {
         try { fs.unlinkSync(filePath); } catch { /**/ }
         console.error('[CV] ppe-check error:', err.message);
-        res.status(500).json({ error: 'PPE check failed: ' + err.message });
+        res.status(500).json({ error: 'PPE check failed: ' });
     }
 });
 
@@ -237,7 +237,7 @@ Component type: ${componentType || 'mechanical component'}`;
     } catch (err) {
         try { fs.unlinkSync(filePath); } catch { /**/ }
         console.error('[CV] condition error:', err.message);
-        res.status(500).json({ error: 'Condition scoring failed: ' + err.message });
+        res.status(500).json({ error: 'Condition scoring failed: ' });
     }
 });
 

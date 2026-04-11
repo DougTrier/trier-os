@@ -37,7 +37,7 @@ import SearchBar from './SearchBar';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
 
-const API = (path, o = {}) => fetch(`/api/vendor-portal${path}`, { ...o, headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
+const API = (path, o = {}) => fetch(`/api/vendor-portal${path}`, { ...o, headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...o.headers } });
 const Badge = ({ color, children }) => <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: `${color}22`, color, border: `1px solid ${color}44` }}>{children}</span>;
 
 const ActionBtn = ({ icon: Icon, tip, color, onClick }) => <button onClick={onClick} title={tip} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 6, color, display: 'flex', alignItems: 'center', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = `${color}22`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}><Icon size={16} /></button>;
@@ -272,7 +272,7 @@ function MessagesTab({ search }) {
 
     const loadMessages = async (vendorId) => {
         setSelected(vendorId);
-        const r = await fetch(`/api/vendor-portal/messages/${vendorId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } });
+        const r = await fetch(`/api/vendor-portal/messages/${vendorId}`, { headers: {  } });
         if (r.ok) setMessages(await r.json());
     };
 

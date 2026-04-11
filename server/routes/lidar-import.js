@@ -381,7 +381,7 @@ router.post('/', upload.single('lidarfile'), async (req, res) => {
     } catch (err) {
         console.error('📡 [LiDAR] Error:', err);
         if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch(e) {} }
-        res.status(500).json({ error: 'LiDAR import failed: ' + err.message });
+        res.status(500).json({ error: 'LiDAR import failed: ' });
     }
 });
 

@@ -38,7 +38,6 @@ import {
 const API = (path, opts = {}) => fetch(`/api/corp-analytics${path}`, {
     ...opts,
     headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         ...opts.headers,
     },

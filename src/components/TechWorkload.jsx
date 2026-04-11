@@ -51,7 +51,6 @@ export default function TechWorkload() {
         try {
             const res = await fetch('/api/technician-workload', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                 }
             });

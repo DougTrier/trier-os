@@ -62,7 +62,7 @@ router.get('/', (req, res) => {
         const records = db.prepare('SELECT * FROM Utilities ORDER BY ReadingDate DESC').all();
         res.json(records);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch utility records: ' + err.message });
+        res.status(500).json({ error: 'Failed to fetch utility records: ' });
     }
 });
 
@@ -108,7 +108,7 @@ router.post('/', (req, res) => {
 
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to save utility record: ' + err.message });
+        res.status(500).json({ error: 'Failed to save utility record: ' });
     }
 });
 
@@ -119,7 +119,7 @@ router.delete('/:id', (req, res) => {
         db.prepare('DELETE FROM Utilities WHERE ID = ?').run(req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to delete record: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete record: ' });
     }
 });
 
@@ -153,7 +153,7 @@ router.get('/summary', (req, res) => {
 
         res.json({ trends, currentMonth });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to generate utility summary: ' + err.message });
+        res.status(500).json({ error: 'Failed to generate utility summary: ' });
     }
 });
 
@@ -226,7 +226,7 @@ router.get('/insights', (req, res) => {
 
         res.json(insights);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to generate insights: ' + err.message });
+        res.status(500).json({ error: 'Failed to generate insights: ' });
     }
 });
 
@@ -241,7 +241,7 @@ router.get('/thresholds', (req, res) => {
         }));
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -263,7 +263,7 @@ router.post('/thresholds', (req, res) => {
         `).run(Type, PercentIncreaseAlert ?? 25.0, BaselineWindowDays ?? 7, AbsoluteMaxReading || null, Active ?? 1);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -274,7 +274,7 @@ router.get('/anomalies', (req, res) => {
         const rows = db.prepare('SELECT * FROM UtilityAnomalies ORDER BY DetectedAt DESC LIMIT 100').all();
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -286,7 +286,7 @@ router.post('/anomalies/:id/acknowledge', (req, res) => {
             .run(req.user?.username || 'user', req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 

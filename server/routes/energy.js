@@ -59,7 +59,7 @@ router.post('/reading', (req, res) => {
         `).run(plantId, assetId || null, meterType, reading, cost || null, periodStart || null, periodEnd || null, source || 'manual', req.user?.username || 'system');
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to log energy reading: ' + err.message });
+        res.status(500).json({ error: 'Failed to log energy reading: ' });
     }
 });
 
@@ -257,7 +257,7 @@ router.get('/tou', (req, res) => {
 
         res.json({ current, forecast, now: now.toISOString() });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -276,7 +276,7 @@ router.get('/tou-config', (req, res) => {
             PeakRateMultiplier: 1.5, OffPeakRateMultiplier: 0.7
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -302,7 +302,7 @@ router.put('/tou-config', (req, res) => {
                req.user?.username || 'system');
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -315,7 +315,7 @@ router.get('/asset-loads', (req, res) => {
         const rows = logisticsDb.prepare(`SELECT * FROM EnergyAssetLoad ${where} ORDER BY LoadKw DESC`).all(...params);
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -339,7 +339,7 @@ router.put('/asset-loads/:id', (req, res) => {
                Category || 'General', Notes || '', req.user?.username || 'system');
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -419,7 +419,7 @@ router.get('/arbitrage', (req, res) => {
         });
     } catch (err) {
         console.error('[ENERGY-ARBITRAGE]', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -430,7 +430,7 @@ router.get('/readings/:id', (req, res) => {
         if (!row) return res.status(404).json({ error: 'Reading not found' });
         res.json(row);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -445,7 +445,7 @@ router.put('/readings/:id', (req, res) => {
         logisticsDb.prepare(`UPDATE EnergyReadings SET ${set} WHERE ID = ?`).run(...vals, req.params.id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

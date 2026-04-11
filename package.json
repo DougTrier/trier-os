@@ -58,6 +58,7 @@
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^11.9.1",
     "cesium": "^1.139.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "dxf-parser": "^1.1.2",

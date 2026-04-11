@@ -202,7 +202,7 @@ router.post('/browse-custom', (req, res) => {
         res.json({ directory, files: results });
     } catch (err) {
         console.error('Browse custom failed:', err);
-        res.status(500).json({ error: 'Failed to browse directory: ' + err.message });
+        res.status(500).json({ error: 'Failed to browse directory: ' });
     }
 });
 
@@ -258,7 +258,7 @@ router.post('/upload-access', dbUpload.single('database'), (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: 'Upload failed: ' + err.message });
+        res.status(500).json({ error: 'Upload failed: ' });
     }
 });
 
@@ -443,7 +443,7 @@ router.post('/open-access', (req, res) => {
 
     } catch (err) {
         console.error('Open Access DB failed:', err);
-        res.status(500).json({ error: 'Failed to open Access database: ' + err.message });
+        res.status(500).json({ error: 'Failed to open Access database: ' });
     }
 });
 
@@ -525,7 +525,7 @@ router.post('/browse-access-table', (req, res) => {
 
     } catch (err) {
         console.error('Browse Access table failed:', err);
-        res.status(500).json({ error: 'Failed to browse table: ' + err.message });
+        res.status(500).json({ error: 'Failed to browse table: ' });
     }
 });
 
@@ -804,7 +804,7 @@ router.post('/auto-match', (req, res) => {
 
     } catch (err) {
         console.error('Auto-match failed:', err);
-        res.status(500).json({ error: 'Auto-match failed: ' + err.message });
+        res.status(500).json({ error: 'Auto-match failed: ' });
     }
 });
 
@@ -987,7 +987,7 @@ router.post('/connect-sql', async (req, res) => {
     } catch (err) {
         if (pool) try { await pool.close(); } catch (e) { /* ignore */ }
         console.error('SQL connection failed:', err.message);
-        res.status(500).json({ error: 'SQL connection failed: ' + err.message });
+        res.status(500).json({ error: 'SQL connection failed: ' });
     }
 });
 
@@ -1050,7 +1050,7 @@ router.post('/browse-sql-table', async (req, res) => {
     } catch (err) {
         if (pool) try { await pool.close(); } catch (e) { /* ignore */ }
         console.error('SQL browse failed:', err.message);
-        res.status(500).json({ error: 'Failed to browse SQL table: ' + err.message });
+        res.status(500).json({ error: 'Failed to browse SQL table: ' });
     }
 });
 
@@ -1394,7 +1394,7 @@ router.post('/execute', (req, res) => {
 
     } catch (err) {
         console.error('❌ Import execution failed:', err);
-        res.status(500).json({ error: 'Import failed: ' + err.message });
+        res.status(500).json({ error: 'Import failed: ' });
     }
 });
 

@@ -359,7 +359,7 @@ router.post('/vehicles', (req, res) => {
         res.status(201).json({ success: true, id: result.lastInsertRowid, unitNumber });
     } catch (err) {
         console.error('[FLEET] POST /vehicles error:', err.message);
-        res.status(500).json({ error: 'Failed to add vehicle: ' + err.message });
+        res.status(500).json({ error: 'Failed to add vehicle: ' });
     }
 });
 

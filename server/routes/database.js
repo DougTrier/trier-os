@@ -762,7 +762,7 @@ router.post('/reset-plant', (req, res) => {
         });
     } catch (err) {
         console.error('❌ Plant reset failed:', err);
-        res.status(500).json({ error: 'Plant reset failed: ' + err.message });
+        res.status(500).json({ error: 'Plant reset failed: ' });
     }
 });
 

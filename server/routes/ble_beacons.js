@@ -8,22 +8,22 @@
  * unless explicitly listed in the auth middleware's public allowlist.
  */
 
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright ï¿½ 2026 Trier OS. All Rights Reserved.
 
 /**
- * © 2026 Doug Trier. All Rights Reserved.
+ * ï¿½ 2026 Doug Trier. All Rights Reserved.
  * Trier OS is proprietary software. Unauthorized copying,
  * distribution, or reverse engineering is strictly prohibited.
  */
 /**
- * Trier OS — BLE Beacon Registry & Anchor Routes
+ * Trier OS ï¿½ BLE Beacon Registry & Anchor Routes
  * ================================================
  * Manages BLE beacon tags linked to assets and floor-plan anchor beacons
  * used for indoor trilateration positioning.
  *
  * Tables (in trier_logistics.db):
- *   ble_beacons  — asset-linked BLE beacon MACs
- *   ble_anchors  — fixed-position anchor beacons per floor plan zone
+ *   ble_beacons  ï¿½ asset-linked BLE beacon MACs
+ *   ble_anchors  ï¿½ fixed-position anchor beacons per floor plan zone
  *
  * ENDPOINTS:
  *   GET    /api/ble/beacons              List beacons (filter by plantId)
@@ -122,7 +122,7 @@ router.post('/beacons', (req, res) => {
         ).run(mac.toLowerCase(), assetId, plantId || null, linkedBy || null, notes || null);
         try { logAudit('BLE_BEACON_LINKED', linkedBy, plantId, { mac, assetId }); } catch { /**/ }
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed to link beacon: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to link beacon: ' }); }
 });
 
 router.put('/beacons/:mac', (req, res) => {
@@ -204,7 +204,7 @@ router.put('/thresholds/:assetId', (req, res) => {
                 UpdatedBy = excluded.UpdatedBy, UpdatedAt = excluded.UpdatedAt
         `).run(req.params.assetId, plantId || null, tempMin ?? null, tempMax ?? null, vibrationMax ?? null, pressureMin ?? null, pressureMax ?? null, alertOnBreach ? 1 : 0, updatedBy || null);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed to save thresholds: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to save thresholds: ' }); }
 });
 
 // -- Threshold Breach Report ---------------------------------------------------
@@ -230,7 +230,7 @@ router.post('/threshold-breach', (req, res) => {
         try { logAudit('BLE_THRESHOLD_BREACH', reportedBy, plantId, { assetId, sensorType, value, threshold }); } catch { /**/ }
 
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed to record breach: ' + err.message }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to record breach: ' }); }
 });
 
 // -- Nearest Asset (for badge polling) ----------------------------------------

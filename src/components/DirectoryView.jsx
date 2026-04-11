@@ -46,7 +46,7 @@ export default function DirectoryView({ plants, onEditLeadership, isAdminOrCreat
 
     const fetchDirectory = () => {
         fetch('/api/leadership/all', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: {  }
         })
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);

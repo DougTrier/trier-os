@@ -8,16 +8,16 @@
  * unless explicitly listed in the auth middleware's public allowlist.
  */
 
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright ï¿½ 2026 Trier OS. All Rights Reserved.
 
 /**
- * Trier OS — GPS Ping & Geofence Routes
+ * Trier OS ï¿½ GPS Ping & Geofence Routes
  * =======================================
  * Stores live GPS pings from authenticated users and manages plant geofences.
  *
  * Tables (in trier_logistics.db):
- *   gps_pings         — rolling 24-hour position log per user
- *   plant_geofences   — admin-defined circular alert zones per plant
+ *   gps_pings         ï¿½ rolling 24-hour position log per user
+ *   plant_geofences   ï¿½ admin-defined circular alert zones per plant
  *
  * ENDPOINTS:
  *   POST   /api/gps/ping              Store a position update
@@ -69,9 +69,9 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
     const R = 6371000;
     const f1 = lat1 * Math.PI / 180;
     const f2 = lat2 * Math.PI / 180;
-    const ?f = (lat2 - lat1) * Math.PI / 180;
-    const ?? = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(?f / 2) ** 2 + Math.cos(f1) * Math.cos(f2) * Math.sin(?? / 2) ** 2;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(f1) * Math.cos(f2) * Math.sin(dLng / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -92,7 +92,7 @@ router.post('/ping', (req, res) => {
              )`
         ).run(userId, userId);
 
-        // Check active geofences — insert a safety alert if breached
+        // Check active geofences ï¿½ insert a safety alert if breached
         const fences = logisticsDb.prepare('SELECT * FROM plant_geofences WHERE Active = 1').all();
         for (const fence of fences) {
             const dist = haversineMetres(lat, lng, fence.CenterLat, fence.CenterLng);

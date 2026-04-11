@@ -293,7 +293,7 @@ router.post('/permits', (req, res) => {
         res.status(201).json({ success: true, permitId, permitNumber });
     } catch (err) {
         console.error('[LOTO] POST /permits error:', err.message);
-        res.status(500).json({ error: 'Failed to create permit: ' + err.message });
+        res.status(500).json({ error: 'Failed to create permit: ' });
     }
 });
 
@@ -438,7 +438,7 @@ router.put('/permits/:id', (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('[LOTO] PUT /permits/:id error:', err.message);
-        res.status(500).json({ error: 'Failed to update permit: ' + err.message });
+        res.status(500).json({ error: 'Failed to update permit: ' });
     }
 });
 

@@ -55,7 +55,6 @@ import DeviceRegistryTab from './DeviceRegistryTab';
 const API = (path, o = {}) => fetch(`/api/plant-setup${path}`, {
     ...o,
     headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Plant_1',
         ...o.headers,
@@ -1246,7 +1245,6 @@ function CalendarTab({ plantId }) {
 const IMPORT_API = (path, o = {}) => fetch(`/api/production-import${path}`, {
     ...o,
     headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
         'x-plant-id': localStorage.getItem('selectedPlantId') || 'Plant_1',
         ...o.headers,
@@ -1760,7 +1758,7 @@ const FLUID_INTEGRATIONS = [
 // easy to trace during debugging.
 const PLANT_API = (path, o = {}) => fetch(`/api/plant-setup${path}`, {
     ...o,
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Plant_1', ...o.headers },
+    headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Plant_1', ...o.headers },
 });
 
 /**

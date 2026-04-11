@@ -37,7 +37,7 @@ import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path, opts = {}) => fetch('/api/it' + path, {
     ...opts,
-    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken'), 'Content-Type': 'application/json', ...opts.headers }
+    headers: { 'Content-Type': 'application/json', ...opts.headers }
 });
 
 const fmt = (v) => v >= 1000000 ? '$' + (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(1) + 'K' : '$' + v.toFixed(0);

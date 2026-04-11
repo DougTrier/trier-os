@@ -361,7 +361,7 @@ router.get('/:category(software|hardware|infrastructure|mobile)', (req, res) => 
         res.json(rows);
     } catch (err) {
         console.error(`GET /api/it/${req.params.category} error:`, err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -393,7 +393,7 @@ router.post('/:category(software|hardware|infrastructure|mobile)', (req, res) =>
         res.status(201).json({ success: true, id: result.lastInsertRowid, barcodeId: data.BarcodeID });
     } catch (err) {
         console.error(`POST /api/it/${req.params.category} error:`, err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -415,7 +415,7 @@ router.put('/:category(software|hardware|infrastructure|mobile)/:id', (req, res)
         res.json({ success: true });
     } catch (err) {
         console.error(`PUT /api/it/${req.params.category}/${req.params.id} error:`, err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -427,7 +427,7 @@ router.delete('/:category(software|hardware|infrastructure|mobile)/:id', (req, r
         res.json({ success: true });
     } catch (err) {
         console.error(`DELETE /api/it/${req.params.category}/${req.params.id} error:`, err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -481,7 +481,7 @@ router.get('/stats', (req, res) => {
         });
     } catch (err) {
         console.error('GET /api/it/stats error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -507,7 +507,7 @@ router.get('/vendors', (req, res) => {
         res.json(rows);
     } catch (err) {
         console.error('GET /api/it/vendors error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -529,7 +529,7 @@ router.post('/vendors', (req, res) => {
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
         console.error('POST /api/it/vendors error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -549,7 +549,7 @@ router.put('/vendors/:id', (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error(`PUT /api/it/vendors/${req.params.id} error:`, err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -559,7 +559,7 @@ router.delete('/vendors/:id', (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error(`DELETE /api/it/vendors/${req.params.id} error:`, err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -581,7 +581,7 @@ router.get('/movements', (req, res) => {
         res.json(rows);
     } catch (err) {
         console.error('GET /api/it/movements error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -610,7 +610,7 @@ router.post('/movements', (req, res) => {
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
         console.error('POST /api/it/movements error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -680,7 +680,7 @@ router.get('/depreciation/report', (req, res) => {
         res.json(report);
     } catch (err) {
         console.error('GET /api/it/depreciation/report error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -724,7 +724,7 @@ router.post('/scan/lookup', (req, res) => {
         res.json({ found: false, code: cleanCode });
     } catch (err) {
         console.error('POST /api/it/scan/lookup error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -759,7 +759,7 @@ router.post('/scan/receive', (req, res) => {
         res.json({ success: true, message: 'Asset received successfully' });
     } catch (err) {
         console.error('POST /api/it/scan/receive error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -787,7 +787,7 @@ router.post('/scan/ship', (req, res) => {
         res.json({ success: true, message: 'Asset shipped — status set to In Transit' });
     } catch (err) {
         console.error('POST /api/it/scan/ship error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -912,7 +912,7 @@ router.post('/scan/batch-receive', (req, res) => {
         });
     } catch (err) {
         console.error('POST /api/it/scan/batch-receive error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -998,7 +998,7 @@ router.post('/scan/batch-ship', (req, res) => {
         });
     } catch (err) {
         console.error('POST /api/it/scan/batch-ship error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1053,7 +1053,7 @@ router.get('/depreciation/:category(hardware|infrastructure|mobile)/:id', (req, 
         });
     } catch (err) {
         console.error('GET /api/it/depreciation error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1090,7 +1090,7 @@ router.get('/export/:category(software|hardware|infrastructure|mobile)', (req, r
         res.send(csv);
     } catch (err) {
         console.error('GET /api/it/export error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1121,7 +1121,10 @@ router.get('/metrics', (req, res) => {
             const monthEnd = `date('now','start of month','-${i-1} months')`;
             const label = logDb.prepare(`SELECT strftime('%Y-%m', ${monthStart})`).pluck().get();
             let total = 0;
-            ['it_hardware','it_infrastructure','it_mobile'].forEach(table => {
+            // SECURITY: table names are a hard-coded allow-list — never derived from user input.
+        // Do not refactor this to use req.params/query without adding the allow-list guard at line 313.
+        const IT_ASSET_SPEND_TABLES = Object.freeze(['it_hardware', 'it_infrastructure', 'it_mobile']);
+        IT_ASSET_SPEND_TABLES.forEach(table => {
                 const sql = `SELECT COALESCE(SUM(PurchaseCost),0) as s FROM ${table} WHERE PurchaseDate >= ${monthStart} AND PurchaseDate < ${monthEnd}` + (isAllSites ? '' : ' AND PlantID = ?');
                 const r = logDb.prepare(sql).get(...pParams);
                 total += r.s;
@@ -1221,7 +1224,7 @@ router.get('/metrics', (req, res) => {
         });
     } catch (err) {
         console.error('GET /api/it/metrics error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1353,7 +1356,7 @@ router.post('/import/:category(software|hardware|infrastructure|mobile)', (req, 
         res.json({ success: true, ...results });
     } catch (err) {
         console.error('POST /api/it/import error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1373,7 +1376,7 @@ router.get('/links/software-hardware/:softwareId', (req, res) => {
             WHERE l.SoftwareID = ?
         `).all(req.params.softwareId);
         res.json(links);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.get('/links/hardware-software/:hardwareId', (req, res) => {
@@ -1385,7 +1388,7 @@ router.get('/links/hardware-software/:hardwareId', (req, res) => {
             WHERE l.HardwareID = ?
         `).all(req.params.hardwareId);
         res.json(links);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.post('/links/software-hardware', (req, res) => {
@@ -1395,14 +1398,14 @@ router.post('/links/software-hardware', (req, res) => {
         const createdBy = req.headers['x-user-name'] || 'System';
         logDb.prepare('INSERT OR IGNORE INTO it_software_hardware_link (SoftwareID, HardwareID, InstalledDate, Notes, CreatedBy) VALUES (?,?,datetime(\'now\'),?,?)').run(softwareId, hardwareId, notes || null, createdBy);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.delete('/links/software-hardware/:id', (req, res) => {
     try {
         logDb.prepare('DELETE FROM it_software_hardware_link WHERE ID = ?').run(req.params.id);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // -- Asset ↔ Work Order links --
@@ -1410,7 +1413,7 @@ router.get('/links/workorders/:category/:assetId', (req, res) => {
     try {
         const links = logDb.prepare('SELECT * FROM it_asset_workorder_link WHERE AssetCategory = ? AND AssetID = ?').all(req.params.category, req.params.assetId);
         res.json(links);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.post('/links/workorders', (req, res) => {
@@ -1420,14 +1423,14 @@ router.post('/links/workorders', (req, res) => {
         const createdBy = req.headers['x-user-name'] || 'System';
         logDb.prepare('INSERT INTO it_asset_workorder_link (AssetCategory, AssetID, WorkOrderID, PlantID, LinkType, Notes, CreatedBy) VALUES (?,?,?,?,?,?,?)').run(assetCategory, assetId, workOrderId, plantId || null, linkType || 'Related', notes || null, createdBy);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.delete('/links/workorders/:id', (req, res) => {
     try {
         logDb.prepare('DELETE FROM it_asset_workorder_link WHERE ID = ?').run(req.params.id);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // -- Asset ↔ User directory links (mobile ↔ user) --
@@ -1435,7 +1438,7 @@ router.get('/links/users/:category/:assetId', (req, res) => {
     try {
         const links = logDb.prepare('SELECT * FROM it_asset_user_link WHERE AssetCategory = ? AND AssetID = ?').all(req.params.category, req.params.assetId);
         res.json(links);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.post('/links/users', (req, res) => {
@@ -1445,14 +1448,14 @@ router.post('/links/users', (req, res) => {
         const createdBy = req.headers['x-user-name'] || 'System';
         logDb.prepare('INSERT INTO it_asset_user_link (AssetCategory, AssetID, UserEmail, UserName, AssignedDate, Notes, CreatedBy) VALUES (?,?,?,?,datetime(\'now\'),?,?)').run(assetCategory, assetId, userEmail, userName || null, notes || null, createdBy);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 router.delete('/links/users/:id', (req, res) => {
     try {
         logDb.prepare('DELETE FROM it_asset_user_link WHERE ID = ?').run(req.params.id);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // -- Infrastructure ↔ FloorPlan location (stored as metadata in Notes/Location) --
@@ -1463,7 +1466,7 @@ router.put('/links/infrastructure-location/:id', (req, res) => {
         const notes = floorPlanId ? `FloorPlan:${floorPlanId}@${floorPlanX},${floorPlanY}` : null;
         logDb.prepare('UPDATE it_infrastructure SET Location = ?, RackPosition = ?, Notes = COALESCE(?, Notes), UpdatedAt = datetime(\'now\') WHERE ID = ?').run(location, rackPosition || null, notes, req.params.id);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 
@@ -1566,7 +1569,7 @@ router.get('/alerts', (req, res) => {
         res.json({ alerts, summary });
     } catch (err) {
         console.error('GET /api/it/alerts error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1700,7 +1703,7 @@ router.get('/analytics', (req, res) => {
         });
     } catch (err) {
         console.error('GET /api/it/analytics error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1744,7 +1747,7 @@ router.get('/global-search', (req, res) => {
         res.json({ results, total: results.length, query: q });
     } catch (err) {
         console.error('GET /api/it/global-search error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
@@ -1930,7 +1933,7 @@ router.post('/import/adapter/:adapter(soti|fortinet|ad)', (req, res) => {
         res.json({ success: true, ...results });
     } catch (err) {
         console.error('POST /api/it/import/adapter error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 

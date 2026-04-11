@@ -18,11 +18,14 @@
  * notifications, settings, and logout across all pages.
  *
  * -- AUTHENTICATION ---------------------------------------------------------------
- * JWT-based. On login, the server issues a signed token stored in localStorage
- * under 'authToken'. All API calls send it as a Bearer token via the Authorization
- * header. The token carries the user's role, plantId, globalAccess, and isCreator
- * flags. On logout or 15-min inactivity, localStorage is cleared and the component
- * re-renders to the LoginView gate.
+ * Cookie-based. On login, the server issues a signed JWT stored in an httpOnly
+ * cookie ('authToken'). The cookie is invisible to JavaScript — not in localStorage,
+ * not readable via document.cookie or DevTools console. The browser sends it
+ * automatically on every /api request (credentials: 'include'). On page reload,
+ * App calls GET /api/auth/me to restore session state from the cookie.
+ * On logout, POST /api/auth/logout clears the cookie server-side.
+ * Non-browser integrations (Power BI, http-edge-agent, HA sync) continue to use
+ * Bearer tokens in the Authorization header — the middleware accepts both.
  *
  * -- MULTI-TENANCY & PLANT CONTEXT ------------------------------------------------
  * `selectedPlant` drives the x-plant-id header on every API call, routing the
@@ -194,7 +197,14 @@ function App() {
         window.addEventListener('trier-branding-update', handleBrandingUpdate);
         return () => window.removeEventListener('trier-branding-update', handleBrandingUpdate);
     }, []);
-    const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('authToken'));
+    const [isAuthenticated, setIsAuthenticated] = useState(null); // null = checking session, true/false after /me responds
+
+    // ── Session restore: check httpOnly cookie via /me ────────────────────────
+    useEffect(() => {
+        fetch('/api/auth/me')
+            .then(r => setIsAuthenticated(r.ok))
+            .catch(() => setIsAuthenticated(false));
+    }, []);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -329,7 +339,6 @@ function App() {
 
     const handle401 = () => {
         setIsAuthenticated(false);
-        localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
         localStorage.removeItem('nativePlantId');
         localStorage.removeItem('selectedPlantId');
@@ -400,7 +409,6 @@ function App() {
         fetch('/api/dashboard', {
             headers: {
                 'x-plant-id': selectedPlant,
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             }
         })
             .then(res => {
@@ -425,7 +433,7 @@ function App() {
         fetchDashboardStats();
         // Fetch specific plant address
         fetch('/api/address', {
-            headers: { 'x-plant-id': selectedPlant, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            headers: { 'x-plant-id': selectedPlant }
         })
             .then(res => {
                 if (res.status === 401) {
@@ -475,7 +483,6 @@ function App() {
                 await fetch('/api/shift-log/lock', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                         'Content-Type': 'application/json',
                         'x-plant-id': selectedPlant || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
                     },
@@ -483,7 +490,7 @@ function App() {
                 });
             } catch (e) { /* best effort */ }
         }
-        localStorage.removeItem('authToken');
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* best effort */ }
         localStorage.removeItem('userRole');
         localStorage.removeItem('nativePlantId');
         localStorage.removeItem('selectedPlantId');
@@ -584,7 +591,6 @@ function App() {
 
         const authHeaders = {
             'x-plant-id': selectedPlant || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Content-Type': 'application/json',
         };
 
@@ -669,6 +675,8 @@ function App() {
     if (window.location.pathname === '/work-request') {
         return <WorkRequestPortal />;
     }
+
+    if (isAuthenticated === null) return null; // waiting for /auth/me session check
 
     if (!isAuthenticated) {
         return <LoginView onLoginSuccess={(data) => {

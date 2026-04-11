@@ -50,7 +50,6 @@ import { formatDate } from '../utils/formatDate';
 
 const AUTH_HEADER = () => ({
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
     'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
 });
 
@@ -461,7 +460,7 @@ export default function DataBridge({ currentPlant, userRole, onComplete }) {
             formData.append('database', file);
             const res = await fetch('/api/import/upload-access', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                headers: {  },
                 body: formData
             });
             const data = await res.json();

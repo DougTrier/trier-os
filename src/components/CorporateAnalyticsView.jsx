@@ -39,7 +39,7 @@ import EquipmentIntelligenceSection from './EquipmentIntelligenceSection';
 
 const API = (path, opts = {}) => fetch('/api/corp-analytics' + path, {
     ...opts,
-    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken'), 'Content-Type': 'application/json', ...opts.headers },
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
 });
 
 const fmt = (v) => v >= 1000000 ? '$' + (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(1) + 'K' : '$' + (v || 0).toFixed(0);
@@ -370,6 +370,9 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
     const [mapPins, setMapPins] = useState([]);
     const [trackingData, setTrackingData] = useState(null);
     const [commitMsg, setCommitMsg] = useState('');
+    // BUG-03: commitPlantId ensures a specific plant is always selected before committing
+    // Defaults to the plantId prop (single-plant context) or empty (all-sites view).
+    const [commitPlantId, setCommitPlantId] = useState(plantId || '');
     const [fleetSort, setFleetSort] = useState({ key: 'mileage', dir: -1 });
 
     const fetchAll = useCallback(() => {
@@ -386,8 +389,8 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
             API('/risk-matrix').then(safeJson),
             API('/forecast').then(safeJson),
             API('/workforce').then(safeJson),
-            fetch('/api/analytics/pay-scales', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken'), 'x-plant-id': 'all_sites' } }).then(safeJson),
-            fetch('/api/map-pins', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken'), 'x-plant-id': 'all_sites' } }).then(safeJson),
+            fetch('/api/analytics/pay-scales', { headers: { 'x-plant-id': 'all_sites' } }).then(safeJson),
+            fetch('/api/map-pins', { headers: { 'x-plant-id': 'all_sites' } }).then(safeJson),
         ]).then(([s, r, f, ri, fo, w, p, m]) => {
             if (s) setSummary(s);
             if (r) setRankings(r);
@@ -411,7 +414,7 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                 .catch(() => setOpexLoading(false));
         }
         if (activeSection === 'tracking' && !trackingData) {
-            fetch('/api/opex-tracking/dashboard', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') } })
+            fetch('/api/opex-tracking/dashboard', { headers: {  } })
                 .then(r => r.json()).then(d => setTrackingData(d)).catch(() => {});
         }
     }, [activeSection, opexData, opexLoading, trackingData]);
@@ -1585,25 +1588,46 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                                     <div style={{ display: 'flex', gap: 8 }}>
                                                         <button onClick={printPlan} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}><Printer size={14} />{t('corpAnalytics.text.printGamePlan', 'Print Game Plan')}</button>
                                                         <button onClick={() => {
+                                                            if (!commitPlantId) { setCommitMsg('❌ Please select a plant before committing.'); return; }
                                                             const tDate = new Date(); tDate.setDate(tDate.getDate() + 30);
                                                             fetch('/api/opex-tracking/commit', {
                                                                 method: 'POST',
-                                                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('authToken') },
+                                                                headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({
-                                                                plantId: plantId || 'all_sites',
+                                                                // BUG-03: use commitPlantId — never send all_sites to the API
+                                                                plantId: commitPlantId,
                                                                 category: opexModal,
                                                                 itemDescription: plan.title,
                                                                 predictedSavings: plan.savings || 0,
                                                                 targetDate: tDate.toISOString().split('T')[0],
                                                                 priority: 'HIGH'
                                                             })
-                                                            .then(r => r.json())
-                                                            .then(() => { setCommitMsg('✅ Committed! Outcome checkpoints set at 30/60/90 days.'); setTimeout(() => setCommitMsg(''), 4000); })
+                                                            }).then(r => r.json())
+                                                            .then(d => {
+                                                                if (d.error) { setCommitMsg('❌ ' + d.error); return; }
+                                                                const warn = d.warning ? ` (${d.warning})` : '';
+                                                                setCommitMsg('✅ Committed! Outcome checkpoints set at 30/60/90 days.' + warn);
+                                                                setTimeout(() => setCommitMsg(''), 6000);
+                                                            })
                                                             .catch(() => setCommitMsg('❌ Commit failed — check connection.'));
-                                                        }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', background: '#10b981' }}>
+                                                        }} disabled={!commitPlantId} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', background: commitPlantId ? '#10b981' : '#374151', cursor: commitPlantId ? 'pointer' : 'not-allowed', opacity: commitPlantId ? 1 : 0.6 }}>
                                                             <CheckCircle2 size={14} /> Commit to This Action
                                                         </button>
-                                                        <button onClick={() => setOpexModal(null)} className="btn-danger" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}><X size={14} />{t('corpAnalytics.text.close', 'Close')}</button>
+                                                        {/* BUG-03: plant selector — required for all-sites corporate view, pre-filled for single-plant context */}
+                                                        {!plantId && (
+                                                            <select
+                                                                value={commitPlantId}
+                                                                onChange={e => { setCommitPlantId(e.target.value); setCommitMsg(''); }}
+                                                                style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: 8, border: '1px solid #374151', background: '#1e293b', color: '#cbd5e1', minWidth: 140 }}
+                                                            >
+                                                                <option value="">— Select Plant —</option>
+                                                                {rankings.filter(r => r.plant && r.plantId !== 'Corporate_Office').map(r => (
+                                                                    <option key={r.plantId || r.plant} value={r.plantId || r.plant}>{r.plant}</option>
+                                                                ))}
+                                                            </select>
+                                                        )}
+                                                        {/* QUAL-03: reset commitMsg when modal closes */}
+                                                        <button onClick={() => { setOpexModal(null); setCommitMsg(''); }} className="btn-danger" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}><X size={14} />{t('corpAnalytics.text.close', 'Close')}</button>
                                                     </div>
                                                     {commitMsg && <div style={{ marginTop: 8, padding: '6px 14px', borderRadius: 8, background: commitMsg.startsWith('✅') ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: commitMsg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>{commitMsg}</div>}
                                                 </div>

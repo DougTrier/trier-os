@@ -77,7 +77,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
     const fetchStandardization = async () => {
         try {
             const res = await fetch('/api/logistics/site-standardization', {
-                headers: { 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: { 'x-plant-id': plantId }
             });
             const data = await res.json();
             setStandardization(data);
@@ -179,8 +179,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json', 
-                            'x-plant-id': plantId,
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            'x-plant-id': plantId
                         },
                         body: JSON.stringify({ vendorData })
                     });
@@ -203,8 +202,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json', 
-                            'x-plant-id': plantId,
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            'x-plant-id': plantId
                         },
                         body: JSON.stringify(assetData)
                     });
@@ -214,8 +212,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json', 
-                            'x-plant-id': plantId,
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            'x-plant-id': plantId
                         },
                         body: JSON.stringify({
                             ID: raw.ID,
@@ -229,8 +226,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'x-plant-id': plantId,
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            'x-plant-id': plantId
                         },
                         body: JSON.stringify({
                             ID: raw.ID,
@@ -246,7 +242,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                 } else if (type === 'unlisted_vendor') {
                     const res = await fetch('/api/v2/network/vendor/import', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                         body: JSON.stringify({ vendorData: {
                             Description: raw.Name, Address: raw.Address || '', City: raw.City || '',
                             State: raw.State || '', Zip: raw.Zip || '', Phone: raw.Phone || '',
@@ -257,7 +253,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                 } else if (type === 'unlisted_asset') {
                     const res = await fetch('/api/assets', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                         body: JSON.stringify({
                             Description: raw.Description, Model: raw.Model || '', Manufacturer: raw.Manufacturer || '',
                             AssetType: raw.AssetType || 'Equipment', UsefulLife: raw.UsefulLife || null,
@@ -268,7 +264,7 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                 } else if (type === 'unlisted_part') {
                     const res = await fetch('/api/parts', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                         body: JSON.stringify({
                             Description: raw.Description, PartNumber: raw.PartNumber || '',
                             Manufacturer: raw.Manufacturer || '', UnitCost: parseFloat(raw.UnitCost) || 0,

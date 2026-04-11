@@ -213,6 +213,9 @@ router.post('/verify-2fa', async (req, res) => {
 });
 
 // ── Helper: Issue JWT token ──
+// Task 2.1: Sets the token as an httpOnly cookie instead of returning it in the body.
+// The user profile fields are still returned so the frontend can build its session state.
+// Bearer header fallback preserved in middleware for API integrations (Power BI, edge agents).
 function issueJWT(user, req, res) {
     const rolesQuery = authDb.prepare('SELECT PlantID, RoleLevel FROM UserPlantRoles WHERE UserID = ?').all(user.UserID);
     const plantRoles = {};
@@ -240,12 +243,25 @@ function issueJWT(user, req, res) {
         { expiresIn: '12h' }
     );
 
+    // INFO-01: Set token as httpOnly cookie — invisible to JavaScript on the client.
+    // sameSite: 'Lax' blocks cross-origin POST/PATCH/DELETE (CSRF protection for intranet).
+    // secure: req.secure — true when served over HTTPS (port 1938), false on HTTP (port 1937/dev).
+    // Chrome silently drops non-Secure cookies when the page is served over HTTPS.
+    res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: req.secure,
+        sameSite: 'Lax',
+        maxAge: 12 * 60 * 60 * 1000 // 12 hours — matches JWT expiry
+    });
+
     logAudit(user.Username, 'LOGIN_SUCCESS', homePlant, { role: user.DefaultRole }, 'INFO', req.ip);
 
-    return res.json({ 
-        success: true, 
-        token, 
-        role: user.DefaultRole, 
+    // Token is NOT included in the response body — it is only in the httpOnly cookie.
+    // The frontend uses /auth/me to check session state on reload.
+    return res.json({
+        success: true,
+        username: user.Username,
+        role: user.DefaultRole,
         nativePlantId: homePlant,
         mustChangePassword: user.MustChangePassword === 1,
         canAccessDashboard: user.CanAccessDashboard === 1,
@@ -330,6 +346,46 @@ async function attemptLdapAuth(config, username, password) {
         });
     });
 }
+
+// ── Task 2.2: Logout — clear the httpOnly cookie ─────────────────────────────
+router.post('/logout', (req, res) => {
+    const user = req.user?.Username || 'unknown';
+    res.clearCookie('authToken', { httpOnly: true, sameSite: 'Lax', secure: req.secure });
+    logAudit(user, 'LOGOUT', null, {}, 'INFO', req.ip);
+    res.json({ success: true });
+});
+
+// ── Task 2.3: /me — return current session user from cookie ───────────────────
+// Called by App.jsx on mount to restore session state without reading localStorage.
+// Returns 401 if the cookie is missing or expired — frontend shows login screen.
+// NOTE: The global auth middleware skips all /auth/* paths, so this route must
+// verify the cookie itself rather than reading req.user from middleware.
+router.get('/me', (req, res) => {
+    const token = req.cookies?.authToken || req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.json({
+            success: true,
+            user: {
+                Username: decoded.Username,
+                globalRole: decoded.globalRole,
+                nativePlantId: decoded.nativePlantId,
+                plantRoles: decoded.plantRoles,
+                canAccessDashboard: decoded.canAccessDashboard,
+                globalAccess: decoded.globalAccess,
+                canImport: decoded.canImport,
+                canSAP: decoded.canSAP,
+                canSensorConfig: decoded.canSensorConfig,
+                canSensorThresholds: decoded.canSensorThresholds,
+                canSensorView: decoded.canSensorView,
+                canViewAnalytics: decoded.canViewAnalytics
+            }
+        });
+    } catch {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+});
 
 // ── User Self-Registration ──────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
@@ -432,9 +488,8 @@ router.post('/register', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
     const { targetUsername } = req.body;
     const authHeader = req.headers.authorization;
-
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
-    const token = authHeader.split(' ')[1];
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
+    const token = req.cookies?.authToken || authHeader?.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -469,8 +524,8 @@ router.post('/change-password', async (req, res) => {
     const { currentPassword, newPassword, targetUsername } = req.body;
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
-    const token = authHeader.split(' ')[1];
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
+    const token = req.cookies?.authToken || authHeader?.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -510,8 +565,8 @@ router.post('/change-password', async (req, res) => {
 // ── User Management (Admin Only) ──────────────────────────────────────────
 router.get('/users/list', async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
-    const token = authHeader.split(' ')[1];
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
+    const token = req.cookies?.authToken || authHeader?.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -540,8 +595,8 @@ router.get('/users/list', async (req, res) => {
 router.post('/users/update-access', async (req, res) => {
     const { targetUsername, canAccessDashboard, globalAccess, canImport, canSAP, canSensorConfig, canSensorThresholds, canSensorView, canViewAnalytics, defaultRole, plantRoles, displayName, email, phone, title } = req.body;
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
-    const token = authHeader.split(' ')[1];
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
+    const token = req.cookies?.authToken || authHeader?.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -600,15 +655,15 @@ router.post('/users/update-access', async (req, res) => {
         logAudit(decoded.Username, 'ACCESS_UPDATED', null, { target: targetUsername, role: defaultRole, dashboard: canAccessDashboard, global: globalAccess, analytics: canViewAnalytics }, 'INFO', req.ip);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // ── Admin: Manually Create User ──────────────────────────────────────────────
 router.post('/users/create', async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
-    const token = authHeader.split(' ')[1];
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
+    const token = req.cookies?.authToken || authHeader?.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -712,7 +767,7 @@ router.post('/users/create', async (req, res) => {
 
     } catch (err) {
         console.error('User creation error:', err);
-        res.status(500).json({ error: 'Failed to create user: ' + err.message });
+        res.status(500).json({ error: 'Failed to create user: ' });
     }
 });
 
@@ -723,8 +778,8 @@ router.post('/users/create', async (req, res) => {
 //   - IT Admin and Creator can delete all standard users
 router.post('/users/delete', async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
-    const token = authHeader.split(' ')[1];
+    if (!authHeader && !req.cookies?.authToken) return res.status(401).json({ error: 'Missing token' });
+    const token = req.cookies?.authToken || authHeader?.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -780,7 +835,7 @@ router.post('/users/delete', async (req, res) => {
         res.json({ success: true, message: `User "${targetUsername}" has been permanently deleted.` });
     } catch (err) {
         console.error('User deletion error:', err);
-        res.status(500).json({ error: 'Failed to delete user: ' + err.message });
+        res.status(500).json({ error: 'Failed to delete user: ' });
     }
 });
 

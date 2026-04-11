@@ -37,7 +37,6 @@ import { GraduationCap, AlertTriangle, CheckCircle, Clock, Users, BookOpen, BarC
 import { useTranslation } from '../i18n/index.jsx';
 
 const authHeaders = (plant) => ({
-    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
     'x-plant-id': plant || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
     'Content-Type': 'application/json',
 });

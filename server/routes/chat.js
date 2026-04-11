@@ -161,7 +161,7 @@ router.post('/signup', async (req, res) => {
         res.json({ success: true, message: 'Profile created. You can now log into the Knowledge Exchange.' });
     } catch (err) {
         console.error('Chat Signup Error:', err);
-        res.status(500).json({ error: err.message || 'Signup failed' });
+        res.status(500).json({ error: 'Signup failed' });
     }
 });
 

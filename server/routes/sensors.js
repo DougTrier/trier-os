@@ -173,8 +173,12 @@ function archiveAndPurge() {
     }
 }
 // Run on startup and every 6 hours
+// INFO-04: guard against accumulating intervals under `node --watch` hot-reload
 archiveAndPurge();
-setInterval(archiveAndPurge, 6 * 60 * 60 * 1000);
+if (!global._sensorPurgeStarted) {
+    global._sensorPurgeStarted = true;
+    setInterval(archiveAndPurge, 6 * 60 * 60 * 1000);
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // SENSOR READING INGESTION
@@ -379,24 +383,25 @@ router.post('/reading/batch', async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 
 function createAutoWorkOrder(plantId, assetId, priority, description, sensorId, metric, value, unit) {
+    if (!plantId) return null;
+    // PERF-04: sanitize plantId before building a file path (mirrors opex_tracking pattern)
+    const safePlant = /^[a-zA-Z0-9_-]+$/.test(plantId) ? plantId : null;
+    if (!safePlant) { console.warn(`[Sensor] Rejected unsafe plantId: ${plantId}`); return null; }
+
+    const dbPath = path.join(require('../resolve_data_dir'), `${safePlant}.db`);
+    if (!fs.existsSync(dbPath)) {
+        console.warn(`[Sensor] Plant DB not found: ${safePlant}`);
+        return null;
+    }
+
+    const plantDb = new Database(dbPath);
     try {
-        if (!plantId) return null;
-
-        const dbPath = path.join(require('../resolve_data_dir'), `${plantId}.db`);
-        if (!fs.existsSync(dbPath)) {
-            console.warn(`[Sensor] Plant DB not found: ${plantId}`);
-            return null;
-        }
-
-        const plantDb = new Database(dbPath);
-        
         // Check for duplicate — don't create if there's already an open sensor WO for this asset
         const existingOpen = plantDb.prepare(
             "SELECT 1 FROM Work WHERE Description LIKE ? AND StatusID < 40"
         ).get(`%[SENSOR-AUTO]%${sensorId}%`);
 
         if (existingOpen) {
-            plantDb.close();
             return { skipped: true, reason: 'Open sensor WO already exists' };
         }
 
@@ -407,19 +412,20 @@ function createAutoWorkOrder(plantId, assetId, priority, description, sensorId, 
             VALUES (?, ?, ?, ?, 10, CURRENT_TIMESTAMP)
         `).run(woNumber, description, assetId, priority);
 
-        plantDb.close();
-
         console.log(`  🌡️ [Sensor→WO] Auto-created ${woNumber} for ${sensorId} (${metric}: ${value}${unit})`);
-        
-        logAudit('SENSOR_GATEWAY', 'AUTO_WO_CREATED', plantId, {
+
+        logAudit('SENSOR_GATEWAY', 'AUTO_WO_CREATED', safePlant, {
             woNumber, sensorId, metric, value, unit, assetId
         });
 
-        return { woNumber, plantId, assetId };
+        return { woNumber, plantId: safePlant, assetId };
 
     } catch (err) {
-        console.error('Auto-WO creation failed:', err.message);
+        console.error('[Sensor] Auto-WO creation failed:', err.message, { sensorId, plantId: safePlant });
         return null;
+    } finally {
+        // PERF-04: guarantee DB close on ALL code paths — prevents fd leaks under concurrent ingest
+        try { plantDb.close(); } catch (_) {}
     }
 }
 

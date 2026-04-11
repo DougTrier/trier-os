@@ -220,7 +220,7 @@ router.get('/budget-forecast', (req, res) => {
         });
     } catch (err) {
         console.error('[Budget Forecast] Error:', err.message);
-        res.status(500).json({ error: 'Forecast calculation failed', details: err.message });
+        res.status(500).json({ error: 'Forecast calculation failed' });
     }
 });
 

@@ -102,7 +102,7 @@ function DashboardView({
             if (globalSearchForm.length > 2) {
                 setIsRefreshingDB(true);
                 fetch(`/api/search?q=${globalSearchForm}`, {
-                    headers: { 'x-plant-id': selectedPlant, 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                    headers: { 'x-plant-id': selectedPlant }
                 })
                     .then(res => res.json())
                     .then(data => {
@@ -1176,7 +1176,6 @@ function ReminderInsightsCard() {
     React.useEffect(() => {
         fetch('/api/calendar/reminders/analytics', {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
             }
         })
