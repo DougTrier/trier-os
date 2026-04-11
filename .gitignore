@@ -123,3 +123,4 @@ data/translations.db
 # Internal Artifacts (strategy docs, audits — not for public distribution)
 Artifacts/
 .claude/
+ROADMAP.md
