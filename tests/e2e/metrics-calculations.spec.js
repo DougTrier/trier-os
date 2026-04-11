@@ -30,7 +30,7 @@ test.describe('Metrics Math & Calculation Consistency (Corporate & Plant)', () =
     // Select a specific plant so the per-plant KPIs render
     const plantSelect = page.locator('select').first();
     if (await plantSelect.isVisible({ timeout: 3000 })) {
-      await plantSelect.selectOption('Demo_Plant_1');
+      await plantSelect.selectOption({ index: 1 }); // use index — Demo_Plant_1 not in all contexts
       await page.waitForTimeout(1000);
     }
 
