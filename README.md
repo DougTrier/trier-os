@@ -93,6 +93,11 @@ npm run dev:full
 ```
 The application will automatically ignite at `http://localhost:5173`.
 
+### Keeping Trier OS Updated
+```bash
+git pull origin main
+```
+
 ---
 
 ## :triangular_ruler: Zero Obfuscation Architecture
