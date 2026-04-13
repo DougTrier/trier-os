@@ -272,4 +272,52 @@ router.get('/constants/all', (req, res) => {
     res.json({ tradeSpecialties: TRADE_SPECIALTIES, prequalStatuses: PREQUAL_STATUSES });
 });
 
+// ── Safety Induction Records ──────────────────────────────────────────────────
+// Track site safety inductions: when a contractor/worker completed plant-specific
+// safety orientation, who conducted it, and when it expires.
+
+logisticsDb.exec(`
+    CREATE TABLE IF NOT EXISTS contractor_inductions (
+        ID              INTEGER PRIMARY KEY AUTOINCREMENT,
+        ContractorID    INTEGER NOT NULL REFERENCES contractors(ID) ON DELETE CASCADE,
+        PlantID         TEXT    NOT NULL,
+        WorkerName      TEXT,                   -- Individual worker name (optional if company-level)
+        InductionType   TEXT    DEFAULT 'SITE_SAFETY',  -- SITE_SAFETY | HAZMAT | CONFINED_SPACE | CUSTOM
+        ConductedBy     TEXT,
+        ConductedAt     TEXT,
+        ExpiresAt       TEXT,
+        Passed          INTEGER DEFAULT 1,
+        Notes           TEXT,
+        CreatedAt       TEXT    DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_inductions_contractor ON contractor_inductions(ContractorID);
+    CREATE INDEX IF NOT EXISTS idx_inductions_plant      ON contractor_inductions(PlantID);
+`);
+
+// GET /api/contractors/:id/inductions
+router.get('/:id/inductions', (req, res) => {
+    try {
+        const rows = logisticsDb.prepare(
+            'SELECT * FROM contractor_inductions WHERE ContractorID = ? ORDER BY ConductedAt DESC'
+        ).all(req.params.id);
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/contractors/:id/inductions
+router.post('/:id/inductions', (req, res) => {
+    try {
+        const { plantId, workerName, inductionType = 'SITE_SAFETY', conductedBy, conductedAt, expiresAt, passed = true, notes } = req.body;
+        if (!plantId) return res.status(400).json({ error: 'plantId is required' });
+
+        const result = logisticsDb.prepare(`
+            INSERT INTO contractor_inductions
+                (ContractorID, PlantID, WorkerName, InductionType, ConductedBy, ConductedAt, ExpiresAt, Passed, Notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(req.params.id, plantId, workerName || null, inductionType, conductedBy || null, conductedAt || null, expiresAt || null, passed ? 1 : 0, notes || null);
+
+        res.status(201).json({ id: result.lastInsertRowid, ok: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

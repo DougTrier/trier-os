@@ -276,6 +276,8 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
                             <tr>
                                 <th>{t('purchaseOrdersListView.partId')}</th>
                                 <th>{t('purchase.orders.list.description')}</th>
+                                <th>Mfr Part #</th>
+                                <th>Vendor Part #</th>
                                 <th>{t('purchase.orders.list.vendor')}</th>
                                 <th>{t('purchase.orders.list.lastPurchase')}</th>
                                 <th>{t('purchaseOrdersListView.unitCost')}</th>
@@ -290,6 +292,8 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
                                     <tr key={`${o.PartID}-${idx}`}>
                                         <td style={{ fontWeight: 600 }}>{o.PartID}</td>
                                         <td style={{ fontSize: '0.85rem' }}>{o.PartDesc || 'N/A'}</td>
+                                        <td style={{ color: o.ManufNum ? '#94a3b8' : '#334155', fontSize: '0.8rem' }}>{o.ManufNum || '—'}</td>
+                                        <td style={{ color: o.VendNum ? '#94a3b8' : '#334155', fontSize: '0.8rem' }}>{o.VendNum || '—'}</td>
                                         <td>{o.VendorID || 'N/A'}</td>
                                         <td>{formatDate(o.PurchaseDate) || 'N/A'}</td>
                                         <td style={{ color: '#059669', fontWeight: 'bold' }}>
@@ -314,7 +318,7 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                    <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                                         {t('purchase.orders.list.noPurchaseHistoryFound')}
                                     </td>
                                 </tr>
@@ -397,12 +401,28 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
                                 <h3>{t('purchase.orders.list.partIdentification')}</h3>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '10pt' }}>
                                     <div>
-                                        <strong>{t('purchase.orders.list.partId')}</strong> 
+                                        <strong>{t('purchase.orders.list.partId')}</strong>
                                         {isCreating ? (
                                             <input type="text" value={editData.PartID || ''} onChange={e => setEditData({...editData, PartID: e.target.value.toUpperCase()})} style={{ width: '100%', marginTop: '5px' }} placeholder={t('purchase.orders.list.eg100valve')} title={t('purchaseOrdersListView.partIdentificationNumberTip')} />
                                         ) : viewingPO.PartID}
                                     </div>
                                     <div><strong>{t('purchase.orders.list.nomenclature')}</strong> {viewingPO.PartDesc || 'N/A'}</div>
+                                    <div>
+                                        <strong>Mfr Part #</strong>
+                                        {isEditing ? (
+                                            <input type="text" value={editData.ManufNum || ''} onChange={e => setEditData({...editData, ManufNum: e.target.value})} style={{ width: '100%', marginTop: '5px' }} placeholder="Manufacturer part number" />
+                                        ) : (
+                                            <span style={{ color: viewingPO.ManufNum ? '#f1f5f9' : 'var(--text-muted)' }}> {viewingPO.ManufNum || '—'}</span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <strong>Vendor Part #</strong>
+                                        {isEditing ? (
+                                            <input type="text" value={editData.VendNum || ''} onChange={e => setEditData({...editData, VendNum: e.target.value})} style={{ width: '100%', marginTop: '5px' }} placeholder="Vendor's part number" />
+                                        ) : (
+                                            <span style={{ color: viewingPO.VendNum ? '#f1f5f9' : 'var(--text-muted)' }}> {viewingPO.VendNum || '—'}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

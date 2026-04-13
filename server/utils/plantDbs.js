@@ -48,9 +48,28 @@ function getAllPlantDbs() {
     try {
         if (!fs.existsSync(dataDir)) return plantDbs;
 
+        // Load plants.json as the authoritative registry of active plants.
+        // Any .db file not registered here (e.g. orphaned from a failed delete)
+        // is excluded — prevents deleted plants from appearing in corporate analytics.
+        const plantsFile = path.join(dataDir, 'plants.json');
+        let registeredIds = null;
+        if (fs.existsSync(plantsFile)) {
+            try {
+                const parsed = JSON.parse(fs.readFileSync(plantsFile, 'utf8'));
+                // Exclude system/non-operational entries from analytics
+                registeredIds = new Set(
+                    parsed
+                        .map(p => p.id)
+                        .filter(id => !NON_PLANT_DBS.has(id))
+                );
+            } catch (_) { /* fall through to disk scan on parse error */ }
+        }
+
         const files = fs.readdirSync(dataDir).filter(f => {
             if (!f.endsWith('.db')) return false;
             const plantId = f.replace('.db', '');
+            // If we have a registry, only allow registered IDs
+            if (registeredIds && !registeredIds.has(plantId)) return false;
             if (NON_PLANT_DBS.has(plantId)) return false;
             if (f.startsWith('trier_') || f.startsWith('logistics')) return false;
             return true;

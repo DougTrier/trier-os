@@ -56,11 +56,14 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
     const [opexData, setOpexData] = useState(null);
     const [opexLoading, setOpexLoading] = useState(false);
     const [opexModal, setOpexModal] = useState(null);
+    const [vendorInflation, setVendorInflation] = useState(null);
+    const [vendorInflationModal, setVendorInflationModal] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [selectedRisk, setSelectedRisk] = useState(null);
     const [payScales, setPayScales] = useState([]);
     const [mapPins, setMapPins] = useState([]);
     const [trackingData, setTrackingData] = useState(null);
+    const [maintenanceKpis, setMaintenanceKpis] = useState(null);
     const [commitMsg, setCommitMsg] = useState('');
     // BUG-03: commitPlantId ensures a specific plant is always selected before committing
     // Defaults to the plantId prop (single-plant context) or empty (all-sites view).
@@ -105,11 +108,21 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                 .then(d => { if (!d.error) setOpexData(d); setOpexLoading(false); })
                 .catch(() => setOpexLoading(false));
         }
+        if (activeSection === 'opex' && !vendorInflation) {
+            API('/vendor-inflation?days=730&limit=100').then(r => r.json())
+                .then(d => { if (!d.error) setVendorInflation(d); })
+                .catch(() => {});
+        }
         if (activeSection === 'tracking' && !trackingData) {
             fetch('/api/opex-tracking/dashboard', { headers: {  } })
                 .then(r => r.json()).then(d => setTrackingData(d)).catch(() => {});
         }
-    }, [activeSection, opexData, opexLoading, trackingData]);
+        if (activeSection === 'maintenance' && !maintenanceKpis) {
+            const pid = plantId || 'Plant_1';
+            fetch(`/api/maintenance-kpis/summary`, { headers: { 'x-plant-id': pid } })
+                .then(r => r.json()).then(d => { if (!d.error) setMaintenanceKpis(d); }).catch(() => {});
+        }
+    }, [activeSection, opexData, opexLoading, trackingData, maintenanceKpis, vendorInflation, plantId]);
 
 
     const sections = [
@@ -117,12 +130,13 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
         { id: 'plants', label: 'Plant Rankings', icon: Factory },
         { id: 'financial', label: 'Financial', icon: DollarSign },
         { id: 'opex', label: 'OpEx Intel', icon: TrendingDown },
+        { id: 'tracking',     label: 'OpEx Tracking',    icon: Target },
         { id: 'equipment', label: 'Equipment Intel', icon: Zap },
         { id: 'risk', label: 'Risk Matrix', icon: AlertTriangle },
         { id: 'forecast', label: 'Forecast', icon: Calendar },
         { id: 'workforce', label: 'Workforce', icon: Users },
         { id: 'realestate', label: 'Property & Real Estate', icon: Map },
-        { id: 'tracking',   label: 'OpEx Tracking',          icon: Target },
+        { id: 'maintenance',  label: 'Maintenance KPIs', icon: Wrench },
     ];
 
     if (loading) return (
@@ -679,6 +693,61 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* ── Vendor Price Drift (Enterprise Rollup) ── */}
+                                {vendorInflation && (
+                                    <div style={{ ...sectionCard, borderColor: 'rgba(239,68,68,0.2)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                                            <TrendingUp size={16} color="#ef4444" />
+                                            <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#f1f5f9' }}>Vendor Price Drift</h3>
+                                            <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#ef4444', fontWeight: 600 }}>
+                                                {vendorInflation.summary?.inflating || 0} items inflating enterprise-wide
+                                            </span>
+                                            <button
+                                                onClick={() => setVendorInflationModal(true)}
+                                                style={{ padding: '5px 12px', borderRadius: 7, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}
+                                            >View Detail</button>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10, marginBottom: 14 }}>
+                                            {[
+                                                { label: 'Items Tracked', val: vendorInflation.summary?.totalTracked || 0, color: '#64748b' },
+                                                { label: 'Inflating (>5%)', val: vendorInflation.summary?.inflating || 0, color: '#ef4444' },
+                                                { label: 'Deflating (<-5%)', val: vendorInflation.summary?.deflating || 0, color: '#10b981' },
+                                                { label: 'Avg Enterprise Drift', val: (vendorInflation.summary?.avgDrift > 0 ? '+' : '') + (vendorInflation.summary?.avgDrift || 0) + '%', color: vendorInflation.summary?.avgDrift > 0 ? '#f97316' : '#10b981', raw: true },
+                                            ].map(({ label, val, color, raw }) => (
+                                                <div key={label} style={{ background: `${color}10`, border: `1px solid ${color}22`, borderRadius: 10, padding: '12px 16px' }}>
+                                                    <div style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                                                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color }}>{raw ? val : val.toLocaleString()}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {/* Top inflators preview */}
+                                        {vendorInflation.topInflators?.length > 0 && (
+                                            <div style={{ overflowX: 'auto' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                    <thead><tr>
+                                                        {['Plant', 'Vendor', 'Description', 'Part #', 'First Price', 'Latest Price', 'Drift'].map(h => (
+                                                            <th key={h} style={tableHead}>{h}</th>
+                                                        ))}
+                                                    </tr></thead>
+                                                    <tbody>
+                                                        {vendorInflation.topInflators.slice(0, 10).map((item, i) => (
+                                                            <tr key={i}>
+                                                                <td style={tableCell}>{(item.plant || '').replace(/_/g, ' ')}</td>
+                                                                <td style={tableCell}>{item.vendor}</td>
+                                                                <td style={{ ...tableCell, fontWeight: 600 }}>{item.label}</td>
+                                                                <td style={{ ...tableCell, color: '#64748b', fontSize: '0.72rem' }}>{item.vendorPartNo || '—'}</td>
+                                                                <td style={tableCell}>${Number(item.firstCost).toFixed(2)}</td>
+                                                                <td style={tableCell}>${Number(item.lastCost).toFixed(2)}</td>
+                                                                <td style={{ ...tableCell, fontWeight: 700, color: '#ef4444' }}>+{item.pctChange}%</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* ── Section 1: CapEx Replacement Alerts ── */}
                                 <div style={sectionCard}>
@@ -1382,6 +1451,100 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                 </>
             )}
 
+            {/* ═══════════ VENDOR INFLATION DETAIL MODAL ═══════════ */}
+            {vendorInflationModal && vendorInflation && (() => {
+                const vi = vendorInflation;
+                const driftingItems = [
+                    ...(vi.topInflators || []),
+                    ...(vi.topDeflators || []),
+                ].filter(x => x.pctChange !== 0).sort((a, b) => b.pctChange - a.pctChange);
+
+                const byVendor = {};
+                driftingItems.forEach(item => {
+                    const key = item.vendor || 'Unknown';
+                    if (!byVendor[key]) byVendor[key] = { phone: item.vendorPhone, email: item.vendorEmail, contact: item.vendorContact, items: [] };
+                    byVendor[key].items.push(item);
+                });
+
+                const handlePrint = () => {
+                    window.triggerTrierPrint('vendor-inflation', {
+                        summary: vi.summary,
+                        byVendor,
+                        plantLabel: 'Enterprise (All Sites)',
+                    });
+                };
+
+                return (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 10500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+                        onClick={() => setVendorInflationModal(false)}>
+                        <div className="glass-card"
+                            style={{ width: '100%', maxWidth: 980, maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}
+                            onClick={e => e.stopPropagation()}>
+                            {/* Header */}
+                            <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <TrendingUp size={20} color="#ef4444" />
+                                    <div>
+                                        <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9' }}>Enterprise Vendor Price Drift</div>
+                                        <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: 1 }}>24-month window · All plants · Items with price movement only</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+                                        Print Report
+                                    </button>
+                                    <button onClick={() => setVendorInflationModal(false)} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                            {/* Summary bar */}
+                            {vi.summary && (
+                                <div style={{ padding: '10px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 24, fontSize: '0.78rem', background: 'rgba(0,0,0,0.2)' }}>
+                                    <span style={{ color: '#64748b' }}>{vi.summary.totalTracked} items tracked enterprise-wide</span>
+                                    <span><span style={{ color: '#ef4444', fontWeight: 700 }}>{vi.summary.inflating}</span> <span style={{ color: '#64748b' }}>inflating</span></span>
+                                    <span><span style={{ color: '#10b981', fontWeight: 700 }}>{vi.summary.deflating}</span> <span style={{ color: '#64748b' }}>deflating</span></span>
+                                    <span style={{ marginLeft: 'auto', color: '#64748b' }}>avg drift <span style={{ color: vi.summary.avgDrift > 0 ? '#f97316' : '#10b981', fontWeight: 700 }}>{vi.summary.avgDrift > 0 ? '+' : ''}{vi.summary.avgDrift}%</span></span>
+                                </div>
+                            )}
+                            {/* Body */}
+                            <div style={{ overflowY: 'auto', flex: 1, padding: '16px 24px' }}>
+                                {driftingItems.length === 0 ? (
+                                    <div style={{ padding: '48px', textAlign: 'center', color: '#475569' }}>No price movement detected across any plant in the past 24 months.</div>
+                                ) : Object.entries(byVendor).map(([vendorName, vData]) => (
+                                    <div key={vendorName} style={{ marginBottom: 24 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                                            <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>🏭</div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#f1f5f9' }}>{vendorName}</div>
+                                                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                                    {vData.contact && <span style={{ marginRight: 12 }}>{vData.contact}</span>}
+                                                    {vData.phone && <span style={{ marginRight: 12 }}>📞 {vData.phone}</span>}
+                                                    {vData.email && <span>✉ {vData.email}</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {vData.items.map((item, i) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', marginBottom: 2 }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#475569', minWidth: 80 }}>{(item.plant || '').replace(/_/g, ' ')}</div>
+                                                <div style={{ fontSize: '0.72rem', color: '#64748b', minWidth: 80 }}>{item.vendorPartNo || '—'}</div>
+                                                <div style={{ flex: 1, fontSize: '0.82rem', color: '#e2e8f0', fontWeight: 500 }}>{item.label}</div>
+                                                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>${Number(item.firstCost).toFixed(2)}</div>
+                                                <div style={{ fontSize: '0.7rem', color: '#475569' }}>→</div>
+                                                <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600 }}>${Number(item.lastCost).toFixed(2)}</div>
+                                                <div style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700, background: item.pctChange > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.12)', color: item.pctChange > 0 ? '#ef4444' : '#10b981', minWidth: 64, textAlign: 'right' }}>
+                                                    {item.pctChange > 0 ? '+' : ''}{item.pctChange}%
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* ═══════════ OPEX TRACKING (SELF-HEALING LOOP) ═══════════ */}
             {activeSection === 'tracking' && (() => {
                 if (!trackingData) return <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}><RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ marginLeft: 10 }}>Loading tracking data...</span></div>;
@@ -1532,6 +1695,120 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                     </div>
                 </>
             )}
+
+            {/* ═══════════ MAINTENANCE KPIs SECTION ═══════════ */}
+            {activeSection === 'maintenance' && (() => {
+                const kpi = maintenanceKpis;
+                if (!kpi) return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#64748b', padding: 40, justifyContent: 'center' }}>
+                        <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading maintenance KPIs...
+                    </div>
+                );
+                const pr   = kpi.plannedRatio   || {};
+                const pm   = kpi.pmCompliance   || {};
+                const bl   = kpi.backlog        || {};
+                const dt   = kpi.downtimeCost   || {};
+                const overTarget = pr.plannedPct >= 80;
+
+                return (
+                    <>
+                        {/* KPI headline row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+                            <KPICard
+                                icon={Activity}
+                                label="Planned vs. Unplanned"
+                                value={`${pr.plannedPct ?? '--'}% Planned`}
+                                sub={`Target ≥ 80% · ${pr.total ?? 0} WOs (12 mo)`}
+                                color={overTarget ? '#10b981' : '#f59e0b'}
+                            />
+                            <KPICard
+                                icon={CheckCircle2}
+                                label="PM Compliance Rate"
+                                value={pm.complianceRate != null ? `${pm.complianceRate}%` : 'N/A'}
+                                sub={`${pm.scheduledPMs ?? 0} scheduled · ${pm.overdue ?? 0} overdue`}
+                                color={pm.complianceRate >= 90 ? '#10b981' : pm.complianceRate >= 70 ? '#f59e0b' : '#ef4444'}
+                            />
+                            <KPICard
+                                icon={Clock}
+                                label="WO Backlog (Open)"
+                                value={fmtN(bl.totalOpen ?? 0)}
+                                sub={`${bl.criticalAged ?? 0} aged >30 days`}
+                                color={bl.criticalAged > 10 ? '#ef4444' : '#3b82f6'}
+                            />
+                            <KPICard
+                                icon={DollarSign}
+                                label="Downtime Cost (12 mo)"
+                                value={fmt(dt.totalCost ?? 0)}
+                                sub={`${dt.woCount ?? 0} WOs with downtime cost`}
+                                color="#f59e0b"
+                            />
+                        </div>
+
+                        {/* Planned vs. Unplanned bar */}
+                        <div className="glass-card" style={{ padding: 20, marginBottom: 12 }}>
+                            <h3 style={{ margin: '0 0 14px 0', fontSize: '0.9rem', fontWeight: 700, color: '#f1f5f9' }}>
+                                Planned vs. Unplanned Ratio
+                                <span style={{ marginLeft: 10, fontSize: '0.7rem', fontWeight: 400, color: '#64748b' }}>
+                                    World-class target: ≥ 80% planned
+                                </span>
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ flex: 1, height: 24, background: 'rgba(255,255,255,0.06)', borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
+                                    <div style={{ width: `${pr.plannedPct ?? 0}%`, background: overTarget ? '#10b981' : '#f59e0b', transition: 'width 0.4s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {(pr.plannedPct ?? 0) > 10 && <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 700 }}>{pr.plannedPct}%</span>}
+                                    </div>
+                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{pr.unplannedPct ?? 0}% unplanned</span>
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+                                    {fmtN(pr.planned ?? 0)} planned / {fmtN(pr.unplanned ?? 0)} reactive
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* PM Compliance + Backlog detail */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div className="glass-card" style={{ padding: 20 }}>
+                                <h3 style={{ margin: '0 0 14px 0', fontSize: '0.9rem', fontWeight: 700, color: '#f1f5f9' }}>PM Compliance Detail</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {[
+                                        { label: 'Scheduled PMs (12 mo)',  value: fmtN(pm.scheduledPMs ?? 0),     color: '#94a3b8' },
+                                        { label: 'Completed On-Time',       value: fmtN(pm.completedOnTime ?? 0),  color: '#10b981' },
+                                        { label: 'Overdue / Missed',        value: fmtN(pm.overdue ?? 0),          color: '#ef4444' },
+                                        { label: 'Compliance Rate',         value: pm.complianceRate != null ? `${pm.complianceRate}%` : 'N/A', color: pm.complianceRate >= 90 ? '#10b981' : '#f59e0b' },
+                                    ].map(row => (
+                                        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{row.label}</span>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: row.color }}>{row.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="glass-card" style={{ padding: 20 }}>
+                                <h3 style={{ margin: '0 0 14px 0', fontSize: '0.9rem', fontWeight: 700, color: '#f1f5f9' }}>Backlog Aging</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {[
+                                        { label: '0–7 days',   value: fmtN(kpi.backlogDetail?.buckets?.d0_7   ?? 0), color: '#10b981' },
+                                        { label: '8–30 days',  value: fmtN(kpi.backlogDetail?.buckets?.d8_30  ?? 0), color: '#f59e0b' },
+                                        { label: '31–90 days', value: fmtN(kpi.backlogDetail?.buckets?.d31_90 ?? 0), color: '#f97316' },
+                                        { label: '90+ days',   value: fmtN(kpi.backlogDetail?.buckets?.d90plus ?? 0), color: '#ef4444' },
+                                    ].map(row => (
+                                        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{row.label}</span>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: row.color }}>{row.value}</span>
+                                        </div>
+                                    ))}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f1f5f9' }}>Total Open</span>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#3b82f6' }}>{fmtN(bl.totalOpen ?? 0)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                );
+            })()}
 
             {/* ═══════════ ACCESS MANAGEMENT ═══════════ */}
             <AccessManager isCreator={isCreator} />

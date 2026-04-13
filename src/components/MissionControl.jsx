@@ -49,7 +49,7 @@
  * @param {function} setViewAsRole     Setter for the impersonation role
  */
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Factory, Wrench, Cog, Truck, Package, ShieldCheck, Lock, MessageSquare, BarChart3, Activity, ChevronRight, Scan, FlaskConical, Users, Monitor, Download, BookOpen, HardHat, Star, ShieldAlert, Lightbulb, Globe, Hammer, LockKeyhole, Server, Crown, Map, MapPin, Zap, Droplets, GraduationCap, Warehouse, ClipboardList } from 'lucide-react';
+import { Factory, Wrench, Cog, Truck, Package, ShieldCheck, Lock, MessageSquare, BarChart3, Activity, ChevronRight, Scan, FlaskConical, Users, Monitor, Download, BookOpen, HardHat, Star, ShieldAlert, Lightbulb, Globe, Hammer, LockKeyhole, Server, Crown, Map, MapPin, Zap, Droplets, GraduationCap, Warehouse, ClipboardList, AlertTriangle, Clock, CheckCircle, RotateCcw, XCircle, RefreshCw } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 import RoleAvatar from './RoleAvatar';
 import { useTranslation } from '../i18n/index.jsx';
@@ -119,20 +119,20 @@ const ROLE_TILES = {
     // Row 3: IT (group) | People & Comms (group) | Reports & Analytics | Plant Metrics
     // Last:  Corporate Analytics
     // Technicians: focused on their work queue, parts they need, safety, SOPs
-    technician: ['my-work-orders', 'parts-needed', 'assets-boms', 'quality-log', 'sops', 'tool-crib', 'loto', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
+    technician: ['scanner', 'my-work-orders', 'parts-needed', 'assets-boms', 'quality-log', 'sops', 'tool-crib', 'loto', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
     operator:   ['quality-log', 'sops', 'floor-plans', 'maps', 'work-request-portal'],
     // Mechanics: same but with fleet/logistics and full asset access
-    mechanic:   ['my-work-orders', 'assets-boms', 'parts-needed', 'storeroom', 'logistics-fleet', 'tool-crib', 'loto', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
+    mechanic:   ['scanner', 'my-work-orders', 'assets-boms', 'parts-needed', 'storeroom', 'logistics-fleet', 'tool-crib', 'loto', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
     // Engineers: assets, BOMs, engineering tools, supply chain visibility
     engineer:   ['engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'sops', 'supply-chain', 'comms', 'floor-plans', 'maps', 'work-request-portal'],
     lab_tech:   ['quality-log', 'sops', 'safety', 'compliance', 'comms', 'floor-plans', 'maps', 'utilities'],
     manager:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
                  'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
-                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'work-request-portal'],
+                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'scanner', 'work-request-portal'],
     plant_manager: ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
                  'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
-                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'work-request-portal'],
-    maintenance_manager: ['maintenance', 'my-work-orders', 'parts-needed', 'storeroom', 'asset-metrics', 'tool-crib', 'contractors', 'analytics', 'sops', 'loto', 'safety', 'floor-plans', 'maps', 'work-request-portal'],
+                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'scanner', 'work-request-portal'],
+    maintenance_manager: ['scanner', 'maintenance', 'my-work-orders', 'parts-needed', 'storeroom', 'asset-metrics', 'tool-crib', 'contractors', 'analytics', 'sops', 'loto', 'safety', 'floor-plans', 'maps', 'work-request-portal'],
     corporate:  ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'storeroom', 'sops',
                  'asset-metrics', 'logistics-fleet', 'supply-chain', 'floor-plans', 'maps',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'underwriter'],
@@ -146,7 +146,7 @@ const ROLE_TILES = {
     creator:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
                  'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard',
-                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'corp-analytics', 'work-request-portal'],
+                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'corp-analytics', 'scanner', 'work-request-portal'],
     employee:   ['plant-overview', 'directory', 'comms', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
 };
 
@@ -166,6 +166,253 @@ const TILE_GROUPS = {
     'it-group': { icon: Server, accent: '#6366f1', title: 'Information Technology', desc: 'IT asset management, software licensing, system administration, governance, and data integration.', pills: ['Assets', 'Metrics', 'Admin', 'Governance'], children: ['it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard'] },
     'plant-setup-group': { icon: Factory, accent: '#0ea5e9', title: 'Facilities & Floor Plans', desc: 'Interactive facility floor plans, equipment placement zones, LiDAR 3D scanning, and site maps.', pills: ['Floor Plans', 'Campus Maps', 'CAD Models'], children: ['floor-plans', 'maps', 'plant-setup', 'plant-onboarding'] },
 };
+
+// ── Roles that see the needsReview supervisor queue ───────────────────────────
+const REVIEW_QUEUE_ROLES = new Set([
+    'manager', 'plant_manager', 'maintenance_manager',
+    'corporate', 'executive', 'it_admin', 'creator',
+]);
+
+// ── reviewReason display labels ───────────────────────────────────────────────
+const REVIEW_REASON_LABELS = {
+    AUTO_TIMEOUT:      'Auto-timeout: no activity',
+    OFFLINE_CONFLICT:  'Offline conflict — Auto-Joined',
+    MANUAL_FLAG:       'Manually flagged',
+    SHIFT_END:         'Shift ended unresolved',
+};
+
+// ── Fetch and expose the needsReview queue for the current plant ──────────────
+function useNeedsReview(plantId) {
+    const [data, setData]       = useState({ flagged: [], overdueScheduled: [], counts: { flagged: 0, overdueScheduled: 0 } });
+    const [loading, setLoading] = useState(false);
+    const [error, setError]     = useState('');
+
+    const load = useCallback(() => {
+        if (!plantId) return;
+        setLoading(true);
+        fetch('/api/scan/needs-review', { headers: { 'x-plant-id': plantId } })
+            .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+            .then(d => { setData(d); setError(''); })
+            .catch(e => setError(String(e)))
+            .finally(() => setLoading(false));
+    }, [plantId]);
+
+    useEffect(() => { load(); }, [load]);
+
+    return { data, loading, error, reload: load };
+}
+
+// ── Single review-queue row — one WO with supervisor resolution actions ───────
+function ReviewRow({ wo, plantId, userId, onResolved }) {
+    const [busy, setBusy]   = useState(false);
+    const [err, setErr]     = useState('');
+
+    const act = useCallback(async (deskAction) => {
+        setBusy(true);
+        setErr('');
+        try {
+            const res = await fetch('/api/scan/desk-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                body: JSON.stringify({ woId: wo.ID, userId, deskAction }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+            onResolved();
+        } catch (e) {
+            setErr(e.message);
+            setBusy(false);
+        }
+    }, [plantId, userId, wo.ID, onResolved]);
+
+    const reasonLabel = REVIEW_REASON_LABELS[wo.reviewReason] || wo.reviewReason || 'Flagged';
+
+    return (
+        <div style={{
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: 10, padding: '12px 16px', marginBottom: 8,
+        }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0 }}>
+                    <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14 }}>
+                        {wo.WorkOrderNumber} — {wo.Description || wo.AssetName || 'No description'}
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+                        {reasonLabel}
+                        {wo.holdReason && (
+                            <span style={{ marginLeft: 10, color: '#64748b' }}>{wo.holdReason.replace(/_/g, ' ')}</span>
+                        )}
+                    </div>
+                    {err && <div style={{ color: '#fca5a5', fontSize: 12, marginTop: 4 }}>{err}</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <ActionBtn icon={CheckCircle} label="Close"   color="#22c55e" onClick={() => act('DESK_CLOSE')}   disabled={busy} />
+                    <ActionBtn icon={RotateCcw}   label="Resume"  color="#60a5fa" onClick={() => act('DESK_RESUME')}  disabled={busy} />
+                    <ActionBtn icon={XCircle}     label="Dismiss" color="#94a3b8" onClick={() => act('DESK_DISMISS')} disabled={busy} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Single overdue scheduled-return row — simpler, fewer actions ──────────────
+function OverdueReturnRow({ wo, plantId, userId, onResolved }) {
+    const [busy, setBusy] = useState(false);
+    const [err, setErr]   = useState('');
+
+    const act = useCallback(async (deskAction) => {
+        setBusy(true);
+        setErr('');
+        try {
+            const res = await fetch('/api/scan/desk-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                body: JSON.stringify({ woId: wo.ID, userId, deskAction }),
+            });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+            onResolved();
+        } catch (e) {
+            setErr(e.message);
+            setBusy(false);
+        }
+    }, [plantId, userId, wo.ID, onResolved]);
+
+    const overdueSince = wo.returnAt
+        ? new Date(wo.returnAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '—';
+
+    return (
+        <div style={{
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.25)',
+            borderRadius: 10, padding: '12px 16px', marginBottom: 8,
+        }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0 }}>
+                    <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14 }}>
+                        {wo.WorkOrderNumber} — {wo.Description || wo.AssetName || 'No description'}
+                    </div>
+                    <div style={{ color: '#f87171', fontSize: 12, marginTop: 2 }}>
+                        Return was due at {overdueSince}
+                    </div>
+                    {err && <div style={{ color: '#fca5a5', fontSize: 12, marginTop: 4 }}>{err}</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <ActionBtn icon={RotateCcw}     label="Resume"  color="#60a5fa" onClick={() => act('DESK_RESUME')}  disabled={busy} />
+                    <ActionBtn icon={AlertTriangle} label="Escalate" color="#f59e0b" onClick={() => act('DESK_DISMISS')} disabled={busy} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Compact icon+label button used inside review rows ────────────────────────
+function ActionBtn({ icon: Icon, label, color, onClick, disabled }) {
+    const [hov, setHov] = useState(false);
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            onMouseEnter={() => setHov(true)}
+            onMouseLeave={() => setHov(false)}
+            style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px', borderRadius: 6, border: 'none',
+                background: hov && !disabled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                color: disabled ? '#334155' : color,
+                fontSize: 12, fontWeight: 600, cursor: disabled ? 'default' : 'pointer',
+                transition: 'background 0.15s',
+            }}
+        >
+            <Icon size={13} />
+            {label}
+        </button>
+    );
+}
+
+// ── Supervisor review queue — shown at top of Mission Control for managers ────
+function NeedsReviewQueue({ plantId, userId }) {
+    const { data, loading, error, reload } = useNeedsReview(plantId);
+    const [expanded, setExpanded] = useState(true);
+    const totalCount = data.counts.flagged + data.counts.overdueScheduled;
+
+    // Don't render the section at all when there's nothing to show
+    if (!loading && totalCount === 0 && !error) return null;
+
+    return (
+        <div style={{
+            maxWidth: 1400, margin: '0 auto 20px', padding: '0 16px',
+        }}>
+            <div
+                onClick={() => setExpanded(x => !x)}
+                style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginBottom: expanded ? 12 : 0,
+                    cursor: 'pointer', userSelect: 'none',
+                }}
+            >
+                <AlertTriangle size={16} color="#f59e0b" />
+                <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 14 }}>
+                    Review Queue
+                </span>
+                {totalCount > 0 && (
+                    <span style={{
+                        background: '#ef4444', color: '#fff', fontSize: 11,
+                        padding: '1px 7px', borderRadius: 8, fontWeight: 700,
+                    }}>
+                        {totalCount}
+                    </span>
+                )}
+                <button
+                    onClick={(e) => { e.stopPropagation(); reload(); }}
+                    style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4 }}
+                    title="Refresh queue"
+                >
+                    <RefreshCw size={13} />
+                </button>
+                <ChevronRight size={16} color="#475569" style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+            </div>
+
+            {expanded && (
+                <div>
+                    {error && (
+                        <div style={{ color: '#fca5a5', fontSize: 13, marginBottom: 8 }}>
+                            Failed to load review queue: {error}
+                        </div>
+                    )}
+                    {loading && (
+                        <div style={{ color: '#475569', fontSize: 13, marginBottom: 8 }}>Loading…</div>
+                    )}
+
+                    {/* Overdue scheduled returns — highest urgency, shown first */}
+                    {data.overdueScheduled.length > 0 && (
+                        <div style={{ marginBottom: 12 }}>
+                            <div style={{ color: '#f87171', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                                <Clock size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                                Overdue Scheduled Returns ({data.counts.overdueScheduled})
+                            </div>
+                            {data.overdueScheduled.map(wo => (
+                                <OverdueReturnRow key={wo.ID} wo={wo} plantId={plantId} userId={userId} onResolved={reload} />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Flagged WOs requiring desk review */}
+                    {data.flagged.length > 0 && (
+                        <div>
+                            <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                                <AlertTriangle size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                                Flagged Work Orders ({data.counts.flagged})
+                            </div>
+                            {data.flagged.map(wo => (
+                                <ReviewRow key={wo.ID} wo={wo} plantId={plantId} userId={userId} onResolved={reload} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function buildDisplayList(tileKeys) {
     const assigned = new Set(tileKeys);
@@ -305,8 +552,8 @@ function MCHeroBlock({ isCorporate, persona, currentUser, metrics, userRole, eff
             padding: '2px 16px',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <RoleAvatar role={userRole} size={80} glow style={{ margin: '-18px 0', zIndex: 10 }} title={`Logged in as ${persona.label} — Click to view Settings & Alerts`} onClick={() => onOpenWorkspace && onOpenWorkspace('settings', 'System Settings')} />
-                <h1 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#fff' }}>{t('app.missionControl', 'Mission Control')}</h1>
+                <RoleAvatar role={userRole} size={80} glow style={{ margin: 0, zIndex: 10 }} title={`Logged in as ${persona.label} — Click to view Settings & Alerts`} onClick={() => onOpenWorkspace && onOpenWorkspace('settings', 'System Settings')} />
+                <h1 className="hide-mobile" style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#fff' }}>{t('app.missionControl', 'Mission Control')}</h1>
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{greeting}</span>
             </div>
             <LiveClock />
@@ -415,7 +662,15 @@ export default function MissionControl({ plantId, onOpenWorkspace }) {
                 <RoleSwitcher userRole={userRole} onRoleChange={(r) => setViewAsRole(r)} />
             </div>
 
-            <div className="mission-control-grid" style={{ 
+            {/* Supervisor review queue — only visible to management roles */}
+            {REVIEW_QUEUE_ROLES.has(effectiveRole) && plantId && (
+                <NeedsReviewQueue
+                    plantId={plantId}
+                    userId={localStorage.getItem('userId') || userRole}
+                />
+            )}
+
+            <div className="mission-control-grid" style={{
                 display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20, maxWidth: 1400, margin: '0 auto' 
             }}>
                 {displayList.map((item, i) => {

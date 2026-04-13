@@ -15,7 +15,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud, Github, Star } from 'lucide-react';
+import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud, Github, Star, Scan } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
 const AboutView = () => {
@@ -517,6 +517,18 @@ const AboutView = () => {
                         t('manual.item.106', '2. Press Enter.'),
                         '3. Results appear grouped by category. Click any result to jump to that record.'
                     ]
+                },
+                {
+                    title: t('manual.sub.165', '2.5 Vendor Inflation Tile'),
+                    items: [
+                        t('manual.vendorInflation.item1', 'The Vendor Inflation tile on the Dashboard monitors part price drift at your plant over a rolling 365-day window.'),
+                        t('manual.vendorInflation.item2', 'The tile header shows the total number of parts tracked and the average price drift percentage across all monitored items. If any parts are rising in price, a yellow badge appears showing the count.'),
+                        t('manual.vendorInflation.item3', 'Below the header, the top three inflating parts are listed by name, vendor, and percentage change — giving you immediate visibility into your highest-cost-pressure items without opening a report.'),
+                        t('manual.vendorInflation.item4', 'Click the tile to open the Vendor Price Drift detail modal. This modal shows the full list of drifting parts grouped by vendor, with columns for part name, unit cost change, and percentage drift. Use this to identify which vendors are driving price increases.'),
+                        t('manual.vendorInflation.item5', 'Parts with a positive drift are shown in amber/red. Parts with negative drift (price drops) are shown in green — these represent negotiation wins or supply chain improvements.'),
+                        t('manual.vendorInflation.item6', 'The modal includes a Print button that generates a formatted Vendor Price Drift report, suitable for purchasing reviews or vendor renegotiation meetings.'),
+                        t('manual.vendorInflation.item7', 'The enterprise-wide view of vendor inflation (across all 40+ plants) is available in Corporate Analytics → OpEx Intel tab → Vendor Price Drift card.'),
+                    ]
                 }
             ]
         },
@@ -761,6 +773,66 @@ const AboutView = () => {
                         'Once closed, a work order cannot be re-opened. If you made a mistake, contact your supervisor.'
                     ]
                 }
+            ]
+        },
+        {
+            section: t('manual.zeroScan.title', 'Part IV-B: Zero-Keyboard Work Order Scanner'),
+            id: 'zero-keyboard-scan',
+            navigateTo: '/scanner',
+            filePath: 'src/components/ScannerWorkspace.jsx',
+            icon: <Scan size={22} />,
+            content: t('manual.zeroScan.content', 'The shop-floor scan system lets a technician open, update, hold, escalate, or close a work order by scanning an asset barcode and tapping a single button — no keyboard, no typing, no navigation required. Built for Zebra TC77/TC78 hardware scanners and gloved environments.'),
+            subsections: [
+                {
+                    title: t('manual.zeroScan.sub1', 'IV-B.1 How It Works — The Scan State Machine'),
+                    items: [
+                        t('manual.zeroScan.item1', 'Navigate to /scanner (the Scan tile in Mission Control). The server owns all workflow logic — the device only captures the barcode and displays tap buttons.'),
+                        t('manual.zeroScan.item2', 'Three capture modes: (1) Hardware wedge scanner (Zebra TC77/TC78) — point and pull trigger, the barcode lands automatically; (2) Camera scan — tap the camera icon and aim at the label; (3) Numeric fallback — type a short asset code when the label is damaged.'),
+                        t('manual.zeroScan.item3', 'After capture, a 1-second confirmation flash shows the asset name and current WO state — prevents wrong-asset errors on camera devices where aiming is less precise.'),
+                        t('manual.zeroScan.item4', 'The server evaluates the asset state and returns a branch code. The device renders the correct tap-only action set for that branch — no client-side logic.'),
+                    ]
+                },
+                {
+                    title: t('manual.zeroScan.sub2', 'IV-B.2 What Happens After Each Scan'),
+                    items: [
+                        t('manual.zeroScan.item5', 'No active WO on asset → System AUTO-CREATES a new Open work order immediately. A green confirmation screen appears — no form filling required.'),
+                        t('manual.zeroScan.item6', 'Active WO, you are the assigned tech (SOLO) → Tap: Close WO | Mark Waiting | Escalate | Continue Later.'),
+                        t('manual.zeroScan.item7', 'Active WO, multiple techs (MULTI_TECH) → Tap: Leave Work | Close for Team | Mark Waiting | Escalate | Continue Later.'),
+                        t('manual.zeroScan.item8', 'Active WO, assigned to a different tech → Tap: Join Team | Take Over | Escalate.'),
+                        t('manual.zeroScan.item9', 'WO exists but is in Waiting status → Tap: Resume Waiting WO | Create New WO | View Status.'),
+                        t('manual.zeroScan.item10', 'WO is Escalated → Tap: Join Response | Take Over Response | View Status.'),
+                        t('manual.zeroScan.item11', 'Duplicate scan (same scanId already processed) → Rejected silently. Prevents accidental double-processing if the gun fires twice.'),
+                    ]
+                },
+                {
+                    title: t('manual.zeroScan.sub3', 'IV-B.3 Hold Reasons — Tap Only, No Typing'),
+                    items: [
+                        t('manual.zeroScan.item12', 'When you tap "Mark Waiting", a secondary hold-reason picker appears. All choices are tap buttons:'),
+                        t('manual.zeroScan.item13', '  • Waiting on Parts (PM-exempt)'),
+                        t('manual.zeroScan.item14', '  • Waiting on Vendor (PM-exempt)'),
+                        t('manual.zeroScan.item15', '  • Waiting on Approval (PM-exempt)'),
+                        t('manual.zeroScan.item16', '  • Scheduled Return — triggers a second picker for the return window (Later This Shift / Next Shift / Tomorrow)'),
+                        t('manual.zeroScan.item17', '  • Continue Later'),
+                        t('manual.zeroScan.item18', '  • Shift End — Unresolved'),
+                        t('manual.zeroScan.item19', 'PM-exempt reasons prevent the WO from aging against PM compliance metrics while the hold is active.'),
+                    ]
+                },
+                {
+                    title: t('manual.zeroScan.sub4', 'IV-B.4 Supervisor Review Queue (Mission Control)'),
+                    items: [
+                        t('manual.zeroScan.item20', 'Escalated WOs and flagged scan events surface in the Mission Control Needs Review queue. Supervisors see them without leaving the desk.'),
+                        t('manual.zeroScan.item21', 'Desk actions available for each flagged WO: Close (supervisor override), Resume (revert to active), Dismiss (clear the flag without status change).'),
+                        t('manual.zeroScan.item22', 'Every scan event is logged to ScanAuditLog with: scanId, assetId, userId, previous state, next state, decision branch, device timestamp, and server timestamp. The log is immutable.'),
+                    ]
+                },
+                {
+                    title: t('manual.zeroScan.sub5', 'IV-B.5 Offline Mode'),
+                    items: [
+                        t('manual.zeroScan.item23', 'Scan events captured while offline are queued in IndexedDB on the device.'),
+                        t('manual.zeroScan.item24', 'When connectivity is restored, POST /api/scan/offline-sync replays the queue in order. Each event is processed exactly as if it arrived live — the server resolves any state conflicts that emerged while the device was disconnected.'),
+                        t('manual.zeroScan.item25', 'The conflict resolution rules prioritize: (1) Explicit close, (2) Escalation, (3) Waiting, (4) Continue Later. The resolvedMode and conflictAutoResolved fields in ScanAuditLog record how each conflict was settled.'),
+                    ]
+                },
             ]
         },
         {
@@ -1680,6 +1752,23 @@ const AboutView = () => {
                     items: [
                         t('manual.item.634', 'Structured data exports compatible with Power BI, Tableau, and other BI tools.'),
                         'Access from Settings → BI Export.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.166', '13.6 Corporate Analytics — 11-Tab Intelligence Suite'),
+                    items: [
+                        t('manual.corpAnalytics.item1', 'Access Corporate Analytics from the Mission Control tile or the navigation bar (corporate users and above). The view provides an 11-tab enterprise intelligence suite spanning financial, operational, and strategic analytics across all facilities.'),
+                        t('manual.corpAnalytics.tab1', 'Tab 1 — Overview: Enterprise KPI summary. Shows total active work orders, network PM compliance rate, average asset health score, and open safety permits across all plants. Entry point for the corporate dashboard.'),
+                        t('manual.corpAnalytics.tab2', 'Tab 2 — Plant Rankings: Ranked performance table comparing every plant on cost efficiency, PM compliance, MTBF, downtime, and parts spend. Identify top-performing and underperforming sites at a glance.'),
+                        t('manual.corpAnalytics.tab3', 'Tab 3 — Financial: Cross-plant cost breakdown — labor, parts, and miscellaneous spend by plant and category. Trend charts show month-over-month cost movement. Used for budget allocation and variance reviews.'),
+                        t('manual.corpAnalytics.tab4', 'Tab 4 — OpEx Intel: The OpEx savings engine. Scans all 41 plants for 14 categories of operational savings opportunities (overstock lockup, rental vs. ownership arbitrage, consumable shrink, and more). Each finding shows predicted annual savings and a one-click "Commit to Action" button. Also contains the Vendor Price Drift card showing parts inflation across the network.'),
+                        t('manual.corpAnalytics.tab5', 'Tab 5 — OpEx Tracking: The self-healing commitment loop. Shows the enterprise dashboard of every committed action plan — open, in-progress, validated, missed, and overdue. Includes the Plant Realization Heatmap, Category Performance table, and total predicted vs. realized savings. See Part XXXI of this manual for the full OpEx Tracking reference.'),
+                        t('manual.corpAnalytics.tab6', 'Tab 6 — Equipment Intel: Network-wide asset intelligence. Aggregates health scores, MTBF trends, and failure patterns across all plants. Surfaces equipment that is failing at multiple facilities — useful for network-wide capital replacement decisions.'),
+                        t('manual.corpAnalytics.tab7', 'Tab 7 — Risk Matrix: Enterprise risk scoring. Every plant is rated on a risk matrix combining compliance gaps, overdue PMs, critical asset health, open safety permits, and incident frequency. Used for insurance audits and executive risk briefings.'),
+                        t('manual.corpAnalytics.tab8', 'Tab 8 — Forecast: Predictive spend and maintenance forecasting. Projects maintenance costs, PM workload, and parts demand over the next 90–365 days based on historical trends and scheduled activity.'),
+                        t('manual.corpAnalytics.tab9', 'Tab 9 — Workforce: Labor analytics across all sites. Shows technician headcount, overtime ratios, labor cost per plant, and open work order backlogs by plant. Supports staffing decisions and cross-plant labor rebalancing.'),
+                        t('manual.corpAnalytics.tab10', 'Tab 10 — Property & Real Estate: Facility-level data — square footage, property values, lease vs. own status, and maintenance cost per square foot by plant. Connects operational spend to real estate footprint for CFO-level reporting.'),
+                        t('manual.corpAnalytics.tab11', 'Tab 11 — Maintenance KPIs: Standardized maintenance performance metrics across the network — wrench time, schedule compliance, backlog hours, mean time to repair, and first-time fix rate — normalized for cross-plant comparison.'),
                     ]
                 }
             ]

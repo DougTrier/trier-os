@@ -38,6 +38,7 @@ const db = new Database(dbPath, { fileMustExist: false });
 // Initialize strict WAL mode for concurrency
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 5000'); // Wait up to 5s on lock contention instead of throwing immediately
+db.pragma('wal_autocheckpoint = 200'); // Checkpoint every 200 pages instead of default 1000 — keeps WAL file small under sustained E2E load
 
 // ── Define Cross-Plant Logistics State Machine Ledger ─────────────────────────
 console.log('📦 Verifying trier_logistics.db ledger integrity...');

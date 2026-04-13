@@ -160,6 +160,18 @@ router.post('/execute', (req, res) => {
         sql += ' LIMIT ' + Math.min(parseInt(limit) || 200, 5000);
 
         const rows = db.queryAll(sql, params);
+
+        // ── CSV export: ?format=csv returns a downloadable file ──
+        if (req.query.format === 'csv' || req.body.format === 'csv') {
+            if (rows.length === 0) return res.status(200).send('');
+            const headers = Object.keys(rows[0]);
+            const escape  = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const csv     = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))].join('\r\n');
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="report_${Date.now()}.csv"`);
+            return res.send(csv);
+        }
+
         res.json({ data: rows, total: rows.length, sql: sql.replace(/\?/g, '?') });
     } catch (err) {
         res.status(500).json({ error: 'Report execution failed: ' });

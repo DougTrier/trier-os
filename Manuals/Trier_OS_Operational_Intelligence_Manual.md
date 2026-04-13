@@ -327,6 +327,8 @@ The following capabilities are **unique to Trier OS** â��⬝ no competitor
 | **LIV** | [Level-3 Runtime Translation Engine (i18n)](#chapter-54-level-3-runtime-translation-engine-i18n) | � |
 | **LV** | [Platform Security Architecture](#chapter-55-platform-security-architecture) | � |
 | **LVI** | [OpEx Intelligence â��⬝ Analytics Engine](#chapter-56-opex-intelligence--analytics-engine) | � |
+| **LVII** | [Corporate Analytics — 11-Tab Enterprise Intelligence Suite](#chapter-57-corporate-analytics--11-tab-enterprise-intelligence-suite) | ★ |
+| **LVIII** | [Zero-Keyboard Work Order Scanner — Scan State Machine](#chapter-58-zero-keyboard-work-order-scanner--scan-state-machine) | ★ |
 
 ---
 
@@ -487,6 +489,27 @@ There is a search bar on the Dashboard that searches across **all data types** �
 1. Type your search term (WO number, asset name, part number, keyword).
 2. Press **Enter**.
 3. Results appear grouped by category. Click any result to jump directly to that record.
+
+### 2.5 Vendor Inflation Tile
+
+The **Vendor Inflation** tile on the Dashboard monitors part price drift at your plant over a rolling 365-day window.
+
+**What the tile shows:**
+
+| Element | Description |
+|---------|-------------|
+| **Header badge** | Total parts tracked and average price drift %. If any parts are rising, a yellow badge shows the count. |
+| **Top 3 inflators** | The three parts with the highest price increase — name, vendor, and % change — visible without opening the full report. |
+| **Click to expand** | Opens the Vendor Price Drift modal with the full list grouped by vendor. |
+
+**Vendor Price Drift Modal:**
+*   Parts are grouped by **vendor name** with contact information (phone, email, contact name).
+*   Each row shows: part name, unit cost change, and percentage drift.
+*   Parts with **positive drift** (price increases) are highlighted in amber/red.
+*   Parts with **negative drift** (price drops) are highlighted in green — these represent negotiation wins or supply improvements.
+*   Use the **Print** button to generate a formatted Vendor Price Drift report for purchasing reviews or vendor renegotiation meetings.
+
+> **Enterprise view:** The network-wide vendor inflation picture (across all 40+ plants) is available in **Corporate Analytics → OpEx Intel tab → Vendor Price Drift card**.
 
 ---
 
@@ -665,6 +688,84 @@ For external expenses not covered by labor or parts:
 4. The work order status changes to **"Closed"** and all costs are permanently recorded.
 
 > **Once closed, a work order cannot be re-opened.** All labor, parts, and costs are locked into the financial ledger. If you made a mistake, contact your supervisor or IT admin.
+
+---
+
+## Part IV-B: Zero-Keyboard Work Order Scanner
+
+### IV-B.1 What It Does
+
+The **Zero-Keyboard Work Order Scanner** (`/scanner`) lets a floor technician open, update, hold, escalate, or close a work order by scanning an asset barcode and tapping a single button — no keyboard, no form-filling, no navigation required.
+
+The server owns all workflow logic. The device only acquires the barcode and displays tap-only action buttons based on the asset's current state. This makes the system fully usable with gloves, in cold storage environments, and on Zebra TC77/TC78 hardware scanners.
+
+**Access:** Mission Control → **Scan** tile, or navigate to `/scanner`.
+
+### IV-B.2 Capture Modes
+
+| Mode | How It Works |
+|------|-------------|
+| **Hardware wedge scanner** | Point the Zebra gun at the label and pull the trigger. The barcode lands in a hidden input and auto-submits within 80ms — no screen tap required. |
+| **Camera scan** | Tap the camera icon and aim at the barcode or QR code. Supports QR, Code 128, Code 39, EAN-13, and UPC-A. |
+| **Numeric fallback** | Type a short asset code manually when the label is damaged or the camera fails. |
+
+After capture, a **1-second confirmation flash** shows the asset name and current WO state — this prevents wrong-asset errors on camera devices before committing the action.
+
+### IV-B.3 Server Decision Logic
+
+The server evaluates the asset state and returns a **branch code**. The device renders the correct tap-only action set for that branch:
+
+| Branch | Condition | Tap Options |
+|--------|-----------|-------------|
+| **AUTO_CREATE_WO** | No WO exists on the asset | Automatic — confirmation screen only, WO created immediately |
+| **ROUTE_TO_ACTIVE_WO / SOLO** | Active WO, you are the assigned tech | Close WO, Mark Waiting, Escalate, Continue Later |
+| **ROUTE_TO_ACTIVE_WO / MULTI_TECH** | Active WO, multiple techs | Leave Work, Close for Team, Mark Waiting, Escalate, Continue Later |
+| **ROUTE_TO_ACTIVE_WO / OTHER_USER** | Active WO, assigned to different tech | Join Team, Take Over, Escalate |
+| **ROUTE_TO_WAITING_WO** | WO exists but is in Waiting status | Resume, Create New WO, View Status |
+| **ROUTE_TO_ESCALATED_WO** | WO is Escalated | Join Response, Take Over Response, View Status |
+| **AUTO_REJECT_DUPLICATE_SCAN** | Same scanId already processed | Rejected — prevents double-processing if the gun fires twice |
+
+### IV-B.4 Hold Reasons — Tap Only, No Typing
+
+When you tap **Mark Waiting**, a secondary picker surfaces. All choices are tap buttons — no keyboard:
+
+| Hold Reason | PM-Exempt | Notes |
+|-------------|-----------|-------|
+| Waiting on Parts | Yes | Pauses PM compliance timer |
+| Waiting on Vendor | Yes | Pauses PM compliance timer |
+| Waiting on Approval | Yes | Pauses PM compliance timer |
+| Scheduled Return | Yes | Opens a return-window picker (Later This Shift / Next Shift / Tomorrow) |
+| Continue Later | No | |
+| Shift End — Unresolved | No | Flags for supervisor review |
+
+### IV-B.5 Supervisor Review Queue
+
+Escalated WOs and flagged scans surface automatically in the **Mission Control Needs Review** queue. Supervisors can take action from the desk without going to the floor:
+
+- **Close** — Supervisor override close
+- **Resume** — Revert to active status
+- **Dismiss** — Clear the flag without status change
+
+### IV-B.6 Audit Trail
+
+Every scan event is permanently recorded in the **ScanAuditLog** table:
+
+| Field | Description |
+|-------|-------------|
+| scanId | Unique identifier for this scan event |
+| assetId | Asset that was scanned |
+| userId | Technician who performed the scan |
+| previousState | WO status before the action |
+| nextState | WO status after the action |
+| decisionBranch | Which branch code the server returned |
+| deviceTimestamp | Time on the device at scan moment |
+| serverTimestamp | Time the server processed the event |
+
+The log is immutable. Records are never deleted.
+
+### IV-B.7 Offline Sync
+
+Scan events captured while offline are queued in IndexedDB on the device. When connectivity is restored, the offline-sync endpoint replays the queue in chronological order. State conflicts that emerged while disconnected are resolved automatically — the resolvedMode and conflictAutoResolved fields in ScanAuditLog record how each conflict was settled.
 
 ---
 
@@ -5073,3 +5174,49 @@ The system intercepts `WorkMisc` tracking records for heavy equipment (Scissor L
 Detecting missing un-serialized items like gloves and bits is incredibly difficult for traditional Enterprise System systems. Trier OS employs a unique statistical approach: calculating the baseline **"Consumable Burn Rate per Labor Hour."**
 
 If your shop consumes normal tooling proportionally to standard active logged labor, the value stays stable. If the system detects consumable consumption exponentially out-scaling tracked production hours, it flags your open tool crib as compromised, signaling "Consumable Vending Shrink" to immediately deploy locked access control.
+
+---
+
+## Chapter 57: Corporate Analytics — 11-Tab Enterprise Intelligence Suite
+
+### 57.1 Overview
+
+**Corporate Analytics** (`/corp-analytics`) is the enterprise command center for all 41 facilities. It provides an 11-tab intelligence suite spanning financial, operational, and strategic analytics. Accessible to Manager-level users and above with corporate view rights.
+
+**Access:** Mission Control → **Corporate Analytics** tile.
+
+### 57.2 The 11 Tabs
+
+| # | Tab | Primary Purpose |
+|---|-----|----------------|
+| 1 | **Overview** | Network KPI summary — active WOs, PM compliance rate, avg asset health, open safety permits |
+| 2 | **Plant Rankings** | Cross-plant performance table ranked by cost efficiency, PM compliance, MTBF, downtime, and parts spend |
+| 3 | **Financial** | Labor, parts, and miscellaneous spend by plant and category with month-over-month trend charts |
+| 4 | **OpEx Intel** | OpEx savings engine — 14 categories of savings opportunities with predicted amounts and one-click commitment |
+| 5 | **OpEx Tracking** | Commitment dashboard — validated, missed, and overdue action plans with plant realization heatmap |
+| 6 | **Equipment Intel** | Network-wide asset health, MTBF trends, and cross-plant failure pattern analysis |
+| 7 | **Risk Matrix** | Enterprise risk scoring combining compliance gaps, overdue PMs, safety incidents, and asset criticality |
+| 8 | **Forecast** | Predictive spend and maintenance workload forecasting for the next 90–365 days |
+| 9 | **Workforce** | Labor analytics — headcount, overtime ratios, labor cost per plant, and open WO backlogs |
+| 10 | **Property & Real Estate** | Facility data — sq ft, property values, lease vs. own, and maintenance cost per sq ft |
+| 11 | **Maintenance KPIs** | Standardized metrics — wrench time, schedule compliance, backlog hours, MTTR, and first-time fix rate |
+
+### 57.3 OpEx Intel Tab — Vendor Price Drift Card
+
+Within the **OpEx Intel** tab, the **Vendor Price Drift** card aggregates parts price inflation across all facilities over a 730-day rolling window. This is the enterprise companion to the single-plant Vendor Inflation tile on the plant Dashboard (see Section 2.5).
+
+*   The card shows top inflators and deflators by vendor, normalized across the network.
+*   Click any vendor entry to drill into the parts list for that supplier.
+*   Use the data to identify vendors applying network-wide price increases and initiate enterprise-level negotiations.
+
+### 57.4 OpEx Tracking Tab
+
+See **Part XXXI: OpEx Self-Healing Loop** for the full reference on the OpEx Tracking tab (commitment lifecycle, 30/60/90-day measurement cycle, realization heatmap, and board-ready financial narrative).
+
+---
+
+## Chapter 58: Zero-Keyboard Work Order Scanner — Scan State Machine
+
+See **Part IV-B** of the Daily Workflow section for the complete reference on the Zero-Keyboard Scanner (`/scanner`) — capture modes, branch logic, hold reasons, supervisor review queue, audit trail, and offline sync.
+
+**Summary:** A floor technician scans an asset barcode using a Zebra hardware gun, phone camera, or numeric fallback. The server evaluates asset state and returns a branch code. The device renders tap-only action buttons — no typing, no navigation. If no WO exists, one is auto-created immediately.

@@ -80,6 +80,28 @@ function DashboardView({
     const { t } = useTranslation();
     const [payScales, setPayScales] = React.useState([]);
     const [isPayScalesOpen, setIsPayScalesOpen] = React.useState(false);
+    const [inflationData, setInflationData] = React.useState(null);
+    const [inflationModal, setInflationModal] = React.useState(false);
+    const [inflationDetail, setInflationDetail] = React.useState(null);
+
+    useEffect(() => {
+        if (selectedPlant && selectedPlant !== 'all_sites') {
+            fetch('/api/supply-chain/inflation?days=365&limit=5', { headers: { 'x-plant-id': selectedPlant } })
+                .then(r => r.json())
+                .then(d => { if (!d.error) setInflationData(d); })
+                .catch(() => {});
+        }
+    }, [selectedPlant]);
+
+    const openInflationModal = React.useCallback(() => {
+        setInflationModal(true);
+        if (!inflationDetail) {
+            fetch('/api/supply-chain/inflation?days=730&limit=100', { headers: { 'x-plant-id': selectedPlant } })
+                .then(r => r.json())
+                .then(d => { if (!d.error) setInflationDetail(d); })
+                .catch(() => {});
+        }
+    }, [selectedPlant, inflationDetail]);
 
     useEffect(() => {
         if (selectedPlant !== 'all_sites') {
@@ -123,6 +145,149 @@ function DashboardView({
 
     return (
         <>
+
+        {/* ── Vendor Inflation Detail Modal ──────────────────────────────── */}
+        {inflationModal && (() => {
+            // Build vendor-grouped list of drifting items only
+            const driftingItems = [
+                ...(inflationDetail?.topInflators || []),
+                ...(inflationDetail?.topDeflators || []),
+            ].filter(x => x.pctChange !== 0).sort((a, b) => b.pctChange - a.pctChange);
+
+            // Group by vendor name
+            const byVendor = {};
+            driftingItems.forEach(item => {
+                const v = item.vendor || 'Unknown Vendor';
+                if (!byVendor[v]) byVendor[v] = { phone: item.vendorPhone, email: item.vendorEmail, contact: item.vendorContact, items: [] };
+                byVendor[v].items.push(item);
+            });
+
+            // Inline sparkline: simple SVG polyline from price history
+            const Sparkline = ({ points, pctChange }) => {
+                if (!points || points.length < 2) return null;
+                const W = 100, H = 28;
+                const costs = points.map(p => p.unitCost);
+                const mn = Math.min(...costs), mx = Math.max(...costs), rng = mx - mn || 1;
+                const pts = points.map((p, i) =>
+                    `${(i / (points.length - 1)) * W},${H - ((p.unitCost - mn) / rng) * (H - 2) - 1}`
+                ).join(' ');
+                const stroke = pctChange > 0 ? '#ef4444' : '#10b981';
+                return (
+                    <svg width={W} height={H} style={{ display: 'block', overflow: 'visible' }}>
+                        <polyline points={pts} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinejoin="round" />
+                        <circle cx={(points.length - 1) / (points.length - 1) * W} cy={H - ((costs[costs.length - 1] - mn) / rng) * (H - 2) - 1} r={3} fill={stroke} />
+                    </svg>
+                );
+            };
+
+            // Print handler — follows Trier OS print standard (PrintSystem.md)
+            const handlePrint = () => {
+                const plantLabel = plants.find(p => p.id === selectedPlant)?.label || selectedPlant;
+                window.triggerTrierPrint('vendor-inflation', {
+                    summary: inflationDetail?.summary,
+                    byVendor,
+                    plantLabel,
+                });
+            };
+
+            return (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+                    onClick={() => setInflationModal(false)}>
+                    <div className="glass-card"
+                        style={{ width: '100%', maxWidth: 900, maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}
+                        onClick={e => e.stopPropagation()}>
+
+                        {/* Header */}
+                        <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <TrendingUp size={20} color="#ef4444" />
+                                <div>
+                                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9' }}>Vendor Price Drift Analysis</div>
+                                    <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: 1 }}>24-month window · Items with price movement only</div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <button onClick={handlePrint}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+                                    🖨 Print Report
+                                </button>
+                                <button onClick={() => setInflationModal(false)}
+                                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px' }}>×</button>
+                            </div>
+                        </div>
+
+                        {/* Summary bar */}
+                        {inflationDetail?.summary && (
+                            <div style={{ padding: '10px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 24, fontSize: '0.78rem', background: 'rgba(0,0,0,0.2)' }}>
+                                <span style={{ color: '#64748b' }}>{inflationDetail.summary.totalTracked} items tracked</span>
+                                <span><span style={{ color: '#ef4444', fontWeight: 700 }}>{inflationDetail.summary.inflating}</span> <span style={{ color: '#64748b' }}>inflating</span></span>
+                                <span><span style={{ color: '#10b981', fontWeight: 700 }}>{inflationDetail.summary.deflating}</span> <span style={{ color: '#64748b' }}>deflating</span></span>
+                                <span style={{ marginLeft: 'auto', color: '#64748b' }}>avg drift <span style={{ color: inflationDetail.summary.avgDrift > 0 ? '#f97316' : '#10b981', fontWeight: 700 }}>{inflationDetail.summary.avgDrift > 0 ? '+' : ''}{inflationDetail.summary.avgDrift}%</span></span>
+                            </div>
+                        )}
+
+                        {/* Body */}
+                        <div style={{ overflowY: 'auto', flex: 1 }}>
+                            {!inflationDetail ? (
+                                <div style={{ padding: '48px', textAlign: 'center', color: '#475569' }}>Loading…</div>
+                            ) : driftingItems.length === 0 ? (
+                                <div style={{ padding: '48px', textAlign: 'center', color: '#475569' }}>No price movement detected in the past 24 months.</div>
+                            ) : (
+                                Object.entries(byVendor).map(([vName, vData]) => (
+                                    <div key={vName} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                        {/* Vendor header */}
+                                        <div style={{ padding: '12px 24px 8px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                                            <span style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '0.9rem' }}>{vName}</span>
+                                            {vData.phone && <span style={{ fontSize: '0.75rem', color: '#64748b' }}>📞 {vData.phone}</span>}
+                                            {vData.email && <span style={{ fontSize: '0.75rem', color: '#64748b' }}>✉ {vData.email}</span>}
+                                        </div>
+                                        {/* Items for this vendor */}
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                            <thead>
+                                                <tr>
+                                                    {['Part #', 'Description', 'Price Trend (24mo)', 'First', 'Latest', 'Δ Change'].map((h, i) => (
+                                                        <th key={h} style={{ padding: '6px 16px', textAlign: i >= 3 ? 'right' : 'left', color: '#475569', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', background: 'rgba(0,0,0,0.15)' }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {vData.items.map((item, i) => {
+                                                    const clr = item.pctChange >= 10 ? '#ef4444' : item.pctChange >= 5 ? '#f97316' : item.pctChange > 0 ? '#f59e0b' : '#10b981';
+                                                    return (
+                                                        <tr key={i}
+                                                            style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+                                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                            <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>{item.vendorPartNo || '—'}</td>
+                                                            <td style={{ padding: '10px 16px', color: '#e2e8f0', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</td>
+                                                            <td style={{ padding: '6px 16px' }}><Sparkline points={item.points} pctChange={item.pctChange} /></td>
+                                                            <td style={{ padding: '10px 16px', textAlign: 'right', color: '#64748b' }}>${item.firstCost.toFixed(2)}</td>
+                                                            <td style={{ padding: '10px 16px', textAlign: 'right', color: '#f1f5f9', fontWeight: 600 }}>${item.lastCost.toFixed(2)}</td>
+                                                            <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                                                                <span style={{ color: clr, fontWeight: 700, background: `${clr}18`, padding: '3px 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                                                                    {item.pctChange > 0 ? '▲ +' : '▼ '}{item.pctChange}%
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#334155' }}>
+                            <span>Match: item ID → vendor part no → description · min 2 purchases required</span>
+                            <span>{driftingItems.length} items with price movement</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        })()}
+
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-base)', overflow: 'hidden' }}>
             {/* Location / Search Bar Area */}
             <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', flexDirection: 'column', gap: '15px', flexShrink: 0, zIndex: 100 }}>
@@ -757,6 +922,52 @@ function DashboardView({
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{dbStats?.expeditedRatio > 0 ? `${dbStats.expeditedRatio}% Ratio (` : ''}Preventable spend{dbStats?.expeditedRatio > 0 ? ')' : ''}</div>
                         </div>
                         <div style={{ fontSize: '0.7rem', color: '#f97316', fontWeight: 700, background: 'rgba(249,115,22,0.1)', padding: '3px 10px', borderRadius: 8, border: '1px solid rgba(249,115,22,0.3)', whiteSpace: 'nowrap' }}>{t('dashboard.fixNow', 'Fix now')} →</div>
+                    </div>
+
+                    {/* Vendor Inflation tile */}
+                    <div
+                        className="glass-card"
+                        onClick={openInflationModal}
+                        style={{ padding: '18px 22px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, transition: 'all 0.2s', border: '1px solid rgba(239,68,68,0.15)', position: 'relative', overflow: 'hidden' }}
+                        onMouseEnter={e => { e.currentTarget.style.border = '1px solid rgba(239,68,68,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.border = '1px solid rgba(239,68,68,0.15)'; e.currentTarget.style.transform = 'none'; }}
+                        title="View vendor price drift trends for parts and supplies"
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239,68,68,0.2)', flexShrink: 0 }}>
+                                <TrendingUp size={22} color="#ef4444" />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+                                    Vendor Inflation
+                                    {inflationData?.summary?.inflating > 0 && (
+                                        <span style={{ marginLeft: 8, fontSize: '0.8rem', color: '#ef4444', fontWeight: 800 }}>
+                                            — {inflationData.summary.inflating} item{inflationData.summary.inflating !== 1 ? 's' : ''} rising
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                                    {inflationData?.summary
+                                        ? `${inflationData.summary.totalTracked} tracked · avg drift ${inflationData.summary.avgDrift > 0 ? '+' : ''}${inflationData.summary.avgDrift}%`
+                                        : 'Price drift · Parts & supplies'}
+                                </div>
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 700, background: 'rgba(239,68,68,0.1)', padding: '3px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', whiteSpace: 'nowrap' }}>Analyze →</div>
+                        </div>
+                        {inflationData?.topInflators?.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
+                                {inflationData.topInflators.slice(0, 3).map((item, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem' }}>
+                                        <span style={{ color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                                            {item.label}
+                                        </span>
+                                        <span style={{ color: item.pctChange >= 10 ? '#ef4444' : item.pctChange >= 5 ? '#f97316' : '#f59e0b', fontWeight: 700, flexShrink: 0 }}>
+                                            +{item.pctChange}%
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* SKU Standardization tile */}

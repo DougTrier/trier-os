@@ -1998,6 +1998,137 @@ router.get('/equipment-intelligence', requireCorpAccess, (req, res) => {
 });
 
 /**
+ * GET /vendor-inflation
+ * Aggregates price-drift data across all plant DBs.
+ * Returns topInflators, topDeflators, per-plant summary, and enterprise summary.
+ * Query params: days (default 730), limit (default 50).
+ */
+router.get('/vendor-inflation', requireCorpAccess, (req, res) => {
+    const plants = getAllPlantDbs();
+    try {
+        const days  = Math.min(parseInt(req.query.days)  || 730, 1825);
+        const limit = Math.min(parseInt(req.query.limit) || 50,  200);
+        const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+
+        const allItems = [];
+        const byPlant  = [];
+
+        for (const { plantId, db } of plants) {
+            try {
+                // ── Supplies ────────────────────────────────────────────────
+                let supplyRows = [];
+                try {
+                    supplyRows = db.prepare(`
+                        SELECT
+                            CAST(COALESCE(l.ItemID,0) AS TEXT) AS item_id,
+                            COALESCE(i.VendorPartNo,'')        AS vendor_part_no,
+                            COALESCE(l.ItemDesc,i.Description,'Unknown') AS label,
+                            COALESCE(v.VendorName,'Unknown Vendor') AS vendor_name,
+                            COALESCE(v.Phone,'')               AS vendor_phone,
+                            COALESCE(v.Email,'')               AS vendor_email,
+                            COALESCE(v.ContactName,'')         AS vendor_contact,
+                            po.OrderDate AS order_date,
+                            l.UnitCost   AS unit_cost
+                        FROM SupplyPOLine l
+                        JOIN  SupplyPO po    ON po.ID  = l.POID
+                        LEFT JOIN SupplyItem i  ON i.ID  = l.ItemID
+                        LEFT JOIN SupplyVendor v ON v.ID = po.VendorID
+                        WHERE po.OrderDate >= ? AND l.UnitCost > 0
+                        ORDER BY item_id, po.OrderDate
+                    `).all(since);
+                } catch (_) {}
+
+                // ── Parts ────────────────────────────────────────────────────
+                let partRows = [];
+                try {
+                    partRows = db.prepare(`
+                        SELECT
+                            pv.PartID                          AS part_id,
+                            pv.PartID                          AS item_id,
+                            COALESCE(pv.ManufNum,'')           AS vendor_part_no,
+                            COALESCE(p.Description,pv.PartID)  AS label,
+                            COALESCE(pv.VendorID,'Unknown')    AS vendor_name,
+                            '' AS vendor_phone, '' AS vendor_email, '' AS vendor_contact,
+                            pv.PurchaseDate AS order_date,
+                            pv.PurchaseCost AS unit_cost
+                        FROM PartVendors pv
+                        LEFT JOIN Part p ON p.ID = pv.PartID
+                        WHERE pv.PurchaseDate >= ? AND pv.PurchaseCost > 0
+                        ORDER BY pv.PartID, pv.PurchaseDate
+                    `).all(since);
+                } catch (_) {}
+
+                // ── Group & score ────────────────────────────────────────────
+                const groupAndScore = (rows, keyFn, sourceType) => {
+                    const groups = {};
+                    for (const row of rows) {
+                        const key = keyFn(row);
+                        if (!groups[key]) groups[key] = {
+                            matchKey: key, label: row.label, vendor: row.vendor_name,
+                            vendorPhone: row.vendor_phone || '', vendorEmail: row.vendor_email || '',
+                            vendorContact: row.vendor_contact || '',
+                            vendorPartNo: row.vendor_part_no || null,
+                            sourceType, plant: plantId, points: [],
+                        };
+                        groups[key].points.push({ date: row.order_date, unitCost: row.unit_cost });
+                    }
+                    return Object.values(groups).filter(g => g.points.length >= 2).map(g => {
+                        const pts   = g.points.slice().sort((a, b) => a.date.localeCompare(b.date));
+                        const first = pts[0].unitCost;
+                        const last  = pts[pts.length - 1].unitCost;
+                        const pct   = first > 0 ? Math.round(((last - first) / first) * 1000) / 10 : 0;
+                        return { ...g, points: pts, firstCost: first, lastCost: last, pctChange: pct,
+                            direction: pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat' };
+                    });
+                };
+
+                const supplyKey = r => r.item_id !== '0'
+                    ? `${r.item_id}::${r.vendor_name}::${plantId}`
+                    : `desc::${r.label.toLowerCase().trim()}::${r.vendor_name}::${plantId}`;
+                const partKey = r => `${r.part_id}::${r.vendor_name}::${plantId}`;
+
+                const supplies = groupAndScore(supplyRows, supplyKey, 'supply');
+                const parts    = groupAndScore(partRows,   partKey,   'part');
+                const plantItems = [...supplies, ...parts];
+                allItems.push(...plantItems);
+
+                const inflating = plantItems.filter(x => x.pctChange >  5).length;
+                const deflating = plantItems.filter(x => x.pctChange < -5).length;
+                const avgDrift  = plantItems.length
+                    ? Math.round(plantItems.reduce((s, x) => s + x.pctChange, 0) / plantItems.length * 10) / 10
+                    : 0;
+                byPlant.push({ plantId, inflating, deflating, tracked: plantItems.length, avgDrift });
+            } catch (_) {
+                // skip broken plant
+            } finally {
+                try { db.close(); } catch (_) {}
+            }
+        }
+
+        allItems.sort((a, b) => b.pctChange - a.pctChange);
+        const inflating = allItems.filter(x => x.pctChange >  5).length;
+        const deflating = allItems.filter(x => x.pctChange < -5).length;
+        const avgDrift  = allItems.length
+            ? Math.round(allItems.reduce((s, x) => s + x.pctChange, 0) / allItems.length * 10) / 10
+            : 0;
+
+        res.json({
+            topInflators: allItems.filter(x => x.pctChange > 0).slice(0, limit),
+            topDeflators: allItems.filter(x => x.pctChange < 0).slice(0, Math.min(limit, 20)),
+            byPlant,
+            summary: { totalTracked: allItems.length, inflating, deflating,
+                stable: allItems.length - inflating - deflating, avgDrift },
+        });
+    } catch (err) {
+        console.error('[Corp Analytics] vendor-inflation error:', err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        // getAllPlantDbs already opens dbs; close any not closed in the loop above
+        // (loop closes each individually, so this is belt-and-suspenders)
+    }
+});
+
+/**
  * POST /sync
  * Manually triggers a metric rollup for today (or a specified date).
  * Useful when the corporate office wants current data outside the 8am/3pm

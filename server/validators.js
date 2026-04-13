@@ -28,7 +28,8 @@ const whitelists = {
         'CompleteLat',
         'StartLng',
         'StartLat',
-        'FailureMode'
+        'FailureMode',
+        'WOSource', 'DowntimeCost', 'SchID'
     ],
     asset: [
         'ID', 'Description', 'AssetType', 'LocationID', 'DeptID', 'Serial',
@@ -50,7 +51,11 @@ const whitelists = {
         'WarrantyTerms',
         'PartNumber',
         'CriticalityClass',
-        'CriticalityReason'
+        'CriticalityReason',
+        'HourlyProductionValue',
+        'CriticalityScoreSafety', 'CriticalityScoreEnv',
+        'CriticalityScoreProd', 'CriticalityScoreProb',
+        'CriticalityScoreTotal'
     ],
     part: [
         'ID', 'Description', 'PartClassID', 'Stock', 'OrdMin', 'UnitCost',

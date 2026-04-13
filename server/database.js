@@ -166,6 +166,7 @@ function getDb(requestedPlantId = null) {
         // for a multi-user maintenance system where technicians hit the DB simultaneously.
         db.pragma('journal_mode = WAL');
         db.pragma('busy_timeout = 5000'); // Wait up to 5s on lock contention instead of throwing immediately
+        db.pragma('wal_autocheckpoint = 200'); // Checkpoint every 200 pages instead of default 1000 — keeps WAL file small under sustained E2E load
         // Enforce referential integrity between tables (e.g., WorkParts -> Part)
         db.pragma('foreign_keys = ON');
 
@@ -266,6 +267,147 @@ function getDb(requestedPlantId = null) {
                 AcknowledgedBy TEXT
             )
         `).run();
+
+        // ── Scan State Machine Schema ────────────────────────────────────────
+        // Tables and columns required by the POST /api/scan endpoint and the
+        // WO lifecycle state machine defined in SCAN_STATE_MACHINE_SCHEMA_DELTA.md.
+        // All additions are idempotent (IF NOT EXISTS / column existence check).
+        // Wrapped in try/catch so non-plant DBs (no Work table) are skipped silently.
+        try {
+            // New columns on Work table — added only if absent to avoid re-run errors.
+            // Each column maps directly to a field in the schema delta Section 1.
+            const workCols = new Set(db.prepare('PRAGMA table_info(Work)').all().map(c => c.name));
+            const scanWorkCols = [
+                ['holdReason',           'TEXT'],                 // Hold reason code (exempt vs timeout-eligible)
+                ['needsReview',          'INTEGER DEFAULT 0'],    // 1 = flagged for supervisor review
+                ['reviewReason',         'TEXT'],                 // AUTO_TIMEOUT | OFFLINE_CONFLICT
+                ['reviewStatus',         'TEXT'],                 // FLAGGED | ACKNOWLEDGED_BY_FIELD | RESOLVED_BY_FIELD | DISMISSED
+                ['acknowledgedByUserId', 'TEXT'],                 // Tech who acknowledged on-device
+                ['acknowledgedAt',       'TEXT'],                 // Server timestamp of acknowledgement
+                ['returnAt',             'TEXT'],                 // SCHEDULED_RETURN target timestamp
+                ['scheduledByUserId',    'TEXT'],                 // Who set the scheduled return
+                ['scheduledAt',          'TEXT'],                 // When the scheduled return was set
+                ['relatedOpenWoId',      'TEXT'],                 // FK → Work.ID (parallel open WO)
+                ['relationshipType',     'TEXT'],                 // PARALLEL_OPEN_WHILE_WAITING
+                ['closeMode',            'TEXT'],                 // SELF_ONLY | TEAM_CLOSE | LAST_ACTIVE_CLOSE
+                ['closedByUserId',       'TEXT'],                 // User who performed the WO close
+            ];
+            for (const [col, type] of scanWorkCols) {
+                if (!workCols.has(col)) {
+                    db.prepare(`ALTER TABLE Work ADD COLUMN "${col}" ${type}`).run();
+                }
+            }
+
+            // New WorkStatuses rows for scan state machine states.
+            // WorkStatuses.ID is not a PRIMARY KEY, so existence-check before insert
+            // to prevent duplicates on repeated connections.
+            const wsIds = new Set(db.prepare('SELECT ID FROM WorkStatuses').all().map(r => r.ID));
+            if (!wsIds.has(33)) db.prepare(`INSERT INTO WorkStatuses (ID, Description) VALUES (33, 'Escalated')`).run();
+            if (!wsIds.has(35)) db.prepare(`INSERT INTO WorkStatuses (ID, Description) VALUES (35, 'On Hold')`).run();
+
+            // WorkSegments — first-class labor time record per technician per WO.
+            // One segment = one contiguous block of active work by one user.
+            // Ownership (userId) is immutable after creation; use endedByUserId for team-close.
+            db.prepare(`
+                CREATE TABLE IF NOT EXISTS WorkSegments (
+                    segmentId           TEXT PRIMARY KEY,          -- UUID, client-generated
+                    woId                TEXT NOT NULL,             -- FK → Work.ID
+                    userId              TEXT NOT NULL,             -- Owning technician (never mutated)
+                    startTime           TEXT NOT NULL,             -- serverTimestamp at open
+                    endTime             TEXT,                      -- serverTimestamp at close; NULL while active
+                    segmentState        TEXT NOT NULL DEFAULT 'Active', -- Active | Ended | ReviewNeeded
+                    segmentReason       TEXT,                      -- TAKEOVER | JOIN | RESUME | AUTO_TIMEOUT | null
+                    holdReason          TEXT,                      -- mirrors WO holdReason at segment end
+                    endedByUserId       TEXT,                      -- may differ from userId on team-close
+                    origin              TEXT NOT NULL DEFAULT 'SCAN', -- SCAN | OFFLINE_SYNC
+                    conflictAutoResolved INTEGER NOT NULL DEFAULT 0   -- 1 if Auto-Join applied on offline sync
+                )
+            `).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_segments_wo    ON WorkSegments(woId)`).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_segments_user  ON WorkSegments(userId)`).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_segments_state ON WorkSegments(segmentState)`).run();
+
+            // ScanAuditLog — immutable append-only record of every scan event.
+            // No UPDATE or DELETE path. Feeds the Explainable Operations Engine
+            // and provides the full causality chain for any WO state change.
+            db.prepare(`
+                CREATE TABLE IF NOT EXISTS ScanAuditLog (
+                    auditEventId        TEXT PRIMARY KEY,          -- UUID, server-generated
+                    scanId              TEXT NOT NULL,             -- Client UUID; used for idempotency
+                    woId                TEXT,                      -- NULL if scan rejected before WO resolution
+                    assetId             TEXT NOT NULL,             -- Asset that was scanned
+                    userId              TEXT NOT NULL,             -- Scanning user
+                    previousState       TEXT,                      -- WO StatusID before scan; NULL if no WO
+                    nextState           TEXT,                      -- WO StatusID after scan; NULL if rejected
+                    decisionBranch      TEXT NOT NULL,             -- Formal Decision Branch enum value
+                    deviceTimestamp     TEXT NOT NULL,             -- Device clock time (stored as-is)
+                    serverTimestamp     TEXT NOT NULL,             -- Authoritative server receipt time
+                    offlineCaptured     INTEGER NOT NULL DEFAULT 0, -- 1 if synced from offline queue
+                    conflictAutoResolved INTEGER NOT NULL DEFAULT 0, -- 1 if Auto-Join applied
+                    resolvedMode        TEXT                        -- AUTO_JOIN | NULL
+                )
+            `).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_scanaudit_scanid ON ScanAuditLog(scanId)`).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_scanaudit_asset  ON ScanAuditLog(assetId)`).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_scanaudit_wo     ON ScanAuditLog(woId)`).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_scanaudit_user   ON ScanAuditLog(userId)`).run();
+
+            // WOCloseParticipants — child table tracking all users and segments
+            // active at the moment of a WO close. Replaces any serialized closedSegmentIds
+            // field on the Work table. Each row = one user/segment pair in the close event.
+            db.prepare(`
+                CREATE TABLE IF NOT EXISTS WOCloseParticipants (
+                    closeEventId        TEXT NOT NULL,             -- Groups participants from one close action
+                    woId                TEXT NOT NULL,             -- FK → Work.ID
+                    userId              TEXT NOT NULL,             -- User whose segment was closed
+                    segmentId           TEXT NOT NULL,             -- FK → WorkSegments.segmentId
+                    closedByUserId      TEXT NOT NULL,             -- User who initiated the close
+                    closeMode           TEXT NOT NULL,             -- SELF_ONLY | TEAM_CLOSE | LAST_ACTIVE_CLOSE
+                    serverTimestamp     TEXT NOT NULL,
+                    PRIMARY KEY (closeEventId, segmentId)
+                )
+            `).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_woclosep_wo ON WOCloseParticipants(woId)`).run();
+
+            // PlantScanConfig — per-plant configuration for the scan state machine.
+            // Governs auto-review thresholds and SCHEDULED_RETURN offset resolution.
+            // One row per plant (plantId is the PK). Defaults are safe baselines only —
+            // must be reviewed and overridden before go-live at each plant.
+            db.prepare(`
+                CREATE TABLE IF NOT EXISTS PlantScanConfig (
+                    plantId                     TEXT PRIMARY KEY,
+                    shiftLengthHours            INTEGER DEFAULT 8,
+                    shiftChangeoverMinutes      INTEGER DEFAULT 30,
+                    autoReviewThresholdHours    INTEGER DEFAULT 12,   -- Hours before needsReview flag on timeout-eligible WOs
+                    returnOffset_laterThisShift INTEGER,              -- NULL = derive from shiftLengthHours / 2
+                    returnOffset_nextShift      INTEGER,              -- NULL = derive from shiftLength + changeover
+                    returnOffset_tomorrow       INTEGER DEFAULT 24,
+                    updatedAt                   TEXT DEFAULT (datetime('now'))
+                )
+            `).run();
+
+            // OfflineScanQueue — stores scan events captured while the device had no
+            // connectivity. Synced to POST /api/scan when connection is restored.
+            // scanId idempotency ensures replay safety — the same event can sync multiple
+            // times without producing duplicate state transitions.
+            db.prepare(`
+                CREATE TABLE IF NOT EXISTS OfflineScanQueue (
+                    queueId         TEXT PRIMARY KEY,              -- UUID, client-generated
+                    scanId          TEXT NOT NULL UNIQUE,          -- Matches the scan payload scanId
+                    assetId         TEXT NOT NULL,
+                    userId          TEXT NOT NULL,
+                    deviceTimestamp TEXT NOT NULL,
+                    userAction      TEXT,                          -- Action user selected (if prompt was shown offline)
+                    payload         TEXT NOT NULL,                 -- Full JSON scan payload
+                    queuedAt        TEXT NOT NULL,                 -- Client timestamp when queued
+                    syncedAt        TEXT,                          -- Server timestamp when processed; NULL = pending
+                    syncStatus      TEXT NOT NULL DEFAULT 'PENDING', -- PENDING | SYNCED | FAILED
+                    failReason      TEXT                           -- Error message if syncStatus = FAILED
+                )
+            `).run();
+            db.prepare(`CREATE INDEX IF NOT EXISTS idx_offlineq_status ON OfflineScanQueue(syncStatus)`).run();
+
+        } catch (_) { /* Non-plant DBs lack a Work table — schema additions safely skipped */ }
 
         // Bootstrap SiteLeadership if empty
         const count = db.prepare('SELECT COUNT(*) as count FROM SiteLeadership').get().count;

@@ -29,6 +29,7 @@ import AssetTimeline from './AssetTimeline';
 import TribalKnowledge from './TribalKnowledge';
 import BomPanel from './BomPanel';
 import DigitalTwinView from './DigitalTwinView';
+import ScanEntryPoint from './ScanEntryPoint';
 import { Search, RefreshCw, Plus, ChevronLeft, ChevronRight, X, PenTool, Printer, AlertTriangle, Eye, Network, ChevronDown, Info, CheckCircle, Activity, TrendingDown, TrendingUp, Trash2, Gauge, Camera, QrCode, Cpu, Cog, Scale } from 'lucide-react';
 import SearchBar from './SearchBar';
 import ActionBar from './ActionBar';
@@ -211,7 +212,10 @@ export default function AssetsView({ plantId, plantLabel }) {
                 search,
                 type: typeFilter
             });
-            const res = await fetch(`/api/assets?${params}`);
+            const activePlant = localStorage.getItem('selectedPlantId') || plantId || 'Demo_Plant_1';
+            const res = await fetch(`/api/assets?${params}`, {
+                headers: { 'x-plant-id': activePlant }
+            });
             const data = await res.json();
 
             setAssets(data.data || []);
@@ -263,7 +267,8 @@ export default function AssetsView({ plantId, plantLabel }) {
     const fetchHierarchy = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/v2/assets/hierarchy');
+            const activePlant = localStorage.getItem('selectedPlantId') || plantId || 'Demo_Plant_1';
+            const res = await fetch('/api/v2/assets/hierarchy', { headers: { 'x-plant-id': activePlant } });
             const data = await res.json();
             
             // Build actual tree structure
@@ -302,7 +307,7 @@ export default function AssetsView({ plantId, plantLabel }) {
         if (pendingViewId && assets.length > 0) {
             const found = assets.find(a => String(a.ID) === String(pendingViewId));
             if (found) {
-                handleView(found.ID);
+                handleView(found.ID, found.plantId);
                 localStorage.removeItem('PF_NAV_VIEW');
             }
         }
@@ -341,17 +346,26 @@ export default function AssetsView({ plantId, plantLabel }) {
         setIsCreating(true);
     };
 
-    const handleView = async (id) => {
+    const handleView = async (id, assetPlantId) => {
         setLoadingDetails(true);
         setIsEditing(false);
         setIsCreating(false);
+        // Resolve the correct plant: prefer the asset's own plantId (populated in all_sites list),
+        // then the UI-selected plant, then fall back to the server default.
+        const resolvedPlant = assetPlantId || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1';
+        const plantHeaders = { 'x-plant-id': resolvedPlant };
         try {
-            const res = await fetch(`/api/assets/${encodeURIComponent(id)}`);
+            const res = await fetch(`/api/assets/${encodeURIComponent(id)}`, { headers: plantHeaders });
+            if (!res.ok) {
+                console.error(`[AssetsView] handleView: asset ${id} not found in plant ${resolvedPlant} (${res.status})`);
+                setLoadingDetails(false);
+                return;
+            }
             const data = await res.json();
             setSelectedAsset(data);
             setEditData(data);
             // Fetch asset photos
-            fetchAssetPhotos(id);
+            fetchAssetPhotos(id, plantHeaders);
             // Fetch meter history if asset has a meter
             if (data.MeterType) {
                 fetchMeterHistory(id);
@@ -360,7 +374,7 @@ export default function AssetsView({ plantId, plantLabel }) {
             }
             // Fetch hierarchy roll-up stats (Feature 3)
             setRollupData(null);
-            fetch(`/api/v2/assets/${encodeURIComponent(id)}/rollup`)
+            fetch(`/api/v2/assets/${encodeURIComponent(id)}/rollup`, { headers: plantHeaders })
                 .then(r => r.json())
                 .then(rollup => { if (rollup && !rollup.error) setRollupData(rollup); })
                 .catch(e => console.warn('[AssetsView] fetch error:', e));
@@ -371,9 +385,9 @@ export default function AssetsView({ plantId, plantLabel }) {
         }
     };
 
-    const fetchAssetPhotos = async (assetId) => {
+    const fetchAssetPhotos = async (assetId, extraHeaders) => {
         try {
-            const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}/photos`);
+            const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}/photos`, { headers: extraHeaders });
             const data = await res.json();
             setAssetPhotos(Array.isArray(data) ? data : []);
         } catch (err) {
@@ -841,7 +855,7 @@ export default function AssetsView({ plantId, plantLabel }) {
                     <button className="btn-primary" onClick={handlePrint} title={t('assets.printTheAssetRegistryAsTip')} style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Printer size={16} /> {t('assets.printRegistry')}
                     </button>
-                    <button className="btn-primary" onClick={() => window.triggerTrierPrint('asset-qr-batch', { items: assets, plantLabel: plantLabel || localStorage.getItem('selectedPlantId') })} title={t('assets.printQrCodeLabelsForTip')} style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981' }}>
+                    <button className="btn-primary" onClick={() => window.triggerTrierPrint('asset-qr-batch', { items: assets, plantLabel: plantLabel || localStorage.getItem('selectedPlantId'), plantId: plantId || localStorage.getItem('selectedPlantId') })} title={t('assets.printQrCodeLabelsForTip')} style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981' }}>
                         <QrCode size={16} /> 🏷️ Print QR Labels
                     </button>
                     <button
@@ -1058,8 +1072,8 @@ export default function AssetsView({ plantId, plantLabel }) {
                                 </td>
                                 <td style={{ fontWeight: 'bold' }}>{a.Quantity || 1}</td>
                                 <td style={{ textAlign: 'right' }} className="no-print">
-                                    <button 
-                                        onClick={() => handleView(a.ID)}
+                                    <button
+                                        onClick={() => handleView(a.ID, a.plantId)}
                                         className="btn-view-standard"
                                         title={`View full details for asset ${a.ID}`}
                                     >
@@ -1157,7 +1171,7 @@ export default function AssetsView({ plantId, plantLabel }) {
                                 onClick: () => {
                                     const assetToPrint = isCreating ? { ...editData, Description: editData.Description || 'New Asset' } : selectedAsset;
                                     if (!assetToPrint.ID) { window.trierToast?.info('Enter an Asset ID first to print.'); return; }
-                                    window.triggerTrierPrint('asset-qr-label', { ...assetToPrint, plantLabel: plantLabel || localStorage.getItem('selectedPlantId') });
+                                    window.triggerTrierPrint('asset-qr-label', { ...assetToPrint, plantLabel: plantLabel || localStorage.getItem('selectedPlantId'), plantId: plantId || localStorage.getItem('selectedPlantId') });
                                 },
                                 title: isCreating ? 'Print a QR code up-front before installing' : 'Print a QR code label for this asset',
                                 style: { background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981' },
@@ -1340,6 +1354,17 @@ export default function AssetsView({ plantId, plantLabel }) {
                                 )}
                             </div>
 
+                            {/* Work Order Actions — manual entry path into scan state machine */}
+                            {!isEditing && !isCreating && selectedAsset.ID && (
+                                <div className="panel-box" style={{ gridColumn: 'span 2' }}>
+                                    <ScanEntryPoint
+                                        assetId={selectedAsset.ID}
+                                        plantId={plantId}
+                                        userId={localStorage.getItem('userId') || localStorage.getItem('userRole') || 'unknown'}
+                                    />
+                                </div>
+                            )}
+
                             {/* Tech Specs */}
                             <div className="panel-box">
                                 <h3>{t('assets.technicalSpecs')}</h3>
@@ -1502,7 +1527,7 @@ export default function AssetsView({ plantId, plantLabel }) {
                                                             if (res.ok) {
                                                                 setMeterReading('');
                                                                 setShowMeterInput(false);
-                                                                handleView(selectedAsset.ID); // Refresh
+                                                                handleView(selectedAsset.ID, selectedAsset.plantId); // Refresh
                                                             } else {
                                                                 const err = await res.json();
                                                                 window.trierToast?.error(err.error || 'Failed to log meter reading');
@@ -2047,7 +2072,7 @@ function AssetTreeNode({ node, level, expandedNodes, toggleNode, onView }) {
                     hover: { background: 'rgba(255,255,255,0.05)' }
                 }}
                 className="asset-row-hover"
-                onClick={() => hasChildren ? toggleNode(node.ID) : onView(node.ID)}
+                onClick={() => hasChildren ? toggleNode(node.ID) : onView(node.ID, node.plantId)}
             >
                 <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
                     {hasChildren ? (
@@ -2066,7 +2091,7 @@ function AssetTreeNode({ node, level, expandedNodes, toggleNode, onView }) {
                 <div className="actions" style={{ opacity: 0.6 }}>
                     <button 
                         className="btn-view-standard" 
-                        onClick={(e) => { e.stopPropagation(); onView(node.ID); }}
+                        onClick={(e) => { e.stopPropagation(); onView(node.ID, node.plantId); }}
                         style={{ padding: '4px 8px', fontSize: '0.8rem' }}
                         title={`Open full details for ${node.ID}`}
                     >

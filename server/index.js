@@ -562,6 +562,7 @@ app.use('/api', apiLimiter);
 // â”€â”€ Pre-Auth Routes (no JWT required) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _serverReady = false; // Set to true only after app.listen callback
 app.get('/api/ping', (req, res) => res.json({ status: 'ok', ready: _serverReady, time: new Date() }));
+app.use('/api/health', require('./routes/health'));          // System health & degraded mode (P2)
 
 // â”€â”€ Local QR Code Generator (no external API needed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/qr', async (req, res) => {
@@ -790,6 +791,7 @@ app.use('/api/enrollment', require('./routes/enrollment'));
 
 // â”€â”€ Authentication Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use('/api', require('./middleware/auth'));
+app.use('/api', require('./middleware/degradedMode'));        // Advisory/Isolated mode write-block (P2)
 
 // â”€â”€ API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -956,6 +958,7 @@ app.get('/api/sync/delta', (req, res) => {
 console.log('[BOOT] Stage 7: Mounting API routes...');
 app.use('/api/leadership', require('./routes/leadership'));
 app.use('/api/work-orders', require('./routes/workOrders'));
+app.use('/api/scan',        require('./routes/scan'));         // Scan State Machine (P1)
 app.use('/api/assets', require('./routes/assets'));
 app.use('/api/parts', require('./routes/parts'));
 app.use('/api/contacts', require('./routes/contacts'));
@@ -1029,6 +1032,19 @@ app.use('/api/plant-setup', require('./routes/plant_setup'));               // P
 app.use('/api/devices',    require('./routes/device-registry'));            // Device Registry: PLC/SCADA onboarding, ARP discovery, Modbus probe
 app.use('/api/production-import', require('./routes/production_import'));   // AS400 Number 9 Report Import & Production Planning Engine
 app.use('/api/integrations/outbox', require('./routes/integrations-outbox')); // ERP Write-Back Outbox: status, history, retry
+app.use('/api/maintenance-kpis',   require('./routes/maintenance_kpis'));   // P3 Maintenance KPI Analytics (Planned Ratio, PM Compliance, Backlog, Downtime)
+app.use('/api/capa',               require('./routes/capa'));               // P3 Closed-Loop CAPA Tracking (Corrective Actions linked to RCA)
+app.use('/api/maintenance-budget', require('./routes/maintenance_budget')); // P3 Budget vs. Actual Maintenance Spend
+app.use('/api/moc',                require('./routes/moc'));                // P4 Management of Change (MOC) — Digital change request + approval workflow
+app.use('/api/qc',                 require('./routes/qc'));                 // P5 Quality Control — NCRs, defect codes, Pareto, FPY, inspection checksheets
+app.use('/api/operator-care',      require('./routes/operator_care'));      // P5 Operator Care (Autonomous Maintenance) — inspection routes + auto-WO on fail
+app.use('/api/turnaround',         require('./routes/turnaround'));         // P5 Shutdown / Turnaround Management — projects, tasks, budget, progress
+app.use('/api/predictive-maintenance', require('./routes/predictive_maintenance')); // P5 Predictive Maintenance — MTBF, risk ranking, failure forecast
+app.use('/api/vibration',      require('./routes/vibration'));       // P6 Vibration & Condition Monitoring Analytics (readings, alerts, trending, ISO 10816)
+app.use('/api/erp-connectors', require('./routes/erp_connectors')); // P6 ERP Connector Marketplace (SAP, Oracle, Dynamics 365, Infor + field mappings)
+app.use('/api/baseline',       require('./routes/baseline_engine')); // P7 Plant Behavioral Baseline Engine — drift detection, MTBF, failure freq baselines
+app.use('/api/causality',      require('./routes/causality'));        // P7 Explainable Operations Engine + Cross-System Causality Graph
+app.use('/api/containment',    require('./routes/containment'));      // P7 Failure Containment Scoring — live blast-radius meter (ISOLATED/PARTIAL/CASCADING)
 
 // ── ERP Write-Back Outbox Drain Worker ────────────────────────────────────────
 require('./services/erp-outbox').startDrainWorker();

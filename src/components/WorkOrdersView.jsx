@@ -1322,17 +1322,19 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
                                             <tr>
                                                 <th>{t('work.orders.reference')}</th>
                                                 <th>{t('work.orders.description')}</th>
+                                                <th>Mfr Part #</th>
                                                 <th style={{ textAlign: 'center' }}>{t('work.orders.quantity')}</th>
                                                 <th style={{ textAlign: 'right' }}>{t('work.orders.totalCost')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {(!selectedWO?._parts || selectedWO._parts.length === 0) ? (
-                                                <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>{t('work.orders.noInventoryPartsLinked')}</td></tr>
+                                                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>{t('work.orders.noInventoryPartsLinked')}</td></tr>
                                             ) : selectedWO._parts.map((part, idx) => (
                                                 <tr key={`item-${idx}`} title={`${t('work.orders.part')}: ${part.Description}`}>
                                                     <td style={{ fontWeight: 600 }}>{part.ID || '--'}</td>
                                                     <td>{part.Description || '--'}</td>
+                                                    <td style={{ color: part.ManufNum ? '#f1f5f9' : 'var(--text-muted)' }}>{part.ManufNum || '--'}</td>
                                                     <td style={{ textAlign: 'center' }}>{part.EstQty || '0'}</td>
                                                     <td style={{ textAlign: 'right' }}>${parseFloat(part.EstCost || 0).toFixed(2)}</td>
                                                 </tr>

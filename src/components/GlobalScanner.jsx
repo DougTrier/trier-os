@@ -34,6 +34,7 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, X, Scan as ScanIcon, Package, HardHat, Plus, Minus, Search, AlertCircle, CheckCircle2, Globe, TrendingDown, BookOpen, Wrench, User, Phone, Mail, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 import Tesseract, { createWorker } from 'tesseract.js';
 import SmartDialog from './SmartDialog';
@@ -41,6 +42,7 @@ import { useTranslation } from '../i18n/index.jsx';
 
 export default function GlobalScanner({ onClose, plantId, plantLabel, initialScan }) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     // ... initial states same ...
     const [scannedId, setScannedId] = useState('');
     const [scannedData, setScannedData] = useState(null);
@@ -341,12 +343,37 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
         return () => clearInterval(timer);
     }, [secondsLeft, scannedData, networkMatch, registrationMode, priceAlert, loading, onClose]);
 
-    const processScan = async (id) => {
+    const processScan = async (rawCode) => {
+        let id = (rawCode || '').trim();
+
+        // Trier OS asset QR codes encode the asset ID as ?scan=AST00001&plant=Plant_1&...
+        // Route directly to the scan state machine — no API lookup needed.
+        if (id.includes('?scan=')) {
+            try {
+                const qrParams = new URLSearchParams(id.includes('?') ? id.split('?')[1] : '');
+                const assetId = qrParams.get('scan');
+                const qrPlant = qrParams.get('plant');
+                if (assetId) {
+                    onClose?.();
+                    navigate('/scanner', {
+                        state: {
+                            pendingAssetId: assetId,
+                            ...(qrPlant && qrPlant !== 'all_sites' ? { plantId: qrPlant } : {}),
+                        },
+                    });
+                    return;
+                }
+            } catch {}
+        }
+
+        // Strip offline Zebra multi-line payload prefix
+        if (id.startsWith('ID: ')) id = id.replace('ID: ', '').trim();
+
         setLoading(true);
         setError(null);
         setSuccess(null);
         setScannedId(id);
-        const cleanId = id.trim();
+        const cleanId = id;
         setScannedData(null);
         setNetworkMatch(null);
         setPriceAlert(null);
@@ -385,6 +412,12 @@ export default function GlobalScanner({ onClose, plantId, plantLabel, initialSca
             }
 
             if (res.ok && (data.ID || data.WorkOrderNumber)) {
+                // Maintenance assets belong in the scan state machine, not the info card
+                if (type === 'asset') {
+                    onClose?.();
+                    navigate('/scanner', { state: { pendingAssetId: cleanId } });
+                    return;
+                }
                 setScannedData({ ...data, type });
                 // Background price check across all plants — fire and forget, never blocks scan result
                 if (type === 'part') {

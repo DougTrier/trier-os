@@ -259,7 +259,7 @@ function EditItemModal({ item, plantId, vendors, onClose, onSaved }) {
         ['Field', 'Value'],
         [
             ['Description', form.Description], ['Category', form.Category], ['Sub-Category', form.SubCategory],
-            ['Supplier', item.VendorName], ['Item Code', item.ItemCode], ['UOM', form.UOM],
+            ['Supplier', item.VendorName], ['Item Code', item.ItemCode], ['Vendor Part No', form.VendorPartNo], ['UOM', form.UOM],
             ['Unit Cost', form.UnitCost ? `$${Number(form.UnitCost).toFixed(2)}` : '—'],
             ['On Hand', `${form.OnHand} ${form.UOM}`], ['Reorder Point', `${form.ReorderPt} ${form.UOM}`],
             ['Min Stock', `${form.MinStock} ${form.UOM}`], ['Max Stock', `${form.MaxStock} ${form.UOM}`],
@@ -291,6 +291,7 @@ function EditItemModal({ item, plantId, vendors, onClose, onSaved }) {
                     <select value={form.HazMat ?? 0} onChange={e => set('HazMat', Number(e.target.value))} style={inputStyle}>
                         <option value={0}>{t('supplyChain.hazMatNo', 'No')}</option><option value={1}>{t('supplyChain.hazMatYes', 'Yes — HazMat')}</option>
                     </select></div>
+                <div style={fieldStyle}><label style={labelStyle}>{t('supplyChain.fieldVendorPartNo', 'Vendor Part No')}</label><input value={form.VendorPartNo || ''} onChange={e => set('VendorPartNo', e.target.value)} style={inputStyle} placeholder="Vendor's part number" /></div>
                 <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>{t('supplyChain.fieldNotes', 'Notes')}</label><input value={form.Notes || ''} onChange={e => set('Notes', e.target.value)} style={inputStyle} /></div>
             </div>
 
@@ -391,6 +392,7 @@ function ViewPOModal({ po, onClose }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead><tr>{[
                     t('supplyChain.colItem', 'Item'),
+                    t('supplyChain.fieldVendorPartNo', 'Vendor Part No'),
                     t('supplyChain.colQtyOrdered', 'Qty Ordered'),
                     t('supplyChain.colQtyReceived', 'Qty Received'),
                     t('supplyChain.colUOM', 'UOM'),
@@ -400,6 +402,7 @@ function ViewPOModal({ po, onClose }) {
                 <tbody>{(po.lines || []).map((l, i) => (
                     <tr key={i}>
                         <td style={{ padding: '5px 8px', color: '#f1f5f9' }}>{l.ItemDesc || l.Description}</td>
+                        <td style={{ padding: '5px 8px', color: l.VendorPartNo ? '#94a3b8' : '#334155' }}>{l.VendorPartNo || '—'}</td>
                         <td style={{ padding: '5px 8px' }}>{l.Qty}</td>
                         <td style={{ padding: '5px 8px', color: l.QtyRcvd >= l.Qty ? '#10b981' : '#f59e0b' }}>{l.QtyRcvd}</td>
                         <td style={{ padding: '5px 8px', color: '#64748b' }}>{l.UOM}</td>
@@ -409,8 +412,8 @@ function ViewPOModal({ po, onClose }) {
                 ))}</tbody>
             </table>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-                <button onClick={() => printTab(`PO ${po.PONumber} — ${po.VendorName}`, ['Item', 'Qty Ordered', 'Qty Received', 'UOM', 'Unit Cost', 'Total'],
-                    (po.lines || []).map(l => [l.ItemDesc, l.Qty, l.QtyRcvd, l.UOM, `$${Number(l.UnitCost).toFixed(2)}`, `$${Number(l.LineTotal).toFixed(2)}`])
+                <button onClick={() => printTab(`PO ${po.PONumber} — ${po.VendorName}`, ['Item', 'Vendor Part No', 'Qty Ordered', 'Qty Received', 'UOM', 'Unit Cost', 'Total'],
+                    (po.lines || []).map(l => [l.ItemDesc, l.VendorPartNo || '—', l.Qty, l.QtyRcvd, l.UOM, `$${Number(l.UnitCost).toFixed(2)}`, `$${Number(l.LineTotal).toFixed(2)}`])
                 )} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <Printer size={13} /> {t('supplyChain.printPO', 'Print PO')}
                 </button>

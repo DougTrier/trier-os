@@ -91,7 +91,7 @@ export default function PortalWidget({ onWarpHome }) {
 
     return (
         <div
-            className="nav-widget"
+            className="nav-widget hide-mobile"
             style={{
                 position: 'fixed',
                 top: 18,

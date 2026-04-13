@@ -336,6 +336,61 @@ test.describe('Trier OS V4.0.0 � The Master Operational Gauntlet', () => {
   });
 
   // ==========================================
+  // 3.98 SCAN STATE MACHINE — SMART SCANNER
+  // ==========================================
+  test('Should navigate to the Smart Scanner workspace and complete a numeric scan flow', async ({ page }) => {
+    // Mock POST /api/scan so we can verify the full UI flow without real plant data
+    await page.route('**/api/scan', (route) => {
+      if (route.request().method() === 'POST') {
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            branch: 'AUTO_CREATE_WO',
+            scanId: 'master-test-scan-001',
+            deviceTimestamp: new Date().toISOString(),
+            wo: { id: '1', number: 'WO-MASTER-001', description: 'Master Workflow Test WO' },
+          }),
+        });
+      } else {
+        route.continue();
+      }
+    });
+
+    // Select a specific plant first
+    const plantSelect = page.locator('select').first();
+    if (await plantSelect.isVisible({ timeout: 2000 })) {
+      const val = await plantSelect.inputValue();
+      if (!val || val === 'all_sites') {
+        await plantSelect.selectOption('Demo_Plant_1');
+        await page.waitForTimeout(500);
+      }
+    }
+
+    // Navigate to scanner workspace via direct URL (mirrors Mission Control tile navigation)
+    await page.goto('/scanner');
+    await expect(page.getByText(/Smart Scanner/i)).toBeVisible({ timeout: 10000 });
+
+    // Verify both input modes are available
+    await expect(page.getByRole('button', { name: /Scan QR Code/i })).toBeVisible();
+    await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible();
+
+    // Submit a scan via numeric fallback
+    await page.getByPlaceholder(/Enter asset number/i).fill('TEST-ASSET-MASTER');
+    await page.keyboard.press('Enter');
+
+    // Confirmation overlay (1.0s flash) then action prompt
+    await expect(page.getByText(/Work Started|WO-MASTER-001|MASTER/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Done resets back to capture
+    const doneBtn = page.getByRole('button', { name: /Done/i });
+    if (await doneBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await doneBtn.click();
+      await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible({ timeout: 3000 });
+    }
+  });
+
+  // ==========================================
   // 4. THE COMPLETE SHOP FLOOR WORKFLOW
   // ==========================================
   test('Should execute a full Enterprise System lifecycle closing with a PrintEngine preview', async ({ page }) => {

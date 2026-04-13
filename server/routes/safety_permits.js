@@ -166,7 +166,7 @@ initSafetyPermitTables();
 
 // ── Constants ───────────────────────────────────────────────────────────
 const PERMIT_TYPES = [
-    'HOT_WORK', 'CONFINED_SPACE', 'EXCAVATION', 'ELECTRICAL',
+    'HOT_WORK', 'CONFINED_SPACE', 'COLD_WORK', 'EXCAVATION', 'ELECTRICAL',
     'WORKING_AT_HEIGHTS', 'LINE_BREAKING', 'CRANE_RIGGING',
     'CHEMICAL_HANDLING', 'RADIATION', 'ROOF_ACCESS',
     'ENERGY_ISOLATION', 'CUSTOM'
@@ -329,6 +329,16 @@ const DEFAULT_CHECKLISTS = {
         { item: 'Each authorized worker applied personal lock and tag', category: 'Isolation', required: true },
         { item: 'Group lockout coordinator designated (if multi-crew)', category: 'Personnel', required: false },
     ],
+    COLD_WORK: [
+        { item: 'Hazard assessment completed — no ignition sources in area', category: 'Pre-Work', required: true },
+        { item: 'Work area inspected and free of ignition hazards', category: 'Pre-Work', required: true },
+        { item: 'Required PPE verified and available', category: 'PPE', required: true },
+        { item: 'Workers briefed on task hazards and emergency contacts', category: 'Personnel', required: true },
+        { item: 'Emergency response plan reviewed', category: 'Emergency', required: true },
+        { item: 'Area secured and warning signs posted', category: 'Access', required: true },
+        { item: 'Communication plan in place for isolated work', category: 'Personnel', required: true },
+        { item: 'Housekeeping plan confirmed — work area will be left clean', category: 'Post-Work', required: true },
+    ],
     CUSTOM: [
         { item: 'Hazard assessment completed for this task', category: 'Pre-Work', required: true },
         { item: 'Required PPE identified and available', category: 'PPE', required: true },
@@ -345,7 +355,7 @@ function generatePermitNumber(plantId, type) {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     const prefixMap = {
-        HOT_WORK: 'HWP', CONFINED_SPACE: 'CSE', EXCAVATION: 'EXC',
+        HOT_WORK: 'HWP', COLD_WORK: 'CWP', CONFINED_SPACE: 'CSE', EXCAVATION: 'EXC',
         ELECTRICAL: 'ELE', WORKING_AT_HEIGHTS: 'WAH', LINE_BREAKING: 'LBK',
         CRANE_RIGGING: 'CRG', CHEMICAL_HANDLING: 'CHM', RADIATION: 'RAD',
         ROOF_ACCESS: 'ROF', ENERGY_ISOLATION: 'EIS', CUSTOM: 'CUS'
@@ -475,11 +485,30 @@ router.post('/permits', (req, res) => {
         // Accept known types AND custom user-defined types
         // No strict validation — if they typed it, they need it
 
-        const permitNumber = generatePermitNumber(plantId, type);
+        // ── Simultaneous Operations Conflict Detection ──
+        // Block a new permit if an ACTIVE permit of the same type already exists
+        // for the same asset. This prevents overlapping hazardous work permits.
+        if (assetId) {
+            const conflict = logisticsDb.prepare(`
+                SELECT PermitNumber, IssuedBy, ExpiresAt FROM SafetyPermits
+                WHERE AssetID = ? AND PermitType = ? AND Status IN ('ACTIVE','DRAFT')
+                ORDER BY IssuedAt DESC LIMIT 1
+            `).get(assetId, type);
+            if (conflict) {
+                return res.status(409).json({
+                    error: `Simultaneous operations conflict: an ${type} permit (${conflict.PermitNumber}) is already ACTIVE for this asset. Close or void it before issuing a new permit.`,
+                    conflict: { permitNumber: conflict.PermitNumber, issuedBy: conflict.IssuedBy, expiresAt: conflict.ExpiresAt }
+                });
+            }
+        }
+
         const hours = parseInt(expiresInHours) || (type === 'CONFINED_SPACE' ? 8 : 4);
         const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 
-        const result = logisticsDb.prepare(`
+        // Retry up to 5 times on UNIQUE constraint — async auth middleware can let two
+        // concurrent requests both read the same COUNT(*) before either inserts.
+        // Re-querying COUNT after each collision gives a fresh seq, resolving the race.
+        const insertStmt = logisticsDb.prepare(`
             INSERT INTO SafetyPermits (
                 PermitNumber, PermitType, PlantID, AssetID, AssetDescription, WorkOrderID, LotoPermitID,
                 Location, Description, IssuedBy, ExpiresAt, Notes,
@@ -490,8 +519,9 @@ router.post('/permits', (req, res) => {
                 EntryPurpose, Attendant, EntrySupervisor,
                 InitialO2, InitialLEL, InitialCO, InitialH2S, GasMonitorSerial, ContinuousMonitoring
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            permitNumber, type, plantId, assetId || null, assetDescription || null,
+        `);
+        const insertArgs = [
+            null /* permitNumber — filled per-attempt */, type, plantId, assetId || null, assetDescription || null,
             workOrderId || null, lotoPermitId || null,
             location, description, issuedBy, expiresAt, notes || null,
             contractorId || null, contractorName || null,
@@ -503,7 +533,20 @@ router.post('/permits', (req, res) => {
             entryPurpose || null, attendant || null, entrySupervisor || null,
             initialO2 || null, initialLEL || null, initialCO || null, initialH2S || null,
             gasMonitorSerial || null, continuousMonitoring ? 1 : 0
-        );
+        ];
+
+        let permitNumber, result;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            permitNumber = generatePermitNumber(plantId, type);
+            insertArgs[0] = permitNumber;
+            try {
+                result = insertStmt.run(...insertArgs);
+                break; // success
+            } catch (insertErr) {
+                if (insertErr.code === 'SQLITE_CONSTRAINT_UNIQUE' && attempt < 4) continue;
+                throw insertErr;
+            }
+        }
 
         const permitId = result.lastInsertRowid;
 
@@ -532,7 +575,7 @@ router.post('/permits', (req, res) => {
         try { logAudit('SAFETY_PERMIT_CREATED', issuedBy, plantId, { permitNumber, type, location, description }); } catch(e) {}
 
         console.log(`[SAFETY] ✅ ${type} permit ${permitNumber} created by ${issuedBy} at ${plantId}`);
-        res.status(201).json({ success: true, permitId, permitNumber, type, checklistItems: defaultItems.length });
+        res.status(201).json({ success: true, permitId, permitNumber, type, checklistItems: defaultItems.length, checklist: defaultItems });
     } catch (err) {
         console.error('[SAFETY] POST /permits error:', err.message);
         res.status(500).json({ error: 'Failed to create permit: ' });

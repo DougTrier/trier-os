@@ -138,6 +138,7 @@ import UnderwriterView from './components/UnderwriterView';
 import StoreroomView from './components/StoreroomView';
 import TrainingView from './components/TrainingView';
 import PlantSetupView from './components/PlantSetupView';
+import ScannerWorkspace from './components/ScannerWorkspace';
 import useHardwareScanner from './hooks/useHardwareScanner';
 /**
  * PlantOnboardingRoute — thin route wrapper for the Enterprise Onboarding Wizard.
@@ -232,6 +233,10 @@ function App() {
     const [dbStats, setDbStats] = useState(null);
     const [plants, setPlants] = useState([]);
     const [selectedPlant, setSelectedPlant] = useState(localStorage.getItem('selectedPlantId') || 'all_sites');
+    // Scan/asset operations need a real plant DB — 'all_sites' is a virtual aggregate with no asset table
+    const scanPlantId = (selectedPlant === 'all_sites' || !selectedPlant)
+        ? (localStorage.getItem('nativePlantId') || 'Demo_Plant_1')
+        : selectedPlant;
     const [plantAddress, setPlantAddress] = useState('...');
     const [globalSearchForm, setGlobalSearchForm] = useState('');
     const [globalSearchResults, setGlobalSearchResults] = useState([]);
@@ -358,7 +363,7 @@ function App() {
         fetchPlants();
     }, [isAuthenticated]);
 
-    // â”€â”€ Onboarding / Setup Document: fetch invite code â”€â”€
+    // â"€â"€ Onboarding / Setup Document: fetch invite code â"€â"€
 
     useEffect(() => {
         if (!isAuthenticated || !isAdminOrCreator) return;
@@ -499,7 +504,7 @@ function App() {
         navigate('/'); // Go home after logout
     };
 
-    // â”€â”€ Inactivity Auto-Logout (15 min idle â†’ lock entries â†’ force logout) â”€â”€
+    // â"€â"€ Inactivity Auto-Logout (15 min idle â†’ lock entries â†’ force logout) â"€â"€
     const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
     const WARNING_BEFORE = 60 * 1000; // Show warning 60s before logout
     const [showIdleWarning, setShowIdleWarning] = useState(false);
@@ -560,12 +565,16 @@ function App() {
     // Keep ref in sync so handleGlobalHardwareScan doesn't need isScannerOpen in its deps
     useEffect(() => { isScannerOpenRef.current = isScannerOpen; }, [isScannerOpen]);
 
-    // â”€â”€ Global Hardware Scanner Wedge (Zebra/Honeywell â€” active on EVERY page) â”€â”€
+    // â"€â"€ Global Hardware Scanner Wedge (Zebra/Honeywell â€" active on EVERY page) â"€â"€
     const handleGlobalHardwareScan = useCallback(async (code) => {
         let cleanCode = code;
+        let qrPlantId = null; // plant ID embedded in Trier OS QR URLs (?plant=Plant_1)
         try {
             if (cleanCode.includes('?scan=')) {
-                cleanCode = cleanCode.split('?scan=')[1].split('&')[0];
+                const qrParams = new URLSearchParams(cleanCode.includes('?') ? cleanCode.split('?')[1] : '');
+                cleanCode = qrParams.get('scan') || cleanCode.split('?scan=')[1].split('&')[0];
+                const embeddedPlant = qrParams.get('plant');
+                if (embeddedPlant && embeddedPlant !== 'all_sites') qrPlantId = embeddedPlant;
             }
             cleanCode = decodeURIComponent(cleanCode);
 
@@ -589,8 +598,9 @@ function App() {
             return;
         }
 
+        const effectivePlant = qrPlantId || scanPlantId;
         const authHeaders = {
-            'x-plant-id': selectedPlant || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
+            'x-plant-id': effectivePlant,
             'Content-Type': 'application/json',
         };
 
@@ -606,13 +616,12 @@ function App() {
             }
         } catch {}
 
-        // 2) Check maintenance assets
+        // 2) Check maintenance assets → route to scan state machine
         try {
             const r = await fetch(`/api/assets/${encodeURIComponent(cleanCode)}`, { headers: authHeaders });
             const d = await r.json();
             if (r.ok && d.ID) {
-                setHwPendingScan(cleanCode);
-                setIsScannerOpen(true);
+                navigate('/scanner', { state: { pendingAssetId: cleanCode, plantId: effectivePlant } });
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                 return;
             }
@@ -635,7 +644,7 @@ function App() {
         setHwPendingScan(cleanCode);
         setIsScannerOpen(true);
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-    }, [selectedPlant]);
+    }, [selectedPlant, scanPlantId, navigate]);
 
     // Ensure deep links are preserved even if the user hits the Login screen
     useEffect(() => {
@@ -691,7 +700,7 @@ function App() {
             // Trigger offline data cache after login
             setTimeout(() => {
                 OfflineDB.fullCacheRefresh((pct, msg) => {
-                    console.log(`[OfflineDB] ${pct}% â€” ${msg}`);
+                    console.log(`[OfflineDB] ${pct}% â€" ${msg}`);
                 }).then(r => console.log('[OfflineDB] Initial cache complete:', r))
                     .catch(e => console.warn('[OfflineDB] Cache failed:', e.message));
             }, 2000);
@@ -726,7 +735,7 @@ function App() {
                         maxWidth: 1400,
                         margin: '0 auto',
                     }}>
-                        {/* â”€â”€ LEFT: Brand â€” Logo large, text block aligns with tile grid â”€â”€ */}
+                        {/* â"€â"€ LEFT: Brand â€" Logo large, text block aligns with tile grid â"€â"€ */}
                         <div title="Trier OS" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center', gap: '14px' }}>
                             <img
                                 src="/assets/TrierOS_Logo.png"
@@ -801,7 +810,7 @@ function App() {
                             </div>
                         </div>
 
-                        {/* â”€â”€ CENTER: Scan + Bell + Shop Floor (Ghost Style) â”€â”€ */}
+                        {/* â"€â"€ CENTER: Scan + Bell + Shop Floor (Ghost Style) â"€â"€ */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifySelf: 'center' }}>
                             <button
                                 onClick={() => setIsScannerOpen(true)}
@@ -860,11 +869,12 @@ function App() {
                             </button>
                         </div>
 
-                        {/* â”€â”€ RIGHT: Compact utility icons â”€â”€ */}
+                        {/* â"€â"€ RIGHT: Compact utility icons â"€â"€ */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifySelf: 'end' }}>
-                            {/* Onboarding Setup Document â€” admin/creator only */}
+                            {/* Onboarding Setup Document â€" admin/creator only */}
                             {isAdminOrCreator && (
                                 <button
+                                    className="hide-mobile"
                                     onClick={() => setIsInvitePopupOpen(true)}
                                     title={t('app.onboardingDocTip', 'Generate Invite Pass for new user registration')}
                                     style={{
@@ -897,7 +907,8 @@ function App() {
                                 <BookOpen size={18} />
                                 <span style={{ fontSize: '0.45rem', fontWeight: 700, letterSpacing: '0.03em', lineHeight: 1 }}>{t('header.manual', 'MANUAL')}</span>
                             </button>
-                            <button 
+                            <button
+                                className="hide-mobile"
                                 onClick={() => navigate('/about')}
                                 title={t('app.aboutTrierOsTip')}
                                 style={{
@@ -944,6 +955,7 @@ function App() {
                             {/* Live Studio -- Creator + IT Admin only */}
                             {(currentUsername === 'creator' || isCreator || activeUserRole === 'it_admin') && (
                                 <button
+                                    className="hide-mobile"
                                     onClick={() => setIsLiveStudioOpen(true)}
                                     title={'Live Studio - In-App IDE'}
                                     style={{
@@ -958,9 +970,10 @@ function App() {
                                     <Code size={15} />
                                 </button>
                             )}
-                            {/* System Console â€” ONLY for username 'creator' */}
+                            {/* System Console â€" ONLY for username 'creator' */}
                             {currentUsername === 'creator' && (
                                 <button
+                                    className="hide-mobile"
                                     onClick={() => setIsCreatorConsoleOpen(true)}
                                     title={t('app.systemConsoleTip')}
                                     style={{
@@ -976,6 +989,7 @@ function App() {
                                 </button>
                             )}
                             <button
+                                className="hide-mobile"
                                 onClick={() => window.triggerTrierPrint('employee-badge', { name: currentUsername, role: activeUserRole, plant: currentPlantLabel })}
                                 title="Print My ID Badge"
                                 style={{
@@ -1094,6 +1108,7 @@ function App() {
                         <Route path="/underwriter" element={<UnderwriterView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/storeroom" element={<StoreroomView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/training" element={<TrainingView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
+                        <Route path="/scanner" element={<ScannerWorkspace plantId={scanPlantId} />} />
                         <Route path="/work-request-portal" element={<WorkRequestPortal />} />
                         <Route path="/plant-setup" element={<PlantSetupView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/plant-onboarding" element={<PlantOnboardingRoute plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
@@ -1190,7 +1205,7 @@ function App() {
 
             {isScannerOpen && (
                 <GlobalScanner
-                    plantId={selectedPlant}
+                    plantId={scanPlantId}
                     plantLabel={currentPlantLabel}
                     initialScan={hwPendingScan}
                     onClose={() => { setIsScannerOpen(false); setHwPendingScan(null); }}
@@ -1220,12 +1235,12 @@ function App() {
                             <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{hwScanResult.category} ASSET</div>
                             <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f1f5f9', marginTop: 4 }}>{hwScanResult.asset?.Name}</div>
                             <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4, display: 'flex', gap: 12 }}>
-                                <span>{t('app.sn')} <strong>{hwScanResult.asset?.SerialNumber || 'â€”'}</strong></span>
-                                <span>{t('app.tag')} <strong>{hwScanResult.asset?.AssetTag || 'â€”'}</strong></span>
+                                <span>{t('app.sn')} <strong>{hwScanResult.asset?.SerialNumber || 'â€"'}</strong></span>
+                                <span>{t('app.tag')} <strong>{hwScanResult.asset?.AssetTag || 'â€"'}</strong></span>
                                 <span>{t('app.scan')} <strong style={{ color: '#06b6d4', fontFamily: 'monospace' }}>{hwScanResult.scannedCode}</strong></span>
                             </div>
                             <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 6 }}>
-                                Status: <strong>{hwScanResult.asset?.Status}</strong> Â· Location: <strong>{hwScanResult.asset?.Location || hwScanResult.asset?.PlantID || 'â€”'}</strong>
+                                Status: <strong>{hwScanResult.asset?.Status}</strong> Â· Location: <strong>{hwScanResult.asset?.Location || hwScanResult.asset?.PlantID || 'â€"'}</strong>
                                 {hwScanResult.asset?.CurrentBookValue != null && <span> Â· Book Value: <strong style={{ color: '#10b981' }}>{'$' + parseFloat(hwScanResult.asset.CurrentBookValue).toLocaleString()}</strong></span>}
                             </div>
                         </div>
@@ -1239,7 +1254,7 @@ function App() {
                 </div>
             )}
 
-            {/* Styled Security Notice Modal â€” replaces browser alert() */}
+            {/* Styled Security Notice Modal â€" replaces browser alert() */}
             {securityNotice && (
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
@@ -1307,11 +1322,11 @@ function App() {
                 </div>
             )}
 
-            {/* Interactive Onboarding Tour â€” Task 4.4 */}
+            {/* Interactive Onboarding Tour â€" Task 4.4 */}
             {isAuthenticated && <OnboardingTour />}
             {isAuthenticated && <ContextualTour />}
 
-            {/* Portal Widget â€” visible from every workspace, NOT on Mission Control */}
+            {/* Portal Widget â€" visible from every workspace, NOT on Mission Control */}
             {activeTab !== '' && location.pathname !== '/' && (
                 <PortalWidget
                     onWarpHome={() => navigate('/')}

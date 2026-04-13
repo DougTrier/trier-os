@@ -803,9 +803,9 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                     )}
                     {renderSectionHeader('Resource Consumption')}
                     {renderTable(
-                        data._isLocked ? ['Part ID', 'Description', 'Qty Used'] : ['Part ID', 'Description', 'Qty Used', 'Unit Cost'], 
+                        data._isLocked ? ['Part ID', 'Description', 'Mfr Part #', 'Qty Used'] : ['Part ID', 'Description', 'Mfr Part #', 'Qty Used', 'Unit Cost'],
                         (data._parts || []).map(p => {
-                            const row = [p.PartID, p.PartDesc || p.Description, p.ActQty || p.EstQty || 0];
+                            const row = [p.PartID, p.PartDesc || p.Description, p.ManufNum || '--', p.ActQty || p.EstQty || 0];
                             if (!data._isLocked) row.push(new Number(p.UnitCost || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' }));
                             return row;
                         })
@@ -1580,6 +1580,8 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                     {renderProperties([
                         { label: 'Part ID', value: data.PartID },
                         { label: 'Nomenclature', value: data.PartDesc || 'N/A' },
+                        { label: 'Mfr Part #', value: data.ManufNum || '—' },
+                        { label: 'Vendor Part #', value: data.VendNum || '—' },
                         { label: 'Vendor Entity', value: data.VendorID },
                         { label: 'Purchase Date', value: formatDate(data.PurchaseDate) || 'N/A' },
                         { label: 'Valuation', value: `$${parseFloat(data.PurchaseCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}` }
@@ -1988,7 +1990,8 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                 qDesc: data.Description || 'N/A',
                 qModel: data.Model || 'N/A',
                 qPlant: data.plantLabel || 'N/A',
-                qLoc: data.LocationID || 'N/A'
+                qLoc: data.LocationID || 'N/A',
+                plant: data.plantId || '',
             });
             const smartUrl = `${baseUrl}/?${params.toString()}`;
             const labelQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(smartUrl)}`;
@@ -2048,7 +2051,8 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                                     qDesc: asset.Description || 'N/A',
                                     qModel: asset.Model || 'N/A',
                                     qPlant: data.plantLabel || 'N/A',
-                                    qLoc: asset.LocationID || 'N/A'
+                                    qLoc: asset.LocationID || 'N/A',
+                                    plant: data.plantId || '',
                                 });
                                 const smartUrl = `${baseUrl}/?${params.toString()}`;
                                 const cellQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(smartUrl)}`;
@@ -4269,6 +4273,60 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
 
                     {renderSectionHeader('Authorization and Acknowledgement')}
                     {renderSignatures(['Supply Chain / Materials', 'Plant Manager'])}
+                </>
+            );
+            break;
+        }
+
+        case 'vendor-inflation': {
+            const vSummary = data.summary || {};
+            const byVendor = data.byVendor || {};
+            const vPlantLabel = data.plantLabel || '';
+
+            // Flatten all vendor items into sortable rows
+            const vRows = [];
+            Object.entries(byVendor).forEach(([vendorName, vData]) => {
+                (vData.items || []).forEach(item => {
+                    const pts = item.points || [];
+                    vRows.push([
+                        vendorName,
+                        vData.contact || '--',
+                        vData.phone || '--',
+                        vData.email || '--',
+                        item.vendorPartNo || '--',
+                        item.label || '--',
+                        pts.length > 0 ? pts[0].date : '--',
+                        pts.length > 0 ? `$${Number(item.firstCost).toFixed(2)}` : '--',
+                        pts.length > 0 ? pts[pts.length - 1].date : '--',
+                        `$${Number(item.lastCost).toFixed(2)}`,
+                        (item.pctChange > 0 ? '+' : '') + item.pctChange + '%',
+                    ]);
+                });
+            });
+            // Inflators first, deflators last
+            vRows.sort((a, b) => parseFloat(b[10]) - parseFloat(a[10]));
+
+            content = (
+                <>
+                    {renderHeader('Vendor Price Drift Report', 'INFLATION-24M')}
+                    {renderSectionHeader('Analysis Summary')}
+                    {renderProperties([
+                        { label: 'Plant', value: vPlantLabel },
+                        { label: 'Analysis Window', value: '24 months' },
+                        { label: 'Items Tracked', value: String(vSummary.totalTracked || 0) },
+                        { label: 'Inflating', value: String(vSummary.inflating || 0) },
+                        { label: 'Deflating', value: String(vSummary.deflating || 0) },
+                        { label: 'Stable / Insufficient Data', value: String(vSummary.stable || 0) },
+                        { label: 'Average Drift', value: vSummary.avgDrift != null ? (vSummary.avgDrift > 0 ? '+' : '') + vSummary.avgDrift + '%' : '--' },
+                    ])}
+                    {renderSectionHeader('Price Movement by Vendor')}
+                    {renderTable(
+                        ['Vendor', 'Contact', 'Phone', 'Email', 'Part #', 'Description', 'First Date', 'First Price', 'Latest Date', 'Latest Price', 'Change'],
+                        vRows,
+                        'No price movement detected in the selected period.'
+                    )}
+                    {renderSectionHeader('Review & Authorization')}
+                    {renderSignatures(['Procurement Manager', 'Plant Manager', 'Date'])}
                 </>
             );
             break;

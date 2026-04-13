@@ -513,9 +513,12 @@ router.get('/:id', (req, res) => {
 
         // Get related parts used with descriptions - USE ID_INTERNAL (rowid) for joined tables
         const parts = db.queryAll(`
-            SELECT wp.*, p.Description as PartDesc 
+            SELECT wp.*, p.Description as PartDesc,
+              (SELECT pv.ManufNum FROM PartVendors pv
+               WHERE pv.PartID = wp.PartID AND pv.ManufNum IS NOT NULL AND pv.ManufNum != ''
+               LIMIT 1) as ManufNum
             FROM WorkParts wp
-            LEFT JOIN Part p ON wp.PartID = p.ID
+            LEFT JOIN Part p ON p.ID = wp.PartID
             WHERE wp.WoID = ?
         `, [wo.ID_INTERNAL]);
 
@@ -660,6 +663,31 @@ router.put('/:id', (req, res) => {
                     });
                 }
             } catch { /* non-blocking */ }
+
+            // ── P3: Auto-calculate DowntimeCost on WO close ──
+            // DowntimeCost = ActualHours × Asset.HourlyProductionValue (if not already set)
+            try {
+                if (!fields.DowntimeCost) {
+                    const woData = db.queryOne(
+                        'SELECT AstID, ActualHours, DowntimeCost FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?',
+                        [req.params.id, req.params.id, req.params.id]
+                    );
+                    if (woData && woData.AstID && !woData.DowntimeCost) {
+                        const asset = db.queryOne(
+                            'SELECT HourlyProductionValue FROM Asset WHERE AstID = ? OR ID = ?',
+                            [woData.AstID, woData.AstID]
+                        );
+                        const hpv = parseFloat(asset?.HourlyProductionValue) || 0;
+                        const hrs = parseFloat(woData.ActualHours) || 0;
+                        if (hpv > 0 && hrs > 0) {
+                            db.run(
+                                'UPDATE Work SET DowntimeCost = ? WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?',
+                                [Math.round(hpv * hrs * 100) / 100, req.params.id, req.params.id, req.params.id]
+                            );
+                        }
+                    }
+                }
+            } catch { /* non-blocking — downtime cost calc is advisory only */ }
         }
 
         res.json({ success: true, message: 'Work order updated' });

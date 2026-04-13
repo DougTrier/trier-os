@@ -20,6 +20,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    serviceWorkers: 'block',  // Prevent SW from intercepting page.evaluate fetch calls
     // slowMo removed — was 500ms per action, causing timeouts on anything > 10 actions
   },
   projects: [

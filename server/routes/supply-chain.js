@@ -411,7 +411,7 @@ router.get('/po', (req, res) => {
         sql += ' ORDER BY p.OrderDate DESC';
         const rows = db.prepare(sql).all(...params);
         // Attach lines
-        const lines = db.prepare(`SELECT l.*, i.Description, i.UOM as ItemUOM FROM SupplyPOLine l LEFT JOIN SupplyItem i ON i.ID = l.ItemID`).all();
+        const lines = db.prepare(`SELECT l.*, i.Description, i.UOM as ItemUOM, i.VendorPartNo FROM SupplyPOLine l LEFT JOIN SupplyItem i ON i.ID = l.ItemID`).all();
         const linesMap = {};
         lines.forEach(l => { if (!linesMap[l.POID]) linesMap[l.POID] = []; linesMap[l.POID].push(l); });
         rows.forEach(r => { r.lines = linesMap[r.ID] || []; });
@@ -733,6 +733,114 @@ router.get('/summary', (req, res) => {
             ORDER BY (i.OnHand/NULLIF(i.ReorderPt,0)) ASC LIMIT 10`).all();
         res.json({ totalItems, totalValue, lowStock, openPOs, openPOValue, vendorCount, hazMatCount, byCategory, lowStockItems });
     } catch (e) { console.error('[supply/summary]', e.message); res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/supply-chain/inflation?days=365&limit=10
+// Returns price-drift analytics for supplies and parts.
+// Matching hierarchy: ItemID > VendorPartNo > ItemDesc (supplies), PartID > ManufNum (parts)
+router.get('/inflation', (req, res) => {
+    try {
+        const plantId = getPlantId(req);
+        if (guardAllSites(res, plantId)) return;
+        const db = getDb(plantId); ensureTables(db);
+        const days  = Math.min(parseInt(req.query.days)  || 730, 1825); // default 2 years, cap 5
+        const limit = Math.min(parseInt(req.query.limit) || 50,  100);
+        const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+
+        // ── Supplies: price history per item, with vendor contact info ────────
+        const supplyRows = db.prepare(`
+            SELECT
+                CAST(COALESCE(l.ItemID, 0) AS TEXT)                  AS item_id,
+                COALESCE(i.VendorPartNo, '')                          AS vendor_part_no,
+                COALESCE(l.ItemDesc, i.Description, 'Unknown')        AS label,
+                COALESCE(v.VendorName, 'Unknown Vendor')              AS vendor_name,
+                COALESCE(v.Phone, '')                                 AS vendor_phone,
+                COALESCE(v.Email, '')                                 AS vendor_email,
+                COALESCE(v.ContactName, '')                           AS vendor_contact,
+                po.OrderDate                                          AS order_date,
+                l.UnitCost                                            AS unit_cost
+            FROM SupplyPOLine l
+            JOIN SupplyPO po ON po.ID = l.POID
+            LEFT JOIN SupplyItem i  ON i.ID  = l.ItemID
+            LEFT JOIN SupplyVendor v ON v.ID = po.VendorID
+            WHERE po.OrderDate >= ? AND l.UnitCost > 0
+            ORDER BY item_id, po.OrderDate
+        `).all(since);
+
+        // ── Parts: price history per PartID ───────────────────────────────────
+        // ManufNum lives on PartVendors (not Part). Part.Description is the label.
+        const partRows = db.prepare(`
+            SELECT
+                pv.PartID                                             AS part_id,
+                pv.PartID                                             AS match_key,
+                COALESCE(p.Description, pv.PartID)                    AS label,
+                COALESCE(pv.ManufNum, '')                             AS vendor_part_no,
+                COALESCE(pv.VendorID, 'Unknown')                      AS vendor_name,
+                pv.PurchaseDate                                       AS order_date,
+                pv.PurchaseCost                                       AS unit_cost
+            FROM PartVendors pv
+            LEFT JOIN Part p ON p.ID = pv.PartID
+            WHERE pv.PurchaseDate >= ? AND pv.PurchaseCost > 0
+            ORDER BY pv.PartID, pv.PurchaseDate
+        `).all(since);
+
+        // ── Group rows → compute drift ─────────────────────────────────────────
+        const groupAndScore = (rows, keyFn, sourceType) => {
+            const groups = {};
+            for (const row of rows) {
+                const key = keyFn(row);
+                if (!groups[key]) {
+                    groups[key] = {
+                        matchKey:     key,
+                        label:        row.label,
+                        vendor:       row.vendor_name,
+                        vendorPhone:  row.vendor_phone  || '',
+                        vendorEmail:  row.vendor_email  || '',
+                        vendorContact: row.vendor_contact || '',
+                        partId:       row.part_id   || null,
+                        vendorPartNo: row.vendor_part_no || null,
+                        sourceType,
+                        points:       [],
+                    };
+                }
+                groups[key].points.push({ date: row.order_date, unitCost: row.unit_cost });
+            }
+            return Object.values(groups)
+                .filter(g => g.points.length >= 2)
+                .map(g => {
+                    const pts      = g.points.slice().sort((a, b) => a.date.localeCompare(b.date));
+                    const first    = pts[0].unitCost;
+                    const last     = pts[pts.length - 1].unitCost;
+                    const pct      = first > 0 ? Math.round(((last - first) / first) * 1000) / 10 : 0;
+                    return { ...g, points: pts, firstCost: first, lastCost: last, pctChange: pct,
+                        direction: pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat' };
+                });
+        };
+
+        // Supply key: ItemID when present, else normalised description
+        const supplyKey = r => r.item_id !== '0'
+            ? `${r.item_id}::${r.vendor_name}`
+            : `desc::${r.label.toLowerCase().trim()}::${r.vendor_name}`;
+
+        const partKey   = r => `${r.part_id}::${r.vendor_name}`;
+
+        const supplies = groupAndScore(supplyRows, supplyKey, 'supply');
+        const parts    = groupAndScore(partRows,   partKey,   'part');
+        const all      = [...supplies, ...parts].sort((a, b) => b.pctChange - a.pctChange);
+
+        const inflating = all.filter(x => x.pctChange >  5).length;
+        const deflating = all.filter(x => x.pctChange < -5).length;
+        const avgDrift  = all.length
+            ? Math.round(all.reduce((s, x) => s + x.pctChange, 0) / all.length * 10) / 10
+            : 0;
+
+        res.json({
+            topInflators: all.filter(x => x.pctChange > 0).slice(0, limit),
+            topDeflators: all.filter(x => x.pctChange < 0).slice(0, 5),
+            summary: { totalTracked: all.length, inflating, deflating,
+                stable: all.length - inflating - deflating, avgDrift },
+        });
+    } catch (e) { console.error('[supply/inflation]', e.message); res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;
