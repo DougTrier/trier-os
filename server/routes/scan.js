@@ -597,6 +597,11 @@ router.post('/action', (req, res) => {
 // Also returns overdue SCHEDULED_RETURN WOs (returnAt has passed, not yet resumed).
 router.get('/needs-review', (req, res) => {
     try {
+        // all_sites uses a readonly schema template with no real work orders
+        const plantId = (req.headers['x-plant-id'] || '').toLowerCase().replace(/\s+/g, '_');
+        if (plantId === 'all_sites') {
+            return res.json({ flagged: [], overdueScheduled: [], counts: { flagged: 0, overdueScheduled: 0 } });
+        }
         const conn = db.getDb();
         ensureScanColumns(conn);
 
