@@ -249,7 +249,7 @@ function issueJWT(user, req, res) {
             canViewAnalytics: user.CanViewAnalytics === 1
         },
         JWT_SECRET,
-        { expiresIn: '12h' }
+        { expiresIn: '7d' }
     );
 
     // INFO-01: Set token as httpOnly cookie — invisible to JavaScript on the client.
@@ -260,7 +260,7 @@ function issueJWT(user, req, res) {
         httpOnly: true,
         secure: req.secure,
         sameSite: 'Lax',
-        maxAge: 12 * 60 * 60 * 1000 // 12 hours — matches JWT expiry
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days — supports multi-day offline plant operation
     });
 
     logAudit(user.Username, 'LOGIN_SUCCESS', homePlant, { role: user.DefaultRole }, 'INFO', req.ip);

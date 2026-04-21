@@ -48,12 +48,10 @@ export default function ScannerWorkspace({ plantId }) {
 
     // ── Session save/restore — survives app close while server is down ────────
     const SESSION_KEY = 'scanSession';
-    const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours (one shift)
 
     useEffect(() => {
         OfflineDB.getMeta(SESSION_KEY).then(saved => {
             if (!saved) return;
-            if (Date.now() - saved.ts > SESSION_TTL_MS) return;
             if (saved.step === 'prompt' && saved.scanResult) {
                 setScanResult(saved.scanResult);
                 setPendingAssetId(saved.pendingAssetId || null);
