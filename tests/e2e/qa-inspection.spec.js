@@ -206,13 +206,13 @@ test.describe('P2 — Pilot Blockers', () => {
         expect(auditText).toBeTruthy();
     });
 
-    test('package.json version is 3.4.1', async ({ page }) => {
+    test('package.json version is 3.4.2', async ({ page }) => {
         const res = await page.request.get('/package.json').catch(() => null);
         // package.json may not be publicly served; check via a version endpoint instead
         const vRes = await page.request.get(`${API}/version`).catch(() => null);
         if (vRes && vRes.ok()) {
             const body = await vRes.json().catch(() => ({}));
-            if (body.version) expect(body.version).toBe('3.4.1');
+            if (body.version) expect(body.version).toBe('3.4.2');
         }
         // If neither available, the test is informational — pass
         expect(true).toBeTruthy();

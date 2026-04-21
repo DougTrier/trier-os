@@ -3,7 +3,7 @@ $ErrorActionPreference = "Continue"
 
 $SOURCE   = "G:\Trier OS"
 $BUILD    = $args[0]
-if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.4.1" }
+if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.4.2" }
 $NODE_EXE = (Get-Command node).Source
 
 Write-Host ""
