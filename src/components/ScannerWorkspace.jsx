@@ -20,12 +20,13 @@
  *   plantId   {string}   Plant DB scope, passed down to both child components
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Scan, Home } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ScanCapture from './ScanCapture';
 import ScanActionPrompt from './ScanActionPrompt';
 import { useTranslation } from '../i18n/index.jsx';
+import OfflineDB from '../utils/OfflineDB.js';
 
 export default function ScannerWorkspace({ plantId }) {
     const { t } = useTranslation();
@@ -44,6 +45,31 @@ export default function ScannerWorkspace({ plantId }) {
     // pendingAssetId is stored in state so it can be explicitly cleared after first use,
     // preventing ScanCapture from re-auto-submitting when it remounts after an action.
     const [pendingAssetId, setPendingAssetId] = useState(location.state?.pendingAssetId || null);
+
+    // ── Session save/restore — survives app close while server is down ────────
+    const SESSION_KEY = 'scanSession';
+    const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours (one shift)
+
+    useEffect(() => {
+        OfflineDB.getMeta(SESSION_KEY).then(saved => {
+            if (!saved) return;
+            if (Date.now() - saved.ts > SESSION_TTL_MS) return;
+            if (saved.step === 'prompt' && saved.scanResult) {
+                setScanResult(saved.scanResult);
+                setPendingAssetId(saved.pendingAssetId || null);
+                setStep('prompt');
+            }
+        }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (step === 'capture' && !scanResult) {
+            OfflineDB.setMeta(SESSION_KEY, null).catch(() => {});
+        } else {
+            OfflineDB.setMeta(SESSION_KEY, { step, scanResult, pendingAssetId, ts: Date.now() }).catch(() => {});
+        }
+    }, [step, scanResult, pendingAssetId]);
 
     // ScanCapture fires this when the server returns a branch response
     const handleScanResult = useCallback((result) => {

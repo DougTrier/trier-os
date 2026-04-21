@@ -201,10 +201,18 @@ function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(null); // null = checking session, true/false after /me responds
 
     // ── Session restore: check httpOnly cookie via /me ────────────────────────
+    // Network errors (server down) fall back to cached credentials so operators
+    // can keep working offline. A 401/403 means the session genuinely expired.
     useEffect(() => {
         fetch('/api/auth/me')
             .then(r => setIsAuthenticated(r.ok))
-            .catch(() => setIsAuthenticated(false));
+            .catch(() => {
+                const hasSession = !!(
+                    localStorage.getItem('userId') ||
+                    localStorage.getItem('currentUser')
+                );
+                setIsAuthenticated(hasSession);
+            });
     }, []);
 
     const location = useLocation();
