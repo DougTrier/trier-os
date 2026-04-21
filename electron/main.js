@@ -192,7 +192,6 @@ function startEmbeddedServer() {
             PORT: String(SERVER_PORT),
             HTTPS_PORT: String(HTTPS_PORT),
             NODE_ENV: 'production',
-            DEMO_MODE: 'true',
             ELECTRON_EMBEDDED: 'true',
             DISABLE_LIVE_STUDIO: 'true',
             DATA_DIR: dataDir,

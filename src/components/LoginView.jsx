@@ -156,7 +156,7 @@ export default function LoginView({ onLoginSuccess }) {
                 setError(data.error || 'Invalid username or password');
             }
         } catch (err) {
-            setError('Network error syncing to the server');
+            setError('Unable to reach the server. Check that the backend is running.');
         }
         setIsLoading(false);
     };

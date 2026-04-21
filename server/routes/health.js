@@ -63,21 +63,6 @@ router.get('/', (req, res) => {
         checks.integrations = { status: 'error', detail: e.message };
     }
 
-    // ── License ───────────────────────────────────────────────────────────────
-    try {
-        const license = require('../license');
-        const resolveDataDir = require('../resolve_data_dir');
-        const dataDir = resolveDataDir();
-        const lic = license.checkLicense(dataDir);
-        checks.license = {
-            status:  lic.valid ? 'ok' : 'invalid',
-            expires: lic.expires || null,
-            daysLeft: lic.daysLeft || null,
-        };
-    } catch (e) {
-        checks.license = { status: 'unknown', detail: e.message };
-    }
-
     // ── Memory ────────────────────────────────────────────────────────────────
     const mem = process.memoryUsage();
     checks.memory = {
