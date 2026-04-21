@@ -19,7 +19,7 @@
 - [x] Offline auth fallback — network error on /auth/me falls back to cached localStorage credentials instead of forcing re-login
 - [x] JWT extended to 7 days — supports multi-day offline plant operation; cookie maxAge updated to match
 - [x] LAN Hub IP field — added to PlantConfiguration (with safe migration), Plant Setup UI, plant creation, login response, and localStorage cache
-- [ ] 🟡 Silent Auto-Close Threshold — 12-hour cron timer on InProgress segments; raises `needsReview` flag; Mission Control queue already done, timer not yet running
+- [x] Silent Auto-Close Threshold — hourly cron (silent_close_engine.js) closes Active segments beyond per-plant threshold; raises needsReview / reviewReason='SILENT_AUTO_CLOSE' on parent WO; exempt hold reasons respected
 
 ---
 

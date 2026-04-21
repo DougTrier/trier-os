@@ -127,10 +127,17 @@ try {
 }
 const pmEngine = require('./pm_engine');
 const enrichmentEngine = require('./enrichment_engine');
+const silentCloseEngine = require('./silent_close_engine');
 
 // We run the engines passively on a 24-hour interval
 setInterval(() => pmEngine.runPMCron(), 24 * 60 * 60 * 1000);
 setInterval(() => enrichmentEngine.runEnrichmentCron(), 12 * 60 * 60 * 1000); // Every 12 hours
+// Hourly — closes WorkSegments Active beyond the per-plant threshold and
+// raises needsReview on the parent WO for the Mission Control review queue.
+setInterval(() => {
+    try { silentCloseEngine.runSilentCloseCron(); }
+    catch (e) { console.warn('[SilentClose] Cron failed:', e.message); }
+}, 60 * 60 * 1000);
 
 // Execute first pass passively after server is up
 setImmediate(() => {
