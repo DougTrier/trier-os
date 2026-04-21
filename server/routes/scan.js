@@ -36,6 +36,7 @@
 
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database');
 
@@ -669,11 +670,53 @@ router.get('/needs-review', (req, res) => {
 // Each event is processed through the same state machine as a live scan.
 // scanId idempotency ensures replaying the same queue multiple times is safe.
 // Offline multi-tech conflicts resolve via Auto-Join (see ROADMAP.md spec).
+//
+// Accepts two body shapes for backward compatibility:
+//   { events: [...] }  — PWA client (OfflineDB.replayQueue)
+//   { scans: [...] }   — LAN hub replay (lan_hub.replayToServer)
+//
+// When called from the LAN hub (x-hub-replay: '1'), an HMAC-SHA256 signature
+// covering ts.nonce.plantId.canonicalBody must be present and valid.
 router.post('/offline-sync', (req, res) => {
     try {
-        const { events } = req.body; // Array of scan payloads from the offline queue
+        // Accept either field name so PWA clients and the LAN hub both work
+        const events = req.body.events || req.body.scans;
         if (!Array.isArray(events) || events.length === 0) {
             return res.status(400).json({ error: 'events array is required' });
+        }
+
+        // ── HMAC verification for LAN hub replays ────────────────────────────
+        if (req.headers['x-hub-replay'] === '1') {
+            const ts       = req.headers['x-hub-ts'];
+            const nonce    = req.headers['x-hub-nonce'];
+            const sig      = req.headers['x-hub-sig'];
+            const plantId  = req.headers['x-plant-id'];
+            const secret   = process.env.JWT_SECRET;
+
+            if (!ts || !nonce || !sig) {
+                return res.status(401).json({ error: 'Hub replay missing auth headers' });
+            }
+            if (Math.abs(Date.now() - parseInt(ts, 10)) > 5 * 60 * 1000) {
+                return res.status(401).json({ error: 'Hub replay timestamp expired' });
+            }
+
+            // Canonical body: re-serialize with 'scans' key to match what the hub signed
+            const canonicalBody = JSON.stringify({ scans: events });
+            const expected = crypto.createHmac('sha256', secret)
+                .update(`${ts}.${nonce}.${plantId}.${canonicalBody}`)
+                .digest('hex');
+
+            try {
+                const expectedBuf = Buffer.from(expected, 'hex');
+                const sigBuf      = Buffer.from(sig, 'hex');
+                if (sigBuf.length !== expectedBuf.length ||
+                    !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+                    console.warn(`[scan] Hub replay HMAC mismatch from plant=${plantId}`);
+                    return res.status(401).json({ error: 'Hub replay signature invalid' });
+                }
+            } catch {
+                return res.status(401).json({ error: 'Hub replay signature invalid' });
+            }
         }
 
         const conn = db.getDb();

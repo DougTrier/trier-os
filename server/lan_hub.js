@@ -275,14 +275,24 @@ async function replayToServer(centralUrl, dataDir, jwtSecret) {
         for (const row of pending) {
             try {
                 const payload = JSON.parse(row.payload);
+                const body  = JSON.stringify({ scans: [payload] });
+                const ts    = Date.now().toString();
+                const nonce = crypto.randomBytes(16).toString('hex');
+                const sig   = crypto.createHmac('sha256', jwtSecret)
+                    .update(`${ts}.${nonce}.${plantId}.${body}`)
+                    .digest('hex');
+
                 const res = await fetch(`${centralUrl}/api/scan/offline-sync`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-plant-id': plantId,
+                        'x-plant-id':   plantId,
                         'x-hub-replay': '1',
+                        'x-hub-ts':     ts,
+                        'x-hub-nonce':  nonce,
+                        'x-hub-sig':    sig,
                     },
-                    body: JSON.stringify({ scans: [payload] }),
+                    body,
                     signal: AbortSignal.timeout(8000),
                 });
                 if (res.ok) {
@@ -315,8 +325,14 @@ function handleMessage(ws, raw, dataDir) {
     // getPendingScans ensures no scan is lost if the client fails to sync.
     if (msg.type === 'SYNC_PENDING') {
         const { scanIds, plantId: msgPlantId } = msg;
-        const plantId = msgPlantId || client?.plantId;
+        // Always use the plantId from the JWT-authenticated connection — never trust
+        // the plantId supplied in the message body. A mismatch is an exploit attempt.
+        const plantId = client?.plantId;
         if (!Array.isArray(scanIds) || !plantId || scanIds.length === 0) return;
+        if (msgPlantId && msgPlantId !== plantId) {
+            console.warn(`[LAN_HUB] SECURITY: SYNC_PENDING plant override rejected user=${client?.userId} claimed=${msgPlantId} actual=${plantId}`);
+            return;
+        }
 
         const db = getPlantDb(dataDir, plantId);
         try {
@@ -342,8 +358,14 @@ function handleMessage(ws, raw, dataDir) {
 
     if (msg.type === 'SCAN') {
         const { scanId, assetId, userId, plantId: msgPlantId, deviceTimestamp, action } = msg;
-        const plantId = msgPlantId || client?.plantId;
+        // Always use the plantId from the JWT-authenticated connection — never trust
+        // the plantId supplied in the message body. A mismatch is an exploit attempt.
+        const plantId = client?.plantId;
         if (!scanId || !assetId || !plantId) return;
+        if (msgPlantId && msgPlantId !== plantId) {
+            console.warn(`[LAN_HUB] SECURITY: SCAN plant override rejected user=${client?.userId} claimed=${msgPlantId} actual=${plantId}`);
+            return;
+        }
 
         // Predict branch BEFORE queuing so we can gate on the result
         let branch;

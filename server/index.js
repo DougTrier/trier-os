@@ -67,6 +67,13 @@ const isMissingOrWeak = !process.env.JWT_SECRET ||
     process.env.JWT_SECRET.includes('PLACEHOLDER');
 
 if (isMissingOrWeak) {
+    if (process.env.NODE_ENV === 'production') {
+        // In production a weak/missing secret is a hard deployment error — fail fast
+        // rather than silently writing a new secret that would invalidate all sessions.
+        console.error('🚨 [SECURITY] JWT_SECRET is missing, weak, or defaulted in production.');
+        console.error('   Set a strong JWT_SECRET (64+ hex chars) in your .env and restart.');
+        process.exit(1);
+    }
     console.log('🔒 [SECURITY] Invalid, missing, or defaulted JWT_SECRET detected. Generating persistent cryptographic hash...');
     const newSecret = crypto.randomBytes(64).toString('hex');
     process.env.JWT_SECRET = newSecret;
@@ -77,7 +84,7 @@ if (isMissingOrWeak) {
         envContent = fs.readFileSync(envPath, 'utf8');
         envContent = envContent.replace(/^JWT_SECRET=.*[\r\n]*/gm, '');
     }
-    
+
     envContent = `JWT_SECRET=${newSecret}\n` + envContent;
     fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf8');
     console.log('✅ [SECURITY] Environment effectively hardened with unique session secret.');
@@ -395,7 +402,9 @@ app.use((req, res, next) => {
 // (NOT per-IP â€” in a factory all users share one NAT, per-IP would lock everyone out)
 const loginLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: 500, // Increased for parallel (workers: 2) ghost account E2E testing
+    // Production default: 8 attempts per 5 min per username.
+    // For parallel E2E testing set RATE_LIMIT_LOGIN_MAX=500 in .env / test environment.
+    max: parseInt(process.env.RATE_LIMIT_LOGIN_MAX, 10) || 8,
     standardHeaders: true,
     legacyHeaders: false,
     validate: false,
