@@ -1,109 +1,138 @@
 // Copyright © 2026 Trier OS. All Rights Reserved.
 
 /**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
-/**
  * Trier OS — PWA Offline Status Bar
  * ===================================
  * Network connectivity banner and offline mode indicator. Persists across
- * all views as a fixed bottom bar when the app detects no connectivity.
- * Part of Trier OS's PWA offline-first architecture.
+ * all views as a fixed top bar when the app detects no connectivity or an
+ * in-flight sync event.
  *
- * KEY FEATURES:
- *   - Online/offline detection via navigator.onLine + window events
- *   - Sync queue counter: shows number of pending actions queued in OfflineDB
- *   - Auto-sync: when connectivity is restored, triggers delta sync automatically
- *   - Retry button: manual sync trigger if auto-sync doesn't fire
- *   - OfflineDB integration: all pending WO creates/updates/parts consumed
- *     are queued in IndexedDB and replayed on reconnect
- *   - "Working Offline" banner: visible reminder that data may not be current
- *   - Dismissible: users can hide the bar (reappears if sync fails)
+ * SYNC STATE MACHINE (explicit — not ad-hoc booleans):
+ *   IDLE           — no pending activity, banner hidden
+ *   DRAINING       — actively replaying queue to central server
+ *   AUTH_EXPIRED   — drain halted; session cookie expired mid-outage; queue preserved
+ *   COMPLETED      — drain finished, all items synced; auto-dismisses after 4s
+ *   REVIEW_REQUIRED — drain finished with errors/conflicts; user must review
  *
- * SYNC BEHAVIOR:
- *   1. Actions made offline are queued to OfflineDB (IndexedDB)
- *   2. On reconnect, OfflineDB.sync() replays queued requests in order
- *   3. Conflicts: server wins for reads; last-write-wins for WO status updates
+ * AUTH EXPIRY FLOW:
+ *   1. replayQueue() returns { authExpired: true, remainingCount } on first 401
+ *   2. OfflineStatusBar sets AUTH_EXPIRED state and dispatches 'trier-session-expired'
+ *   3. App.jsx listens and calls setIsAuthenticated(false) → shows LoginView
+ *   4. After login, App.jsx dispatches 'trier-session-restored'
+ *   5. OfflineStatusBar listens and calls triggerDrain() automatically — no user action
+ *
+ * MOUNT-TIME DRAIN:
+ *   On mount, if navigator.onLine and queue is non-empty, drain fires immediately.
+ *   This covers the page-reload-while-online case after a prior offline session.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import OfflineDB from '../utils/OfflineDB.js';
 import LanHub from '../utils/LanHub.js';
 import { useTranslation } from '../i18n/index.jsx';
 
-/**
- * OfflineStatusBar — Renders a persistent banner when the app goes offline.
- * Shows sync progress when reconnecting. Auto-dismisses on success.
- */
+// Explicit sync state constants — prevents string-comparison sprawl as new states are added
+const SYNC = {
+    IDLE:             'idle',
+    DRAINING:         'draining',
+    AUTH_EXPIRED:     'auth_expired',
+    COMPLETED:        'completed',
+    REVIEW_REQUIRED:  'review_required',
+};
+
 export default function OfflineStatusBar() {
     const { t } = useTranslation();
-    const [isOnline, setIsOnline] = useState(navigator.onLine);
-    const [pendingCount, setPendingCount] = useState(0);
-    const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'done' | 'error'
-    const [syncMessage, setSyncMessage] = useState('');
-    const [showBanner, setShowBanner] = useState(false);
-    const [dismissed, setDismissed] = useState(false);
+    const [isOnline, setIsOnline]               = useState(navigator.onLine);
+    const [pendingCount, setPendingCount]        = useState(0);
+    const [syncState, setSyncState]             = useState(SYNC.IDLE);
+    const [syncMessage, setSyncMessage]          = useState('');
+    const [showBanner, setShowBanner]           = useState(false);
+    const [dismissed, setDismissed]             = useState(false);
     const [hubTokenExpired, setHubTokenExpired] = useState(false);
-    // syncErrors: detail records from the last failed replayQueue run, stored in
-    // IndexedDB by OfflineDB so they survive a page refresh and can be reviewed
-    // after the banner is dismissed and re-shown on the next offline session.
-    const [syncErrors, setSyncErrors] = useState([]);
-    // showReview toggles the expandable conflict-detail panel below the banner
-    const [showReview, setShowReview] = useState(false);
-    const dismissTimer = useRef(null);
+    const [syncErrors, setSyncErrors]           = useState([]);
+    const [showReview, setShowReview]           = useState(false);
+    const dismissTimer  = useRef(null);
+    // Prevents concurrent drain calls (e.g., 'online' event + 'trier-session-restored' racing).
+    const isDrainingRef = useRef(false);
+
+    const triggerDrain = useCallback(async () => {
+        if (isDrainingRef.current) return;
+        const count = await OfflineDB.getPendingCount();
+        if (count === 0) {
+            setSyncState(SYNC.COMPLETED);
+            setSyncMessage(t('offlineStatusBar.connectionRestored', '✅ Connection restored'));
+            dismissTimer.current = setTimeout(() => {
+                setShowBanner(false);
+                setSyncState(SYNC.IDLE);
+            }, 3000);
+            return;
+        }
+
+        isDrainingRef.current = true;
+        setSyncState(SYNC.DRAINING);
+        setSyncMessage(`Syncing ${count} change${count !== 1 ? 's' : ''}...`);
+
+        const result = await OfflineDB.replayQueue((current, total) => {
+            setSyncMessage(`Syncing ${current} of ${total}...`);
+        });
+        isDrainingRef.current = false;
+
+        if (result.authExpired) {
+            // Valid scans are preserved in the queue — only auth state is stale.
+            // Dispatch to App.jsx to show LoginView; drain resumes on session-restored.
+            const n = result.remainingCount;
+            setSyncState(SYNC.AUTH_EXPIRED);
+            setSyncMessage(`${n} scan${n !== 1 ? 's' : ''} preserved — session expired`);
+            console.warn(`[OfflineStatusBar] Sync paused — auth expired. ${n} items preserved in queue.`);
+            window.dispatchEvent(new CustomEvent('trier-session-expired'));
+        } else if (result.failed > 0 || result.conflicts > 0) {
+            setSyncState(SYNC.REVIEW_REQUIRED);
+            setSyncMessage(`${result.sent} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
+            OfflineDB.getSyncErrors().then(errs => setSyncErrors(errs)).catch(() => {});
+        } else {
+            setSyncState(SYNC.COMPLETED);
+            const n = result.sent;
+            setSyncMessage(`✅ Back online — ${n} change${n !== 1 ? 's' : ''} synced successfully`);
+            dismissTimer.current = setTimeout(() => {
+                setShowBanner(false);
+                setSyncState(SYNC.IDLE);
+            }, 4000);
+        }
+    }, []); // all deps (state setters, OfflineDB) are stable references
 
     useEffect(() => {
         let active = true;
-        // Start connectivity monitor
+
         OfflineDB.startConnectivityMonitor(async (online) => {
+            if (!active) return;
             setIsOnline(online);
             setDismissed(false);
-
             if (online) {
-                // Back online — replay queue
-                const pending = await OfflineDB.getPendingCount();
-                if (pending > 0) {
-                    setSyncStatus('syncing');
-                    setSyncMessage(`Syncing ${pending} change${pending !== 1 ? 's' : ''}...`);
-                    
-                    const result = await OfflineDB.replayQueue((current, total) => {
-                        setSyncMessage(`Syncing ${current} of ${total}...`);
-                    });
-
-                    if (result.failed > 0 || result.conflicts > 0) {
-                        setSyncStatus('error');
-                        setSyncMessage(`${result.sent} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
-                        // Load the error detail records replayQueue persisted so
-                        // the Review button can show per-scan failure information
-                        OfflineDB.getSyncErrors().then(errs => setSyncErrors(errs)).catch(() => {});
-                    } else {
-                        setSyncStatus('done');
-                        setSyncMessage(`✅ Back online — ${result.sent} change${result.sent !== 1 ? 's' : ''} synced successfully`);
-                        // Auto-dismiss after 4s
-                        dismissTimer.current = setTimeout(() => {
-                            setShowBanner(false);
-                            setSyncStatus(null);
-                        }, 4000);
-                    }
-                } else {
-                    setSyncStatus('done');
-                    setSyncMessage('✅ Connection restored');
-                    dismissTimer.current = setTimeout(() => {
-                        setShowBanner(false);
-                        setSyncStatus(null);
-                    }, 3000);
-                }
+                await triggerDrain();
             } else {
-                setSyncStatus(null);
+                setSyncState(SYNC.IDLE);
                 setSyncMessage('');
             }
         });
 
-        // Show hub token warning when LanHub detects expiry
         LanHub.onTokenExpired(() => setHubTokenExpired(true));
 
-        // Poll pending count every 5s when offline
+        // After App.jsx completes re-auth, it fires this event so drain resumes
+        // automatically without requiring the user to do anything beyond logging in.
+        const onSessionRestored = () => {
+            setSyncState(SYNC.IDLE);
+            setHubTokenExpired(false);
+            triggerDrain();
+        };
+        window.addEventListener('trier-session-restored', onSessionRestored);
+
+        // Drain queue items that accumulated before this component mounted.
+        // Handles the page-reload-while-online case after a prior offline session.
+        if (navigator.onLine) {
+            OfflineDB.getPendingCount().then(count => {
+                if (count > 0 && active) triggerDrain();
+            }).catch(() => {});
+        }
+
         const interval = setInterval(async () => {
             const count = await OfflineDB.getPendingCount();
             setPendingCount(count);
@@ -112,29 +141,29 @@ export default function OfflineStatusBar() {
         return () => {
             active = false;
             clearInterval(interval);
-            if (dismissTimer.current) clearTimeout(dismissTimer.current);
+            clearTimeout(dismissTimer.current);
+            window.removeEventListener('trier-session-restored', onSessionRestored);
         };
-    }, []);
+    }, [triggerDrain]);
 
-    // Show banner when offline or syncing
     useEffect(() => {
-        if (!isOnline || syncStatus === 'syncing' || syncStatus === 'done' || syncStatus === 'error') {
-            setShowBanner(true);
-        }
-    }, [isOnline, syncStatus]);
+        if (!isOnline || syncState !== SYNC.IDLE) setShowBanner(true);
+    }, [isOnline, syncState]);
 
     if (!showBanner || dismissed) return null;
 
-    const isOffline = !isOnline && syncStatus !== 'done';
-    const isSyncing = syncStatus === 'syncing';
-    const isDone = syncStatus === 'done';
-    const isError = syncStatus === 'error';
+    const isOffline        = !isOnline && syncState !== SYNC.COMPLETED;
+    const isDraining       = syncState === SYNC.DRAINING;
+    const isCompleted      = syncState === SYNC.COMPLETED;
+    const isReviewRequired = syncState === SYNC.REVIEW_REQUIRED;
+    const isAuthExpired    = syncState === SYNC.AUTH_EXPIRED;
 
-    const bgColor = isOffline ? 'rgba(245, 158, 11, 0.95)' :
-                    isSyncing ? 'rgba(59, 130, 246, 0.95)' :
-                    isDone ? 'rgba(16, 185, 129, 0.95)' :
-                    isError ? 'rgba(239, 68, 68, 0.95)' :
-                    'rgba(245, 158, 11, 0.95)';
+    const bgColor = isAuthExpired    ? 'rgba(245, 158, 11, 0.95)'
+                  : isOffline        ? 'rgba(245, 158, 11, 0.95)'
+                  : isDraining       ? 'rgba(59, 130, 246, 0.95)'
+                  : isCompleted      ? 'rgba(16, 185, 129, 0.95)'
+                  : isReviewRequired ? 'rgba(239, 68, 68, 0.95)'
+                  :                    'rgba(245, 158, 11, 0.95)';
 
     return (
         <>
@@ -155,9 +184,9 @@ export default function OfflineStatusBar() {
             fontWeight: 600,
             boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
             animation: 'slideDown 0.3s ease',
-            backdropFilter: 'blur(8px)'
+            backdropFilter: 'blur(8px)',
         }}>
-            {isOffline && (
+            {isOffline && !isAuthExpired && (
                 <>
                     <span style={{ fontSize: '1.1rem' }}>📡</span>
                     <span>{t('offlineStatusBar.offlineModeChangesAreSaved')}</span>
@@ -166,7 +195,7 @@ export default function OfflineStatusBar() {
                             background: 'rgba(255,255,255,0.2)',
                             padding: '2px 10px',
                             borderRadius: '12px',
-                            fontSize: '0.75rem'
+                            fontSize: '0.75rem',
                         }}>
                             🔄 {pendingCount} pending
                         </span>
@@ -185,16 +214,31 @@ export default function OfflineStatusBar() {
                 </>
             )}
 
-            {isSyncing && (
+            {isAuthExpired && (
+                <>
+                    <span style={{ fontSize: '1.1rem' }}>🔐</span>
+                    <span>{syncMessage}</span>
+                    <span style={{
+                        background: 'rgba(0,0,0,0.18)',
+                        padding: '2px 10px',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                    }}>
+                        {t('offlineStatusBar.authExpiredNote', 'Queued scans are safe — log in to resume sync')}
+                    </span>
+                </>
+            )}
+
+            {isDraining && (
                 <>
                     <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>🔄</span>
                     <span>{syncMessage}</span>
                 </>
             )}
 
-            {isDone && <span>{syncMessage}</span>}
+            {isCompleted && <span>{syncMessage}</span>}
 
-            {isError && (
+            {isReviewRequired && (
                 <>
                     <span>⚠️ {syncMessage}</span>
                     {syncErrors.length > 0 && (
@@ -244,10 +288,7 @@ export default function OfflineStatusBar() {
             `}</style>
         </div>
 
-        {/* Review panel — appears below the banner, not inside it, so the
-            banner itself stays a single compact line even with many errors.
-            zIndex 99997 sits one below the banner (99998) so it slides under
-            rather than overlapping the fixed controls. */}
+        {/* Review panel — one level below the banner so it doesn't overlap the controls */}
         {showReview && syncErrors.length > 0 && (
             <div style={{
                 position: 'fixed', top: 40, left: 0, right: 0, zIndex: 99997,
@@ -264,8 +305,6 @@ export default function OfflineStatusBar() {
                         padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
                         fontSize: '0.78rem', color: '#e2e8f0',
                     }}>
-                        {/* Color-coded badge: amber for server-side conflicts (409),
-                            red for network errors or permanent failures */}
                         <span style={{
                             background: err.syncResult === 'conflict' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
                             color: err.syncResult === 'conflict' ? '#fbbf24' : '#f87171',

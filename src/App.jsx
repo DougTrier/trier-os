@@ -718,6 +718,14 @@ function App() {
 
     useHardwareScanner(handleGlobalHardwareScan, isAuthenticated);
 
+    // When OfflineStatusBar detects a 401 mid-drain (session cookie expired during
+    // an extended offline period), it fires this event so App re-shows LoginView.
+    // After re-auth, onLoginSuccess fires 'trier-session-restored' to resume the drain.
+    useEffect(() => {
+        const onSessionExpired = () => setIsAuthenticated(false);
+        window.addEventListener('trier-session-expired', onSessionExpired);
+        return () => window.removeEventListener('trier-session-expired', onSessionExpired);
+    }, []);
 
     // Public routes — accessible without login
     if (window.location.pathname === '/work-request') {
@@ -729,6 +737,8 @@ function App() {
     if (!isAuthenticated) {
         return <LoginView onLoginSuccess={(data) => {
             setIsAuthenticated(true);
+            // Signal OfflineStatusBar to resume any drain paused by an expired session.
+            window.dispatchEvent(new CustomEvent('trier-session-restored'));
             const hasIntelAccess = ['it_admin', 'creator'].includes(data.userRole) || data.isCreator || data.globalAccess || data.intelAccess;
             const defaultPlant = hasIntelAccess ? 'all_sites' : (data.nativePlantId || 'Demo_Plant_1');
 

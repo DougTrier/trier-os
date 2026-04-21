@@ -424,6 +424,23 @@ async function replayQueue(onProgress) {
                 entry.synced = true;
                 entry.syncResult = 'success';
                 sent++;
+            } else if (res.status === 401) {
+                // Session cookie expired during the drain. The scan data is valid —
+                // only the auth state is stale. Do NOT mark this item or any remaining
+                // items as failed. Flush already-synced items, then halt and return
+                // so the caller can prompt re-auth and resume.
+                const partialAll = await getAll(STORES.SYNC_QUEUE);
+                for (const e of partialAll) {
+                    if (e.synced) await deleteByKey(STORES.SYNC_QUEUE, e.id);
+                }
+                console.warn(`[OfflineDB] Drain halted on 401 at item ${i}. ${pending.length - i} items preserved.`);
+                return {
+                    authExpired:    true,
+                    processedCount: i,
+                    remainingCount: pending.length - i,
+                    sent, failed, conflicts,
+                    total: pending.length,
+                };
             } else if (res.status === 409) {
                 entry.syncResult = 'conflict';
                 conflicts++;

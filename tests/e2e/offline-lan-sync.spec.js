@@ -410,3 +410,183 @@ test.describe('Scenario 6 — Expired hub JWT triggers "Hub unavailable" notice 
             .toBeVisible({ timeout: 6000 });
     });
 });
+
+// =============================================================================
+// SCENARIO 7 — Auth expires before drain starts; queue preserved
+// =============================================================================
+test.describe('Scenario 7 — Session expires before drain; banner shows AUTH_EXPIRED, queue intact', () => {
+
+    test('On first 401, drain halts immediately and no item is marked failed-permanently', async ({ page }) => {
+        await addHubInitScript(page);
+        await login(page);
+
+        await page.route('**/api/scan', route => {
+            route.fulfill({ status: 401, contentType: 'application/json',
+                body: JSON.stringify({ error: 'Unauthorized' }) });
+        });
+
+        await writeToStore(page, 'sync_queue', [
+            { id: 'auth-q1', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-auth-1', assetId: 'PUMP-AUTH-01' },
+              synced: false, syncResult: null, timestamp: new Date().toISOString(), retries: 0 },
+            { id: 'auth-q2', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-auth-2', assetId: 'PUMP-AUTH-02' },
+              synced: false, syncResult: null, timestamp: new Date().toISOString(), retries: 0 },
+        ]);
+
+        await page.evaluate(() => window.dispatchEvent(new Event('online')));
+        await page.waitForTimeout(2000);
+
+        // AUTH_EXPIRED banner must be visible with queue-safe messaging
+        await expect(page.getByText(/session expired|Session expired|log in to resume|Queued scans are safe/i))
+            .toBeVisible({ timeout: 6000 });
+
+        // Both items must still be in the queue — not marked failed
+        const queue = await readAllFromStore(page, 'sync_queue');
+        const pending = queue.filter(e => ['auth-q1', 'auth-q2'].includes(e.id));
+        expect(pending).toHaveLength(2);
+        expect(pending.every(e => e.syncResult !== 'failed-permanently')).toBe(true);
+        expect(pending.every(e => !e.synced)).toBe(true);
+    });
+});
+
+// =============================================================================
+// SCENARIO 8 — Auth expires mid-drain; processed item synced, rest preserved
+// =============================================================================
+test.describe('Scenario 8 — Auth expires mid-drain; item before 401 synced, rest preserved untouched', () => {
+
+    test('First scan syncs, second returns 401 — drain halts, two items remain in queue', async ({ page }) => {
+        await addHubInitScript(page);
+        await login(page);
+
+        let callCount = 0;
+        await page.route('**/api/scan', async route => {
+            callCount++;
+            if (callCount === 1) {
+                await route.fulfill({ status: 200, contentType: 'application/json',
+                    body: JSON.stringify({ ok: true, branch: 'AUTO_CREATE_WO', wo: { id: '1' } }) });
+            } else {
+                await route.fulfill({ status: 401, contentType: 'application/json',
+                    body: JSON.stringify({ error: 'Unauthorized' }) });
+            }
+        });
+
+        // Items ordered by timestamp so replayQueue processes mid-q1 first
+        await writeToStore(page, 'sync_queue', [
+            { id: 'mid-q1', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-mid-1', assetId: 'PUMP-MID-01' },
+              synced: false, syncResult: null, timestamp: '2026-04-21T10:00:00.000Z', retries: 0 },
+            { id: 'mid-q2', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-mid-2', assetId: 'PUMP-MID-02' },
+              synced: false, syncResult: null, timestamp: '2026-04-21T10:01:00.000Z', retries: 0 },
+            { id: 'mid-q3', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-mid-3', assetId: 'PUMP-MID-03' },
+              synced: false, syncResult: null, timestamp: '2026-04-21T10:02:00.000Z', retries: 0 },
+        ]);
+
+        await page.evaluate(() => window.dispatchEvent(new Event('online')));
+        await page.waitForTimeout(3000);
+
+        await expect(page.getByText(/session expired|Session expired/i))
+            .toBeVisible({ timeout: 6000 });
+
+        // mid-q1 was synced and cleaned up; mid-q2 and mid-q3 must remain
+        const queue = await readAllFromStore(page, 'sync_queue');
+        expect(queue.some(e => e.id === 'mid-q1')).toBe(false);
+        expect(queue.some(e => e.id === 'mid-q2')).toBe(true);
+        expect(queue.some(e => e.id === 'mid-q3')).toBe(true);
+
+        // Preserved items must not be permanently failed
+        const preserved = queue.filter(e => ['mid-q2', 'mid-q3'].includes(e.id));
+        expect(preserved.every(e => e.syncResult !== 'failed-permanently')).toBe(true);
+    });
+});
+
+// =============================================================================
+// SCENARIO 9 — Re-auth via trier-session-restored resumes drain automatically
+// =============================================================================
+test.describe('Scenario 9 — trier-session-restored event resumes drain; each item submitted once', () => {
+
+    test('After session-restored, remaining queue drains with no duplicate submissions', async ({ page }) => {
+        await addHubInitScript(page);
+        await login(page);
+
+        let authValid = false;
+        const postedScanIds = [];
+
+        await page.route('**/api/scan', async route => {
+            if (!authValid) {
+                await route.fulfill({ status: 401, contentType: 'application/json',
+                    body: JSON.stringify({ error: 'Unauthorized' }) });
+            } else {
+                const body = await route.request().postDataJSON().catch(() => ({}));
+                if (body?.scanId) postedScanIds.push(body.scanId);
+                await route.fulfill({ status: 200, contentType: 'application/json',
+                    body: JSON.stringify({ ok: true, branch: 'AUTO_CREATE_WO', wo: { id: '42' } }) });
+            }
+        });
+
+        await writeToStore(page, 'sync_queue', [
+            { id: 'res-q1', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-resume-1', assetId: 'VFD-RES-01' },
+              synced: false, syncResult: null, timestamp: new Date().toISOString(), retries: 0 },
+            { id: 'res-q2', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-resume-2', assetId: 'VFD-RES-02' },
+              synced: false, syncResult: null, timestamp: new Date().toISOString(), retries: 0 },
+        ]);
+
+        // Phase 1: trigger drain → 401 → AUTH_EXPIRED
+        await page.evaluate(() => window.dispatchEvent(new Event('online')));
+        await page.waitForTimeout(2000);
+        await expect(page.getByText(/session expired|Session expired/i)).toBeVisible({ timeout: 6000 });
+
+        // Phase 2: simulate successful re-auth — enable 200 responses then fire session-restored
+        authValid = true;
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('trier-session-restored')));
+        await page.waitForTimeout(3000);
+
+        // Each scan ID must appear exactly once — no double submission
+        expect(postedScanIds.filter(id => id === 'scan-resume-1').length).toBe(1);
+        expect(postedScanIds.filter(id => id === 'scan-resume-2').length).toBe(1);
+
+        // Queue must be empty after successful drain
+        const queue = await readAllFromStore(page, 'sync_queue');
+        const stillPending = queue.filter(e => ['res-q1', 'res-q2'].includes(e.id) && !e.synced);
+        expect(stillPending).toHaveLength(0);
+    });
+});
+
+// =============================================================================
+// SCENARIO 10 — Concurrent drain guard prevents double submission
+// =============================================================================
+test.describe('Scenario 10 — isDrainingRef guard blocks a second drain while one is in flight', () => {
+
+    test('Two rapid trier-session-restored events submit each scan exactly once', async ({ page }) => {
+        await addHubInitScript(page);
+        await login(page);
+
+        const postedScanIds = [];
+        await page.route('**/api/scan', async route => {
+            const body = await route.request().postDataJSON().catch(() => ({}));
+            if (body?.scanId) postedScanIds.push(body.scanId);
+            await route.fulfill({ status: 200, contentType: 'application/json',
+                body: JSON.stringify({ ok: true, branch: 'AUTO_CREATE_WO', wo: { id: '1' } }) });
+        });
+
+        await writeToStore(page, 'sync_queue', [
+            { id: 'dedup-q1', method: 'POST', endpoint: '/api/scan',
+              payload: { scanId: 'scan-dedup-1', assetId: 'MOTOR-DEDUP-01' },
+              synced: false, syncResult: null, timestamp: new Date().toISOString(), retries: 0 },
+        ]);
+
+        // Fire two session-restored events simultaneously — only one drain should run
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('trier-session-restored'));
+            window.dispatchEvent(new CustomEvent('trier-session-restored'));
+        });
+        await page.waitForTimeout(3000);
+
+        // scan-dedup-1 must appear exactly once — the isDrainingRef guard blocked the second
+        expect(postedScanIds.filter(id => id === 'scan-dedup-1').length).toBe(1);
+    });
+});
