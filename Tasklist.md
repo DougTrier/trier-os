@@ -119,11 +119,11 @@
 | 1 | Design LAN peer discovery protocol | ✅ Done | — |
 | 2 | Build plant-local sync server (LAN hub) in Electron | ✅ Done | #1 |
 | 3 | Add LAN hub discovery to PWA client | ✅ Done | #2 |
-| 4 | Sync hub state back to central server on reconnect | 🔵 Planned | #2, #3 |
-| 5 | Real-time WO state push from hub to all plant devices | 🔵 Planned | #2, #3 |
-| 6 | Handle hub conflict resolution (dual WO auto-create) | 🔵 Planned | #5 |
+| 4 | Sync hub state back to central server on reconnect | ✅ Done | #2, #3 |
+| 5 | Real-time WO state push from hub to all plant devices | ✅ Done | #2, #3 |
+| 6 | Handle hub conflict resolution (dual WO auto-create) | ✅ Done | #5 |
 | 7 | Show live plant-device presence in Mission Control | 🔵 Planned | #2, #3 |
-| 8 | Security — authenticate devices on the LAN hub | 🔵 Planned | #2 |
+| 8 | Security — authenticate devices on the LAN hub | ✅ Done | #2 |
 | 9 | Playwright E2E tests for offline LAN sync scenarios | 🔵 Planned | #1–#8 |
 
 ### Task Details
