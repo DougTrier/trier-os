@@ -117,7 +117,7 @@
 | # | Task | Status | Depends On |
 |---|------|--------|-----------|
 | 1 | Design LAN peer discovery protocol | ✅ Done | — |
-| 2 | Build plant-local sync server (LAN hub) in Electron | 🔵 Planned | #1 |
+| 2 | Build plant-local sync server (LAN hub) in Electron | ✅ Done | #1 |
 | 3 | Add LAN hub discovery to PWA client | 🔵 Planned | #2 |
 | 4 | Sync hub state back to central server on reconnect | 🔵 Planned | #2, #3 |
 | 5 | Real-time WO state push from hub to all plant devices | 🔵 Planned | #2, #3 |

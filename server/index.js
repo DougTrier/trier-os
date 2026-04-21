@@ -441,6 +441,14 @@ app.use('/api', apiLimiter);
 // â”€â”€ Pre-Auth Routes (no JWT required) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _serverReady = false; // Set to true only after app.listen callback
 app.get('/api/ping', (req, res) => res.json({ status: 'ok', ready: _serverReady, time: new Date() }));
+app.get('/api/hub/status', (req, res) => {
+    try {
+        const lanHub = require('./lan_hub');
+        res.json(lanHub.getStatus());
+    } catch {
+        res.json({ running: false, port: 1940, clients: 0, devices: [] });
+    }
+});
 app.use('/api/health', require('./routes/health'));          // System health & degraded mode (P2)
 
 // â”€â”€ Local QR Code Generator (no external API needed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2069,11 +2077,29 @@ app.listen(PORT, '0.0.0.0', async () => {
             console.error('  ❌ [HA] Sync initialization failed:', err.message);
         }
     }, 5000);
+
+    // ── LAN Hub — only boots inside Electron desktop app ─────────────────────
+    // Allows PWA devices on the same plant LAN to stay in sync when the central
+    // server is unreachable. Hub listens on port 1940.
+    if (process.env.ELECTRON_EMBEDDED === 'true') {
+        try {
+            const lanHub = require('./lan_hub');
+            const centralUrl = `http://localhost:${PORT}`;
+            lanHub.start({
+                dataDir: _resolvedDataDir,
+                jwtSecret: process.env.JWT_SECRET,
+                centralUrl,
+            });
+        } catch (err) {
+            console.warn('[LAN_HUB] Failed to start:', err.message);
+        }
+    }
 });
 
 // Graceful shutdown (SIGINT for manual, SIGTERM for PM2 cluster)
 const _gracefulShutdown = (signal) => {
     console.log(`\n  ${signal} received - shutting down gracefully...`);
+    try { require('./lan_hub').stop(); } catch(e) {}
     try { db.close(); } catch(e) {}
     process.exit(0);
 };

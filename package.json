@@ -83,7 +83,8 @@
     "react-router-dom": "^7.13.1",
     "tesseract.js": "^7.0.0",
     "three": "^0.183.2",
-    "vite-plugin-cesium": "^1.2.23"
+    "vite-plugin-cesium": "^1.2.23",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
