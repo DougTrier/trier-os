@@ -15,7 +15,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud, Github, Star, Scan } from 'lucide-react';
+import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud, Github, Star, Scan, Wifi } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
 const AboutView = () => {
@@ -48,7 +48,7 @@ const AboutView = () => {
         ],
         bio: `Bridging ${yearsExp} years of industrial grit and enterprise technology. Doug's journey began on the front lines—driving wholesale delivery routes, picking in coolers, loading trucks, and operating production equipment, with decades of operational management experience. This 'boots-on-the-ground' foundation evolved into architecting enterprise digital infrastructure. From racking server foundations to acting as the architect for enterprise mobile infrastructure, this platform is the culmination of three decades of operational knowledge.`,
         badges: ['Industrial Engineering', 'V-Sphere/Cloud', 'Mobile Infra'],
-        version: '3.3.0',
+        version: '3.4.1',
         buildDate: 'March 2026',
         experience: yearsExp
     };
@@ -3883,6 +3883,72 @@ const AboutView = () => {
                     ]
                 }
             ]
+        },
+        {
+            section: t('manual.s34.title', 'Part XXXIII: Offline Resilience & Plant LAN Sync'),
+            id: 'offline-resilience-lan-sync',
+            navigateTo: '/scanner',
+            filePath: 'src/utils/LanHub.js',
+            icon: <Wifi size={22} />,
+            content: t('manual.s34.content', 'How Trier OS keeps every plant operational when the central server is unreachable — including real-time device sync over the local network, zero-data-loss scan queuing, and the automated Silent Auto-Close safeguard.'),
+            subsections: [
+                {
+                    title: t('manual.sub.167', 'XXXIII.1 How LAN Sync Works (Plant Hub Architecture)'),
+                    items: [
+                        t('manual.item.1597', "When the central server becomes unreachable, the Electron desktop application automatically activates a LAN Hub — a lightweight WebSocket server running on port 1940 of the plant's local network."),
+                        t('manual.item.1598', "Every PWA scanner on the same network discovers the hub using the plant's configured Hub IP (set in Plant Setup). The connection is established automatically within seconds of central server loss."),
+                        t('manual.item.1599', 'Once connected, all scans submitted on any PWA device are routed to the hub in real time. The hub stores them in a local SQLite queue and broadcasts WO_STATE_CHANGED events to every other connected device — keeping all screens in sync without the central server.'),
+                        t('manual.item.1600', 'When the central server returns, the hub replays its full collected queue to the server automatically, preserving original deviceTimestamp order. All PWA devices switch back to normal server mode and the hub gracefully goes quiet.'),
+                        t('manual.item.1601', 'Plant Network Status Panel: Mission Control includes a live "Plant Network" panel showing central server status, LAN hub status (Connected / Not Running), port number, and per-device presence with connection times. This updates in real time via the hub WebSocket.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.168', 'XXXIII.2 Offline Scan Queue — Zero-Data-Loss Guarantee'),
+                    items: [
+                        t('manual.item.1602', "Every scan submitted while offline is immediately written to the device's local IndexedDB database before any network call is attempted. The scan is never lost, even if the app is closed during submission."),
+                        t('manual.item.1603', 'Scans routed through the LAN hub are marked "hub-submitted" in the local queue. When the central server returns, these entries are skipped by the client\'s own replay — the hub already delivered them. This prevents every scan from being sent twice.'),
+                        t('manual.item.1604', 'Branch Prediction: While offline, the app predicts the correct scan outcome (New WO, Resume, MULTI_TECH, etc.) using locally cached work order and segment data. The prediction is shown to the technician immediately — no spinner, no wait.'),
+                        t('manual.item.1605', 'Session Persistence: If the app is closed or crashes mid-scan submission, it saves a recovery checkpoint to IndexedDB. On the next launch, a resume prompt appears asking the technician to confirm or re-scan the in-flight asset.'),
+                        t('manual.item.1606', 'Sync Error Review: After a batch replay, if any scans conflict (409) or fail permanently, the Offline Status Bar shows a "Review N issues" button. Expanding it lists each affected asset with a color-coded badge (amber = conflict, red = network failure) so the technician knows exactly which assets need a re-scan.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.169', 'XXXIII.3 LAN Hub Security — JWT Authentication'),
+                    items: [
+                        t('manual.item.1607', "Every device must present a valid JWT on the WebSocket upgrade handshake. The hub validates the token's signature and expiry before accepting the connection. Invalid or expired tokens are refused with a 401 close code — rogue devices on the plant WiFi cannot inject scan events."),
+                        t('manual.item.1608', 'Hub Tokens are distributed to PWA devices at login by the central server. They have the same 7-day lifetime as the session cookie, supporting extended offline plant operation across full shift cycles.'),
+                        t('manual.item.1609', 'When a token is near expiry (within 5 minutes) or already expired, the app detects this client-side without a network call. The Offline Status Bar shows an amber "Hub unavailable — local queue only" chip. Scans continue to be queued in IndexedDB and will replay to the server when connectivity returns.'),
+                        t('manual.item.1610', "Offline Profile Signing: At every successful login, the app stores a device-bound HMAC signature of the user's profile using a 32-byte secret stored in IndexedDB — never in localStorage. If someone tampers with the stored credentials, the signature check fails and the app refuses the offline login with a clear tamper-detected message."),
+                    ]
+                },
+                {
+                    title: t('manual.sub.170', 'XXXIII.4 Conflict Resolution — Dual-Scan Merge'),
+                    items: [
+                        t('manual.item.1611', "Race Condition: Two technicians scan the same asset within seconds of each other while the hub is active. Both devices predict AUTO_CREATE_WO because neither has seen the other's scan yet."),
+                        t('manual.item.1612', 'Hub Detection: When the second SCAN message arrives for the same assetId within 30 seconds of the first, the hub identifies the conflict and rejects the duplicate AUTO_CREATE with a SCAN_ACK error: "Another technician is creating a work order for this asset — tap Join instead."'),
+                        t('manual.item.1613', 'The conflict is flagged with conflictAutoResolved=1 and surfaced in Mission Control\'s review queue so a supervisor can confirm the merge was handled correctly.'),
+                        t('manual.item.1614', 'Deduplication is also enforced at the central server using the scanId UUID — even if a scan somehow reaches the server twice (hub replay + client replay), the second attempt is silently skipped.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.171', 'XXXIII.5 Silent Auto-Close Threshold'),
+                    items: [
+                        t('manual.item.1615', "The Silent Auto-Close Engine runs every hour on the server. It scans every plant database for WorkSegments that have been in \"Active\" state longer than the plant's configured threshold (default: 12 hours, set in Plant Setup > Scan Config > autoReviewThresholdHours)."),
+                        t('manual.item.1616', 'When a stale segment is found, the engine closes it with state "TimedOut" (not "Ended" — this distinction lets reports separate cron-closed segments from technician-closed ones). It then sets needsReview=1, reviewReason=\'SILENT_AUTO_CLOSE\', and reviewStatus=\'FLAGGED\' on the parent Work Order.'),
+                        t('manual.item.1617', 'Exempt Hold Reasons: Work orders with hold reasons WAITING_ON_PARTS, WAITING_ON_VENDOR, WAITING_ON_APPROVAL, or SCHEDULED_RETURN are skipped — a WO legitimately waiting on an external dependency should not generate a false-positive review flag.'),
+                        t('manual.item.1618', 'Flagged WOs appear in Mission Control\'s review queue under the "Silent Auto-Close" reason. Supervisors can acknowledge, resolve, or dismiss them from the queue. The engine does not re-flag a WO that already has needsReview=1 to avoid overwriting a prior reviewReason.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.172', 'XXXIII.6 Offline Cache Staleness & Trust Indicators'),
+                    items: [
+                        t('manual.item.1619', 'Cache Staleness Badge: When the central server is unreachable and the last successful data sync (fullCacheRefresh) was more than 30 minutes ago, the Plant Network panel shows an amber "Offline data last updated Xh ago" badge.'),
+                        t('manual.item.1620', 'This gives plant managers a clear signal about how fresh the on-screen WO and asset data is, allowing them to judge whether cached information is safe to act on before the server returns.'),
+                        t('manual.item.1621', 'The Status Map (WorkStatuses table) is also cached at login and refreshed on every successful server connection. This means predictBranch() uses plant-specific status IDs rather than hardcoded defaults — accurate even for plants that have customized their status taxonomy.'),
+                        t('manual.item.1622', 'LAN Hub Keepalive: The hub connection uses a 20-second PING/PONG keepalive. If the hub becomes unreachable mid-shift, the PWA detects the closed WebSocket within seconds and displays the disconnected state, automatically attempting to reconnect every 5–25 seconds (exponential backoff, max 10 attempts).'),
+                    ]
+                },
+            ]
         }
     ];
 
@@ -3956,7 +4022,7 @@ const AboutView = () => {
                             <img src="/assets/TrierLogo.png" alt="Trier OS" style={{ height: '48px', borderRadius: '8px' }} />
                             <div>
                                 <h1 style={{ fontSize: '1.6rem', margin: 0 }}>{t('about.manualTitle', 'Trier OS — Operational Intelligence Manual')}</h1>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.3.0')}</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.4.1')}</p>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
