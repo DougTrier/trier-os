@@ -1,5 +1,5 @@
 # Trier OS — Manual QA Inspection Checklist
-> Version 3.4.0 · Generated 2026-04-13
+> Version 3.4.1 · Generated 2026-04-21
 > Work top-to-bottom. Each section maps directly to a P-phase in the roadmap.
 > Mark ✅ pass · ❌ fail (note symptom) · ⏭ skipped (note why)
 

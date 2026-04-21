@@ -1,6 +1,6 @@
 # Trier OS — Workflow Audit & Industry Comparison Report
-**Version:** 3.3.0  
-**Audited:** April 10, 2026  
+**Version:** 3.4.1  
+**Audited:** April 21, 2026  
 **Methodology:** Full source code review of workflow logic in WorkOrdersView.jsx, LotoPanel.jsx, CloseOutWizard.jsx, SafetyView.jsx, SupplyChainView.jsx, ShiftHandoff.jsx, and 74 supporting server routes. Industry comparisons drawn against IBM Maximo 8.x, SAP Plant Maintenance (PM), Infor EAM, UpKeep, and Fiix.
 
 ---

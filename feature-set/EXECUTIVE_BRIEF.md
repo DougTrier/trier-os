@@ -2,7 +2,7 @@
 ### The Multi-Plant Operational Savings Case
 
 **For:** VP of Operations · VP of Maintenance · CFO  
-**Version:** 3.3.0 | **April 2026**
+**Version:** 3.4.1 | **April 2026**
 
 ---
 

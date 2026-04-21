@@ -1,8 +1,8 @@
 # Trier OS — Quick Facts & Project Specifications
 
-**Version:** 3.4.0  
+**Version:** 3.4.1  
 **Development Started:** March 7, 2026  
-**Development Completed:** April 13, 2026  
+**Development Completed:** April 21, 2026  
 **Public Release:** April 9, 2026  
 **Total Build Time:** 37 days  
 **License:** MIT  
@@ -23,7 +23,7 @@
 | Production Dependencies | **34 vetted packages** |
 | Languages Supported | **11** (EN, DE, ES, FR, JA, KO, PT, AR, HI, TR, ZH) |
 | Database Architecture | **Multi-tenant SQLite sharding** (one `.db` per plant) |
-| E2E Test Coverage | **8,630 lines · 20 spec files · 595 passing tests** |
+| E2E Test Coverage | **8,630+ lines · 21 spec files · 600+ passing tests** |
 | Development Started | **March 7, 2026** |
 | Public Release | **April 9, 2026** |
 | Total Build Time | **33 days** (pure Agentic Coding, single developer) |

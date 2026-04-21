@@ -1,6 +1,6 @@
 # Trier OS — Complete Feature Set Audit
-**Version:** 3.4.0  
-**Audited:** April 13, 2026  
+**Version:** 3.4.1  
+**Audited:** April 21, 2026  
 **Methodology:** Full codebase scan across 162 React components and 196 API route/server modules.
 
 Features are ordered by enterprise plant customer priority — i.e., what breaks production, costs money, or causes a safety incident if it fails or is absent.
@@ -239,7 +239,7 @@ Tools used by reliability engineers and maintenance leadership.
 - Rolling CapEx and OpEx forecast
 - What-if modeling for deferred maintenance scenarios
 - Linked to actual spend data from Parts and WO records
-- Interfaces with the **OpEx Self-Healing Loop** (Feature 77) — committed savings flow back as realized adjustments to the forecast baseline
+- Interfaces with the **OpEx Self-Healing Loop** (Feature 79) — committed savings flow back as realized adjustments to the forecast baseline
 
 ### 31. Underwriter Portal (Insurance Intelligence)
 - Automated insurance risk score: 0–100 composite scoring
@@ -553,11 +553,31 @@ Tools used by reliability engineers and maintenance leadership.
 - Internal module for tracking capability gaps vs. competitor platforms
 - Used to drive the internal feature roadmap
 
+### 77. Plant LAN Peer Sync (LanHub)
+- WebSocket-based hub server embedded in each plant's local area network
+- All plant devices (Zebra guns, tablets, workstations) connect to the hub on `ws://<hub-ip>:1940` — no internet required
+- Real-time broadcast: asset state changes, WO updates, and scan queue events propagate to every device in the plant instantly
+- Offline scan queue: scans buffered in IndexedDB when no server is reachable; auto-flushed to both hub and central server when connectivity is restored
+- JWT authentication: hub validates token before accepting any device connection
+- Reconnect loop: client retries with exponential backoff; device never falls silent permanently
+- Hub-aware mission control: supervisor view shows live device presence count for the plant
+- On hub reconnect: central server reconciles any queued scans that arrived during the outage
+
+### 78. Offline Scan Queue & Silent Auto-Close Engine
+- Scans captured offline are stored in a persistent IndexedDB queue (`sync_queue` store) tied to the plant's origin
+- On device reconnect (`online` event), the queue is drained sequentially — no scans are lost even across full server outages
+- Duplicate suppression: records already submitted to hub are skipped on drain to prevent double-close
+- Silent Auto-Close Engine (server-side hourly cron): detects `Active` WorkSegments that have exceeded the configurable `autoReviewThresholdHours` threshold (default: 12 h)
+- Exempt hold reasons: segments placed under deliberate holds (e.g., `waiting-for-parts`, `locked-out`) are skipped and never auto-closed
+- Flagged for review: auto-closed segments set `needsReview = 1`, `reviewReason = 'SILENT_AUTO_CLOSE'`, `reviewStatus = 'FLAGGED'` on the parent Work Order without overwriting a prior more-specific flag
+- Per-plant configurability: `PlantScanConfig.autoReviewThresholdHours` lets each site tune the threshold independently
+- E2E tested: all six offline-sync and auto-close scenarios covered by the Playwright suite (`tests/e2e/offline-lan-sync.spec.js`)
+
 ---
 
 ## TIER 11 — OpEx Self-Healing Loop
 
-### 77. OpEx Action Commitment & Outcome Tracking Engine
+### 79. OpEx Action Commitment & Outcome Tracking Engine
 
 The OpEx Self-Healing Loop is Trier OS's autonomous savings accountability engine. It closes the gap between a financial analysis identifying a savings opportunity and confirmation that the savings actually materialized. Most CMMS platforms stop at the recommendation. Trier OS executes, tracks, and validates end-to-end.
 
@@ -628,7 +648,7 @@ The following items were originally listed as "potential additions" but are **fu
 | **Contractor COI Expiry Block** | `PrequalificationStatus` must be `Approved` before assignment. An `Approved` contractor with no active Permit-to-Work triggers a hard amber warning block in the contractor detail view. COI expiry is tracked and displayed inline. |
 | **Inter-Plant Parts Visibility** | `analytics.js` corporate rollup surfaces cross-plant inventory. The `notifications.js` and `logistics.js` routes already expose inter-plant transfer endpoints. |
 | **Contractor SLA / Time Theft Detection** | Fully implemented — the Contractors Job History tab actively cross-references vendor invoice hours against security gate access logs, automatically blocks PO routing, and triggers a chargeback dispute when time discrepancy is detected. This was not even listed in the feature set and is arguably one of the most operationally valuable hidden features in the platform. |
-| **OpEx Self-Healing Loop** | Fully implemented as Feature 77 (Tier 11). The 24-hour cron engine, 30/60/90-day checkpoint validation, commitment lifecycle (`OPEN → MISSED`), alert deduplication, plant-scope enforcement, and all 10 hardened API endpoints are live in `server/routes/opex_tracking.js`. Security audit completed 2026-04-10: all endpoints enforce `isCorp()` RBAC, `plantId` sanitized against path traversal, N+1 query pattern eliminated. |
+| **OpEx Self-Healing Loop** | Fully implemented as Feature 79 (Tier 11). The 24-hour cron engine, 30/60/90-day checkpoint validation, commitment lifecycle (`OPEN → MISSED`), alert deduplication, plant-scope enforcement, and all 10 hardened API endpoints are live in `server/routes/opex_tracking.js`. Security audit completed 2026-04-10: all endpoints enforce `isCorp()` RBAC, `plantId` sanitized against path traversal, N+1 query pattern eliminated. |
 
 ---
 

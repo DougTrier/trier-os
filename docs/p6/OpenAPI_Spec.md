@@ -24,7 +24,7 @@ const expressJSDocSwagger = require('express-jsdoc-swagger');
 
 const swaggerOptions = {
     info: {
-        version: '3.4.0',
+        version: '3.4.1',
         title: 'Trier OS API',
         description: 'Enterprise CMMS & Advisory Platform — REST API',
         license: { name: 'Proprietary — © 2026 Trier OS' },

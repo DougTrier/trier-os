@@ -24,8 +24,8 @@
 
 | | |
 |:---:|:---:|
-| **Version** | 3.0.26 |
-| **Effective Date** | March 2026 |
+| **Version** | 3.0.27 |
+| **Effective Date** | April 2026 |
 | **Classification** | Internal Use â��⬝ Restricted Distribution |
 | **Platform Architect** | Doug Trier |
 | **Contact** | github.com/DougTrier/trier-os/discussions |
@@ -5220,3 +5220,77 @@ See **Part XXXI: OpEx Self-Healing Loop** for the full reference on the OpEx Tra
 See **Part IV-B** of the Daily Workflow section for the complete reference on the Zero-Keyboard Scanner (`/scanner`) — capture modes, branch logic, hold reasons, supervisor review queue, audit trail, and offline sync.
 
 **Summary:** A floor technician scans an asset barcode using a Zebra hardware gun, phone camera, or numeric fallback. The server evaluates asset state and returns a branch code. The device renders tap-only action buttons — no typing, no navigation. If no WO exists, one is auto-created immediately.
+
+---
+
+## Part XXXIV: Offline Resilience & Plant LAN Sync
+
+### 59.1 How LAN Sync Works
+
+Every plant running Trier OS has a **LAN Hub** — a lightweight WebSocket server embedded in the local area network at `ws://<hub-ip>:1940`. All plant devices (Zebra scanners, tablets, supervisor workstations) connect directly to this hub without routing through the internet or the central cloud server.
+
+When a technician scans a barcode:
+1. The scan is sent to the central Express server via REST.
+2. Simultaneously, the scan event is broadcast to the LAN Hub.
+3. All other connected plant devices receive the update in real time — supervisor screens refresh, active WO boards update, and floor monitors reflect the new state within milliseconds.
+
+The LAN Hub is a resilience layer, not a replacement for the central server. Central authority always wins on conflict resolution.
+
+---
+
+### 59.2 Offline Scan Queue
+
+When a device loses connectivity to both the central server and the LAN Hub, scans are not lost. Each device maintains a persistent **offline scan queue** stored in IndexedDB (`TrierCMMS_Offline` / `sync_queue` store). The queue survives browser restarts, device sleeps, and network drops.
+
+When connectivity is restored:
+- The device fires an `online` event.
+- The queue is drained sequentially — each queued scan is submitted to the central server and, if a hub connection is available, to the LAN Hub as well.
+- Scans already marked `hub-submitted` are skipped on drain to prevent double-close.
+- The queue is cleared after successful flush.
+
+**No technician action is required.** The recovery is fully automatic.
+
+---
+
+### 59.3 LAN Hub Security
+
+The LAN Hub validates every connecting device with a **JWT token** before accepting any data. Devices without a valid token are disconnected immediately. The token is derived from the same plant authentication session used for the main application — no separate credentials are required.
+
+Expired tokens cause the device to reconnect with a fresh token after re-authentication. This prevents stale sessions from holding open hub connections indefinitely.
+
+The hub runs on an isolated port (1940) on the plant's OT network — it is never exposed to the internet and requires no inbound firewall rules beyond the plant LAN.
+
+---
+
+### 59.4 Conflict Resolution
+
+When two devices scan the same asset simultaneously — or when an offline queue flushes a scan that conflicts with a change made by another device during the outage — the system applies a deterministic resolution rule:
+
+- **Hub wins over queue:** If a scan was already processed by the hub while a device was offline, the queued scan is discarded as a duplicate.
+- **Server wins over hub:** If the central server's record contradicts the hub's broadcast state, the server state is authoritative on next sync.
+- **No silent data loss:** All conflict events are logged to the plant audit trail with the reason code `OFFLINE_CONFLICT`.
+
+---
+
+### 59.5 Silent Auto-Close Engine
+
+Work Segments left in `Active` state for an extended period — typically due to a missed close-out scan at end of shift — are automatically resolved by the **Silent Auto-Close Engine**, a server-side hourly cron.
+
+The engine:
+1. Queries all `Active` WorkSegments older than `autoReviewThresholdHours` (default: 12 hours; configurable per plant in `PlantScanConfig`).
+2. Skips segments placed under deliberate holds (waiting-for-parts, locked-out, and other exempt reasons) — these are intentionally open.
+3. Closes qualifying segments with state `TimedOut`.
+4. Sets `needsReview = 1` and `reviewReason = 'SILENT_AUTO_CLOSE'` on the parent Work Order, placing it in the supervisor review queue.
+
+**The supervisor then confirms or overrides.** Auto-close is never the final word — it is a guardrail that ensures no segment stays permanently open due to a forgotten scan.
+
+---
+
+### 59.6 Cache Staleness & Reconnect Behavior
+
+Devices that have been offline for more than one cache TTL interval may hold stale asset or WO state. On reconnect:
+- The client invalidates its local React Query cache for all plant-scoped data.
+- A fresh fetch is issued for the current view's data before rendering resumes.
+- Stale indicators are shown if the reconnect fetch is delayed by more than 3 seconds.
+
+For supervisors, the Mission Control dashboard shows a **live device presence count** reflecting how many devices are currently connected to the plant's LAN Hub. A count of zero while the hub is expected to be running is a signal that connectivity on the plant floor should be investigated.
