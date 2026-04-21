@@ -223,6 +223,15 @@ function issueJWT(user, req, res) {
 
     const homePlant = rolesQuery.find(r => r.PlantID !== 'all_sites')?.PlantID || null;
 
+    // Look up the LAN hub IP for the user's home plant — cached by PWA for offline use
+    let hubIp = null;
+    if (homePlant) {
+        try {
+            const plantCfg = logDb.prepare('SELECT HubIp FROM PlantConfiguration WHERE PlantID = ?').get(homePlant);
+            hubIp = plantCfg?.HubIp || null;
+        } catch (_) {}
+    }
+
     const token = jwt.sign(
         {
             UserID: user.UserID,
@@ -263,6 +272,7 @@ function issueJWT(user, req, res) {
         username: user.Username,
         role: user.DefaultRole,
         nativePlantId: homePlant,
+        hubIp,
         mustChangePassword: user.MustChangePassword === 1,
         canAccessDashboard: user.CanAccessDashboard === 1,
         globalAccess: user.GlobalAccess === 1,

@@ -151,6 +151,8 @@ export default function LoginView({ onLoginSuccess }) {
                 localStorage.setItem('canViewAnalytics', data.canViewAnalytics ? 'true' : 'false');
                 localStorage.setItem('selectedPlantId', data.globalAccess ? 'all_sites' : (data.nativePlantId || 'Demo_Plant_1'));
                 localStorage.setItem('nativePlantId', data.nativePlantId || 'Demo_Plant_1');
+                if (data.hubIp) localStorage.setItem('plantHubIp', data.hubIp);
+                else localStorage.removeItem('plantHubIp');
                 onLoginSuccess(data);
             } else {
                 setError(data.error || 'Invalid username or password');
@@ -187,6 +189,8 @@ export default function LoginView({ onLoginSuccess }) {
                 localStorage.setItem('canViewAnalytics', data.canViewAnalytics ? 'true' : 'false');
                 localStorage.setItem('selectedPlantId', data.globalAccess ? 'all_sites' : (data.nativePlantId || 'Demo_Plant_1'));
                 localStorage.setItem('nativePlantId', data.nativePlantId || 'Demo_Plant_1');
+                if (data.hubIp) localStorage.setItem('plantHubIp', data.hubIp);
+                else localStorage.removeItem('plantHubIp');
                 setShow2FA(false);
                 onLoginSuccess(data);
             } else {

@@ -102,6 +102,7 @@ function initPlantSetupTables() {
         CREATE TABLE IF NOT EXISTS PlantConfiguration (
             PlantID TEXT PRIMARY KEY,
             ProductionModel TEXT DEFAULT 'fluid-process',
+            HubIp TEXT,
             UpdatedAt TEXT DEFAULT (datetime('now')),
             UpdatedBy TEXT
         );
@@ -198,6 +199,7 @@ initPlantSetupTables();
 
 // ── Safe column migrations ────────────────────────────────────────────────────
 const addCols = [
+    "ALTER TABLE PlantConfiguration ADD COLUMN HubIp TEXT",
     "ALTER TABLE PlantProducts ADD COLUMN ButterfatPct REAL DEFAULT 0",
     "ALTER TABLE PlantProducts ADD COLUMN LabelName TEXT",
     "ALTER TABLE PlantProducts ADD COLUMN SizeCode TEXT",
@@ -222,14 +224,17 @@ router.get('/config', (req, res) => {
 router.put('/config', (req, res) => {
     try {
         const plantId = getPlantId(req);
-        const { productionModel } = req.body;
+        const { productionModel, hubIp } = req.body;
         if (!productionModel) return res.status(400).json({ error: 'productionModel required' });
         logisticsDb.prepare(`
-            INSERT INTO PlantConfiguration (PlantID, ProductionModel, UpdatedAt) VALUES (?,?,datetime('now'))
-            ON CONFLICT(PlantID) DO UPDATE SET ProductionModel=excluded.ProductionModel, UpdatedAt=datetime('now')
-        `).run(plantId, productionModel);
+            INSERT INTO PlantConfiguration (PlantID, ProductionModel, HubIp, UpdatedAt) VALUES (?,?,?,datetime('now'))
+            ON CONFLICT(PlantID) DO UPDATE SET
+                ProductionModel = excluded.ProductionModel,
+                HubIp           = excluded.HubIp,
+                UpdatedAt       = datetime('now')
+        `).run(plantId, productionModel, hubIp || null);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed to save config: ' }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to save config' }); }
 });
 
 // ── Production Units ─────────────────────────────────────────────────────────

@@ -202,6 +202,15 @@ router.put('/plants', (req, res) => {
                         }
 
                         newDb.close();
+
+                        // Seed initial PlantConfiguration row in logistics DB
+                        try {
+                            logisticsDb.prepare(`
+                                INSERT OR IGNORE INTO PlantConfiguration (PlantID, ProductionModel, HubIp, UpdatedAt)
+                                VALUES (?, 'fluid-process', ?, datetime('now'))
+                            `).run(plant.id, plant.hubIp || null);
+                        } catch (_) {}
+
                         created.push(plant.id);
                         console.log(`✅ Created new plant database: ${plant.id}.db (schema copied from Demo Plant 1)`);
                     } catch (dbErr) {

@@ -302,17 +302,22 @@ function GeneralTab({ plantId, plantLabel, summary, setSummary }) {
     const { t } = useTranslation();
     const [config, setConfig] = useState(null);
     const [model, setModel] = useState('');
+    const [hubIp, setHubIp] = useState('');
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState('');
     const [seeding, setSeeding] = useState(false);
 
     useEffect(() => {
-        API('/config').then(r => r.json()).then(d => { setConfig(d); setModel(d.ProductionModel || ''); }).catch(() => {});
+        API('/config').then(r => r.json()).then(d => {
+            setConfig(d);
+            setModel(d.ProductionModel || '');
+            setHubIp(d.HubIp || '');
+        }).catch(() => {});
     }, [plantId]);
 
     const saveConfig = async () => {
         setSaving(true);
-        const r = await API('/config', { method: 'PUT', body: JSON.stringify({ productionModel: model }) });
+        const r = await API('/config', { method: 'PUT', body: JSON.stringify({ productionModel: model, hubIp: hubIp.trim() || null }) });
         const d = await r.json();
         if (d.success) { setMsg(t('plantSetup.savedMsg', 'Saved ✓')); setTimeout(() => setMsg(''), 2000); }
         setSaving(false);
@@ -349,6 +354,7 @@ function GeneralTab({ plantId, plantLabel, summary, setSummary }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 14 }}>
                 <FF label={t('plantSetup.productionModel', 'Production Model')} value={model} onChange={setModel} options={MODEL_OPTIONS} />
+                <FF label={t('plantSetup.hubIp', 'LAN Hub IP Address')} value={hubIp} onChange={setHubIp} placeholder="e.g. 192.168.1.50" />
             </div>
 
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
