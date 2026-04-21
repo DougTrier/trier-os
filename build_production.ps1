@@ -1,4 +1,4 @@
-�# Trier OS � Production Build Script (Clean Databases)
+﻿�# Trier OS � Production Build Script (Clean Databases)
 # Creates a deployable build with empty plant databases + preserved catalogs
 # ======================================================================
 $ErrorActionPreference = "Continue"
