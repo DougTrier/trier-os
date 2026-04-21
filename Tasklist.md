@@ -124,7 +124,7 @@
 | 6 | Handle hub conflict resolution (dual WO auto-create) | ✅ Done | #5 |
 | 7 | Show live plant-device presence in Mission Control | ✅ Done | #2, #3 |
 | 8 | Security — authenticate devices on the LAN hub | ✅ Done | #2 |
-| 9 | Playwright E2E tests for offline LAN sync scenarios | 🔵 Planned | #1–#8 |
+| 9 | Playwright E2E tests for offline LAN sync scenarios | ✅ Done | #1–#8 |
 
 ### Task Details
 
