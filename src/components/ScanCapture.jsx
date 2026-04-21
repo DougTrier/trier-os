@@ -225,6 +225,7 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
                 assetName: data.wo?.description || assetId,
                 woStatus: data.wo ? `WO ${data.wo.number}` : 'New Work Order',
                 branch: data.branch,
+                offline: !!data._offlinePredicted,
             });
             setMode('confirming');
 
@@ -277,6 +278,11 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
                         <div style={{ fontSize: 13, color: '#64748b' }}>
                             {confirmation.woStatus}
                         </div>
+                        {confirmation.offline && (
+                            <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8 }}>
+                                Offline — will sync when connected
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

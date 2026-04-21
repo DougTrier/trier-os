@@ -329,7 +329,21 @@ window.fetch = async (...args) => {
                     await OfflineDB.queueWrite(method, urlStr, payload);
                     console.log(`[Offline] Queued ${method} ${urlStr} for sync`);
 
-                    // Return a synthetic success response
+                    // For scan submissions, predict the branch from cached WO data
+                    // so the operator still sees the correct action prompt offline.
+                    if (urlStr === '/api/scan' && payload?.assetId) {
+                        const predicted = await OfflineDB.predictBranch(payload.assetId, payload.userId);
+                        return new Response(JSON.stringify({
+                            ...predicted,
+                            success: true,
+                            _offlineQueued: true,
+                            scanId: payload.scanId,
+                        }), {
+                            status: 200,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+
                     return new Response(JSON.stringify({
                         success: true,
                         _offlineQueued: true,

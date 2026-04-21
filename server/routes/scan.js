@@ -591,6 +591,24 @@ router.post('/action', (req, res) => {
     }
 });
 
+// ── GET /api/scan/active-segments ────────────────────────────────────────────
+// Returns all currently active WorkSegments for offline caching.
+// Used by the PWA to predict multi-tech branch decisions without a server round-trip.
+router.get('/active-segments', (req, res) => {
+    try {
+        const conn = req.db;
+        const segments = conn.prepare(`
+            SELECT segmentId, woId, userId, startTime, segmentState, origin
+            FROM WorkSegments
+            WHERE segmentState = 'Active'
+            ORDER BY startTime DESC
+        `).all();
+        res.json({ segments });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── GET /api/scan/needs-review ───────────────────────────────────────────────
 // Returns all WOs flagged needsReview=1 for the Mission Control supervisor queue.
 // Separated into AUTO_TIMEOUT and OFFLINE_CONFLICT buckets for distinct surfacing.

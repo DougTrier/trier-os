@@ -14,7 +14,7 @@
  */
 
 const DB_NAME = 'TrierCMMS_Offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 // Store names
 const STORES = {
@@ -23,6 +23,7 @@ const STORES = {
     PARTS: 'parts',
     PM_SCHEDULES: 'pm_schedules',
     CONTACTS: 'contacts',
+    WORK_SEGMENTS: 'work_segments',
     SYNC_QUEUE: 'sync_queue',
     META: 'meta'
 };
@@ -68,6 +69,14 @@ function openDB() {
             // Contacts/Vendors store
             if (!db.objectStoreNames.contains(STORES.CONTACTS)) {
                 db.createObjectStore(STORES.CONTACTS, { keyPath: '_id' });
+            }
+
+            // Work Segments — active labor segments per tech per WO
+            if (!db.objectStoreNames.contains(STORES.WORK_SEGMENTS)) {
+                const segStore = db.createObjectStore(STORES.WORK_SEGMENTS, { keyPath: '_id' });
+                segStore.createIndex('woId', 'woId', { unique: false });
+                segStore.createIndex('userId', 'userId', { unique: false });
+                segStore.createIndex('state', 'segmentState', { unique: false });
             }
 
             // Sync Queue — offline writes waiting to replay
@@ -256,6 +265,25 @@ async function cacheContacts() {
 }
 
 /**
+ * Cache active work segments — used for offline multi-tech branch prediction
+ */
+async function cacheWorkSegments() {
+    try {
+        const res = await fetch('/api/scan/active-segments');
+        if (!res.ok) return { cached: 0 };
+        const data = await res.json();
+        const records = (data.segments || [])
+            .map(r => ({ ...r, _id: r.segmentId }));
+        await clearStore(STORES.WORK_SEGMENTS);
+        const count = await putAll(STORES.WORK_SEGMENTS, records);
+        return { cached: count };
+    } catch (e) {
+        console.warn('[OfflineDB] Failed to cache work segments:', e.message);
+        return { cached: 0, error: e.message };
+    }
+}
+
+/**
  * Full cache refresh — runs on login and every 15 minutes
  * @param {function} onProgress - Optional callback(percent, message)
  */
@@ -266,6 +294,7 @@ async function fullCacheRefresh(onProgress) {
         { fn: cacheParts, label: 'Parts & Inventory', store: STORES.PARTS },
         { fn: cachePMSchedules, label: 'PM Schedules', store: STORES.PM_SCHEDULES },
         { fn: cacheContacts, label: 'Contacts', store: STORES.CONTACTS },
+        { fn: cacheWorkSegments, label: 'Active Segments', store: STORES.WORK_SEGMENTS },
     ];
 
     const results = {};
@@ -401,6 +430,89 @@ async function getMeta(key) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Offline Branch Prediction
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function predictBranch(assetId, currentUserId) {
+    const allWos = await getAll(STORES.WORK_ORDERS);
+    const assetWos = allWos.filter(w => String(w.AstID) === String(assetId));
+
+    const activeWo = assetWos
+        .filter(w => [30, 20].includes(Number(w.StatusID)))
+        .sort((a, b) => (b.ID || 0) - (a.ID || 0))[0];
+
+    if (activeWo) {
+        const allSegments = await getAll(STORES.WORK_SEGMENTS);
+        const woSegments = allSegments.filter(
+            s => String(s.woId) === String(activeWo.ID) && s.segmentState === 'Active'
+        );
+        const mySegment = currentUserId
+            ? woSegments.find(s => s.userId === currentUserId)
+            : null;
+        const otherSegments = currentUserId
+            ? woSegments.filter(s => s.userId !== currentUserId)
+            : woSegments;
+
+        let context, options;
+        if (mySegment && otherSegments.length > 0) {
+            context = 'MULTI_TECH';
+            options = ['LEAVE_WORK', 'TEAM_CLOSE', 'WAITING', 'ESCALATE', 'CONTINUE_LATER'];
+        } else if (!mySegment && otherSegments.length > 0) {
+            context = 'OTHER_USER_ACTIVE';
+            options = ['JOIN', 'TAKE_OVER', 'ESCALATE'];
+        } else {
+            context = 'RESUMED_NO_SEGMENT';
+            options = ['CLOSE_WO', 'WAITING', 'ESCALATE', 'CONTINUE_LATER'];
+        }
+
+        return {
+            branch: 'ROUTE_TO_ACTIVE_WO',
+            context,
+            wo: {
+                id: activeWo.WorkOrderNumber,
+                number: activeWo.WorkOrderNumber,
+                description: activeWo.Description,
+            },
+            activeUsers: otherSegments.map(s => s.userId),
+            options,
+            _offlinePredicted: true,
+        };
+    }
+
+    const waitingWo = assetWos
+        .filter(w => [31, 32, 35].includes(Number(w.StatusID)))
+        .sort((a, b) => (b.ID || 0) - (a.ID || 0))[0];
+
+    if (waitingWo) {
+        return {
+            branch: 'ROUTE_TO_WAITING_WO',
+            wo: {
+                id: waitingWo.WorkOrderNumber,
+                number: waitingWo.WorkOrderNumber,
+                description: waitingWo.Description,
+                holdReason: waitingWo.holdReason,
+                returnAt: waitingWo.returnAt,
+            },
+            options: ['RESUME_WAITING_WO', 'CREATE_NEW_WO', 'VIEW_STATUS'],
+            _offlinePredicted: true,
+        };
+    }
+
+    const assets = await getAll(STORES.ASSETS);
+    const asset = assets.find(a => String(a.ID) === String(assetId));
+    if (!asset) {
+        return { branch: 'ASSET_NOT_FOUND', error: 'Asset not in offline cache', _offlinePredicted: true };
+    }
+
+    return {
+        branch: 'AUTO_CREATE_WO',
+        message: 'Work Started',
+        wo: { description: asset.Description },
+        _offlinePredicted: true,
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Connectivity Monitoring
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -474,11 +586,14 @@ export default {
     cacheParts,
     cachePMSchedules,
     cacheContacts,
+    cacheWorkSegments,
     // Sync queue
     queueWrite,
     getPendingWrites,
     getPendingCount,
     replayQueue,
+    // Offline branch prediction
+    predictBranch,
     // Meta
     setMeta,
     getMeta,
