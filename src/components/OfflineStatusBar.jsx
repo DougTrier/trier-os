@@ -29,6 +29,7 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import OfflineDB from '../utils/OfflineDB.js';
+import LanHub from '../utils/LanHub.js';
 import { useTranslation } from '../i18n/index.jsx';
 
 /**
@@ -43,6 +44,13 @@ export default function OfflineStatusBar() {
     const [syncMessage, setSyncMessage] = useState('');
     const [showBanner, setShowBanner] = useState(false);
     const [dismissed, setDismissed] = useState(false);
+    const [hubTokenExpired, setHubTokenExpired] = useState(false);
+    // syncErrors: detail records from the last failed replayQueue run, stored in
+    // IndexedDB by OfflineDB so they survive a page refresh and can be reviewed
+    // after the banner is dismissed and re-shown on the next offline session.
+    const [syncErrors, setSyncErrors] = useState([]);
+    // showReview toggles the expandable conflict-detail panel below the banner
+    const [showReview, setShowReview] = useState(false);
     const dismissTimer = useRef(null);
 
     useEffect(() => {
@@ -66,6 +74,9 @@ export default function OfflineStatusBar() {
                     if (result.failed > 0 || result.conflicts > 0) {
                         setSyncStatus('error');
                         setSyncMessage(`${result.sent} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
+                        // Load the error detail records replayQueue persisted so
+                        // the Review button can show per-scan failure information
+                        OfflineDB.getSyncErrors().then(errs => setSyncErrors(errs)).catch(() => {});
                     } else {
                         setSyncStatus('done');
                         setSyncMessage(`✅ Back online — ${result.sent} change${result.sent !== 1 ? 's' : ''} synced successfully`);
@@ -88,6 +99,9 @@ export default function OfflineStatusBar() {
                 setSyncMessage('');
             }
         });
+
+        // Show hub token warning when LanHub detects expiry
+        LanHub.onTokenExpired(() => setHubTokenExpired(true));
 
         // Poll pending count every 5s when offline
         const interval = setInterval(async () => {
@@ -123,6 +137,7 @@ export default function OfflineStatusBar() {
                     'rgba(245, 158, 11, 0.95)';
 
     return (
+        <>
         <div style={{
             position: 'fixed',
             top: 0,
@@ -156,6 +171,17 @@ export default function OfflineStatusBar() {
                             🔄 {pendingCount} pending
                         </span>
                     )}
+                    {hubTokenExpired && (
+                        <span style={{
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '2px 10px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            opacity: 0.9,
+                        }}>
+                            ⚠️ {t('offlineStatusBar.hubTokenExpired', 'Hub unavailable — local queue only')}
+                        </span>
+                    )}
                 </>
             )}
 
@@ -171,21 +197,37 @@ export default function OfflineStatusBar() {
             {isError && (
                 <>
                     <span>⚠️ {syncMessage}</span>
-                    <button 
-                        onClick={() => setDismissed(true)}
+                    {syncErrors.length > 0 && (
+                        <button
+                            onClick={() => setShowReview(r => !r)}
+                            style={{
+                                background: 'rgba(255,255,255,0.2)',
+                                border: 'none', color: '#fff',
+                                padding: '4px 12px', borderRadius: '6px',
+                                cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold',
+                            }}
+                        >
+                            {showReview
+                                ? t('offlineStatusBar.hideReview', 'Hide')
+                                : t('offlineStatusBar.reviewIssues', `Review ${syncErrors.length} issue${syncErrors.length !== 1 ? 's' : ''}`)}
+                        </button>
+                    )}
+                    <button
+                        onClick={() => {
+                            OfflineDB.clearSyncErrors().catch(() => {});
+                            setSyncErrors([]);
+                            setShowReview(false);
+                            setDismissed(true);
+                        }}
                         style={{
                             background: 'rgba(255,255,255,0.2)',
-                            border: 'none',
-                            color: '#fff',
-                            padding: '4px 12px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem',
-                            fontWeight: 'bold'
+                            border: 'none', color: '#fff',
+                            padding: '4px 12px', borderRadius: '6px',
+                            cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold',
                         }}
                         title={t('offlineStatusBar.dismissThisSyncErrorNotificationTip')}
                     >
-                        Dismiss
+                        {t('common.dismiss', 'Dismiss')}
                     </button>
                 </>
             )}
@@ -201,5 +243,54 @@ export default function OfflineStatusBar() {
                 }
             `}</style>
         </div>
+
+        {/* Review panel — appears below the banner, not inside it, so the
+            banner itself stays a single compact line even with many errors.
+            zIndex 99997 sits one below the banner (99998) so it slides under
+            rather than overlapping the fixed controls. */}
+        {showReview && syncErrors.length > 0 && (
+            <div style={{
+                position: 'fixed', top: 40, left: 0, right: 0, zIndex: 99997,
+                background: 'rgba(17,24,39,0.97)', backdropFilter: 'blur(12px)',
+                borderBottom: '1px solid rgba(239,68,68,0.3)',
+                padding: '12px 20px', maxHeight: 260, overflowY: 'auto',
+            }}>
+                <div style={{ fontSize: '0.78rem', color: '#f87171', fontWeight: 700, marginBottom: 8 }}>
+                    {t('offlineStatusBar.syncErrorsTitle', 'Sync Errors — Re-scan these assets when the server is available')}
+                </div>
+                {syncErrors.map(err => (
+                    <div key={err.id} style={{
+                        display: 'flex', gap: 12, alignItems: 'center',
+                        padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                        fontSize: '0.78rem', color: '#e2e8f0',
+                    }}>
+                        {/* Color-coded badge: amber for server-side conflicts (409),
+                            red for network errors or permanent failures */}
+                        <span style={{
+                            background: err.syncResult === 'conflict' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
+                            color: err.syncResult === 'conflict' ? '#fbbf24' : '#f87171',
+                            padding: '1px 7px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                        }}>
+                            {err.syncResult === 'conflict' ? 'CONFLICT' : err.syncResult?.toUpperCase()}
+                        </span>
+                        <span style={{ flex: 1 }}>
+                            {err.assetId
+                                ? `${t('offlineStatusBar.asset', 'Asset')} ${err.assetId}`
+                                : err.endpoint}
+                        </span>
+                        {err.scanId && (
+                            <span style={{ opacity: 0.4, fontSize: '0.7rem', fontFamily: 'monospace' }}>
+                                {err.scanId.slice(0, 8)}…
+                            </span>
+                        )}
+                        <span style={{ opacity: 0.4, fontSize: '0.7rem' }}>
+                            {err.timestamp ? new Date(err.timestamp).toLocaleTimeString() : ''}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        )}
+        </>
     );
 }

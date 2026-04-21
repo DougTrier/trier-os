@@ -9154,5 +9154,21 @@
   "manual.zeroScan.sub5": "IV-B.5 Offline Mode",
   "manual.zeroScan.item23": "Scan events captured while offline are queued in IndexedDB on the device.",
   "manual.zeroScan.item24": "When connectivity is restored, the offline-sync endpoint replays the queue in order. Each event is processed exactly as if it arrived live.",
-  "manual.zeroScan.item25": "The conflict resolution rules prioritize: (1) Explicit close, (2) Escalation, (3) Waiting, (4) Continue Later. The resolvedMode and conflictAutoResolved fields in ScanAuditLog record how each conflict was settled."
+  "manual.zeroScan.item25": "The conflict resolution rules prioritize: (1) Explicit close, (2) Escalation, (3) Waiting, (4) Continue Later. The resolvedMode and conflictAutoResolved fields in ScanAuditLog record how each conflict was settled.",
+  "plantNetwork.title": "Plant Network",
+  "plantNetwork.centralServer": "Central Server",
+  "plantNetwork.lanHub": "LAN Hub",
+  "plantNetwork.checking": "Checking…",
+  "plantNetwork.online": "Online",
+  "plantNetwork.unreachable": "Unreachable",
+  "plantNetwork.hubConnected": "Connected · port {{port}}",
+  "plantNetwork.hubRunning": "Running · port {{port}}",
+  "plantNetwork.hubNotRunning": "Not running",
+  "plantNetwork.devices": "Devices",
+  "plantNetwork.devicesConnected": "{{n}} connected",
+  "plantNetwork.refresh": "Refresh",
+  "plantNetwork.deviceUser": "User {{id}}",
+  "plantNetwork.device": "Device",
+  "offlineStatusBar.hubTokenExpired": "Hub unavailable — local queue only",
+  "plantNetwork.cacheStale": "Offline data last updated {{age}}"
 }

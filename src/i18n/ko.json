@@ -9086,5 +9086,21 @@
   "manual.studio.items.72": "잘못된 배포 후 계단식 오류로 인해 UI가 잠기면 NODE_ENV=safe_mode로 서버를 시작하세요. 이는 최신 커밋을 우회하고 가장 최근의 stable-* 태그를 자동으로 로드하므로 사고 발생 시 사람의 판단이 필요하지 않습니다.",
   "manual.studio.items.73": "배포 탭의 긴급 되돌리기 버튼은 UI 내부에서 동일한 복구 경로를 실행합니다. 즉, git tag --list를 통해 최신 stable-* 태그를 확인합니다.",
   "manual.studio.items.74": "모든 되돌리기는 Status=REVERTED, 복원된 태그 및 이를 트리거한 사용자로 원장에 기록됩니다.",
-  "manual.studio.items.75": "오늘의 태그가 이미 존재하는 경우(예: 하루에 두 번 배포) 파이프라인은 오류 없이 태그 다시 지정을 건너뜁니다. 그날의 첫 번째 배포에는 안정적인 앵커가 유지됩니다."
+  "manual.studio.items.75": "오늘의 태그가 이미 존재하는 경우(예: 하루에 두 번 배포) 파이프라인은 오류 없이 태그 다시 지정을 건너뜁니다. 그날의 첫 번째 배포에는 안정적인 앵커가 유지됩니다.",
+  "plantNetwork.title": "공장 네트워크",
+  "plantNetwork.centralServer": "중앙 서버",
+  "plantNetwork.lanHub": "LAN 허브",
+  "plantNetwork.checking": "확인 중…",
+  "plantNetwork.online": "온라인",
+  "plantNetwork.unreachable": "연결 불가",
+  "plantNetwork.hubConnected": "연결됨 · 포트 {{port}}",
+  "plantNetwork.hubRunning": "실행 중 · 포트 {{port}}",
+  "plantNetwork.hubNotRunning": "실행 안 됨",
+  "plantNetwork.devices": "장치",
+  "plantNetwork.devicesConnected": "{{n}}개 연결됨",
+  "plantNetwork.refresh": "새로 고침",
+  "plantNetwork.deviceUser": "사용자 {{id}}",
+  "plantNetwork.device": "장치",
+  "offlineStatusBar.hubTokenExpired": "허브 사용 불가 — 로컬 대기열만 사용",
+  "plantNetwork.cacheStale": "오프라인 데이터 마지막 업데이트: {{age}} 전"
 }

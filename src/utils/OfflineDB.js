@@ -283,6 +283,21 @@ async function cacheWorkSegments() {
     }
 }
 
+// Fetch WorkStatuses from server and persist as meta.statusMap
+async function cacheStatusMap() {
+    const res = await fetch('/api/config/statuses');
+    if (!res.ok) return;
+    const data = await res.json();
+    await setMeta('statusMap', { activeIds: data.activeIds, waitingIds: data.waitingIds });
+}
+
+// Returns { activeIds, waitingIds } from cache, with hardcoded fallback
+async function getStatusIds() {
+    const cached = await getMeta('statusMap').catch(() => null);
+    if (cached?.activeIds?.length) return cached;
+    return { activeIds: [20, 30], waitingIds: [31, 32, 35] };
+}
+
 /**
  * Full cache refresh — runs on login and every 15 minutes
  * @param {function} onProgress - Optional callback(percent, message)
@@ -310,6 +325,9 @@ async function fullCacheRefresh(onProgress) {
             results[step.store] = { cached: 0, error: e.message };
         }
     }
+
+    // Cache WorkStatuses so predictBranch uses real IDs, not hardcoded constants
+    await cacheStatusMap().catch(() => {});
 
     // Save sync timestamp
     await setMeta('lastSync', new Date().toISOString());
@@ -349,7 +367,28 @@ async function queueWrite(method, endpoint, payload) {
  */
 async function getPendingWrites() {
     const all = await getAll(STORES.SYNC_QUEUE);
-    return all.filter(e => !e.synced).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    // Skip hub-submitted entries — the hub owns replay for those scans
+    return all
+        .filter(e => !e.synced && e.syncResult !== 'hub-submitted')
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+// Mark a queued scan as hub-owned so replayQueue won't double-submit it
+async function markHubSubmitted(scanId) {
+    const all = await getAll(STORES.SYNC_QUEUE);
+    const entry = all.find(e => e.payload?.scanId === scanId);
+    if (!entry) return;
+    entry.syncResult = 'hub-submitted';
+    await putAll(STORES.SYNC_QUEUE, [entry]);
+}
+
+// Called when SERVER_ONLINE fires — hub has already replayed these, clean up
+async function clearHubSubmitted() {
+    const all = await getAll(STORES.SYNC_QUEUE);
+    const done = all.filter(e => e.syncResult === 'hub-submitted');
+    if (done.length > 0) {
+        await putAll(STORES.SYNC_QUEUE, done.map(e => ({ ...e, synced: true })));
+    }
 }
 
 /**
@@ -413,7 +452,35 @@ async function replayQueue(onProgress) {
         }
     }
 
+    // Persist error details so OfflineStatusBar can surface them for review
+    if (failed > 0 || conflicts > 0) {
+        const errors = pending
+            .filter(e => e.syncResult && e.syncResult !== 'success')
+            .map(({ id, endpoint, payload, syncResult, timestamp }) => ({
+                id,
+                endpoint,
+                scanId:   payload?.scanId   || null,
+                assetId:  payload?.assetId  || null,
+                syncResult,
+                timestamp,
+            }));
+        await setMeta('syncErrors', errors);
+    }
+
     return { sent, failed, conflicts, total: pending.length };
+}
+
+// Returns the error list persisted by the last replayQueue run.
+// OfflineStatusBar reads this to populate the review panel without
+// needing to re-run the replay or keep the errors in React state.
+async function getSyncErrors() {
+    return (await getMeta('syncErrors')) || [];
+}
+
+// Clears the stored error list once the user has reviewed and dismissed it,
+// so the review panel doesn't reappear on the next offline→online cycle.
+async function clearSyncErrors() {
+    await setMeta('syncErrors', []);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -429,16 +496,57 @@ async function getMeta(key) {
     return record ? record.value : null;
 }
 
+// ── Device-bound HMAC helpers (C3) ───────────────────────────────────────────
+// The device secret lives only in IndexedDB — never in localStorage — so it
+// cannot be read or forged by code that only has localStorage access.  This
+// asymmetry is what makes the HMAC tamper-evident: an attacker who modifies
+// userRole in localStorage cannot regenerate the matching signature without
+// the secret stored in the separate IDB store.
+
+// Generates a 256-bit random secret on first call; returns the cached value
+// on every subsequent call.  One secret per browser profile / origin.
+async function getDeviceSecret() {
+    let secret = await getMeta('_deviceSecret');
+    if (!secret) {
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        secret = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        await setMeta('_deviceSecret', secret);
+    }
+    return secret;
+}
+
+// Signs an arbitrary string with the device secret using HMAC-SHA-256.
+// Returns a lowercase hex digest suitable for localStorage storage.
+async function hmacSign(data) {
+    const secret   = await getDeviceSecret();
+    const key      = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig      = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+    return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Verifies a hex HMAC signature produced by hmacSign.  Returns true only when
+// the data and secret both match — constant-time comparison via SubtleCrypto.
+async function hmacVerify(data, hexSig) {
+    const secret   = await getDeviceSecret();
+    const key      = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    // Convert hex string back to Uint8Array for SubtleCrypto verify
+    const sigBytes = new Uint8Array(hexSig.match(/.{2}/g).map(b => parseInt(b, 16)));
+    return crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(data));
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Offline Branch Prediction
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function predictBranch(assetId, currentUserId) {
+    // Use cached status IDs rather than hardcoded constants so the branch
+    // logic stays accurate even if the plant's WorkStatuses table is customised.
+    const { activeIds, waitingIds } = await getStatusIds();
     const allWos = await getAll(STORES.WORK_ORDERS);
     const assetWos = allWos.filter(w => String(w.AstID) === String(assetId));
 
     const activeWo = assetWos
-        .filter(w => [30, 20].includes(Number(w.StatusID)))
+        .filter(w => activeIds.includes(Number(w.StatusID)))
         .sort((a, b) => (b.ID || 0) - (a.ID || 0))[0];
 
     if (activeWo) {
@@ -480,7 +588,7 @@ async function predictBranch(assetId, currentUserId) {
     }
 
     const waitingWo = assetWos
-        .filter(w => [31, 32, 35].includes(Number(w.StatusID)))
+        .filter(w => waitingIds.includes(Number(w.StatusID)))
         .sort((a, b) => (b.ID || 0) - (a.ID || 0))[0];
 
     if (waitingWo) {
@@ -581,6 +689,8 @@ export default {
     clearStore,
     // Data caching
     fullCacheRefresh,
+    cacheStatusMap,
+    getStatusIds,
     cacheWorkOrders,
     cacheAssets,
     cacheParts,
@@ -592,11 +702,20 @@ export default {
     getPendingWrites,
     getPendingCount,
     replayQueue,
+    markHubSubmitted,
+    clearHubSubmitted,
     // Offline branch prediction
     predictBranch,
     // Meta
     setMeta,
     getMeta,
+    // Sync error review (M3)
+    getSyncErrors,
+    clearSyncErrors,
+    // Device-bound HMAC auth (C3)
+    getDeviceSecret,
+    hmacSign,
+    hmacVerify,
     // Connectivity
     startConnectivityMonitor,
     getOnlineStatus

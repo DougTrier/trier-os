@@ -9092,5 +9092,21 @@
   "manual.studio.items.72": "Se uma falha em cascata bloquear a UI após uma implementação incorreta, inicie o servidor com NODE_ENV=safe_mode. Isso ignora o commit mais recente e carrega a tag stable-* mais recente automaticamente – sem necessidade de julgamento humano durante um incidente.",
   "manual.studio.items.73": "O botão Emergency Revert na guia Deploy executa o mesmo caminho de recuperação de dentro da UI: ele resolve a tag stable-* mais recente via git tag --list",
   "manual.studio.items.74": "Cada reversão é registrada no razão com Status=REVERTED, a tag que foi restaurada e o usuário que a acionou.",
-  "manual.studio.items.75": "Se a tag já existir hoje (por exemplo, você implanta duas vezes em um dia), o pipeline ignora a nova marcação sem erros – a primeira implantação do dia mantém a âncora estável."
+  "manual.studio.items.75": "Se a tag já existir hoje (por exemplo, você implanta duas vezes em um dia), o pipeline ignora a nova marcação sem erros – a primeira implantação do dia mantém a âncora estável.",
+  "plantNetwork.title": "Rede da Planta",
+  "plantNetwork.centralServer": "Servidor Central",
+  "plantNetwork.lanHub": "Hub LAN",
+  "plantNetwork.checking": "Verificando…",
+  "plantNetwork.online": "Online",
+  "plantNetwork.unreachable": "Inacessível",
+  "plantNetwork.hubConnected": "Conectado · porta {{port}}",
+  "plantNetwork.hubRunning": "Ativo · porta {{port}}",
+  "plantNetwork.hubNotRunning": "Inativo",
+  "plantNetwork.devices": "Dispositivos",
+  "plantNetwork.devicesConnected": "{{n}} conectados",
+  "plantNetwork.refresh": "Atualizar",
+  "plantNetwork.deviceUser": "Usuário {{id}}",
+  "plantNetwork.device": "Dispositivo",
+  "offlineStatusBar.hubTokenExpired": "Hub indisponível — apenas fila local",
+  "plantNetwork.cacheStale": "Dados offline atualizados há {{age}}"
 }

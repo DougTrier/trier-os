@@ -335,9 +335,13 @@ window.fetch = async (...args) => {
                         // Ensure hub is connected — connect now if not already
                         if (!LanHub.isConnected()) LanHub.connect();
 
-                        // Submit to hub (fire-and-forget; hub broadcasts WO_STATE_CHANGED)
+                        // Submit to hub; if accepted mark the IndexedDB entry so
+                        // replayQueue won't double-submit it when the server returns
                         const plantId = localStorage.getItem('nativePlantId') || localStorage.getItem('selectedPlantId');
-                        LanHub.submitScan({ ...payload, plantId });
+                        const hubSent = LanHub.submitScan({ ...payload, plantId });
+                        if (hubSent && payload.scanId) {
+                            OfflineDB.markHubSubmitted(payload.scanId).catch(() => {});
+                        }
 
                         // Still return a local branch prediction so the UI shows immediately
                         const predicted = await OfflineDB.predictBranch(payload.assetId, payload.userId);
@@ -406,6 +410,11 @@ window.fetch = async (...args) => {
 import('./utils/LanHub.js').then(({ default: LanHub }) => {
     LanHub.onServerOnline(() => {
         console.log('[LanHub] Central server restored — hub disconnected, normal flow resumed');
+        // Hub has replayed hub-submitted scans; mark them synced so replayQueue
+        // cleans them up rather than trying to submit them again
+        import('./utils/OfflineDB.js').then(({ default: OfflineDB }) => {
+            OfflineDB.clearHubSubmitted().catch(() => {});
+        }).catch(() => {});
     });
     LanHub.onWoStateChanged((msg) => {
         console.log('[LanHub] WO state changed:', msg.assetId, msg.branch);

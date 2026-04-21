@@ -846,6 +846,7 @@ console.log('[BOOT] Stage 7: Mounting API routes...');
 app.use('/api/leadership', require('./routes/leadership'));
 app.use('/api/work-orders', require('./routes/workOrders'));
 app.use('/api/scan',        require('./routes/scan'));         // Scan State Machine (P1)
+app.use('/api/config',      require('./routes/config'));       // PWA config cache (status IDs)
 app.use('/api/assets', require('./routes/assets'));
 app.use('/api/parts', require('./routes/parts'));
 app.use('/api/contacts', require('./routes/contacts'));
@@ -2081,7 +2082,7 @@ app.listen(PORT, '0.0.0.0', async () => {
     // ── LAN Hub — only boots inside Electron desktop app ─────────────────────
     // Allows PWA devices on the same plant LAN to stay in sync when the central
     // server is unreachable. Hub listens on port 1940.
-    if (process.env.ELECTRON_EMBEDDED === 'true') {
+    if (process.env.ELECTRON_EMBEDDED === 'true' || process.env.LAN_HUB_ENABLED === 'true') {
         try {
             const lanHub = require('./lan_hub');
             const centralUrl = `http://localhost:${PORT}`;

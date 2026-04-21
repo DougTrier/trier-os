@@ -37,6 +37,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Hash, Scan, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { BrowserMultiFormatReader } from '@zxing/library';
 import { useTranslation } from '../i18n/index.jsx';
+import OfflineDB from '../utils/OfflineDB.js';
 
 // Keyboard-wedge scanners burst a full barcode in <100ms then send Enter.
 // We allow up to 80ms between characters to classify input as a scanner burst.
@@ -200,6 +201,9 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
             : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
         const deviceTimestamp = new Date().toISOString();
+
+        // Save session before the network call so a crash mid-flight is recoverable
+        OfflineDB.setMeta('scanSession', { step: 'submitting', pendingAssetId: assetId, submittedAt: Date.now() }).catch(() => {});
 
         try {
             const res = await fetch('/api/scan', {

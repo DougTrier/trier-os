@@ -14,7 +14,10 @@
  * Message protocol (JSON over WebSocket):
  *   Client → Hub:   { type: 'PING' }
  *   Client → Hub:   { type: 'SCAN', scanId, assetId, userId, plantId, deviceTimestamp, action? }
+ *   Client → Hub:   { type: 'SYNC_PENDING', scanIds: string[], plantId } — dedup on reconnect
  *   Hub → Client:   { type: 'PONG' }
+ *   Hub → Client:   { type: 'SCAN_ACK', scanId, ...branch, _hubBroadcast: true }
+ *   Hub → Client:   { type: 'SYNC_ACK', acknowledged: string[] }
  *   Hub → Client:   { type: 'WO_STATE_CHANGED', assetId, branch, wo, options, _hubBroadcast: true }
  *   Hub → Client:   { type: 'SERVER_ONLINE' }
  *   Hub → All:      { type: 'DEVICE_LIST', devices: [{deviceId, userId, connectedAt}] }
@@ -30,8 +33,34 @@ const crypto             = require('crypto');
 
 const HUB_PORT = 1940;
 
-// ── Status codes mirrored from server/routes/scan.js ─────────────────────────
-const STATUS = { OPEN: 20, IN_PROGRESS: 30, WAITING_PARTS: 31, WAITING_VENDOR: 32, ON_HOLD: 35 };
+// ── Status ID helpers — read from WorkStatuses table, fallback to defaults ────
+// Hardcoded values are kept as a safety net; the table query runs per-plant DB.
+// Using description-pattern matching rather than fixed IDs means the hub stays
+// correct even if a plant admin renames or renumbers their WorkStatuses rows.
+// The fallback kicks in when WorkStatuses is empty or the query throws (e.g.
+// during hub startup before the DB migration has run).
+const _STATUS_DEFAULTS = { activeIds: [20, 30], waitingIds: [31, 32, 35] };
+// Substring patterns matched case-insensitively against WorkStatuses.Description
+const ACTIVE_PATTERNS  = ['open', 'in progress', 'in-progress'];
+const WAITING_PATTERNS = ['waiting', 'on hold', 'hold', 'vendor', 'parts'];
+
+// Called once per predictBranch invocation; the caller already holds an open DB
+// connection so no extra open/close overhead is incurred here.
+function getStatusIds(db) {
+    try {
+        const rows = db.prepare('SELECT ID, Description FROM WorkStatuses').all();
+        const activeIds  = rows.filter(r => ACTIVE_PATTERNS.some(p  => r.Description.toLowerCase().includes(p))).map(r => r.ID);
+        const waitingIds = rows.filter(r => WAITING_PATTERNS.some(p => r.Description.toLowerCase().includes(p))).map(r => r.ID);
+        // Only substitute if we found at least one matching row; otherwise the
+        // pattern list needs updating rather than silently using an empty array.
+        return {
+            activeIds:  activeIds.length  ? activeIds  : _STATUS_DEFAULTS.activeIds,
+            waitingIds: waitingIds.length ? waitingIds : _STATUS_DEFAULTS.waitingIds,
+        };
+    } catch {
+        return _STATUS_DEFAULTS;
+    }
+}
 
 let _hub  = null; // WebSocketServer instance
 let _http = null; // Underlying HTTP server
@@ -102,7 +131,15 @@ function getPendingScans(dataDir, plantId) {
     const db = getPlantDb(dataDir, plantId);
     try {
         ensureQueue(db);
-        return db.prepare(`SELECT * FROM OfflineScanQueue WHERE syncStatus='PENDING' ORDER BY queuedAt ASC`).all();
+        // Include DEDUP_CLIENT entries older than 10 minutes as a fallback — if the
+        // client told us it would handle its scans but never came back online, the hub
+        // picks them up so no scan is permanently lost.
+        return db.prepare(`
+            SELECT * FROM OfflineScanQueue
+            WHERE syncStatus = 'PENDING'
+               OR (syncStatus = 'DEDUP_CLIENT' AND queuedAt < datetime('now', '-10 minutes'))
+            ORDER BY queuedAt ASC
+        `).all();
     } finally {
         db.close();
     }
@@ -113,9 +150,11 @@ function getPendingScans(dataDir, plantId) {
 function predictBranch(dataDir, plantId, assetId, userId) {
     const db = getPlantDb(dataDir, plantId);
     try {
+        const { activeIds, waitingIds } = getStatusIds(db);
+
         const activeWo = db.prepare(`
             SELECT ID, WorkOrderNumber, Description FROM Work
-            WHERE AstID = ? AND StatusID IN (${STATUS.IN_PROGRESS}, ${STATUS.OPEN})
+            WHERE AstID = ? AND StatusID IN (${activeIds.join(',')})
             ORDER BY ID DESC LIMIT 1
         `).get(assetId);
 
@@ -149,7 +188,7 @@ function predictBranch(dataDir, plantId, assetId, userId) {
 
         const waitingWo = db.prepare(`
             SELECT ID, WorkOrderNumber, Description, holdReason, returnAt FROM Work
-            WHERE AstID = ? AND StatusID IN (${STATUS.WAITING_PARTS}, ${STATUS.WAITING_VENDOR}, ${STATUS.ON_HOLD})
+            WHERE AstID = ? AND StatusID IN (${waitingIds.join(',')})
             ORDER BY ID DESC LIMIT 1
         `).get(assetId);
 
@@ -173,16 +212,21 @@ function predictBranch(dataDir, plantId, assetId, userId) {
     }
 }
 
-// ── Conflict detection — dual AUTO_CREATE for same asset ─────────────────────
+// ── Conflict detection — dual AUTO_CREATE for same asset within 30s window ────
+// Returns true if another PENDING scan for this asset was queued in the last
+// 30 seconds, meaning a second AUTO_CREATE would create a duplicate WO.
 
-function checkConflict(dataDir, plantId, assetId) {
+function checkRecentAutoCreate(dataDir, plantId, assetId) {
     const db = getPlantDb(dataDir, plantId);
     try {
-        const pending = db.prepare(`
+        ensureQueue(db);
+        const row = db.prepare(`
             SELECT COUNT(*) as cnt FROM OfflineScanQueue
-            WHERE assetId = ? AND syncStatus = 'PENDING'
+            WHERE assetId    = ?
+              AND syncStatus  = 'PENDING'
+              AND queuedAt   > datetime('now', '-30 seconds')
         `).get(assetId);
-        return pending.cnt > 1;
+        return row.cnt > 0;
     } finally {
         db.close();
     }
@@ -265,22 +309,43 @@ function handleMessage(ws, raw, dataDir) {
         return;
     }
 
+    // Client declares its pending scanIds on connect so the hub won't double-replay
+    // them to the central server when it comes back online. The hub marks those rows
+    // DEDUP_CLIENT and skips them in replayToServer. A 10-minute fallback in
+    // getPendingScans ensures no scan is lost if the client fails to sync.
+    if (msg.type === 'SYNC_PENDING') {
+        const { scanIds, plantId: msgPlantId } = msg;
+        const plantId = msgPlantId || client?.plantId;
+        if (!Array.isArray(scanIds) || !plantId || scanIds.length === 0) return;
+
+        const db = getPlantDb(dataDir, plantId);
+        try {
+            ensureQueue(db);
+            const mark = db.prepare(`
+                UPDATE OfflineScanQueue SET syncStatus = 'DEDUP_CLIENT'
+                WHERE scanId = ? AND syncStatus = 'PENDING'
+            `);
+            const acked = [];
+            for (const scanId of scanIds) {
+                const info = mark.run(scanId);
+                if (info.changes > 0) acked.push(scanId);
+            }
+            ws.send(JSON.stringify({ type: 'SYNC_ACK', acknowledged: acked }));
+            if (acked.length > 0) {
+                console.log(`[LAN_HUB] Deduped ${acked.length} client-owned scans for plant=${plantId}`);
+            }
+        } finally {
+            db.close();
+        }
+        return;
+    }
+
     if (msg.type === 'SCAN') {
         const { scanId, assetId, userId, plantId: msgPlantId, deviceTimestamp, action } = msg;
         const plantId = msgPlantId || client?.plantId;
         if (!scanId || !assetId || !plantId) return;
 
-        // Store in queue (idempotent)
-        const result = queueScan(dataDir, plantId, { scanId, assetId, userId, deviceTimestamp, action });
-        if (result.duplicate) {
-            ws.send(JSON.stringify({ type: 'SCAN_ACK', scanId, duplicate: true }));
-            return;
-        }
-
-        // Detect dual auto-create conflict
-        const hasConflict = checkConflict(dataDir, plantId, assetId);
-
-        // Predict branch from live plant DB
+        // Predict branch BEFORE queuing so we can gate on the result
         let branch;
         try {
             branch = predictBranch(dataDir, plantId, assetId, userId);
@@ -289,23 +354,34 @@ function handleMessage(ws, raw, dataDir) {
             branch = { branch: 'AUTO_CREATE_WO', message: 'Work Started' };
         }
 
-        const response = {
-            ...branch,
-            scanId,
-            _hubBroadcast: true,
-            _conflictDetected: hasConflict,
-        };
+        // Block a second AUTO_CREATE for the same asset within a 30-second window.
+        // Without this, two devices scanning simultaneously both create WOs and
+        // a duplicate appears when the server replays the queue.
+        if (branch.branch === 'AUTO_CREATE_WO' && checkRecentAutoCreate(dataDir, plantId, assetId)) {
+            console.log(`[LAN_HUB] Blocked duplicate AUTO_CREATE for asset=${assetId} by user=${userId}`);
+            ws.send(JSON.stringify({
+                type:    'SCAN_ACK',
+                scanId,
+                branch:  'CONFLICT_AUTO_CREATE',
+                _hubBroadcast: true,
+                error:   'Another technician is already creating a work order for this asset. Please wait a moment and scan again to join.',
+                options: ['WAIT_AND_RETRY'],
+            }));
+            return;
+        }
+
+        // Store in queue (idempotent on scanId)
+        const result = queueScan(dataDir, plantId, { scanId, assetId, userId, deviceTimestamp, action });
+        if (result.duplicate) {
+            ws.send(JSON.stringify({ type: 'SCAN_ACK', scanId, duplicate: true }));
+            return;
+        }
 
         // Acknowledge to the sending device
-        ws.send(JSON.stringify({ type: 'SCAN_ACK', ...response }));
+        ws.send(JSON.stringify({ type: 'SCAN_ACK', ...branch, scanId, _hubBroadcast: true }));
 
         // Broadcast WO state change to all other connected devices
-        broadcast({
-            type: 'WO_STATE_CHANGED',
-            assetId,
-            ...branch,
-            _hubBroadcast: true,
-        });
+        broadcast({ type: 'WO_STATE_CHANGED', assetId, ...branch, _hubBroadcast: true });
 
         console.log(`[LAN_HUB] Scan queued: ${scanId} asset=${assetId} user=${userId} plant=${plantId} branch=${branch.branch}`);
     }

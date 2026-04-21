@@ -9091,5 +9091,21 @@
   "manual.studio.items.72": "Wenn ein kaskadierender Fehler die Benutzeroberfläche nach einer fehlerhaften Bereitstellung sperrt, starten Sie den Server mit NODE_ENV=safe_mode. Dadurch wird der letzte Commit umgangen und das neueste Stable-*-Tag automatisch geladen – während eines Vorfalls ist kein menschliches Urteilsvermögen erforderlich.",
   "manual.studio.items.73": "Die Schaltfläche „Notfallwiederherstellung“ auf der Registerkarte „Bereitstellen“ führt denselben Wiederherstellungspfad innerhalb der Benutzeroberfläche aus: Sie löst das neueste Stable-*-Tag über git tag --list auf",
   "manual.studio.items.74": "Jede Wiederherstellung wird im Hauptbuch mit Status=REVERTED, dem wiederhergestellten Tag und dem Benutzer, der sie ausgelöst hat, aufgezeichnet.",
-  "manual.studio.items.75": "Wenn das Tag für heute bereits vorhanden ist (z. B. wenn Sie es zweimal an einem Tag bereitstellen), überspringt die Pipeline das erneute Taggen ohne Fehler – die erste Bereitstellung des Tages enthält den stabilen Anker."
+  "manual.studio.items.75": "Wenn das Tag für heute bereits vorhanden ist (z. B. wenn Sie es zweimal an einem Tag bereitstellen), überspringt die Pipeline das erneute Taggen ohne Fehler – die erste Bereitstellung des Tages enthält den stabilen Anker.",
+  "plantNetwork.title": "Werknetzwerk",
+  "plantNetwork.centralServer": "Zentralserver",
+  "plantNetwork.lanHub": "LAN-Hub",
+  "plantNetwork.checking": "Prüfen…",
+  "plantNetwork.online": "Online",
+  "plantNetwork.unreachable": "Nicht erreichbar",
+  "plantNetwork.hubConnected": "Verbunden · Port {{port}}",
+  "plantNetwork.hubRunning": "Aktiv · Port {{port}}",
+  "plantNetwork.hubNotRunning": "Inaktiv",
+  "plantNetwork.devices": "Geräte",
+  "plantNetwork.devicesConnected": "{{n}} verbunden",
+  "plantNetwork.refresh": "Aktualisieren",
+  "plantNetwork.deviceUser": "Benutzer {{id}}",
+  "plantNetwork.device": "Gerät",
+  "offlineStatusBar.hubTokenExpired": "Hub nicht verfügbar — nur lokale Warteschlange",
+  "plantNetwork.cacheStale": "Offline-Daten zuletzt aktualisiert vor {{age}}"
 }

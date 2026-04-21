@@ -9092,5 +9092,21 @@
   "manual.studio.items.72": "如果在错误部署后级联故障锁定了 UI，请使用 NODE_ENV=safe_mode 启动服务器。 这会绕过最新的提交并自动加载最新的 stable-* 标签——在事件期间不需要人为判断。",
   "manual.studio.items.73": "部署选项卡中的紧急恢复按钮从 UI 内部执行相同的恢复路径：它通过 git tag --list 解析最新的 stable-* 标记",
   "manual.studio.items.74": "每次恢复都会以 Status=REVERTED、恢复的标签以及触发它的用户记录在分类帐中。",
-  "manual.studio.items.75": "如果今天的标签已经存在（例如，您在一天内部署两次），则管道会跳过重新标记而不会出现错误 - 当天的第一次部署保持稳定的锚点。"
+  "manual.studio.items.75": "如果今天的标签已经存在（例如，您在一天内部署两次），则管道会跳过重新标记而不会出现错误 - 当天的第一次部署保持稳定的锚点。",
+  "plantNetwork.title": "工厂网络",
+  "plantNetwork.centralServer": "中央服务器",
+  "plantNetwork.lanHub": "局域网中枢",
+  "plantNetwork.checking": "检查中…",
+  "plantNetwork.online": "在线",
+  "plantNetwork.unreachable": "无法访问",
+  "plantNetwork.hubConnected": "已连接 · 端口 {{port}}",
+  "plantNetwork.hubRunning": "运行中 · 端口 {{port}}",
+  "plantNetwork.hubNotRunning": "未运行",
+  "plantNetwork.devices": "设备",
+  "plantNetwork.devicesConnected": "{{n}} 台已连接",
+  "plantNetwork.refresh": "刷新",
+  "plantNetwork.deviceUser": "用户 {{id}}",
+  "plantNetwork.device": "设备",
+  "offlineStatusBar.hubTokenExpired": "Hub 不可用 — 仅使用本地队列",
+  "plantNetwork.cacheStale": "离线数据上次更新于 {{age}}"
 }

@@ -9092,5 +9092,21 @@
   "manual.studio.items.72": "Si una falla en cascada bloquea la interfaz de usuario después de una implementación incorrecta, inicie el servidor con NODE_ENV=safe_mode. Esto omite la última confirmación y carga automáticamente la etiqueta stable-* más reciente, sin necesidad de juicio humano durante un incidente.",
   "manual.studio.items.73": "El botón Reversión de emergencia en la pestaña Implementar ejecuta la misma ruta de recuperación desde dentro de la interfaz de usuario: resuelve la última etiqueta stable-* mediante la etiqueta git --list",
   "manual.studio.items.74": "Cada reversión se registra en el libro mayor con Estado=REVERTED, la etiqueta que se restauró y el usuario que la activó.",
-  "manual.studio.items.75": "Si la etiqueta ya existe para hoy (por ejemplo, implementa dos veces en un día), la canalización omite el reetiquetado sin error: la primera implementación del día mantiene el ancla estable."
+  "manual.studio.items.75": "Si la etiqueta ya existe para hoy (por ejemplo, implementa dos veces en un día), la canalización omite el reetiquetado sin error: la primera implementación del día mantiene el ancla estable.",
+  "plantNetwork.title": "Red de Planta",
+  "plantNetwork.centralServer": "Servidor Central",
+  "plantNetwork.lanHub": "Hub LAN",
+  "plantNetwork.checking": "Verificando…",
+  "plantNetwork.online": "En línea",
+  "plantNetwork.unreachable": "Sin conexión",
+  "plantNetwork.hubConnected": "Conectado · puerto {{port}}",
+  "plantNetwork.hubRunning": "Activo · puerto {{port}}",
+  "plantNetwork.hubNotRunning": "No activo",
+  "plantNetwork.devices": "Dispositivos",
+  "plantNetwork.devicesConnected": "{{n}} conectados",
+  "plantNetwork.refresh": "Actualizar",
+  "plantNetwork.deviceUser": "Usuario {{id}}",
+  "plantNetwork.device": "Dispositivo",
+  "offlineStatusBar.hubTokenExpired": "Hub no disponible — solo cola local",
+  "plantNetwork.cacheStale": "Datos sin conexión actualizados hace {{age}}"
 }

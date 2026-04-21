@@ -9092,5 +9092,21 @@
   "manual.studio.items.72": "不適切なデプロイ後にカスケード障害が発生して UI がロックアウトされた場合は、NODE_ENV=safe_mode を使用してサーバーを起動します。 これにより、最新のコミットがバイパスされ、最新の安定した-* タグが自動的にロードされます。インシデント中に人間による判断は必要ありません。",
   "manual.studio.items.73": "「デプロイ」タブの「緊急復帰」ボタンは、UI 内から同じリカバリー・パスを実行します。これは、git tag --list を介して最新の Stable-* タグを解決します。",
   "manual.studio.items.74": "すべての取り消しは、Status=REVERTED、復元されたタグ、および取り消しをトリガーしたユーザーで台帳に記録されます。",
-  "manual.studio.items.75": "今日のタグがすでに存在する場合 (たとえば、1 日に 2 回デプロイする場合)、パイプラインはエラーなしで再タグ付けをスキップします。その日の最初のデプロイは安定したアンカーを保持します。"
+  "manual.studio.items.75": "今日のタグがすでに存在する場合 (たとえば、1 日に 2 回デプロイする場合)、パイプラインはエラーなしで再タグ付けをスキップします。その日の最初のデプロイは安定したアンカーを保持します。",
+  "plantNetwork.title": "工場ネットワーク",
+  "plantNetwork.centralServer": "中央サーバー",
+  "plantNetwork.lanHub": "LANハブ",
+  "plantNetwork.checking": "確認中…",
+  "plantNetwork.online": "オンライン",
+  "plantNetwork.unreachable": "接続不可",
+  "plantNetwork.hubConnected": "接続済み · ポート {{port}}",
+  "plantNetwork.hubRunning": "稼働中 · ポート {{port}}",
+  "plantNetwork.hubNotRunning": "停止中",
+  "plantNetwork.devices": "デバイス",
+  "plantNetwork.devicesConnected": "{{n}} 台接続中",
+  "plantNetwork.refresh": "更新",
+  "plantNetwork.deviceUser": "ユーザー {{id}}",
+  "plantNetwork.device": "デバイス",
+  "offlineStatusBar.hubTokenExpired": "ハブ利用不可 — ローカルキューのみ",
+  "plantNetwork.cacheStale": "オフラインデータの最終更新: {{age}}"
 }

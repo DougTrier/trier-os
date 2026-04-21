@@ -45,6 +45,7 @@ export default function ScannerWorkspace({ plantId }) {
     // pendingAssetId is stored in state so it can be explicitly cleared after first use,
     // preventing ScanCapture from re-auto-submitting when it remounts after an action.
     const [pendingAssetId, setPendingAssetId] = useState(location.state?.pendingAssetId || null);
+    const [resumePrompt, setResumePrompt]     = useState(null); // { pendingAssetId } — stale submitting session
 
     // ── Session save/restore — survives app close while server is down ────────
     const SESSION_KEY = 'scanSession';
@@ -56,6 +57,10 @@ export default function ScannerWorkspace({ plantId }) {
                 setScanResult(saved.scanResult);
                 setPendingAssetId(saved.pendingAssetId || null);
                 setStep('prompt');
+            } else if (saved.step === 'submitting' && saved.submittedAt && (Date.now() - saved.submittedAt) < 60000) {
+                // App crashed mid-flight — offer to re-scan the same asset
+                setResumePrompt({ pendingAssetId: saved.pendingAssetId });
+                OfflineDB.setMeta(SESSION_KEY, null).catch(() => {});
             }
         }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,6 +126,61 @@ export default function ScannerWorkspace({ plantId }) {
                     {t('app.missionControl', 'Mission Control')}
                 </button>
             </div>
+
+            {/* ── Resume prompt — shown when app crashed mid-scan ───────── */}
+            {/* ScanCapture wrote a 'submitting' session to IndexedDB before
+                the fetch; if the app crashed or the tab closed before the
+                server responded, this prompt appears on the next open so the
+                tech knows to verify the scan landed or re-scan the asset.
+                Re-scan button restores pendingAssetId so ScanCapture
+                auto-submits immediately without requiring another physical scan. */}
+            {resumePrompt && (
+                <div style={{
+                    maxWidth: 440, margin: '0 auto 20px',
+                    background: 'rgba(245,158,11,0.12)',
+                    border: '1px solid rgba(245,158,11,0.35)',
+                    borderRadius: 10, padding: '14px 18px',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    fontSize: '0.85rem', color: '#fcd34d',
+                }}>
+                    <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+                    <span style={{ flex: 1 }}>
+                        {t('scanner.resumePrompt', 'Your last scan may not have completed — check status or re-scan.')}
+                        {/* Show the asset ID so the tech can verify in the WO list
+                            before deciding whether to re-scan or dismiss */}
+                        {resumePrompt.pendingAssetId && (
+                            <span style={{ opacity: 0.7, marginLeft: 6, fontSize: '0.75rem' }}>
+                                ({resumePrompt.pendingAssetId})
+                            </span>
+                        )}
+                    </span>
+                    {/* Clicking Re-scan injects the saved assetId back into
+                        ScanCapture via pendingAssetId, triggering auto-submit */}
+                    <button
+                        onClick={() => {
+                            if (resumePrompt.pendingAssetId) setPendingAssetId(resumePrompt.pendingAssetId);
+                            setResumePrompt(null);
+                        }}
+                        style={{
+                            background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)',
+                            borderRadius: 6, color: '#fcd34d', padding: '4px 10px',
+                            cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                        }}
+                    >
+                        {t('scanner.reScan', 'Re-scan')}
+                    </button>
+                    <button
+                        onClick={() => setResumePrompt(null)}
+                        style={{
+                            background: 'none', border: 'none',
+                            color: 'rgba(252,211,77,0.5)', cursor: 'pointer', fontSize: '1rem',
+                        }}
+                        title={t('common.dismiss', 'Dismiss')}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
 
             {/* ── Main content area ─────────────────────────────────────── */}
             <div style={{ maxWidth: 440, margin: '0 auto' }}>

@@ -29,7 +29,23 @@ const _handlers = {
     serverOnline:    [],  // () => void
     scanAck:         [],  // (data) => void
     statusChange:    [],  // (connected: boolean) => void
+    tokenExpired:    [],  // () => void — hub JWT expired while server is down
 };
+
+// ── Token expiry check ────────────────────────────────────────────────────────
+
+// Decodes the hubToken JWT payload and returns true if expired or within 5 min.
+// No network call needed — just reads localStorage and checks the exp claim.
+function _isTokenExpired() {
+    const token = localStorage.getItem('hubToken');
+    if (!token) return true;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return (payload.exp * 1000) < (Date.now() + 5 * 60 * 1000);
+    } catch {
+        return true;
+    }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -53,6 +69,12 @@ function setConnected(val) {
 
 function connect() {
     if (_ws && (_ws.readyState === WebSocket.OPEN || _ws.readyState === WebSocket.CONNECTING)) return;
+
+    if (_isTokenExpired()) {
+        console.warn('[LanHub] Hub token is expired — cannot connect. Tech must log in when server returns.');
+        emit('tokenExpired');
+        return;
+    }
 
     const url = getHubUrl();
     if (!url) {
@@ -168,6 +190,11 @@ function _handleMessage(msg) {
 // ── Scan submission ───────────────────────────────────────────────────────────
 
 function submitScan(payload) {
+    if (_isTokenExpired()) {
+        console.warn('[LanHub] Hub token expired — scan stays in IndexedDB queue only');
+        emit('tokenExpired');
+        return false;
+    }
     if (!_connected || _ws?.readyState !== WebSocket.OPEN) {
         console.warn('[LanHub] Not connected — scan will stay in IndexedDB queue');
         return false;
@@ -185,12 +212,26 @@ async function _replayQueue() {
         const pending = await OfflineDB.getPendingWrites();
         const scans   = pending.filter(e => e.endpoint === '/api/scan' && e.payload?.scanId);
 
-        for (const entry of scans) {
-            const sent = submitScan({
-                ...entry.payload,
+        if (scans.length === 0) return;
+
+        // Tell the hub which scanIds this client owns so it won't double-replay them
+        // when the central server returns. The hub marks these DEDUP_CLIENT and skips
+        // them in replayToServer; the client syncs them directly via OfflineDB.replayQueue.
+        if (_ws?.readyState === WebSocket.OPEN) {
+            _ws.send(JSON.stringify({
+                type:    'SYNC_PENDING',
+                scanIds: scans.map(e => e.payload.scanId),
                 plantId,
-            });
-            if (sent) console.log(`[LanHub] Replayed queued scan ${entry.payload.scanId} to hub`);
+            }));
+        }
+
+        for (const entry of scans) {
+            const sent = submitScan({ ...entry.payload, plantId });
+            if (sent) {
+                console.log(`[LanHub] Replayed queued scan ${entry.payload.scanId} to hub`);
+                // Mark so replayQueue doesn't also submit this scan when server returns
+                OfflineDB.markHubSubmitted(entry.payload.scanId).catch(() => {});
+            }
         }
     } catch (err) {
         console.warn('[LanHub] Queue replay failed:', err.message);
@@ -216,6 +257,21 @@ async function _updateLocalCache(msg) {
             };
             existing.StatusID = statusMap[branch] ?? existing.StatusID;
             await OfflineDB.putAll('work_orders', [existing]);
+
+            // Close active work segments when the WO leaves IN_PROGRESS
+            // ROUTE_TO_WAITING_WO: WO put on hold — no one actively working
+            // CLOSE_WO / DESK_CLOSE: WO completed — segments must be closed so
+            // predictBranch doesn't show a stale MULTI_TECH or OTHER_USER_ACTIVE context
+            const closesSegmentsOn = new Set(['ROUTE_TO_WAITING_WO', 'CLOSE_WO', 'DESK_CLOSE']);
+            if (closesSegmentsOn.has(branch)) {
+                const allSegments = await OfflineDB.getAll('work_segments');
+                const active = allSegments.filter(
+                    s => String(s.woId) === String(existing.ID) && s.segmentState === 'Active'
+                );
+                if (active.length > 0) {
+                    await OfflineDB.putAll('work_segments', active.map(s => ({ ...s, segmentState: 'Closed' })));
+                }
+            }
         }
     } catch (_) {}
 }
@@ -227,18 +283,22 @@ function onDeviceList(fn)      { _handlers.deviceList.push(fn); }
 function onServerOnline(fn)    { _handlers.serverOnline.push(fn); }
 function onScanAck(fn)         { _handlers.scanAck.push(fn); }
 function onStatusChange(fn)    { _handlers.statusChange.push(fn); }
+function onTokenExpired(fn)    { _handlers.tokenExpired.push(fn); }
 
 function isConnected()         { return _connected; }
+function isTokenExpired()      { return _isTokenExpired(); }
 
 export default {
     connect,
     disconnect,
     submitScan,
     isConnected,
+    isTokenExpired,
     onWoStateChanged,
     onDeviceList,
     onServerOnline,
     onScanAck,
     onStatusChange,
+    onTokenExpired,
     HUB_PORT,
 };

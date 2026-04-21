@@ -206,12 +206,23 @@ function App() {
     useEffect(() => {
         fetch('/api/auth/me')
             .then(r => setIsAuthenticated(r.ok))
-            .catch(() => {
-                const hasSession = !!(
-                    localStorage.getItem('userId') ||
-                    localStorage.getItem('currentUser')
-                );
-                setIsAuthenticated(hasSession);
+            .catch(async () => {
+                const currentUser = localStorage.getItem('currentUser') || localStorage.getItem('userId');
+                if (!currentUser) { setIsAuthenticated(false); return; }
+
+                const profileJson = localStorage.getItem(`offlineProfile_${currentUser}`);
+                const storedSig   = localStorage.getItem(`offlineSig_${currentUser}`);
+
+                if (profileJson && storedSig) {
+                    try {
+                        const { default: OfflineDB } = await import('./utils/OfflineDB.js');
+                        const valid = await OfflineDB.hmacVerify(profileJson, storedSig);
+                        setIsAuthenticated(valid);
+                        return;
+                    } catch (_) {}
+                }
+                // No signed profile yet (pre-C3 device) — trust localStorage presence
+                setIsAuthenticated(true);
             });
     }, []);
 
@@ -625,15 +636,35 @@ function App() {
         } catch {}
 
         // 2) Check maintenance assets → route to scan state machine
-        try {
-            const r = await fetch(`/api/assets/${encodeURIComponent(cleanCode)}`, { headers: authHeaders });
-            const d = await r.json();
-            if (r.ok && d.ID) {
+        //    2-second timeout; falls back to IndexedDB cache when server is unreachable.
+        {
+            let assetFound = false;
+            try {
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 2000);
+                const r    = await fetch(`/api/assets/${encodeURIComponent(cleanCode)}`, { headers: authHeaders, signal: ctrl.signal });
+                clearTimeout(tid);
+                const d = await r.json();
+                if (r.ok && d.ID) assetFound = true;
+            } catch {
+                // Server unreachable — check IndexedDB asset cache
+                try {
+                    const cached = await OfflineDB.getAll('assets');
+                    const code   = String(cleanCode).toLowerCase();
+                    const hit    = cached.find(a =>
+                        String(a.ID)         === String(cleanCode) ||
+                        String(a.Code        || '').toLowerCase() === code ||
+                        String(a.AssetTag    || '').toLowerCase() === code
+                    );
+                    if (hit) assetFound = true;
+                } catch {}
+            }
+            if (assetFound) {
                 navigate('/scanner', { state: { pendingAssetId: cleanCode, plantId: effectivePlant } });
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                 return;
             }
-        } catch {}
+        }
 
         // 3) Check IT assets (hardware, infrastructure, mobile)
         try {

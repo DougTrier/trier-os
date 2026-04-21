@@ -9092,5 +9092,21 @@
   "manual.studio.items.72": "Kötü bir dağıtımın ardından basamaklı bir hata kullanıcı arayüzünü kilitlerse, sunucuyu NODE_ENV=safe_mode ile başlatın. Bu, en son işlemeyi atlar ve en yeni stabil-* etiketini otomatik olarak yükler; bir olay sırasında insan kararına gerek yoktur.",
   "manual.studio.items.73": "Dağıt sekmesindeki Acil Durum Geri Döndürme düğmesi, kullanıcı arayüzünün içinden aynı kurtarma yolunu yürütür: en son stabil-* etiketini git tag --list aracılığıyla çözer",
   "manual.studio.items.74": "Her geri dönüş, deftere Status=REVERTED, geri yüklenen etiket ve onu tetikleyen kullanıcı ile kaydedilir.",
-  "manual.studio.items.75": "Etiket bugün için zaten mevcutsa (örneğin, bir günde iki kez dağıtırsanız), işlem hattı yeniden etiketlemeyi hatasız olarak atlar; günün ilk dağıtımı kararlı bağlantıyı tutar."
+  "manual.studio.items.75": "Etiket bugün için zaten mevcutsa (örneğin, bir günde iki kez dağıtırsanız), işlem hattı yeniden etiketlemeyi hatasız olarak atlar; günün ilk dağıtımı kararlı bağlantıyı tutar.",
+  "plantNetwork.title": "Tesis Ağı",
+  "plantNetwork.centralServer": "Merkezi Sunucu",
+  "plantNetwork.lanHub": "LAN Hub",
+  "plantNetwork.checking": "Kontrol ediliyor…",
+  "plantNetwork.online": "Çevrimici",
+  "plantNetwork.unreachable": "Erişilemiyor",
+  "plantNetwork.hubConnected": "Bağlı · port {{port}}",
+  "plantNetwork.hubRunning": "Çalışıyor · port {{port}}",
+  "plantNetwork.hubNotRunning": "Çalışmıyor",
+  "plantNetwork.devices": "Cihazlar",
+  "plantNetwork.devicesConnected": "{{n}} bağlı",
+  "plantNetwork.refresh": "Yenile",
+  "plantNetwork.deviceUser": "Kullanıcı {{id}}",
+  "plantNetwork.device": "Cihaz",
+  "offlineStatusBar.hubTokenExpired": "Hub kullanılamıyor — yalnızca yerel kuyruk",
+  "plantNetwork.cacheStale": "Çevrimdışı veriler {{age}} önce güncellendi"
 }

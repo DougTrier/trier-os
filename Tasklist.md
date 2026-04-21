@@ -122,7 +122,7 @@
 | 4 | Sync hub state back to central server on reconnect | ✅ Done | #2, #3 |
 | 5 | Real-time WO state push from hub to all plant devices | ✅ Done | #2, #3 |
 | 6 | Handle hub conflict resolution (dual WO auto-create) | ✅ Done | #5 |
-| 7 | Show live plant-device presence in Mission Control | 🔵 Planned | #2, #3 |
+| 7 | Show live plant-device presence in Mission Control | ✅ Done | #2, #3 |
 | 8 | Security — authenticate devices on the LAN hub | ✅ Done | #2 |
 | 9 | Playwright E2E tests for offline LAN sync scenarios | 🔵 Planned | #1–#8 |
 
@@ -154,3 +154,61 @@ Devices present JWT on WebSocket upgrade. Hub validates before accepting connect
 
 **#9 — Playwright E2E tests for offline LAN sync scenarios**
 Scenarios: (1) PWA finds hub when central server down, (2) scan on PWA appears on desktop within 2s, (3) two PWAs scan same asset — conflict surfaced in review queue, (4) central server returns — hub replays without duplicates, (5) hub goes down — PWA falls back to IndexedDB gracefully, (6) expired JWT rejected by hub.
+
+---
+
+## P9 — Offline Resilience Hardening (Edge Case Fixes)
+**Goal:** Close every gap identified in `Edge Cases.md` that could stop a plant from functioning when the central server is unreachable. Ordered by priority — fix C-items before M-items.
+
+| # | ID | Task | Status | File(s) |
+|---|----|------|--------|---------|
+| 1 | C2 | Login timeout + offline login path | ✅ Done | `src/components/LoginView.jsx` |
+| 2 | C1 | Hub token expiry check + amber banner | ✅ Done | `src/utils/LanHub.js`, `src/components/OfflineStatusBar.jsx` |
+| 3 | C6 | Block second AUTO_CREATE on hub (30s window) | ✅ Done | `server/lan_hub.js` |
+| 4 | C4 | Asset lookup offline fallback to IndexedDB | ✅ Done | `src/App.jsx` |
+| 5 | C8 | Save scan session on submit start, not just on response | ✅ Done | `src/components/ScannerWorkspace.jsx`, `src/components/ScanCapture.jsx` |
+| 6 | C3 | Offline auth validation (HMAC of userId + plantId) | ✅ Done | `src/App.jsx`, `src/components/LoginView.jsx` |
+| 7 | C5 | Patch work_segments cache on WO_STATE_CHANGED events | ✅ Done | `src/utils/LanHub.js`, `src/utils/OfflineDB.js` |
+| 8 | M3 | Surface sync conflicts to user after queue replay | ✅ Done | `src/utils/OfflineDB.js`, `src/components/OfflineStatusBar.jsx` |
+| 9 | C7 | Hub/device queue deduplication on reconnect | ✅ Done | `server/lan_hub.js`, `src/utils/LanHub.js` |
+| 10 | M1 | Mark hub-submitted scans in IndexedDB to prevent double-replay | ✅ Done | `src/main.jsx`, `src/utils/OfflineDB.js` |
+| 11 | M2 | Cache status ID table at login; remove hardcoded [30, 20] | ✅ Done | `src/utils/OfflineDB.js`, `server/routes/scan.js` |
+| 12 | M6 | Show cache staleness timestamp on Mission Control | ✅ Done | `src/components/PlantNetworkStatus.jsx`, `src/utils/OfflineDB.js` |
+
+### Task Details
+
+**#1 (C2) — Login timeout + offline login path**
+Add 3-second `AbortController` timeout to `POST /api/auth/login`. On timeout/failure, check localStorage for a stored credential hash for that username. If found and password matches, allow offline login with persistent amber banner: *"Offline mode — scans will sync when server returns."* Store bcrypt hash of password at each successful login (never store plaintext). Files: `src/components/LoginView.jsx`.
+
+**#2 (C1) — Hub token expiry check**
+Before calling `submitScan()`, decode the `hubToken` JWT from localStorage and check the `exp` claim. If expired (or within 5 minutes of expiry), skip hub submission and fall back to IndexedDB-only queue. Show amber banner in `OfflineStatusBar`: *"Hub unavailable — scanning in local-only mode."* Files: `src/utils/LanHub.js`.
+
+**#3 (C6) — Block second AUTO_CREATE on hub**
+In `lan_hub.js`, when a `SCAN` message arrives with a predicted `AUTO_CREATE_WO` branch, query `OfflineScanQueue` for any `PENDING` entry with the same `assetId` created within the last 30 seconds. If found, reject with `SCAN_ACK` error: *"Another technician is creating a work order for this asset — tap Join instead."* Files: `server/lan_hub.js`.
+
+**#4 (C4) — Asset lookup offline fallback**
+In `src/App.jsx` barcode handler, wrap the `fetch('/api/assets/...')` call with a 2-second timeout. On failure, fall back to `OfflineDB.getAll('assets')` and search by asset ID/code. If found in cache, proceed normally. If not found anywhere, show modal: *"Asset not found in offline cache — verify the barcode and try again."* Files: `src/App.jsx`, `src/utils/OfflineDB.js`.
+
+✅ **#5 (C8) — Save scan session on submit start**
+In `ScanCapture.jsx`, write `{ step: 'submitting', pendingAssetId, submittedAt }` to IndexedDB meta as soon as submission begins (before the fetch). In `ScannerWorkspace.jsx`, on mount check for a `submitting` session less than 60 seconds old and show resume prompt: *"Your last scan may not have completed — check status or re-scan?"* Files: `src/components/ScannerWorkspace.jsx`, `src/components/ScanCapture.jsx`.
+
+✅ **#6 (C3) — Offline auth validation**
+At each successful login, store `HMAC(userId + nativePlantId, deviceSecret)` in localStorage where `deviceSecret` is a random key generated once per device and stored in IndexedDB. On offline auth fallback in `App.jsx`, verify this HMAC rather than just checking key existence. Files: `src/App.jsx`, `src/components/LoginView.jsx`, `src/utils/OfflineDB.js`.
+
+✅ **#7 (C5) — Patch work_segments on WO_STATE_CHANGED**
+`LanHub._updateLocalCache()` currently patches `work_orders` only. Extend it to also update `work_segments` in IndexedDB when a `WO_STATE_CHANGED` event arrives — mark the relevant segment's state as `Closed` when branch is `CLOSE_WO` or `DESK_CLOSE`. Files: `src/utils/LanHub.js`, `src/utils/OfflineDB.js`.
+
+✅ **#8 (M3) — Surface sync conflicts after queue replay**
+In `OfflineDB.replayQueue()` (or wherever offline-sync results are processed), collect any `409 CONFLICT` or error responses. After all replays complete, if failures exist push a notification to `OfflineStatusBar`: *"2 offline scans had conflicts — tap to review."* Link to a modal listing failed scan IDs and server error messages. Files: `src/utils/OfflineDB.js`, `src/components/OfflineStatusBar.jsx`.
+
+✅ **#9 (C7) — Hub/device queue deduplication on reconnect**
+When a PWA reconnects to the hub, it should send its list of pending `scanId` values. Hub cross-checks against `OfflineScanQueue` and marks any matching entries so they are not double-replayed when the server returns. Server already deduplicates on `scanId`, but this prevents duplicate 409 noise. Files: `server/lan_hub.js`, `src/utils/LanHub.js`.
+
+✅ **#10 (M1) — Mark hub-submitted scans in IndexedDB**
+After `LanHub.submitScan()` returns `true`, update the corresponding IndexedDB `sync_queue` entry's status to `'hub-submitted'`. The normal offline-sync replay path should skip entries with this status, preventing the same scan being sent twice (once via hub, once via `/api/scan/offline-sync`). Files: `src/main.jsx`, `src/utils/OfflineDB.js`.
+
+✅ **#11 (M2) — Cache status ID table; remove hardcoded status codes**
+Add `GET /api/config/statuses` endpoint returning the WorkStatus lookup table. Cache it in IndexedDB at login as `meta.statusMap`. Replace hardcoded `[30, 20]` in `OfflineDB.predictBranch()` and `lan_hub.js` with values resolved from this cache. Files: `src/utils/OfflineDB.js`, `server/lan_hub.js`, `server/routes/` (new endpoint).
+
+✅ **#12 (M6) — Show cache staleness in Plant Network panel**
+Track `lastSuccessfulRefresh` timestamp in `OfflineDB` meta. In `PlantNetworkStatus.jsx`, display *"Offline data last updated Xh ago"* when the last refresh was more than 30 minutes ago and the server is currently unreachable. Files: `src/components/PlantNetworkStatus.jsx`, `src/utils/OfflineDB.js`.

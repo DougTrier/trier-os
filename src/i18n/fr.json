@@ -9092,5 +9092,21 @@
   "manual.studio.items.72": "Si un échec en cascade verrouille l'interface utilisateur après un mauvais déploiement, démarrez le serveur avec NODE_ENV=safe_mode. Cela contourne le dernier commit et charge automatiquement la balise stable-* la plus récente – aucun jugement humain n’est requis lors d’un incident.",
   "manual.studio.items.73": "Le bouton Emergency Revert dans l'onglet Déployer exécute le même chemin de récupération depuis l'interface utilisateur : il résout la dernière balise stable-* via git tag --list",
   "manual.studio.items.74": "Chaque retour est enregistré dans le grand livre avec Status=REVERTED, la balise qui a été restaurée et l'utilisateur qui l'a déclenché.",
-  "manual.studio.items.75": "Si la balise existe déjà pour aujourd'hui (par exemple, vous déployez deux fois en une journée), le pipeline ignore le ré-étiquetage sans erreur : le premier déploiement de la journée détient l'ancre stable."
+  "manual.studio.items.75": "Si la balise existe déjà pour aujourd'hui (par exemple, vous déployez deux fois en une journée), le pipeline ignore le ré-étiquetage sans erreur : le premier déploiement de la journée détient l'ancre stable.",
+  "plantNetwork.title": "Réseau Usine",
+  "plantNetwork.centralServer": "Serveur Central",
+  "plantNetwork.lanHub": "Hub LAN",
+  "plantNetwork.checking": "Vérification…",
+  "plantNetwork.online": "En ligne",
+  "plantNetwork.unreachable": "Inaccessible",
+  "plantNetwork.hubConnected": "Connecté · port {{port}}",
+  "plantNetwork.hubRunning": "Actif · port {{port}}",
+  "plantNetwork.hubNotRunning": "Inactif",
+  "plantNetwork.devices": "Appareils",
+  "plantNetwork.devicesConnected": "{{n}} connectés",
+  "plantNetwork.refresh": "Actualiser",
+  "plantNetwork.deviceUser": "Utilisateur {{id}}",
+  "plantNetwork.device": "Appareil",
+  "offlineStatusBar.hubTokenExpired": "Hub indisponible — file locale uniquement",
+  "plantNetwork.cacheStale": "Données hors ligne mises à jour il y a {{age}}"
 }

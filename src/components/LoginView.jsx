@@ -33,6 +33,63 @@ import React, { useState, useEffect } from 'react';
 import { Lock, User, UserPlus, X, MapPin, KeyRound, CheckCircle2, Send, Briefcase, Mail, Phone, Shield, Cpu, Github, Star } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
+// ── Offline credential helpers ────────────────────────────────────────────────
+// Stores a SHA-256 hash of username:password:deviceSalt in localStorage so the
+// tech can log in when the server is unreachable. Never stores the plaintext.
+function _deviceSalt() {
+    let s = localStorage.getItem('_deviceSalt');
+    if (!s) {
+        s = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
+        localStorage.setItem('_deviceSalt', s);
+    }
+    return s;
+}
+
+async function _hashCred(username, password) {
+    const raw  = new TextEncoder().encode(`${username}:${password}:${_deviceSalt()}`);
+    const buf  = await crypto.subtle.digest('SHA-256', raw);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function _storeOfflineCred(username, password) {
+    _hashCred(username, password)
+        .then(hash => localStorage.setItem(`offlineCred_${username}`, hash))
+        .catch(() => {});
+}
+
+// Stores a signed snapshot of the user profile so role/permissions can't be
+// tampered with in localStorage while the server is unreachable.
+// The profile is serialised to JSON and signed with the device-bound secret
+// held in IndexedDB (OfflineDB.hmacSign).  Both the JSON and its HMAC are
+// written to localStorage — on offline login the HMAC is re-verified before
+// the profile is trusted.  If verification fails, login is blocked.
+async function _storeOfflineProfile(username, userObj) {
+    // Only capture the fields that affect access control — omitting ephemeral
+    // UI state keeps the serialised form stable across server-side changes.
+    const profile = {
+        username,
+        role:                userObj.role              || 'technician',
+        nativePlantId:       userObj.nativePlantId     || '',
+        globalAccess:        !!userObj.globalAccess,
+        canAccessDashboard:  !!userObj.canAccessDashboard,
+        canImport:           !!userObj.canImport,
+        canSensorConfig:     !!userObj.canSensorConfig,
+        canSensorThresholds: !!userObj.canSensorThresholds,
+        canSensorView:       !!userObj.canSensorView,
+        canViewAnalytics:    !!userObj.canViewAnalytics,
+        signedAt:            Date.now(),
+    };
+    try {
+        const { default: OfflineDB } = await import('../utils/OfflineDB.js');
+        const sig = await OfflineDB.hmacSign(JSON.stringify(profile));
+        // Store profile and signature as separate keys so we can verify the
+        // profile JSON exactly as serialised without a second parse/stringify.
+        localStorage.setItem(`offlineProfile_${username}`, JSON.stringify(profile));
+        localStorage.setItem(`offlineSig_${username}`, sig);
+    } catch (_) {}
+}
+
 const ROLE_OPTIONS = [
     { value: 'technician', label: '🔧 Maintenance Technician', desc: 'Field repairs & inspections' },
     { value: 'mechanic', label: '⚙️ Mechanic', desc: 'Heavy equipment & motor work' },
@@ -120,12 +177,17 @@ export default function LoginView({ onLoginSuccess }) {
         setIsLoading(true);
         setError('');
 
+        const controller = new AbortController();
+        const timeout    = setTimeout(() => controller.abort(), 3000);
+
         try {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                signal: controller.signal,
             });
+            clearTimeout(timeout);
 
             const data = await res.json();
 
@@ -155,12 +217,69 @@ export default function LoginView({ onLoginSuccess }) {
                 else localStorage.removeItem('plantHubIp');
                 if (data.hubToken) localStorage.setItem('hubToken', data.hubToken);
                 else localStorage.removeItem('hubToken');
+                // Cache credential hash + signed profile for offline login
+                _storeOfflineCred(username, password);
+                _storeOfflineProfile(username, data);
                 onLoginSuccess(data);
             } else {
                 setError(data.error || 'Invalid username or password');
             }
         } catch (err) {
-            setError('Unable to reach the server. Check that the backend is running.');
+            clearTimeout(timeout);
+            // Server unreachable — attempt offline login with cached credential hash
+            const offlineHash = localStorage.getItem(`offlineCred_${username}`);
+            if (offlineHash && password) {
+                try {
+                    const inputHash = await _hashCred(username, password);
+                    if (inputHash === offlineHash) {
+                        const profileJson = localStorage.getItem(`offlineProfile_${username}`);
+                        const storedSig   = localStorage.getItem(`offlineSig_${username}`);
+                        let offlineUser;
+
+                        if (profileJson && storedSig) {
+                            // Verify HMAC — if localStorage was tampered to elevate
+                            // the role (e.g. technician → manager), the signature
+                            // won't match and we refuse the offline login.
+                            const { default: OfflineDB } = await import('../utils/OfflineDB.js');
+                            const valid = await OfflineDB.hmacVerify(profileJson, storedSig);
+                            if (!valid) {
+                                setError('Offline session data appears tampered. Sign in when the server is available.');
+                                setIsLoading(false);
+                                return;
+                            }
+                            // Signature valid — restore the exact profile the server issued
+                            offlineUser = { ...JSON.parse(profileJson), _offlineLogin: true };
+                        } else {
+                            // Pre-C3 device: no signed profile stored yet.
+                            // Fall back to reading individual localStorage keys so
+                            // existing devices aren't locked out before their next
+                            // online login writes the signed profile.
+                            offlineUser = {
+                                username,
+                                role:                localStorage.getItem('userRole')            || 'technician',
+                                nativePlantId:       localStorage.getItem('nativePlantId')       || '',
+                                canAccessDashboard:  localStorage.getItem('canAccessDashboard')  === 'true',
+                                globalAccess:        localStorage.getItem('globalAccess')        === 'true',
+                                canImport:           localStorage.getItem('canImport')           === 'true',
+                                canSensorConfig:     localStorage.getItem('canSensorConfig')     === 'true',
+                                canSensorThresholds: localStorage.getItem('canSensorThresholds') === 'true',
+                                canSensorView:       localStorage.getItem('canSensorView')       === 'true',
+                                canViewAnalytics:    localStorage.getItem('canViewAnalytics')    === 'true',
+                                _offlineLogin:       true,
+                            };
+                        }
+
+                        onLoginSuccess(offlineUser);
+                        setIsLoading(false);
+                        return;
+                    }
+                } catch (_) {}
+            }
+            setError(
+                offlineHash
+                    ? 'Server unreachable — incorrect password for offline login.'
+                    : 'Server unreachable. No offline session found for this device.'
+            );
         }
         setIsLoading(false);
     };
@@ -193,6 +312,8 @@ export default function LoginView({ onLoginSuccess }) {
                 localStorage.setItem('nativePlantId', data.nativePlantId || 'Demo_Plant_1');
                 if (data.hubIp) localStorage.setItem('plantHubIp', data.hubIp);
                 else localStorage.removeItem('plantHubIp');
+                _storeOfflineCred(username, password);
+                _storeOfflineProfile(data.username || username, data);
                 setShow2FA(false);
                 onLoginSuccess(data);
             } else {

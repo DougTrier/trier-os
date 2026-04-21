@@ -52,6 +52,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Factory, Wrench, Cog, Truck, Package, ShieldCheck, Lock, MessageSquare, BarChart3, Activity, ChevronRight, Scan, FlaskConical, Users, Monitor, Download, BookOpen, HardHat, Star, ShieldAlert, Lightbulb, Globe, Hammer, LockKeyhole, Server, Crown, Map, MapPin, Zap, Droplets, GraduationCap, Warehouse, ClipboardList, AlertTriangle, Clock, CheckCircle, RotateCcw, XCircle, RefreshCw } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 import RoleAvatar from './RoleAvatar';
+import PlantNetworkStatus from './PlantNetworkStatus';
 import { useTranslation } from '../i18n/index.jsx';
 
 const PERSONA_META = {
@@ -171,6 +172,11 @@ const TILE_GROUPS = {
 const REVIEW_QUEUE_ROLES = new Set([
     'manager', 'plant_manager', 'maintenance_manager',
     'corporate', 'executive', 'it_admin', 'creator',
+]);
+
+// ── Roles that see the Plant Network status panel ─────────────────────────────
+const PLANT_NETWORK_ROLES = new Set([
+    'manager', 'plant_manager', 'it_admin', 'creator',
 ]);
 
 // ── reviewReason display labels ───────────────────────────────────────────────
@@ -668,6 +674,11 @@ export default function MissionControl({ plantId, onOpenWorkspace }) {
                     plantId={plantId}
                     userId={localStorage.getItem('userId') || userRole}
                 />
+            )}
+
+            {/* Plant Network status — hub + central server + device presence */}
+            {PLANT_NETWORK_ROLES.has(effectiveRole) && plantId && (
+                <PlantNetworkStatus plantId={plantId} />
             )}
 
             <div className="mission-control-grid" style={{
