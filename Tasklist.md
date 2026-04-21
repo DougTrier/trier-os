@@ -13,6 +13,12 @@
 - [x] Context Confirmation Flash (1.0s overlay)
 - [x] Auto-WO Creation on First Scan
 - [x] Offline-Safe Scan Queue — client-side PWA queue + auto-sync; offline multi-tech Auto-Join conflict rule
+- [x] Offline PWA Branch Prediction — predictBranch() uses cached WO + WorkSegments data; accurate MULTI_TECH / OTHER_USER_ACTIVE / RESUMED_NO_SEGMENT context offline
+- [x] WorkSegments offline cache — GET /api/scan/active-segments + IndexedDB store (DB v3); refreshed every 15 min
+- [x] Session persistence across app close — ScannerWorkspace saves step + scanResult to IndexedDB meta; restores on reopen with server down
+- [x] Offline auth fallback — network error on /auth/me falls back to cached localStorage credentials instead of forcing re-login
+- [x] JWT extended to 7 days — supports multi-day offline plant operation; cookie maxAge updated to match
+- [x] LAN Hub IP field — added to PlantConfiguration (with safe migration), Plant Setup UI, plant creation, login response, and localStorage cache
 - [ ] 🟡 Silent Auto-Close Threshold — 12-hour cron timer on InProgress segments; raises `needsReview` flag; Mission Control queue already done, timer not yet running
 
 ---
