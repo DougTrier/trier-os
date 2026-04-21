@@ -232,6 +232,15 @@ function issueJWT(user, req, res) {
         } catch (_) {}
     }
 
+    // Hub token — stored in localStorage (not httpOnly) so the PWA can pass it
+    // as a WebSocket query param when connecting to the LAN hub offline.
+    // Minimal claims only: identity + plant. Same secret, same expiry.
+    const hubToken = jwt.sign(
+        { UserID: user.UserID, Username: user.Username, nativePlantId: homePlant },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+    );
+
     const token = jwt.sign(
         {
             UserID: user.UserID,
@@ -273,6 +282,7 @@ function issueJWT(user, req, res) {
         role: user.DefaultRole,
         nativePlantId: homePlant,
         hubIp,
+        hubToken,
         mustChangePassword: user.MustChangePassword === 1,
         canAccessDashboard: user.CanAccessDashboard === 1,
         globalAccess: user.GlobalAccess === 1,

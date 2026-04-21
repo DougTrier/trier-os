@@ -153,6 +153,8 @@ export default function LoginView({ onLoginSuccess }) {
                 localStorage.setItem('nativePlantId', data.nativePlantId || 'Demo_Plant_1');
                 if (data.hubIp) localStorage.setItem('plantHubIp', data.hubIp);
                 else localStorage.removeItem('plantHubIp');
+                if (data.hubToken) localStorage.setItem('hubToken', data.hubToken);
+                else localStorage.removeItem('hubToken');
                 onLoginSuccess(data);
             } else {
                 setError(data.error || 'Invalid username or password');

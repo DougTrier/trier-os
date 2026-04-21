@@ -319,9 +319,10 @@ window.fetch = async (...args) => {
                 clearTimeout(timer);
                 return response;
             } catch (err) {
-                // Network failed — queue for later sync
+                // Network failed — try LAN hub first, then fall back to IndexedDB queue
                 try {
                     const { default: OfflineDB } = await import('./utils/OfflineDB.js');
+                    const { default: LanHub }    = await import('./utils/LanHub.js');
                     let payload = null;
                     if (config.body) {
                         try { payload = JSON.parse(config.body); } catch { payload = config.body; }
@@ -329,14 +330,22 @@ window.fetch = async (...args) => {
                     await OfflineDB.queueWrite(method, urlStr, payload);
                     console.log(`[Offline] Queued ${method} ${urlStr} for sync`);
 
-                    // For scan submissions, predict the branch from cached WO data
-                    // so the operator still sees the correct action prompt offline.
+                    // For scan submissions: try hub first, then predict branch locally
                     if (urlStr === '/api/scan' && payload?.assetId) {
+                        // Ensure hub is connected — connect now if not already
+                        if (!LanHub.isConnected()) LanHub.connect();
+
+                        // Submit to hub (fire-and-forget; hub broadcasts WO_STATE_CHANGED)
+                        const plantId = localStorage.getItem('nativePlantId') || localStorage.getItem('selectedPlantId');
+                        LanHub.submitScan({ ...payload, plantId });
+
+                        // Still return a local branch prediction so the UI shows immediately
                         const predicted = await OfflineDB.predictBranch(payload.assetId, payload.userId);
                         return new Response(JSON.stringify({
                             ...predicted,
                             success: true,
                             _offlineQueued: true,
+                            _hubSubmitted: LanHub.isConnected(),
                             scanId: payload.scanId,
                         }), {
                             status: 200,
@@ -390,6 +399,18 @@ window.fetch = async (...args) => {
     return originalFetch(resource, config);
 };
 
+
+// ── LAN Hub global listeners ─────────────────────────────────────────────────
+// Wire up once at boot so hub events update the local cache and disconnect
+// cleanly when the central server comes back.
+import('./utils/LanHub.js').then(({ default: LanHub }) => {
+    LanHub.onServerOnline(() => {
+        console.log('[LanHub] Central server restored — hub disconnected, normal flow resumed');
+    });
+    LanHub.onWoStateChanged((msg) => {
+        console.log('[LanHub] WO state changed:', msg.assetId, msg.branch);
+    });
+}).catch(() => {});
 
 // Register Service Worker for Offline Resilience (Production only to avoid local SSL warnings)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
