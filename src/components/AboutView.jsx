@@ -48,7 +48,7 @@ const AboutView = () => {
         ],
         bio: `Bridging ${yearsExp} years of industrial grit and enterprise technology. Doug's journey began on the front lines—driving wholesale delivery routes, picking in coolers, loading trucks, and operating production equipment, with decades of operational management experience. This 'boots-on-the-ground' foundation evolved into architecting enterprise digital infrastructure. From racking server foundations to acting as the architect for enterprise mobile infrastructure, this platform is the culmination of three decades of operational knowledge.`,
         badges: ['Industrial Engineering', 'V-Sphere/Cloud', 'Mobile Infra'],
-        version: '3.4.2',
+        version: '3.4.3',
         buildDate: 'March 2026',
         experience: yearsExp
     };
@@ -4022,7 +4022,7 @@ const AboutView = () => {
                             <img src="/assets/TrierLogo.png" alt="Trier OS" style={{ height: '48px', borderRadius: '8px' }} />
                             <div>
                                 <h1 style={{ fontSize: '1.6rem', margin: 0 }}>{t('about.manualTitle', 'Trier OS — Operational Intelligence Manual')}</h1>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.4.2')}</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.4.3')}</p>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
