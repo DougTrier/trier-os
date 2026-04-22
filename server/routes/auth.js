@@ -588,7 +588,18 @@ router.post('/reset-password', async (req, res) => {
 
         logAudit(decoded.Username, 'PASSWORD_RESET_BY_ADMIN', null, { target: targetUsername }, 'WARNING', req.ip);
 
-        res.json({ success: true, message: `Password for ${targetUsername} has been reset to: ${tempPassword}` });
+        // Audit 47 / M-16: return the temp password as a dedicated field
+        // instead of embedding it in prose. This lets reverse-proxy and
+        // client-side log filters mask the known `tempPassword` key while
+        // the admin UI renders it via a one-shot copy widget. MustChangePassword = 1
+        // is already set above so the user is forced to rotate on first login.
+        res.json({
+            success: true,
+            targetUsername,
+            tempPassword,
+            mustChangePassword: true,
+            message: `Password reset for ${targetUsername}. Share the temp password via a secure channel.`,
+        });
     } catch (err) {
         res.status(401).json({ error: 'Invalid session' });
     }
