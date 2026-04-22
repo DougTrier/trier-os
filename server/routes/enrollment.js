@@ -18,10 +18,24 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const authDb = require('../auth_db');
 const { logAudit } = require('../logistics_db');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Audit 47 / M-4: rate-limit the public /enroll endpoint to prevent flooding.
+// 5 requests/hour per IP is enough for legitimate slow-typing submitters and
+// tight enough to make scripted abuse obvious. Applied only to POST /enroll —
+// the admin endpoints below run through the main auth + rate chain in index.js.
+const enrollLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_ENROLL_MAX, 10) || 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.ip || 'unknown',
+    message: { error: 'Enrollment rate limit exceeded. Try again later or contact your administrator.' },
+});
 
 // ── Ensure enrollment_requests table exists ─────────────────────────────────
 authDb.exec(`
@@ -42,7 +56,7 @@ authDb.exec(`
 `);
 
 // ── Public: Submit Enrollment Request ────────────────────────────────────────
-router.post('/enroll', (req, res) => {
+router.post('/enroll', enrollLimiter, (req, res) => {
     const { fullName, email, phone, requestedPlant, requestedRole, reason } = req.body;
 
     if (!fullName || !fullName.trim()) {
