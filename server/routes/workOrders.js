@@ -43,6 +43,7 @@ const router = express.Router();
 const db = require('../database');
 const { whitelist, validateSort } = require('../validators');
 const { insertOutboxEvent } = require('../services/erp-outbox');
+const { logAudit } = require('../logistics_db');
 
 // ── GET /api/work-orders ─────────────────────────────────────────────────
 // List work orders with pagination, filtering, search
@@ -701,17 +702,33 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
     try {
         const id = req.params.id;
-        // Safety: prevent deleting completed work orders
-        const wo = db.queryOne('SELECT StatusID FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?', [id, id, id]);
+        // Safety: prevent deleting completed/cancelled work orders.
+        // Platform convention (costLedger.js:98, all analytics queries): 40 = Completed, 50 = Cancelled.
+        // Legacy text values ('completed' / 'closed') kept as a belt-and-braces fallback.
+        const wo = db.queryOne('SELECT StatusID, WorkOrderNumber FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?', [id, id, id]);
         if (!wo) return res.status(404).json({ error: 'Work order not found' });
-        
+
+        const statusNum = Number(wo.StatusID);
         const statusStr = String(wo.StatusID || '').toLowerCase();
-        if (statusStr === '50' || statusStr === 'completed' || statusStr === 'complete' || statusStr === 'closed') {
+        const isTerminal = (Number.isFinite(statusNum) && statusNum >= 40)
+            || statusStr === 'completed' || statusStr === 'complete' || statusStr === 'closed' || statusStr === 'cancelled' || statusStr === 'canceled';
+        if (isTerminal) {
             return res.status(403).json({ error: 'Cannot delete completed work orders — they are part of your metrics.' });
         }
 
         // Delete by ID, WorkOrderNumber, or rowid
         db.run('DELETE FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?', [id, id, id]);
+
+        const plantId = req.headers['x-plant-id'] || null;
+        logAudit(
+            req.user?.Username || 'unknown',
+            'WO_DELETED',
+            plantId,
+            { id, workOrderNumber: wo.WorkOrderNumber, statusId: wo.StatusID },
+            'WARNING',
+            req.ip
+        );
+
         res.json({ success: true, message: 'Work order deleted' });
     } catch (err) {
         console.error('DELETE /api/work-orders/:id error:', err);
