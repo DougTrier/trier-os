@@ -229,6 +229,14 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_global_sops_desc ON GlobalSOPs(Description);
 `);
 
+// Audit 47 / H-7: request-scoped "already audited" flag. The auditTrail
+// middleware establishes a store for each /api/* mutation; any inline
+// logAudit call the route makes sets store.audited = true, so the
+// middleware's generic HTTP_MUTATION safety-net entry is suppressed and
+// we don't double-log richly-audited endpoints.
+const { AsyncLocalStorage } = require('async_hooks');
+const auditContext = new AsyncLocalStorage();
+
 /**
  * Structured Logging Helper
  * @param {string} userId - ID of the user performing the action
@@ -252,6 +260,10 @@ function logAudit(userId, action, plantId = null, details = null, severity = 'IN
             severity,
             ip
         );
+        // Mark the active HTTP request (if any) as audited so the auditTrail
+        // middleware skips its generic safety-net entry for this request.
+        const store = auditContext.getStore();
+        if (store) store.audited = true;
     } catch (err) {
         console.error('❌ Failed to write to AuditLog:', err);
     }
@@ -412,6 +424,7 @@ function getImportFailures(importId) {
 module.exports = {
     db,
     logAudit,
+    auditContext, // exported for auditTrail middleware
     isBackupAllowed,
     syncGlobalAsset,
     syncGlobalSOP,

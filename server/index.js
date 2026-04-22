@@ -743,6 +743,7 @@ app.use('/api/enrollment', require('./routes/enrollment'));
 // â”€â”€ Authentication Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use('/api', require('./middleware/auth'));
 app.use('/api', require('./middleware/degradedMode'));        // Advisory/Isolated mode write-block (P2)
+app.use('/api', require('./middleware/auditTrail'));          // Audit 47 / H-7: safety-net mutation logging
 
 // â”€â”€ API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
