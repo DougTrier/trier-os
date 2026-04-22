@@ -234,6 +234,29 @@ router.post('/verify-2fa', async (req, res) => {
             return res.status(401).json({ error: 'Invalid authenticator code. Check your app and try again.' });
         }
 
+        // Audit 47 / M-2: TOTP codes are valid for ~60 s (current window + one
+        // adjacent) and otpauth doesn't track used codes. Without a replay
+        // cache, a captured code could be re-used multiple times inside the
+        // window. Track the last successfully-consumed { delta, at } in
+        // creator_settings; reject the same delta if presented again within
+        // 90 s.
+        try {
+            const lastRow = logDb.prepare("SELECT Value FROM creator_settings WHERE Key = 'totp_last_delta'").get();
+            const last = lastRow?.Value ? JSON.parse(lastRow.Value) : null;
+            if (last && last.delta === delta && (Date.now() - last.at) < 90_000) {
+                logAudit('creator', 'LOGIN_2FA_REPLAY_REJECTED', null, { delta }, 'WARNING', req.ip);
+                return res.status(401).json({ error: 'This code was already used. Wait for the next one in your authenticator app.' });
+            }
+            logDb.prepare(
+                "INSERT OR REPLACE INTO creator_settings (Key, Value, UpdatedAt) VALUES ('totp_last_delta', ?, datetime('now'))"
+            ).run(JSON.stringify({ delta, at: Date.now() }));
+        } catch (replayErr) {
+            // Replay cache is best-effort — log and continue. A broken cache
+            // reverts to the previous (non-replay-guarded) behavior rather
+            // than locking the creator out.
+            console.warn('[2FA] Replay cache update failed:', replayErr.message);
+        }
+
         const user = authDb.prepare('SELECT * FROM Users WHERE UserID = ?').get(decoded.UserID);
         if (!user) return res.status(404).json({ error: 'User account not found' });
 
