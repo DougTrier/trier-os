@@ -442,7 +442,10 @@ router.post('/register', async (req, res) => {
                 return res.status(401).json({ error: 'This invite code has been revoked. Please contact your administrator.' });
             }
 
-            resolvedPlantId = plantId || codeRow.PlantID;
+            // Invite codes are bound to a specific plant at issue time. Ignore any
+            // body-supplied plantId — trusting it would let a holder of an invite
+            // for Plant A register into Plant B.
+            resolvedPlantId = codeRow.PlantID;
 
             // Check for duplicate username
             const existing = authDb.prepare('SELECT 1 FROM Users WHERE Username = ?').get(username);
