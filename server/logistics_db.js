@@ -283,7 +283,27 @@ function getAuditHealth() {
  * @param {string} severity - Severity level
  * @param {string} ip - Source IP
  */
+/**
+ * Structured audit entry writer.
+ * Signature: (userId, action, plantId?, details?, severity?, ip?)
+ * @param {string} userId  - Acting user / system identity ('SYSTEM', 'GUEST', or a Username)
+ * @param {string} action  - ACTION_IN_CAPS slug describing what happened
+ * @param {string?} plantId
+ * @param {object?} details
+ * @param {'INFO'|'WARNING'|'CRITICAL'} severity
+ * @param {string?} ip
+ */
 function logAudit(userId, action, plantId = null, details = null, severity = 'INFO', ip = null) {
+    // Audit 47 / L-4: warn when the first argument looks like an action string
+    // (2+ underscores, all-caps). Historically several callers inverted the
+    // first two arguments, landing actions in the UserID column and usernames
+    // in the Action column. This heuristic catches that pattern without
+    // false-positiving on legitimate system identities like 'SENSOR_GATEWAY'
+    // (single underscore) or 'SYSTEM' / 'GUEST' (no underscores).
+    if (typeof userId === 'string' && /^[A-Z][A-Z0-9]*(_[A-Z0-9]+){2,}$/.test(userId)) {
+        console.warn(`[logAudit] Suspicious signature: first arg "${userId}" looks like an ACTION. ` +
+            `Expected (userId, action, ...). Check callsite.`);
+    }
     auditHealth.total += 1;
     const entry = { userId: userId || 'SYSTEM', action, plantId, details, severity, ip };
     try {

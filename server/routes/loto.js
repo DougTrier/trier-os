@@ -287,7 +287,7 @@ router.post('/permits', (req, res) => {
             VALUES (?, 'CREATED', ?, ?)
         `).run(permitId, issuedBy, `Permit ${permitNumber} created for ${assetDescription || description}. Expires: ${expiresAt}`);
 
-        try { logAudit('LOTO_PERMIT_CREATED', issuedBy, plantId, { permitNumber, assetId, description }); } catch(e) {}
+        try { logAudit(issuedBy, 'LOTO_PERMIT_CREATED', plantId, { permitNumber, assetId, description }); } catch(e) {}
 
         console.log(`[LOTO] ✅ Permit ${permitNumber} created by ${issuedBy} at ${plantId}`);
         res.status(201).json({ success: true, permitId, permitNumber });
@@ -378,7 +378,7 @@ router.post('/permits/:id/close', (req, res) => {
             VALUES (?, 'CLOSED', ?, ?)
         `).run(req.params.id, closedBy, `Permit ${permit.PermitNumber} closed. All isolation points released.`);
 
-        try { logAudit('LOTO_PERMIT_CLOSED', closedBy, permit.PlantID, { permitNumber: permit.PermitNumber }); } catch(e) {}
+        try { logAudit(closedBy, 'LOTO_PERMIT_CLOSED', permit.PlantID, { permitNumber: permit.PermitNumber }); } catch(e) {}
 
         console.log(`[LOTO] 🔓 Permit ${permit.PermitNumber} closed by ${closedBy}`);
         res.json({ success: true });
@@ -406,7 +406,7 @@ router.post('/permits/:id/void', (req, res) => {
             VALUES (?, 'VOIDED', ?, ?)
         `).run(req.params.id, voidedBy, `Voided: ${reason}`);
 
-        try { logAudit('LOTO_PERMIT_VOIDED', voidedBy, permit.PlantID, { permitNumber: permit.PermitNumber, reason }); } catch(e) {}
+        try { logAudit(voidedBy, 'LOTO_PERMIT_VOIDED', permit.PlantID, { permitNumber: permit.PermitNumber, reason }); } catch(e) {}
 
         res.json({ success: true });
     } catch (err) {

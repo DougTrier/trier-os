@@ -149,7 +149,7 @@ router.post('/instruments', (req, res) => {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         `).run(instrumentId, description, instrumentType || 'Gauge', manufacturer || null, modelNumber || null, serialNumber || null, location || null, plantId || null, assetId || null, calibrationInterval || 365, intervalUnit || 'days', accuracySpec || null, rangeMin || null, rangeMax || null, unit || null, notes || null);
 
-        try { logAudit('CALIBRATION_INSTRUMENT_ADDED', req.user?.Username || 'system', plantId, { instrumentId, description }); } catch(e) {}
+        try { logAudit(req.user?.Username || 'system', 'CALIBRATION_INSTRUMENT_ADDED', plantId, { instrumentId, description }); } catch(e) {}
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) { res.status(500).json({ error: 'Failed to add instrument: ' }); }
 });
@@ -195,7 +195,7 @@ router.post('/instruments/:id/calibrate', (req, res) => {
             logisticsDb.prepare("UPDATE calibration_instruments SET Status = 'Out of Tolerance' WHERE ID = ?").run(inst.ID);
         }
 
-        try { logAudit('CALIBRATION_PERFORMED', req.user?.Username || 'system', inst.PlantID, { instrumentId: inst.InstrumentID, result, certificateNumber }); } catch(e) {}
+        try { logAudit(req.user?.Username || 'system', 'CALIBRATION_PERFORMED', inst.PlantID, { instrumentId: inst.InstrumentID, result, certificateNumber }); } catch(e) {}
         console.log(`[CALIBRATION] ✅ ${inst.InstrumentID} calibrated: ${result}`);
         res.status(201).json({ success: true, id: r.lastInsertRowid, nextDue });
     } catch (err) { res.status(500).json({ error: 'Failed to log calibration: ' }); }

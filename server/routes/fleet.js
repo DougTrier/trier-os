@@ -354,7 +354,7 @@ router.post('/vehicles', (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(unitNumber, vinCheck.vin, year || null, make || null, model || null, vehicleType || 'Straight Truck', licensePlate || null, plateState || null, fuelType || 'Diesel', plantId || null, assignedDriver || null, department || null, purchaseDate || null, purchasePrice || null, odometer || 0, engineHours || 0, dotNumber || null, gvwr || null, axleCount || 2, insurancePolicy || null, insuranceExpiry || null, pmIntervalMiles || 25000, pmIntervalDays || 90, notes || null);
 
-        try { logAudit('FLEET_VEHICLE_ADDED', req.user?.Username || 'system', plantId, { unitNumber, vin: vinCheck.vin, make, model }); } catch(e) {}
+        try { logAudit(req.user?.Username || 'system', 'FLEET_VEHICLE_ADDED', plantId, { unitNumber, vin: vinCheck.vin, make, model }); } catch(e) {}
         console.log(`[FLEET] ✅ Vehicle ${unitNumber} added (${year} ${make} ${model})`);
         res.status(201).json({ success: true, id: result.lastInsertRowid, unitNumber });
     } catch (err) {

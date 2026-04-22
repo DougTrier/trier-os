@@ -134,7 +134,7 @@ router.post('/vendors/:id/grant-access', (req, res) => {
         } else {
             logisticsDb.prepare('INSERT INTO vendor_portal_access (VendorID, ContactName, ContactEmail, AccessToken, TokenExpiry) VALUES (?,?,?,?,?)').run(req.params.id, contactName || null, contactEmail || null, token, expiry);
         }
-        try { logAudit('VENDOR_ACCESS_GRANTED', req.user?.Username || 'system', null, { vendorId: req.params.id }); } catch(e) {}
+        try { logAudit(req.user?.Username || 'system', 'VENDOR_ACCESS_GRANTED', null, { vendorId: req.params.id }); } catch(e) {}
         res.json({ success: true, token, expiresAt: expiry });
     } catch (err) { res.status(500).json({ error: 'Failed to grant access' }); }
 });
@@ -142,7 +142,7 @@ router.post('/vendors/:id/grant-access', (req, res) => {
 router.post('/vendors/:id/revoke-access', (req, res) => {
     try {
         logisticsDb.prepare('UPDATE vendor_portal_access SET Active=0, AccessToken=NULL WHERE VendorID=?').run(req.params.id);
-        try { logAudit('VENDOR_ACCESS_REVOKED', req.user?.Username || 'system', null, { vendorId: req.params.id }); } catch(e) {}
+        try { logAudit(req.user?.Username || 'system', 'VENDOR_ACCESS_REVOKED', null, { vendorId: req.params.id }); } catch(e) {}
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed to revoke access' }); }
 });

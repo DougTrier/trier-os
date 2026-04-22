@@ -572,7 +572,7 @@ router.post('/permits', (req, res) => {
             VALUES (?, 'CREATED', ?, ?)
         `).run(permitId, issuedBy, `${type} permit ${permitNumber} created at ${location}. Expires: ${expiresAt}`);
 
-        try { logAudit('SAFETY_PERMIT_CREATED', issuedBy, plantId, { permitNumber, type, location, description }); } catch(e) {}
+        try { logAudit(issuedBy, 'SAFETY_PERMIT_CREATED', plantId, { permitNumber, type, location, description }); } catch(e) {}
 
         console.log(`[SAFETY] ✅ ${type} permit ${permitNumber} created by ${issuedBy} at ${plantId}`);
         res.status(201).json({ success: true, permitId, permitNumber, type, checklistItems: defaultItems.length, checklist: defaultItems });
@@ -754,7 +754,7 @@ router.post('/permits/:id/close', (req, res) => {
             VALUES (?, 'CLOSED', ?, ?)
         `).run(req.params.id, closedBy, `Permit ${permit.PermitNumber} closed. All conditions satisfied.`);
 
-        try { logAudit('SAFETY_PERMIT_CLOSED', closedBy, permit.PlantID, { permitNumber: permit.PermitNumber, type: permit.PermitType }); } catch(e) {}
+        try { logAudit(closedBy, 'SAFETY_PERMIT_CLOSED', permit.PlantID, { permitNumber: permit.PermitNumber, type: permit.PermitType }); } catch(e) {}
 
         console.log(`[SAFETY] ✅ Permit ${permit.PermitNumber} closed by ${closedBy}`);
         res.json({ success: true });
@@ -782,7 +782,7 @@ router.post('/permits/:id/void', (req, res) => {
             VALUES (?, 'VOIDED', ?, ?)
         `).run(req.params.id, voidedBy, `Voided: ${reason}`);
 
-        try { logAudit('SAFETY_PERMIT_VOIDED', voidedBy, permit.PlantID, { permitNumber: permit.PermitNumber, reason }); } catch(e) {}
+        try { logAudit(voidedBy, 'SAFETY_PERMIT_VOIDED', permit.PlantID, { permitNumber: permit.PermitNumber, reason }); } catch(e) {}
 
         console.log(`[SAFETY] ❌ Permit ${permit.PermitNumber} voided by ${voidedBy}: ${reason}`);
         res.json({ success: true });

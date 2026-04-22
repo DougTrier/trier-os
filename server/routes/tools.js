@@ -175,7 +175,7 @@ router.post('/:id/checkout', (req, res) => {
         logisticsDb.prepare('INSERT INTO tool_checkouts (ToolDBID, CheckedOutBy, DueBackDate, Notes) VALUES (?,?,?,?)').run(tool.ID, checkedOutBy, dueBack, notes || null);
         logisticsDb.prepare("UPDATE tools_inventory SET Status='Checked Out', UpdatedAt=datetime('now') WHERE ID=?").run(tool.ID);
 
-        try { logAudit('TOOL_CHECKOUT', checkedOutBy, tool.PlantID, { toolId: tool.ToolID, dueBack }); } catch(e) {}
+        try { logAudit(checkedOutBy, 'TOOL_CHECKOUT', tool.PlantID, { toolId: tool.ToolID, dueBack }); } catch(e) {}
         res.json({ success: true, dueBack });
     } catch (err) { res.status(500).json({ error: 'Failed to check out tool' }); }
 });
@@ -195,7 +195,7 @@ router.post('/:id/return', (req, res) => {
         const newStatus = (condition === 'Needs Repair' || condition === 'Poor') ? 'Repair' : 'Available';
         logisticsDb.prepare("UPDATE tools_inventory SET Status=?, Condition=COALESCE(?,Condition), UpdatedAt=datetime('now') WHERE ID=?").run(newStatus, condition || null, tool.ID);
 
-        try { logAudit('TOOL_RETURN', returnedBy || 'system', tool.PlantID, { toolId: tool.ToolID, condition }); } catch(e) {}
+        try { logAudit(returnedBy || 'system', 'TOOL_RETURN', tool.PlantID, { toolId: tool.ToolID, condition }); } catch(e) {}
         res.json({ success: true, newStatus });
     } catch (err) { res.status(500).json({ error: 'Failed to return tool' }); }
 });
