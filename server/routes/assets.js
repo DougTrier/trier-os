@@ -111,7 +111,7 @@ router.get('/', (req, res) => {
                             let sql = 'SELECT *, ? as plantId, ? as plantLabel FROM Asset';
                             let sqlParams = [p.id, p.label];
                             if (whereClause) {
-                                sql += ' WHERE ' + whereClause.replace(/"/g, ''); 
+                                sql += ' WHERE ' + whereClause;
                                 sqlParams = [...sqlParams, ...params];
                             }
                             const siteAssets = tempDb.prepare(sql).all(...sqlParams);
@@ -155,7 +155,7 @@ router.get('/', (req, res) => {
         res.json(result);
     } catch (err) {
         console.error('GET /api/assets error:', err);
-        res.status(500).json({ error: 'Failed to fetch assets: ' });
+        res.status(500).json({ error: 'Failed to fetch assets' });
     }
 });
 
@@ -723,7 +723,7 @@ router.post('/', (req, res) => {
         }
     } catch (err) {
         console.error('POST /api/assets error:', err);
-        res.status(500).json({ error: 'Failed to create asset: ' });
+        res.status(500).json({ error: 'Failed to create asset' });
     }
 });
 
@@ -749,7 +749,7 @@ router.put('/:id', (req, res) => {
         }
     } catch (err) {
         console.error('PUT /api/assets/:id error:', err);
-        res.status(500).json({ error: 'Failed to update asset: ' });
+        res.status(500).json({ error: 'Failed to update asset' });
     }
 });
 
@@ -767,7 +767,7 @@ router.post('/:id/delete', (req, res) => {
         res.json({ success: true, message: 'Asset flagged as deleted' });
     } catch (err) {
         console.error('POST /api/assets/:id/delete error:', err);
-        res.status(500).json({ error: 'Failed to delete asset: ' });
+        res.status(500).json({ error: 'Failed to delete asset' });
     }
 });
 
@@ -782,7 +782,7 @@ router.post('/:id/restore', (req, res) => {
         res.json({ success: true, message: 'Asset restored to active inventory' });
     } catch (err) {
         console.error('POST /api/assets/:id/restore error:', err);
-        res.status(500).json({ error: 'Failed to restore asset: ' });
+        res.status(500).json({ error: 'Failed to restore asset' });
     }
 });
 
@@ -810,9 +810,10 @@ const assetUpload = multer({
     storage: assetPhotoStorage,
     limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
     fileFilter: (req, file, cb) => {
-        const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'];
+        const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'];
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
         const ext = path.extname(file.originalname).toLowerCase();
-        if (allowed.includes(ext)) cb(null, true);
+        if (allowedExts.includes(ext) && allowedMimes.includes(file.mimetype)) cb(null, true);
         else cb(new Error('Only image files are allowed (.jpg, .png, .gif, .webp, .heic)'));
     }
 });

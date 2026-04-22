@@ -134,7 +134,7 @@ router.get('/plants', (req, res) => {
 // Save updated list of plants — auto-creates DB for new plants
 router.put('/plants', (req, res) => {
     try {
-        if (!req.user || (req.user.role !== 'it_admin' && req.user.globalRole !== 'it_admin' && req.user.globalRole !== 'creator')) {
+        if (!req.user || (req.user.globalRole !== 'it_admin' && req.user.globalRole !== 'creator')) {
             return res.status(403).json({ error: 'Administrative privileges required to modify locations.' });
         }
 
@@ -160,11 +160,20 @@ router.put('/plants', (req, res) => {
             return res.status(500).json({ error: 'Master Schema Template DB not found. Ensure schema_template.db is in /data.' });
         }
 
+        const SAFE_PLANT_ID = /^[a-zA-Z0-9_-]{1,64}$/;
         const created = [];
         for (const plant of newPlants) {
+            if (!plant.id || !SAFE_PLANT_ID.test(plant.id)) {
+                console.warn(`[Database] Rejected invalid plant ID: "${plant.id}"`);
+                continue;
+            }
             if (!existingIds.has(plant.id)) {
                 // New plant — create empty DB with schema from template
                 const newDbPath = path.join(dataDir, `${plant.id}.db`);
+                if (!path.resolve(newDbPath).startsWith(path.resolve(dataDir))) {
+                    console.warn(`[Database] Boundary escape attempt blocked for plant ID: "${plant.id}"`);
+                    continue;
+                }
                 if (!fs.existsSync(newDbPath) && templatePath) {
                     try {
                         const Database = require('better-sqlite3');
@@ -263,7 +272,7 @@ router.put('/plants', (req, res) => {
 // Delete a plant entirely
 router.delete('/plants/:id', (req, res) => {
     try {
-        if (!req.user || (req.user.role !== 'it_admin' && req.user.globalRole !== 'it_admin' && req.user.globalRole !== 'creator')) {
+        if (!req.user || (req.user.globalRole !== 'it_admin' && req.user.globalRole !== 'creator')) {
             return res.status(403).json({ error: 'Administrative privileges required.' });
         }
 
@@ -397,9 +406,13 @@ router.get('/export', (req, res) => {
 // List available snapshots for a plant
 router.get('/snapshots', (req, res) => {
     try {
+        if (req.user.globalRole !== 'it_admin' && req.user.globalRole !== 'creator') {
+            return res.status(403).json({ error: 'Access restricted to administrators.' });
+        }
+
         const plantId = req.query.plantId || db.asyncLocalStorage.getStore() || 'Demo_Plant_1';
         const files = fs.readdirSync(dataDir);
-        
+
         let dbBase = `${plantId}.db`;
         if (plantId === 'Demo_Plant_1' && fs.existsSync(path.join(dataDir, 'Trier OS.db'))) {
             dbBase = 'Trier OS.db';
@@ -416,10 +429,6 @@ router.get('/snapshots', (req, res) => {
                 };
             })
             .sort((a, b) => b.created - a.created);
-
-        if (req.user.globalRole !== 'it_admin' && req.user.globalRole !== 'creator') {
-            return res.status(403).json({ error: 'Access restricted to administrators.' });
-        }
 
         res.json(snapshots);
     } catch (err) {

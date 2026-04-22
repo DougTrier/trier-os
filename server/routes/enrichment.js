@@ -46,7 +46,7 @@ const SAFE_INPUT = /^[a-zA-Z0-9._\-\s\/\\#]+$/;
 
 // Get List of Supported Manufacturers
 router.get('/manufacturers', (req, res) => {
-    execFile(pythonPath, [scriptPath, 'manuf_list'], (error, stdout) => {
+    execFile(pythonPath, [scriptPath, 'manuf_list'], { timeout: 15000 }, (error, stdout) => {
         if (error) {
             console.error('Enrichment Engine (Manuf List) Error:', error);
             return res.json([]);
@@ -104,7 +104,7 @@ router.post('/bulk/start', async (req, res) => {
                 const currentData = JSON.stringify({ manufacturer: part.ManufID || '' });
                 
                 await new Promise((resolve) => {
-                    execFile(pythonPath, [scriptPath, 'enrich', String(part.ID), '', currentData], (error, stdout) => {
+                    execFile(pythonPath, [scriptPath, 'enrich', String(part.ID), '', currentData], { timeout: 30000 }, (error, stdout) => {
                         if (error) {
                             bulkProgress.errors.push({ id: part.ID, error: error.message });
                         }
@@ -163,7 +163,7 @@ router.get('/:partNumber', (req, res) => {
         category: currentCategory || ''
     });
 
-    execFile(pythonPath, [scriptPath, 'enrich', partNumber, manufacturer || '', currentData], (error, stdout, stderr) => {
+    execFile(pythonPath, [scriptPath, 'enrich', partNumber, manufacturer || '', currentData], { timeout: 30000 }, (error, stdout, stderr) => {
         if (error) {
             console.error(`Enrichment Engine Error: ${error}`);
             return res.status(500).json({ 

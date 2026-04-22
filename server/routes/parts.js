@@ -268,15 +268,6 @@ router.get('/', (req, res) => {
 
         res.json(result);
     } catch (err) {
-        const fs = require('fs');
-        const errorDetail = `
---- ${new Date().toISOString()} ---
-Error: ${err.message}
-Stack: ${err.stack}
-Query: ${JSON.stringify(req.query)}
--------------------------
-`;
-        fs.appendFileSync('error_debug.log', errorDetail);
         console.error('CRITICAL: GET /api/parts error:', err);
         res.status(500).json({ error: 'Failed to fetch parts' });
     }
@@ -293,6 +284,57 @@ router.get('/next-id', (req, res) => {
     } catch (err) {
         console.error('GET /api/parts/next-id error:', err);
         res.status(500).json({ error: 'Failed to fetch next ID' });
+    }
+});
+
+// ── GET /api/parts/enterprise/low-stock ──────────────────────────────────
+// Cross-plant low stock alerts for enterprise dashboard
+// NOTE: Must be defined before /:id so Express doesn't swallow it as a param route.
+router.get('/enterprise/low-stock', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const Database = require('better-sqlite3');
+        const dataDir = require('../resolve_data_dir');
+        const { getPlants } = require('../plant_cache');
+        const plants = getPlants();
+        const alerts = [];
+
+        for (const p of plants) {
+            const dbPath = path.join(dataDir, `${p.id}.db`);
+            if (!fs.existsSync(dbPath)) continue;
+            try {
+                const tempDb = new Database(dbPath, { readonly: true });
+                const low = tempDb.prepare(`
+                    SELECT ID, Description, Stock, OrdMin, UnitCost, Location
+                    FROM Part
+                    WHERE Stock <= OrdMin AND OrdMin > 0
+                    ORDER BY (OrdMin - Stock) DESC
+                    LIMIT 20
+                `).all();
+
+                low.forEach(part => {
+                    alerts.push({
+                        ...part,
+                        plantId: p.id,
+                        plantLabel: p.label,
+                        deficit: (part.OrdMin || 0) - (part.Stock || 0),
+                        reorderCost: ((part.OrdMin || 0) - (part.Stock || 0)) * (parseFloat(String(part.UnitCost || '0').replace(/[^0-9.]/g, '')) || 0)
+                    });
+                });
+
+                tempDb.close();
+            } catch(e) { console.warn(`[Parts] Low-stock scan failed for ${p.id}: ${e.message}`); }
+        }
+
+        res.json({
+            alerts: alerts.sort((a, b) => b.deficit - a.deficit),
+            totalAlerts: alerts.length,
+            plantsScanned: plants.length
+        });
+    } catch (err) {
+        console.error('GET /api/parts/enterprise/low-stock error:', err);
+        res.status(500).json({ error: 'Failed to scan enterprise inventory' });
     }
 });
 
@@ -467,9 +509,9 @@ router.post('/:id/adjust', (req, res) => {
 // ── DELETE /api/parts/:id ──────────────────────────────────────────────
 router.delete('/:id', (req, res) => {
     try {
-        const userRole = req.user?.DefaultRole || 'technician';
-        const isCreator = req.user?.Username === 'Doug Trier';
-        
+        const userRole = req.user?.globalRole || 'technician';
+        const isCreator = req.user?.globalRole === 'creator';
+
         if (userRole !== 'it_admin' && !isCreator) {
             return res.status(403).json({ error: 'Only administrators can delete parts from the catalog.' });
         }
@@ -485,56 +527,6 @@ router.delete('/:id', (req, res) => {
     } catch (err) {
         console.error('DELETE /api/parts/:id error:', err);
         res.status(500).json({ error: 'Failed to delete part: ' });
-    }
-});
-
-// ── GET /api/parts/enterprise/low-stock ──────────────────────────────────
-// Cross-plant low stock alerts for enterprise dashboard
-router.get('/enterprise/low-stock', (req, res) => {
-    try {
-        const fs = require('fs');
-        const path = require('path');
-        const Database = require('better-sqlite3');
-        const dataDir = require('../resolve_data_dir');
-        const { getPlants } = require('../plant_cache');
-        const plants = getPlants();
-        const alerts = [];
-
-        for (const p of plants) {
-            const dbPath = path.join(dataDir, `${p.id}.db`);
-            if (!fs.existsSync(dbPath)) continue;
-            try {
-                const tempDb = new Database(dbPath, { readonly: true });
-                const low = tempDb.prepare(`
-                    SELECT ID, Description, Stock, OrdMin, UnitCost, Location
-                    FROM Part 
-                    WHERE Stock <= OrdMin AND OrdMin > 0
-                    ORDER BY (OrdMin - Stock) DESC
-                    LIMIT 20
-                `).all();
-
-                low.forEach(part => {
-                    alerts.push({
-                        ...part,
-                        plantId: p.id,
-                        plantLabel: p.label,
-                        deficit: (part.OrdMin || 0) - (part.Stock || 0),
-                        reorderCost: ((part.OrdMin || 0) - (part.Stock || 0)) * (parseFloat(String(part.UnitCost || '0').replace(/[^0-9.]/g, '')) || 0)
-                    });
-                });
-
-                tempDb.close();
-            } catch(e) { console.warn(`[Parts] Low-stock scan failed for ${p.id}: ${e.message}`); }
-        }
-
-        res.json({
-            alerts: alerts.sort((a, b) => b.deficit - a.deficit),
-            totalAlerts: alerts.length,
-            plantsScanned: plants.length
-        });
-    } catch (err) {
-        console.error('GET /api/parts/enterprise/low-stock error:', err);
-        res.status(500).json({ error: 'Failed to scan enterprise inventory' });
     }
 });
 

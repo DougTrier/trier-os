@@ -5,7 +5,7 @@
  * Trier OS is proprietary software. Unauthorized copying,
  * distribution, or reverse engineering is strictly prohibited.
  */
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
@@ -63,9 +63,7 @@ const enrichPartSilent = (id, manuf) => {
     return new Promise((resolve) => {
         const pythonPath = 'python';
         const scriptPath = path.join(__dirname, '..', 'enrichment', 'engine.py');
-        const cmd = `${pythonPath} "${scriptPath}" enrich "${id}" "${manuf || ''}"`;
-        
-        exec(cmd, (error) => {
+        execFile(pythonPath, [scriptPath, 'enrich', id, manuf || ''], { timeout: 30000 }, (error) => {
             if (error) console.error(`Background Enrichment Failed: ${id}`);
             resolve();
         });

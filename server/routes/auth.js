@@ -114,13 +114,8 @@ router.post('/login', async (req, res) => {
     }
 
     if (!user) {
-        const adminUser = authDb.prepare("SELECT * FROM Users WHERE Username = 'it_admin'").get();
-        if (adminUser && await bcrypt.compare(password, adminUser.PasswordHash)) {
-            user = adminUser;
-        } else {
-            logAudit(username, 'LOGIN_FAILURE', null, { reason: 'User not found' }, 'WARNING', req.ip);
-            return res.status(401).json({ error: 'Invalid username or location' });
-        }
+        logAudit(username, 'LOGIN_FAILURE', null, { reason: 'User not found' }, 'WARNING', req.ip);
+        return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (await bcrypt.compare(password, user.PasswordHash)) {
@@ -149,7 +144,7 @@ router.post('/login', async (req, res) => {
         return issueJWT(user, req, res);
     } else {
         logAudit(username, 'LOGIN_FAILURE', null, { reason: 'Invalid password' }, 'WARNING', req.ip);
-        res.status(401).json({ error: 'Invalid password' });
+        res.status(401).json({ error: 'Invalid credentials' });
     }
 });
 
@@ -234,11 +229,14 @@ function issueJWT(user, req, res) {
 
     // Hub token — stored in localStorage (not httpOnly) so the PWA can pass it
     // as a WebSocket query param when connecting to the LAN hub offline.
-    // Minimal claims only: identity + plant. Same secret, same expiry.
+    // Uses a dedicated secret (HUB_TOKEN_SECRET) when configured so a stolen
+    // localStorage token cannot be replayed against the main API (different key).
+    // Minimal claims only: identity + plant, no roles.
+    const HUB_TOKEN_SECRET = process.env.HUB_TOKEN_SECRET || JWT_SECRET;
     const hubToken = jwt.sign(
         { UserID: user.UserID, Username: user.Username, nativePlantId: homePlant },
-        JWT_SECRET,
-        { expiresIn: '7d' }
+        HUB_TOKEN_SECRET,
+        { expiresIn: '24h' }
     );
 
     const token = jwt.sign(
@@ -301,7 +299,7 @@ async function attemptLdapAuth(config, username, password) {
     try { ldap = require('ldapjs'); } catch (e) { return { success: false }; }
 
     const url = `${config.UseTLS ? 'ldaps' : 'ldap'}://${config.Host}:${config.Port}`;
-    const client = ldap.createClient({ url, connectTimeout: 5000, timeout: 5000, tlsOptions: { rejectUnauthorized: false } });
+    const client = ldap.createClient({ url, connectTimeout: 5000, timeout: 5000, tlsOptions: { rejectUnauthorized: !config.TLSIgnoreCert } });
 
     return new Promise((resolve) => {
         const timer = setTimeout(() => { client.destroy(); resolve({ success: false }); }, 6000);
@@ -413,6 +411,11 @@ router.post('/register', async (req, res) => {
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
+        return res.status(400).json({ error: pwCheck.error });
     }
 
     // Must provide either invite code OR plant password

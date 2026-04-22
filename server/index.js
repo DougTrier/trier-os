@@ -2111,7 +2111,7 @@ app.listen(PORT, '0.0.0.0', async () => {
             const centralUrl = `http://localhost:${PORT}`;
             lanHub.start({
                 dataDir: _resolvedDataDir,
-                jwtSecret: process.env.JWT_SECRET,
+                jwtSecret: process.env.HUB_TOKEN_SECRET || process.env.JWT_SECRET,
                 centralUrl,
             });
         } catch (err) {

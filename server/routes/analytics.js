@@ -68,7 +68,7 @@ function sanitizePlantId(raw) {
 // When x-plant-id is set to a specific plant, only that plant's data is returned.
 // Corporate_Office and all_sites see the full enterprise sweep.
 router.get('/narrative', (req, res) => {
-    const requestedPlant = req.headers['x-plant-id'] || 'all_sites';
+    const requestedPlant = sanitizePlantId(req.headers['x-plant-id']) || 'all_sites';
     const isEnterprise = !requestedPlant || requestedPlant === 'all_sites' || requestedPlant === 'Corporate_Office';
     const cacheKey = isEnterprise ? 'enterprise_narrative' : `narrative_${requestedPlant}`;
     
@@ -77,7 +77,7 @@ router.get('/narrative', (req, res) => {
 
     try {
         const dataDir = require('../resolve_data_dir');
-        const NON_PLANT = new Set(['corporate_master','Corporate_Office','dairy_master','it_master','logistics','schema_template','schema_template']);
+        const NON_PLANT = new Set(['corporate_master','Corporate_Office','dairy_master','it_master','logistics','schema_template']);
         let dbFiles = fs.readdirSync(dataDir).filter(f => f.endsWith('.db') && !f.includes('trier_') && !NON_PLANT.has(f.replace('.db','')));
 
         // Filter to single plant if not enterprise view
@@ -102,7 +102,7 @@ router.get('/narrative', (req, res) => {
 
         // Sweep databases (single or all)
         for (const dbFile of dbFiles) {
-            const plantName = dbFile.replace('.db', '').replace('_', ' ');
+            const plantName = dbFile.replace('.db', '').replace(/_/g, ' ');
 
             try {
                 const tempDb = new Database(path.join(dataDir, dbFile), { readonly: true });

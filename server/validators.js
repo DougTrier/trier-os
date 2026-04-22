@@ -21,7 +21,7 @@ const whitelists = {
     work: [
         'ID', 'WorkOrderNumber', 'Description', 'AddDate', 'SchDate', 'StatusID',
         'AstID', 'Priority', 'AssignToID', 'Comment', 'ProcComment',
-        'TechnicianID', 'WorkTypeID', 'DeptID', 'LocationID',
+        'TechnicianID', 'TypeID', 'DeptID', 'LocationID',
         'Resolution', 'Userkey', 'UserID', 'OpenNotStarted', 'ExpectedDuration',
         'GPSAccuracy',
         'CompleteLng',
@@ -29,7 +29,8 @@ const whitelists = {
         'StartLng',
         'StartLat',
         'FailureMode',
-        'WOSource', 'DowntimeCost', 'SchID'
+        'WOSource', 'DowntimeCost', 'SchID',
+        'CompDate', 'ReasonID'
     ],
     asset: [
         'ID', 'Description', 'AssetType', 'LocationID', 'DeptID', 'Serial',
