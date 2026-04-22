@@ -463,7 +463,7 @@ router.post('/:id/adjust', (req, res) => {
             // 1. Record the adjustment in the historical ledger
             // Note: We use the actual schema columns: Qty, AdjTypID, Comment, UnitCost
             plantDb.prepare(
-                `INSERT INTO "PartAdjustments" (PartID, UserID, Qty, AdjTypID, Comment, UnitCost, Updated) 
+                `INSERT INTO "PartAdjustments" (PartID, UserID, Qty, AdjTypID, Comment, UnitCost, Updated)
                  VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
             ).run(partId, req.user?.Username || 'SYSTEM', adjQty, type, reason || '', adjCost || null);
 
@@ -480,7 +480,12 @@ router.post('/:id/adjust', (req, res) => {
             }
         });
 
-        tx();
+        // Audit 47 / M-11: run in IMMEDIATE mode so the write lock is taken at
+        // BEGIN. Previously two concurrent adjustments on the same part could
+        // both enter the transaction body and produce a double-adjust; with
+        // IMMEDIATE the second caller waits (or errors SQLITE_BUSY after
+        // busy_timeout), eliminating the race.
+        tx.immediate();
 
         // ── ERP Write-Back: queue part_consume event for negative adjustments ──
         if (adjQty < 0 && String(type) !== '4') {
