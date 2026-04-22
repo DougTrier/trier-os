@@ -461,18 +461,6 @@ app.use('/api/database',          express.json({ limit: '25mb' }));
 app.use('/api/plant-setup',       express.json({ limit: '25mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-
-// Audit 47 / L-6: long-running legitimate routes extend the per-request timeout
-// to 5 minutes. Default server timeout (set after listen() below) is 30 s, which
-// would otherwise cut off imports / bulk analytics / DB restore mid-flight.
-const LONG_ROUTE_PREFIXES = ['/api/import', '/api/production-import', '/api/database', '/api/corporate-analytics'];
-app.use((req, res, next) => {
-    if (LONG_ROUTE_PREFIXES.some(p => req.path.startsWith(p))) {
-        req.setTimeout?.(5 * 60 * 1000);
-        res.setTimeout?.(5 * 60 * 1000);
-    }
-    next();
-});
 app.use(cookieParser()); // Task 1.2: must be before auth middleware so req.cookies.authToken is readable
 const _resolvedDataDir = require('./resolve_data_dir');
 app.use('/uploads', express.static(path.join(_resolvedDataDir, 'uploads')));
@@ -2153,11 +2141,17 @@ try {
 
 console.log('[BOOT] Stage 8: Calling app.listen on port', PORT, '...');
 const _httpServer = app.listen(PORT, '0.0.0.0', async () => {
-    // Audit 47 / L-6: 30-second default request timeout. Long-running routes
-    // (import, bulk analytics, DB restore) override upward via the middleware
-    // mounted earlier. Slow-loris attacks and stuck handlers now release
-    // their worker thread after 30 s instead of pinning it indefinitely.
-    _httpServer.setTimeout(30 * 1000);
+    // Audit 47 / L-6: cap total per-request duration at 2 minutes. This uses
+    // server.requestTimeout (Node 18+) which measures wall-clock time from
+    // request start to response end — NOT socket idle time. An earlier version
+    // set server.setTimeout(30_000), which treats the socket as idle during a
+    // long synchronous better-sqlite3 query and killed list requests on large
+    // plants (Work/Asset tables with 100k+ rows) mid-flight. requestTimeout
+    // is the correct knob: slow-loris and stuck handlers still free up after
+    // 2 min, but legitimate cold queries against large datasets complete.
+    // Node also protects at the header layer via the default 60 s
+    // headersTimeout, so we don't need to manage that separately.
+    _httpServer.requestTimeout = 2 * 60 * 1000;
     _serverReady = true; // Signal to Electron poller that boot is complete
     // Use the same smart detection as the API endpoint
     const os = require('os');
