@@ -138,10 +138,18 @@ function getPendingScans(dataDir, plantId) {
         // R-10: SYNCED_BY_CLIENT rows are excluded — the device sent SYNC_COMPLETE,
         // confirming it already pushed those scans directly. Without that explicit signal
         // the hub was the only thing preventing a double-replay after the 10-minute timer.
+        // Audit 47 / M-13: the DEDUP_CLIENT re-adopt window was 10 minutes —
+        // long enough that a device which sent SYNC_PENDING and then legitimately
+        // pushed to central directly before its SYNC_COMPLETE arrived would see
+        // the hub also replay those scans on the next reconnect tick. Duplicates
+        // are absorbed by ScanAuditLog.scanId UNIQUE, but the FAILED-vs-already
+        // -processed log noise confused operators. Tighten to 3 minutes: most
+        // offline sync flows complete within seconds; genuine crashes beyond
+        // 3 min still get re-adopted, just with less operator-visible noise.
         return db.prepare(`
             SELECT * FROM OfflineScanQueue
             WHERE syncStatus = 'PENDING'
-               OR (syncStatus = 'DEDUP_CLIENT' AND queuedAt < datetime('now', '-10 minutes'))
+               OR (syncStatus = 'DEDUP_CLIENT' AND queuedAt < datetime('now', '-3 minutes'))
             ORDER BY queuedAt ASC
         `).all();
     } finally {
