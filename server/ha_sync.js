@@ -382,10 +382,18 @@ function applyReplicatedEntries(plantId, entries) {
             }
         });
 
-        // Disable triggers before applying, re-enable after
-        disableSyncTriggers(plantDb);
-        applyTx();
-        enableSyncTriggers(plantDb);
+        // Disable triggers before applying, re-enable after.
+        // Audit 47 / H-2: Wrap the disable → apply → enable sequence in an
+        // IMMEDIATE transaction. Without this, foreground writes on the primary
+        // between disable and enable would bypass sync_ledger, causing the
+        // secondary to diverge silently. BEGIN IMMEDIATE acquires the write
+        // lock up front so concurrent writers are serialized behind us; the
+        // inner applyTx() becomes a savepoint inside this outer transaction.
+        plantDb.transaction(() => {
+            disableSyncTriggers(plantDb);
+            applyTx();
+            enableSyncTriggers(plantDb);
+        }).immediate();
 
     } catch (err) {
         results.errors.push({ error: err.message });
