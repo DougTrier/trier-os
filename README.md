@@ -1,7 +1,7 @@
 Read this in other languages: English | Español | Français | Deutsch | 中文 | Português | 日本語 | 한국어 | العربية | हिन्दी | Türkçe |
 
 <div align="center">
-  <img src="./public/assets/TrierOS_Logo.png" alt="Trier OS Banner" width="600">
+  <img src="./public/assets/TrierOS_Logo.png" alt="Trier OS Banner" width="200">
 
   # Trier OS
   
