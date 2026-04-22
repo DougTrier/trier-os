@@ -8,16 +8,17 @@
 ## Summary
 
 - **Total Tasks:** 34
-- **Completed:** 7
-- **Remaining:** 27
+- **Completed:** 8 (🎉 **Wave 1 done**)
+- **Remaining:** 26
 - **Critical:** 0
-- **High:** 8 (7 done, 1 remaining — TASK-08)
+- **High:** 8 (8 done)
 - **Medium:** 17 (0 done)
 - **Low:** 9 (0 done)
 
-Eight High-severity tasks block general-availability; most are small, surgical fixes. Medium-severity work is the bulk of the effort (17 tasks covering concurrency, delivery guarantees, rate-limit scoping, and secret handling). Lows are maintainability and future-proofing. None of the 34 tasks require architectural rework. Estimated total effort: 1 focused sprint for Wave 1, a second sprint for Wave 2, Waves 3 and 4 absorbable in backlog.
+All eight High-severity blockers are shipped. Wave 2 (Core Hardening) is up next: 15 Medium tasks covering body-size limits, TOTP replay, rate-limiting, SMTP encryption, CSP tightening, webhook outbox retry, lidar path containment, and related hardening. Waves 3 and 4 stay absorbable in backlog.
 
 **Progress log (most recent first):**
+- `a96fd26` — TASK-08 — Audit-log coverage sweep **(closes Wave 1)**
 - `71f1a6e` — TASK-02 — TokenVersion claim for JWT revocation
 - `56b3c01` — TASK-07 — ERP outbox idempotency
 - `1fc0908` — TASK-06 — Part stock negative-decrement race
@@ -41,7 +42,9 @@ Eight High-severity tasks: a broken safety guard allowing destruction of complet
 - [x] TASK-05 · H-2 · HA sync trigger race — commit `ab3208f`
 - [x] TASK-06 · H-3 · Part stock negative-decrement race — commit `1fc0908`
 - [x] TASK-07 · H-4 · ERP outbox idempotency — commit `56b3c01`
-- [ ] TASK-08 · H-7 · Audit-log coverage sweep
+- [x] TASK-08 · H-7 · Audit-log coverage sweep — commit `a96fd26`
+
+**🎉 Wave 1 complete — all 8 High-severity items shipped.**
 
 ---
 
@@ -362,7 +365,9 @@ Duplicate `wo_close` / `part_consume` events cause ERPs to double-count labor, p
 
 ---
 
-### TASK-08
+### TASK-08 ✅
+
+**Status:** Completed — commit `a96fd26`
 
 **Source Finding:** H-7
 
