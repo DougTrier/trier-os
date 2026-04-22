@@ -76,6 +76,24 @@ module.exports = async (req, res, next) => {
     if (!token) return res.status(401).json({ error: 'Missing authorization token' });
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Audit 47 / H-5: in-band session revocation via TokenVersion claim.
+        // Password change, admin reset, and role edit bump Users.TokenVersion;
+        // any token whose claim is below the current DB value is stale and
+        // must be rejected. A deleted user (row missing) is also a 401 —
+        // previously a deleted user's JWT remained honored until natural expiry.
+        // Missing claim (pre-TokenVersion tokens) is treated as 0, matching the
+        // default DB value — existing sessions remain valid until the first bump.
+        const userRow = authDb.prepare('SELECT TokenVersion FROM Users WHERE UserID = ?').get(decoded.UserID);
+        if (!userRow) {
+            return res.status(401).json({ error: 'Account no longer exists' });
+        }
+        const claimVersion = Number(decoded.tokenVersion ?? 0);
+        const currentVersion = Number(userRow.TokenVersion ?? 0);
+        if (claimVersion < currentVersion) {
+            return res.status(401).json({ error: 'Session invalidated — please log in again' });
+        }
+
         req.user = decoded; // Contains parsed { UserID, Username, globalRole, plantRoles, nativePlantId }
 
         // Strict Read-Only Mode enforcement across foreign plants

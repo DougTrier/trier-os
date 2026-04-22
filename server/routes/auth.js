@@ -253,7 +253,11 @@ function issueJWT(user, req, res) {
             canSensorConfig: user.CanSensorConfig === 1,
             canSensorThresholds: user.CanSensorThresholds === 1,
             canSensorView: user.CanSensorView === 1,
-            canViewAnalytics: user.CanViewAnalytics === 1
+            canViewAnalytics: user.CanViewAnalytics === 1,
+            // Audit 47 / H-5: middleware rejects the token if this claim drops
+            // below the current DB value for this user — enables in-band
+            // session revocation on password/role/permission changes.
+            tokenVersion: Number(user.TokenVersion ?? 0),
         },
         JWT_SECRET,
         { expiresIn: '7d' }
@@ -535,7 +539,11 @@ router.post('/reset-password', async (req, res) => {
         const tempPassword = crypto.randomBytes(8).toString('base64url');
         const hash = await bcrypt.hash(tempPassword, 10);
         
-        authDb.prepare('UPDATE Users SET PasswordHash = ?, MustChangePassword = 1 WHERE UserID = ?').run(hash, user.UserID);
+        // Audit 47 / H-5: bump TokenVersion so any existing session for this
+        // user is invalidated the moment the admin resets their password.
+        authDb.prepare(
+            'UPDATE Users SET PasswordHash = ?, MustChangePassword = 1, TokenVersion = COALESCE(TokenVersion, 0) + 1 WHERE UserID = ?'
+        ).run(hash, user.UserID);
 
         logAudit(decoded.Username, 'PASSWORD_RESET_BY_ADMIN', null, { target: targetUsername }, 'WARNING', req.ip);
 
@@ -578,7 +586,11 @@ router.post('/change-password', async (req, res) => {
         if (!pwCheck.valid) return res.status(400).json({ error: pwCheck.error });
 
         const hash = await bcrypt.hash(newPassword, 10);
-        authDb.prepare('UPDATE Users SET PasswordHash = ?, MustChangePassword = 0 WHERE UserID = ?').run(hash, user.UserID);
+        // Audit 47 / H-5: bump TokenVersion atomically with the password change
+        // so every JWT issued before this moment is rejected by the middleware.
+        authDb.prepare(
+            'UPDATE Users SET PasswordHash = ?, MustChangePassword = 0, TokenVersion = COALESCE(TokenVersion, 0) + 1 WHERE UserID = ?'
+        ).run(hash, user.UserID);
 
         logAudit(decoded.Username, 'PASSWORD_CHANGE', null, { targetUser: user.Username }, 'INFO', req.ip);
 
@@ -668,7 +680,7 @@ router.post('/users/update-access', async (req, res) => {
             // Transactional update
             const deleteOld = authDb.prepare('DELETE FROM UserPlantRoles WHERE UserID = ?');
             const insertNew = authDb.prepare('INSERT INTO UserPlantRoles (UserID, PlantID, RoleLevel) VALUES (?, ?, ?)');
-            
+
             const sync = authDb.transaction((userId, roles) => {
                 deleteOld.run(userId);
                 for (const r of roles) {
@@ -677,6 +689,11 @@ router.post('/users/update-access', async (req, res) => {
             });
             sync(user.UserID, plantRoles);
         }
+
+        // Audit 47 / H-5 (and SEC-18 from prior audit): bump TokenVersion AFTER
+        // role/permission and plant-role mutations have committed, so any live
+        // session with the old claims is rejected on its next request.
+        authDb.prepare('UPDATE Users SET TokenVersion = COALESCE(TokenVersion, 0) + 1 WHERE UserID = ?').run(user.UserID);
 
         logAudit(decoded.Username, 'ACCESS_UPDATED', null, { target: targetUsername, role: defaultRole, dashboard: canAccessDashboard, global: globalAccess, analytics: canViewAnalytics }, 'INFO', req.ip);
         res.json({ success: true });

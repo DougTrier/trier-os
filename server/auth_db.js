@@ -76,6 +76,11 @@ try { db.exec("ALTER TABLE Users ADD COLUMN Email TEXT;"); } catch(e){}
 try { db.exec("ALTER TABLE Users ADD COLUMN Phone TEXT;"); } catch(e){}
 try { db.exec("ALTER TABLE Users ADD COLUMN Title TEXT;"); } catch(e){}
 try { db.exec("ALTER TABLE Users ADD COLUMN CanViewAnalytics INTEGER DEFAULT 0;"); } catch(e){}
+// Audit 47 / H-5: TokenVersion is bumped on password change, role edit, and
+// admin reset. JWTs embed the version at mint time; the auth middleware
+// rejects any token whose claim is lower than the current DB value, giving
+// us in-band session revocation for compromised or demoted accounts.
+try { db.exec("ALTER TABLE Users ADD COLUMN TokenVersion INTEGER DEFAULT 0;"); } catch(e){}
 
 // Ensure creator@trieros has the formal 'creator' role and IT Admin is fully empowered
 db.prepare(`
