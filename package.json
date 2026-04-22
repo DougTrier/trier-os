@@ -1,6 +1,6 @@
 {
   "name": "trier-os",
-  "version": "3.4.3",
+  "version": "3.5.0",
   "description": "Trier OS — Enterprise Maintenance Management System",
   "main": "electron/main.js",
   "scripts": {
