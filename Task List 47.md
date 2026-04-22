@@ -8,16 +8,17 @@
 ## Summary
 
 - **Total Tasks:** 34
-- **Completed:** 6
-- **Remaining:** 28
+- **Completed:** 7
+- **Remaining:** 27
 - **Critical:** 0
-- **High:** 8 (6 done, 2 remaining)
+- **High:** 8 (7 done, 1 remaining — TASK-08)
 - **Medium:** 17 (0 done)
 - **Low:** 9 (0 done)
 
 Eight High-severity tasks block general-availability; most are small, surgical fixes. Medium-severity work is the bulk of the effort (17 tasks covering concurrency, delivery guarantees, rate-limit scoping, and secret handling). Lows are maintainability and future-proofing. None of the 34 tasks require architectural rework. Estimated total effort: 1 focused sprint for Wave 1, a second sprint for Wave 2, Waves 3 and 4 absorbable in backlog.
 
 **Progress log (most recent first):**
+- `71f1a6e` — TASK-02 — TokenVersion claim for JWT revocation
 - `56b3c01` — TASK-07 — ERP outbox idempotency
 - `1fc0908` — TASK-06 — Part stock negative-decrement race
 - `ab3208f` — TASK-05 — HA sync trigger race
@@ -34,7 +35,7 @@ Eight High-severity tasks block general-availability; most are small, surgical f
 Eight High-severity tasks: a broken safety guard allowing destruction of completed WOs, token-lifetime gaps that keep demoted users privileged, an invite-code boundary bypass, concurrency/idempotency holes in HA sync and outbound delivery, a credential-isolation silent fallback, and a systemic audit-log coverage gap.
 
 - [x] TASK-01 · H-1 · WO delete status guard — commit `b23df21`
-- [ ] TASK-02 · H-5 · Token version claim for JWT revocation
+- [x] TASK-02 · H-5 · Token version claim for JWT revocation — commit `71f1a6e`
 - [x] TASK-03 · H-6 · Invite-code plant override — commit `ee1cf44`
 - [x] TASK-04 · H-8 · HUB_TOKEN_SECRET isolation — commit `fcda760`
 - [x] TASK-05 · H-2 · HA sync trigger race — commit `ab3208f`
@@ -132,7 +133,9 @@ Simultaneously add a `logAudit` call before the DELETE so the action is recorded
 
 ---
 
-### TASK-02
+### TASK-02 ✅
+
+**Status:** Completed — commit `71f1a6e`
 
 **Source Finding:** H-5
 
