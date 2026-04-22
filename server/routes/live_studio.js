@@ -144,6 +144,25 @@ function resolveWhitelisted(relativePath) {
     return abs;
 }
 
+// ── Recursive file collector ──────────────────────────────────────────────────
+// Returns all file paths under baseDir, skipping symlinked directories.
+// Symlinked files are caught later by resolveWhitelisted().
+function collectFiles(baseDir) {
+    const results = [];
+    function walk(dir) {
+        try {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                if (entry.isSymbolicLink()) continue;
+                const abs = path.join(dir, entry.name);
+                if (entry.isDirectory()) walk(abs);
+                else if (entry.isFile()) results.push(abs);
+            }
+        } catch { /* skip unreadable dirs */ }
+    }
+    walk(baseDir);
+    return results;
+}
+
 // ── GET /api/studio/search?q=... ─────────────────────────────────────────────
 // Full-text search across all whitelisted source files. Returns files that
 // contain the query string with up to 3 line-preview snippets per file,
@@ -156,12 +175,12 @@ router.get('/search', (req, res) => {
     WHITELIST_DIRS.forEach(dir => {
         if (!fs.existsSync(dir)) return;
         const section = path.relative(PROJECT_ROOT, dir).replace(/\\/g, '/');
-        fs.readdirSync(dir)
-            .filter(f => ['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(f).toLowerCase()))
+        collectFiles(dir)
+            .filter(abs => ['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(abs).toLowerCase()))
             .sort()
-            .forEach(f => {
-                const abs = path.join(dir, f);
-                const relPath = `${section}/${f}`;
+            .forEach(abs => {
+                const relPath = path.relative(PROJECT_ROOT, abs).replace(/\\/g, '/');
+                const name = path.basename(abs);
                 try {
                     const content = fs.readFileSync(abs, 'utf8');
                     const lines = content.split('\n');
@@ -173,7 +192,7 @@ router.get('/search', (req, res) => {
                     });
                     if (matches.length > 0) {
                         results.push({
-                            name: f, path: relPath, section,
+                            name, path: relPath, section,
                             matchCount: matches.length,
                             matches: matches.slice(0, 3),
                         });
@@ -193,13 +212,13 @@ router.get('/files', (req, res) => {
         WHITELIST_DIRS.forEach(dir => {
             if (!fs.existsSync(dir)) return;
             const section = path.relative(PROJECT_ROOT, dir).replace(/\\/g, '/');
-            fs.readdirSync(dir)
-                .filter(f => ['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(f).toLowerCase()))
+            collectFiles(dir)
+                .filter(abs => ['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(abs).toLowerCase()))
                 .sort()
-                .forEach(f => {
-                    const rel = `${section}/${f}`;
-                    const stats = fs.statSync(path.join(dir, f));
-                    files.push({ name: f, path: rel, section, size: stats.size, mtime: stats.mtime });
+                .forEach(abs => {
+                    const rel = path.relative(PROJECT_ROOT, abs).replace(/\\/g, '/');
+                    const stats = fs.statSync(abs);
+                    files.push({ name: path.basename(abs), path: rel, section, size: stats.size, mtime: stats.mtime });
                 });
         });
         res.json({ files });

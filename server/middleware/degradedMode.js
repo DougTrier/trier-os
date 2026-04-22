@@ -28,6 +28,8 @@
 
 'use strict';
 
+const cluster = require('cluster');
+
 // ── System Mode Singleton ─────────────────────────────────────────────────────
 
 const MODES = {
@@ -55,9 +57,20 @@ function getModeInfo() {
     };
 }
 
+// Internal: apply mode change to this process's state only (no broadcast).
+function _applyMode(mode, reason, setBy) {
+    const prev = _currentMode;
+    _currentMode = mode;
+    _modeSince   = new Date().toISOString();
+    _modeReason  = reason;
+    _modeSetBy   = setBy;
+    console.log(`[DegradedMode] Mode changed: ${prev} → ${mode} (by ${setBy}${reason ? ': ' + reason : ''})`);
+}
+
 /**
  * Set the system mode. Called by the health route on admin request,
  * or internally when a subsystem anomaly is detected.
+ * In cluster mode, broadcasts the change to all sibling workers via the primary.
  * @param {string} mode   One of MODES values
  * @param {string} reason Human-readable reason string
  * @param {string} setBy  Username or 'system'
@@ -66,12 +79,20 @@ function setMode(mode, reason = null, setBy = 'system') {
     if (!MODES[mode]) {
         throw new Error(`Unknown mode: ${mode}. Valid: ${Object.keys(MODES).join(', ')}`);
     }
-    const prev = _currentMode;
-    _currentMode  = mode;
-    _modeSince    = new Date().toISOString();
-    _modeReason   = reason;
-    _modeSetBy    = setBy;
-    console.log(`[DegradedMode] Mode changed: ${prev} → ${mode} (by ${setBy}${reason ? ': ' + reason : ''})`);
+    _applyMode(mode, reason, setBy);
+    // In cluster mode, ask the primary to relay the change to all other workers.
+    if (cluster.isWorker) {
+        process.send({ type: 'DEGRADED_MODE_SYNC', mode, reason, setBy });
+    }
+}
+
+// Listen for mode broadcasts relayed from the primary (worker side only).
+if (cluster.isWorker) {
+    process.on('message', (msg) => {
+        if (msg && msg.type === 'DEGRADED_MODE_SYNC' && MODES[msg.mode]) {
+            _applyMode(msg.mode, msg.reason || null, msg.setBy || 'system');
+        }
+    });
 }
 
 // ── Paths that bypass the write block ────────────────────────────────────────

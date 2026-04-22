@@ -85,7 +85,7 @@ function processPlantPMs(dbPath, plantName) {
         db.transaction(() => {
             for (const pm of dueNow) {
                 // Ensure we don't duplicate inject open WOs for the same PM task natively
-                const existingOpen = db.prepare("SELECT 1 FROM Work WHERE Description LIKE ? AND StatusID < 40").get(`%[PM-AUTO] ?%`, [pm.Description]);
+                const existingOpen = db.prepare("SELECT 1 FROM Work WHERE Description LIKE ? AND StatusID < 40").get(`%[PM-AUTO] ${pm.Description}%`);
                 if (!existingOpen) {
                     // Inject a clean narrative Work Order automatically generated
                     const woNumStr = `PM-${Date.now().toString().slice(-6)}-${pm.ID}`;
@@ -162,7 +162,7 @@ function processMeterPMs(dbPath, plantName) {
                     // Check for duplicate open WO
                     const existingOpen = db.prepare(
                         "SELECT 1 FROM Work WHERE Description LIKE ? AND StatusID < 40"
-                    ).get(`%[PM-METER] ?%`, [pm.Description]);
+                    ).get(`%[PM-METER] ${pm.Description}%`);
 
                     if (!existingOpen) {
                         const woNum = `PM-M-${Date.now().toString().slice(-6)}-${pm.ID}`;

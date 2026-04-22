@@ -88,8 +88,17 @@ function validateTableName(tableName, db = null) {
 
 // getDb() resolves which SQLite file to use for the current request.
 // Priority: explicit param > AsyncLocalStorage context > fallback to Demo_Plant_1.
+// In production, missing context is a hard error — a misconfigured route hitting
+// the wrong plant's data with no indication is worse than a visible crash.
 function getDb(requestedPlantId = null) {
-    let plantId = requestedPlantId || asyncLocalStorage.getStore() || 'Demo_Plant_1';
+    const contextPlantId = asyncLocalStorage.getStore();
+    if (!requestedPlantId && !contextPlantId) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('[getDb] No plant context — AsyncLocalStorage not set and no explicit plantId. Check middleware ordering.');
+        }
+        // Development: fall back to Demo_Plant_1 for convenience (e.g. startup migrations)
+    }
+    let plantId = requestedPlantId || contextPlantId || 'Demo_Plant_1';
 
     // SECURITY: Strip any characters that could be used for path traversal (../ etc.)
     // Only alphanumeric, underscores, spaces, and hyphens survive.
@@ -103,12 +112,22 @@ function getDb(requestedPlantId = null) {
         let dbFileName = `${plantId}.db`;
         const dbPath = path.join(dataDir, dbFileName);
         let isNew = !fs.existsSync(dbPath);
+        let savedLeaders = []; // hoisted so restore block below can access it without global
         if (!isNew) {
             const size = fs.statSync(dbPath).size;
-            if (size < 32768) { // 32KB — only catch truly empty/corrupt DBs
+            // Corrupt-DB threshold: legitimate plant DBs are bootstrapped from
+            // schema_template.db (~19MB), so a fresh copy is always >> 32KB.
+            // We compute the floor dynamically so the check stays correct if
+            // the template ever shrinks: cap at 32KB but never exceed half the
+            // template size (a valid fresh copy must be at least that large).
+            let _corruptThreshold = 32768;
+            try {
+                const tmplSize = fs.statSync(path.join(dataDir, 'schema_template.db')).size;
+                if (tmplSize > 0) _corruptThreshold = Math.min(32768, Math.floor(tmplSize / 2));
+            } catch (_) { /* template missing — keep 32KB default */ }
+            if (size < _corruptThreshold) { // only catch truly truncated/corrupt DBs
                 console.log(`  📂 Site DB [${plantId}] is too small (${size} bytes). Forcing repair...`);
                 // SAFEGUARD: Preserve SiteLeadership contacts before wiping
-                let savedLeaders = [];
                 try {
                     const oldDb = new Database(dbPath, { readonly: true });
                     const hasTable = oldDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SiteLeadership'").get();
@@ -124,11 +143,6 @@ function getDb(requestedPlantId = null) {
                 try {
                     fs.unlinkSync(dbPath);
                     isNew = true;
-                    // Stash preserved contacts so they can be restored after bootstrap
-                    if (savedLeaders.length > 0) {
-                        if (!global._preservedLeaders) global._preservedLeaders = {};
-                        global._preservedLeaders[plantId] = savedLeaders;
-                    }
                 } catch (e) {
                     console.error(`  ❌ Failed to remove corrupted DB [${plantId}]:`, e.message);
                 }
@@ -583,18 +597,16 @@ function getDb(requestedPlantId = null) {
         connections[plantId] = { db, lastUsed: Date.now() };
         console.log(`  📦 Database connected for plant [${plantId}]: ${dbFileName}`);
 
-        // RESTORE: If we preserved SiteLeadership contacts before a repair, restore them now
-        if (global._preservedLeaders && global._preservedLeaders[plantId]) {
+        // RESTORE: If contacts were saved before a repair, write them into the new DB now
+        if (savedLeaders.length > 0) {
             try {
-                const preserved = global._preservedLeaders[plantId];
                 db.prepare('DELETE FROM SiteLeadership').run();
                 const ins = db.prepare('INSERT INTO SiteLeadership (Name, Title, Phone, Email) VALUES (?, ?, ?, ?)');
                 const restoreTx = db.transaction(() => {
-                    for (const l of preserved) ins.run(l.Name, l.Title, l.Phone, l.Email);
+                    for (const l of savedLeaders) ins.run(l.Name, l.Title, l.Phone, l.Email);
                 });
                 restoreTx();
-                console.log(`  ♻️ Restored ${preserved.length} preserved contacts for ${plantId}`);
-                delete global._preservedLeaders[plantId];
+                console.log(`  ♻️ Restored ${savedLeaders.length} preserved contacts for ${plantId}`);
             } catch (e) {
                 console.error(`  ❌ Failed to restore contacts for ${plantId}:`, e.message);
             }

@@ -29,9 +29,19 @@ if (!JWT_SECRET) {
     process.exit(1);
 }
 
+// Explicit allowlist of auth routes that require no JWT.
+// All other /auth/* routes (/auth/me, /auth/users/*, /auth/reset-password, etc.)
+// have internal JWT checks and correctly flow through the middleware.
+const PUBLIC_AUTH_ROUTES = new Set([
+    'POST:/auth/login',
+    'POST:/auth/verify-2fa',
+    'POST:/auth/logout',
+    'POST:/auth/register',
+]);
+
 module.exports = async (req, res, next) => {
     // Public Routes (Heavily Restricted)
-    if (req.path.startsWith('/auth')) return next();
+    if (PUBLIC_AUTH_ROUTES.has(`${req.method}:${req.path}`)) return next();
     if (req.path === '/database/plants' && req.method === 'GET') return next();
     if (req.path.startsWith('/branding') && req.method === 'GET') return next(); // Logo & branding loads before login
     if (req.path.startsWith('/digital-twin/image') && req.method === 'GET') return next(); // Digital Twin schematics rendered in img tags

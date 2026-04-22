@@ -23,16 +23,7 @@ const Database = require('better-sqlite3');
 const fs       = require('fs');
 const path     = require('path');
 
-// Must mirror EXEMPT_HOLD_REASONS in routes/scan.js exactly.
-// If you add a new exempt reason to scan.js, add it here too — they are
-// separate because this module has no runtime access to the route handlers,
-// but they must agree or a legitimately-held WO could get silently flagged.
-const EXEMPT_HOLD_REASONS = new Set([
-    'WAITING_ON_PARTS',
-    'WAITING_ON_VENDOR',
-    'WAITING_ON_APPROVAL',
-    'SCHEDULED_RETURN',
-]);
+const { EXEMPT_HOLD_REASONS } = require('./constants/holdReasons');
 
 // Read per-plant threshold; falls back to 12h to match PlantScanConfig default.
 function getThreshold(db) {

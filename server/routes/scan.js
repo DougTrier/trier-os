@@ -124,12 +124,7 @@ const HOLD_REASON_TO_STATUS = {
 };
 
 // ── Hold reasons exempt from auto-review timeout ────────────────────────────
-const EXEMPT_HOLD_REASONS = new Set([
-    'WAITING_ON_PARTS',
-    'WAITING_ON_VENDOR',
-    'WAITING_ON_APPROVAL',
-    'SCHEDULED_RETURN',
-]);
+const { EXEMPT_HOLD_REASONS } = require('../constants/holdReasons');
 
 // ── Active WO StatusIDs — these have at least one open segment ──────────────
 const ACTIVE_STATUSES = new Set([STATUS.IN_PROGRESS, STATUS.OPEN]);

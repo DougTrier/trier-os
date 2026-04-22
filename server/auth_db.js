@@ -171,11 +171,13 @@ demoAccounts.forEach(acc => {
 // ----------------------------------------------
 
 // --- E2E TEST ACCOUNTS (ghost_*) ---
-// These accounts cover roles not represented by demo_* (it_admin, executive).
-// They are seeded idempotently; passwords are fixed so Playwright tests can rely on them.
+// Seeded in development/test only. In production (NODE_ENV=production) these
+// accounts are never created — fixed public passwords + GlobalAccess are a
+// permanent backdoor if left in a customer deployment. See SECURITY.md.
 // ghost_tech  → technician on Demo_Plant_1  (password: Trier3292!)
 // ghost_admin → it_admin, GlobalAccess=1    (password: Trier3652!)
 // ghost_exec  → executive, GlobalAccess=1   (password: Trier7969!)
+if (process.env.NODE_ENV !== 'production') {
 const ghostAccounts = [
     {
         user: 'ghost_tech', hash: bcrypt.hashSync('Trier3292!', 10),
@@ -216,6 +218,7 @@ ghostAccounts.forEach(acc => {
         db.prepare('INSERT INTO UserPlantRoles (UserID, PlantID, RoleLevel) VALUES (?, ?, ?)').run(result.lastInsertRowid, acc.plantId, acc.role);
     }
 });
+} // end ghost account seeding (development/test only)
 // -------------------------------------------
 
 // Map existing auth.json locations to distinct user accounts, providing a clean upgrade path.

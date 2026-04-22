@@ -41,3 +41,18 @@ Trier OS uses httpOnly cookie-based authentication for browser sessions.
 Tokens in `localStorage` are readable by any JavaScript on the page (XSS, browser extensions, DevTools on shared plant-floor machines). An httpOnly cookie is never exposed to JavaScript — it cannot be read, copied, or exfiltrated by a script.
 
 **API integrations** (Power BI, http-edge-agent, HA sync agents) are not browser sessions and cannot use cookies. They pass the JWT as a `Bearer` token in the `Authorization` header. The auth middleware accepts both paths and falls back gracefully.
+
+---
+
+## Production Deployment Hardening
+
+Before going live, verify each item below:
+
+| Item | Action |
+|---|---|
+| `NODE_ENV=production` | Set in `.env`. Enables JWT fail-fast, suppresses ghost account seeding, and hardens the DB context fallback. |
+| `JWT_SECRET` | Must be 64+ random hex characters. Server exits on boot if missing or weak in production. |
+| Ghost test accounts | Set `NODE_ENV=production` — `ghost_tech`, `ghost_admin`, and `ghost_exec` are **not seeded** in production. If upgrading an existing install, delete these accounts manually via Settings → Accounts & Permissions. |
+| Demo accounts | `demo_tech`, `demo_operator`, `demo_maint_mgr`, `demo_plant_mgr` use a public password (`TrierDemo2026!`) and are bound to the `examples` plant only. They cannot access real plant data but should be removed from customer-facing deployments. |
+| Login rate limiter | Default is 8 attempts per 5 minutes per username. For parallel E2E environments only, set `RATE_LIMIT_LOGIN_MAX=500` in `.env`. Never set this in production. |
+| `DISABLE_LIVE_STUDIO` | Set `DISABLE_LIVE_STUDIO=true` in production builds to strip the Monaco IDE from the API surface. |

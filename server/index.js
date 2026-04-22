@@ -53,9 +53,14 @@ process.on('unhandledRejection', (reason) => {
 console.log('[BOOT] Stage 1: Loading core modules...');
 require('dotenv').config();
 
+const cluster = require('cluster');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+
+// True when running without cluster (direct node call) OR when this worker
+// was designated the cron worker by cluster.js via IS_CRON_WORKER=1.
+const isCronWorker = !cluster.isWorker || process.env.IS_CRON_WORKER === '1';
 
 // ── Boot-time SEC-006 JWT_SECRET auto-generation & validation ──
 const defaultInsecureToken = '4ee5f3fd56b185eeb061c5e73faf52e0cc01af8952e7c957436b612a72485d73';
@@ -137,6 +142,7 @@ const enrichmentEngine = require('./enrichment_engine');
 const silentCloseEngine = require('./silent_close_engine');
 
 // We run the engines passively on a 24-hour interval
+if (isCronWorker) { // cluster.js designates exactly one worker; direct-node always true
 setInterval(() => pmEngine.runPMCron(), 24 * 60 * 60 * 1000);
 setInterval(() => enrichmentEngine.runEnrichmentCron(), 12 * 60 * 60 * 1000); // Every 12 hours
 // Hourly — closes WorkSegments Active beyond the per-plant threshold and
@@ -155,6 +161,7 @@ setImmediate(() => {
         console.error('âš ï¸ [Engine Failure] Background jobs failed to start:', err.message);
     }
 });
+} // end isCronWorker
 
 console.log('[BOOT] Stage 5.5: LDAP sync cron configured');
 // â”€â”€ LDAP Periodic Sync (Task 3.5) â”€â”€

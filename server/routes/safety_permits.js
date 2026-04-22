@@ -819,8 +819,11 @@ function checkExpiredSafetyPermits() {
     }
 }
 
-// Run expiry check every 5 minutes
-setInterval(checkExpiredSafetyPermits, 5 * 60 * 1000);
-checkExpiredSafetyPermits();
+// Run expiry check every 5 minutes — cron worker only (see cluster.js)
+const cluster = require('cluster');
+if (!cluster.isWorker || process.env.IS_CRON_WORKER === '1') {
+    setInterval(checkExpiredSafetyPermits, 5 * 60 * 1000);
+    checkExpiredSafetyPermits();
+}
 
 module.exports = router;

@@ -40,21 +40,40 @@ if (cluster.isPrimary) {
  🔧 Platform:   ${os.platform()} ${os.arch()}
 `);
 
-    // Fork workers
+    // Fork workers — first worker is designated the cron worker so background
+    // engines (PM, silent-close, enrichment, safety-permit expiry, etc.) run
+    // on exactly one process regardless of cluster size.
+    let cronWorkerId = null;
     for (let i = 0; i < WORKER_COUNT; i++) {
-        const worker = cluster.fork();
-        console.log(`  ✅ Worker ${worker.process.pid} spawned (${i + 1}/${WORKER_COUNT})`);
+        const isCronWorker = i === 0;
+        const worker = cluster.fork(isCronWorker ? { IS_CRON_WORKER: '1' } : {});
+        if (isCronWorker) cronWorkerId = worker.id;
+        console.log(`  ✅ Worker ${worker.process.pid} spawned (${i + 1}/${WORKER_COUNT})${isCronWorker ? ' [cron]' : ''}`);
     }
 
-    // Handle worker crashes — auto-restart
+    // Handle worker crashes — auto-restart; preserve cron designation if the
+    // cron worker was the one that died.
     cluster.on('exit', (worker, code, signal) => {
         if (signal === 'SIGTERM' || signal === 'SIGINT') {
             console.log(`  🛑 Worker ${worker.process.pid} shut down gracefully`);
             return;
         }
         console.error(`  ❌ Worker ${worker.process.pid} crashed (code: ${code}). Restarting...`);
-        const newWorker = cluster.fork();
-        console.log(`  🔄 Replacement worker ${newWorker.process.pid} spawned`);
+        const wasCronWorker = worker.id === cronWorkerId;
+        const newWorker = cluster.fork(wasCronWorker ? { IS_CRON_WORKER: '1' } : {});
+        if (wasCronWorker) cronWorkerId = newWorker.id;
+        console.log(`  🔄 Replacement worker ${newWorker.process.pid} spawned${wasCronWorker ? ' [cron]' : ''}`);
+    });
+
+    // Relay degraded-mode changes from any worker to all other workers.
+    cluster.on('message', (sender, msg) => {
+        if (msg && msg.type === 'DEGRADED_MODE_SYNC') {
+            for (const id in cluster.workers) {
+                if (cluster.workers[id].id !== sender.id) {
+                    cluster.workers[id].send(msg);
+                }
+            }
+        }
     });
 
     // Graceful shutdown: kill all workers on master SIGINT/SIGTERM

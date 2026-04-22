@@ -37,6 +37,16 @@ const SECONDARY_URL = process.env.SECONDARY_URL || 'http://localhost:3001';
 const PRIMARY_URL = process.env.PRIMARY_URL || 'http://localhost:3000';
 const SYNC_INTERVAL_MS = parseInt(process.env.SYNC_INTERVAL_MS || '60000', 10);
 
+// Validates a SQL identifier (table or column name) against a safe allowlist pattern.
+// Rejects anything that could escape a double-quoted identifier in trigger DDL.
+const SAFE_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+function assertSafeIdentifier(name, context) {
+    if (!SAFE_IDENTIFIER.test(name)) {
+        throw new Error(`[HA] Unsafe identifier rejected in trigger DDL (${context}): "${name}"`);
+    }
+    return name;
+}
+
 // Tables to track for replication
 const TRACKED_TABLES = [
     'Work', 'WorkLabor', 'WorkParts', 'WorkMisc', 'WorkNote', 'WorkCost',
@@ -82,8 +92,18 @@ function installSyncInfrastructure(plantDb, plantId) {
             ).get(table);
             if (!exists) continue;
 
+            // Validate table name and all column names before interpolating into DDL.
+            try { assertSafeIdentifier(table, 'table'); } catch (e) {
+                console.warn(`  ⚠️ [HA] Skipping trigger for table: ${e.message}`);
+                continue;
+            }
+
             // Get primary key column (usually ID or WorkOrderNumber for Work)
-            const columns = plantDb.prepare(`PRAGMA table_info("${table}")`).all(); /* dynamic col/table - sanitize inputs */
+            const rawColumns = plantDb.prepare(`PRAGMA table_info("${table}")`).all();
+            const columns = rawColumns.filter(c => {
+                try { assertSafeIdentifier(c.name, `column in ${table}`); return true; }
+                catch (e) { console.warn(`  ⚠️ [HA] ${e.message} — column excluded from trigger`); return false; }
+            });
             const pkCol = columns.find(c => c.pk > 0);
             const idCol = pkCol ? pkCol.name : 'rowid';
 
@@ -255,7 +275,7 @@ function applyReplicatedEntries(plantId, entries) {
             const snapshotFile = path.join(snapshotDir, `${plantId}_pre_sync_${ts}.db`);
             const dbPath = path.join(dataDir, `${plantId}.db`);
             if (fs.existsSync(dbPath)) {
-                plantDb.exec('VACUUM INTO ?', [snapshotFile]) // Try VACUUM INTO first (SQLite 3.27+)
+                plantDb.prepare('VACUUM INTO ?').run(snapshotFile); // SQLite 3.27+
             }
             results.snapshotFile = snapshotFile;
         } catch (snapErr) {
