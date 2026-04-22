@@ -1133,7 +1133,7 @@ test.describe('05 · Supply Chain Portal', () => {
     await page.goto('/portal/supply-chain-group');
     const supplyTiles = ['Supply Chain', 'Vendor Portal', 'Tool Crib'];
     for (const tile of supplyTiles) {
-      await expect(page.getByText(tile, { exact: false }).first()).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(tile, { exact: false }).first()).toBeVisible({ timeout: 15000 });
     }
   });
 

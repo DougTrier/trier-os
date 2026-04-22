@@ -2,29 +2,15 @@
 
 import { test, expect } from '@playwright/test';
 
-const ACCOUNT = { username: 'ghost_tech', password: 'Trier3292!' };
+// Pre-authenticated state created by global-setup.js — no beforeEach login needed
+const STORAGE_STATE = 'tests/e2e/.auth/ghost_tech.json';
 
 test.describe('Trier OS Accessibility & i18n Suite', () => {
-
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.locator('input[type="text"]').first().fill(ACCOUNT.username);
-    await page.locator('input[type="password"]').first().fill(ACCOUNT.password);
-    await page.locator('button').filter({ hasText: /Log In|Login|Sign In/i }).first().click();
-
-    try {
-      const newPasswordInput = page.locator('input[type="password"]').nth(1); 
-      await newPasswordInput.waitFor({ state: 'visible', timeout: 2000 });
-      await page.locator('input[type="password"]').nth(0).fill(ACCOUNT.password);
-      await page.locator('input[type="password"]').nth(1).fill(ACCOUNT.password);
-      await page.locator('input[type="password"]').nth(2).fill(ACCOUNT.password);
-      await page.locator('button').filter({ hasText: /Save/i }).first().click();
-    } catch (e) {}
-
-    await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
-  });
+  // Load the saved authenticated session so we don't log in on every test
+  test.use({ storageState: STORAGE_STATE });
 
   test('Should strictly toggle Shop Floor High-Contrast Mode', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     // Locate the Shop Floor toggle (often a button or a switch)
     const shopFloorBtn = page.getByRole('button', { name: /Shop Floor/i });
     if (await shopFloorBtn.isVisible()) {
@@ -40,10 +26,15 @@ test.describe('Trier OS Accessibility & i18n Suite', () => {
   test('Should prove the DOM escapes rendering for the I18n translations', async ({ page }) => {
     // This test formally proves that the Language Dropdown works, 
     // or at least checks the fallback default Language state is healthy and present in the DOM
-    
-    // Look for the translation hook output, usually the word "Dashboard" or "Mission Control"
-    const dashboardTitle = page.locator('h1, h2').filter({ hasText: /Dashboard|Mission Control/i }).first();
-    await expect(dashboardTitle).toBeVisible();
+
+    // Navigate to /dashboard explicitly — the Mission Control h1 uses `hide-mobile`
+    // so it is not visible on the Zebra TC77 (mobile) viewport. The Dashboard h2 renders
+    // on all viewports and contains the translated word "Dashboard".
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+
+    // Look for the translation hook output — the Dashboard h2 is always visible
+    const dashboardTitle = page.locator('h1, h2').filter({ hasText: /Dashboard|Mission Control|Plant/i }).first();
+    await expect(dashboardTitle).toBeVisible({ timeout: 15000 });
 
     // Ensure there are no raw translation keys leaked to the screen (like "nav.dashboard")
     const pageText = await page.innerText('body');
@@ -52,3 +43,4 @@ test.describe('Trier OS Accessibility & i18n Suite', () => {
   });
 
 });
+

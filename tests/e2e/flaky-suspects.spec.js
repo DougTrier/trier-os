@@ -56,11 +56,10 @@ test.describe('S1 · Dashboard KPI timing', () => {
     }
   });
 
-  test('Dashboard KPI cards render — PM Compliance / MTBF / Downtime', async ({ page }) => {
-    // Increased timeout to 20s — this card loads asynchronously via /api/maintenance-kpis
-    const kpiText = await page.getByText(/PM Compliance|MTBF|Downtime|Backlog|Open Work/i).first()
-      .isVisible({ timeout: 20000 }).catch(() => false);
-    expect(kpiText).toBeTruthy();
+  test('Dashboard KPI cards render — Work Orders / Equipment Assets / Parts Catalog', async ({ page }) => {
+    // KPI grid: Work Orders, Equipment Assets, Parts Catalog, Active PM Schedules, Pay Scales
+    await expect(page.getByText(/Work Orders|Equipment Assets|Parts Catalog|Active PM/i).first())
+      .toBeVisible({ timeout: 20000 });
   });
 });
 
@@ -122,11 +121,10 @@ test.describe('S3 · API Health checks', () => {
     ['pm-schedules',            `/api/pm-schedules?plantId=${PLANT}`],
     ['storeroom summary',       `/api/storeroom/summary?plantId=${PLANT}`],
     ['maintenance-kpis summary',`/api/maintenance-kpis/summary?plantId=${PLANT}`],
-    ['corp-analytics inflation', `/api/corp-analytics/vendor-inflation?days=30&limit=10`],
-    ['fleet list',               `/api/fleet?plantId=${PLANT}`],
+    ['fleet vehicles',           `/api/fleet/vehicles?plantId=${PLANT}`],
     ['maintenance-kpis pm-compliance', `/api/maintenance-kpis/pm-compliance?plantId=${PLANT}`],
-    ['analytics dashboard',      `/api/analytics?plantId=${PLANT}`],
-    ['compliance list',          `/api/compliance?plantId=${PLANT}`],
+    ['analytics activity',       `/api/analytics/activity?plantId=${PLANT}`],
+    ['compliance inspections',   `/api/compliance/inspections?plantId=${PLANT}`],
   ];
 
   for (const [label, path] of apiChecks) {

@@ -1330,7 +1330,7 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                             onClick={e => { if (e.target === e.currentTarget) setOpexModal(null); }}>
                                             <div style={{ background: 'linear-gradient(160deg,#0f172a,#1e1b4b)', border: `1px solid ${plan.color}30`, borderRadius: 20, width: '100%', maxWidth: 860, boxShadow: `0 32px 80px rgba(0,0,0,0.6)`, overflow: 'hidden' }}>
                                                 {/* Header */}
-                                                <div style={{ padding: '24px 32px 20px', background: `linear-gradient(135deg,${plan.color}18,transparent)`, borderBottom: `1px solid ${plan.color}20` }}>
+                                                <div style={{ padding: 'clamp(14px,4vw,24px) clamp(14px,4vw,32px) clamp(12px,3vw,20px)', background: `linear-gradient(135deg,${plan.color}18,transparent)`, borderBottom: `1px solid ${plan.color}20` }}>
                                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
                                                         <div style={{ width: 48, height: 48, borderRadius: 14, background: `${plan.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                             <PlanIcon size={24} color={plan.color} />
@@ -1346,7 +1346,7 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div style={{ display: 'flex', gap: 8 }}>
+                                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                                         <button onClick={printPlan} className="btn-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}><Printer size={14} />{t('corpAnalytics.text.printGamePlan', 'Print Game Plan')}</button>
                                                         <button onClick={() => {
                                                             if (!commitPlantId) { setCommitMsg('❌ Please select a plant before committing.'); return; }
@@ -1393,7 +1393,7 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                                     {commitMsg && <div style={{ marginTop: 8, padding: '6px 14px', borderRadius: 8, background: commitMsg.startsWith('✅') ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: commitMsg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>{commitMsg}</div>}
                                                 </div>
                                                 {/* Body */}
-                                                <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 22, maxHeight: '72vh', overflowY: 'auto' }}>
+                                                <div style={{ padding: 'clamp(14px,4vw,28px) clamp(14px,4vw,32px)', display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '72vh', overflowY: 'auto' }}>
                                                     {/* Summary */}
                                                     <div style={{ background: `${plan.color}08`, border: `1px solid ${plan.color}20`, borderRadius: 12, padding: '16px 20px' }}>
                                                         <div style={{ fontSize: '0.67rem', fontWeight: 700, color: plan.color, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('corpAnalytics.text.executiveSummary', 'Executive Summary')}</div>

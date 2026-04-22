@@ -27,7 +27,7 @@
  * @param {string} plantLabel - Human-readable plant name for display
  */
 import React from 'react';
-import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import ComplianceTracker from './ComplianceTracker';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
@@ -43,14 +43,6 @@ export default function ComplianceView({ plantId, plantLabel }) {
                 </h2>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <TakeTourButton tourId="compliance" />
-                    <button
-                        onClick={() => window.dispatchEvent(new CustomEvent('pf-nav', { detail: '' }))}
-                        className="btn-nav"
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36 }}
-                        title={t('app.returnToMissionControl', 'Return to Mission Control')}
-                    >
-                        <ArrowLeft size={15} /> {t('app.missionControl', 'Mission Control')}
-                    </button>
                 </div>
             </div>
 

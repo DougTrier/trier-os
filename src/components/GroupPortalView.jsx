@@ -112,25 +112,20 @@ export default function GroupPortalView({ plantId, plantLabel, onOpenWorkspace, 
 
                 {/* Portal Header */}
                 <div style={{
-                    display: 'flex', alignItems: 'center', gap: 16,
                     marginBottom: 30,
                     padding: '16px 24px',
                     background: `linear-gradient(135deg, ${group.accent}10 0%, ${group.accent}05 100%)`,
                     border: `1px solid ${group.accent}30`,
                     borderRadius: 16,
                 }}>
-                    <button onClick={onBackToMC} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
-                        <ArrowLeft size={16} />
-                        {t('app.missionControl', 'Mission Control')}
-                    </button>
-
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: group.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon size={28} color="#fff" />
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                        <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#f1f5f9' }}>{t(`mc.tile.${groupKey}.title`, group.title)}</h1>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>{t(`mc.tile.${groupKey}.desc`, group.desc)}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 14, background: group.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Icon size={28} color="#fff" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                            <h1 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#f1f5f9', lineHeight: 1.2 }}>{t(`mc.tile.${groupKey}.title`, group.title)}</h1>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.4 }}>{t(`mc.tile.${groupKey}.desc`, group.desc)}</p>
+                        </div>
                     </div>
                 </div>
 

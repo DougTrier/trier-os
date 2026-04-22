@@ -118,7 +118,7 @@ export default function LotoPanel() {
      * Impact:  Saves 90% of data entry time and drastically reduces human error in transcription.
      */
     const handleAssetAutoFill = async () => {
-        const scanAssetId = window.prompt('[Scanner Active]\nScan Asset NFC/QR Tag or enter Asset ID to pull history:');
+        const scanAssetId = await window.prompt('[Scanner Active]\nScan Asset NFC/QR Tag or enter Asset ID to pull history:');
         if (!scanAssetId) return;
         
         try {
@@ -190,7 +190,7 @@ export default function LotoPanel() {
     };
 
     const handleVoid = async (id) => {
-        const reason = window.prompt('Reason for voiding this permit:');
+        const reason = await window.prompt('Reason for voiding this permit:');
         if (!reason) return;
         try {
             const r = await fetch(`/api/loto/permits/${id}/void`, { method: 'POST', headers, body: JSON.stringify({ voidedBy: currentUser, reason }) });
@@ -220,7 +220,7 @@ export default function LotoPanel() {
     const handleVerifyPoint = async (pointId, method) => {
         if (method === 'scan') {
             const targetPoint = selectedPermit.points.find(p => p.ID === pointId);
-            const code = window.prompt(`[Scanner Active]\nPlease scan NFC/QR Tag for Isolation Point #${targetPoint.PointNumber} at ${targetPoint.Location}...\n\n(Or manually type tag ID to simulate hardware scan)`);
+            const code = await window.prompt(`[Scanner Active]\nPlease scan NFC/QR Tag for Isolation Point #${targetPoint.PointNumber} at ${targetPoint.Location}...\n\n(Or manually type tag ID to simulate hardware scan)`);
             if (!code) return; // cancelled
         }
         

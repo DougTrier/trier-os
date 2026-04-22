@@ -901,6 +901,11 @@ textarea:focus {
     display: none !important;
   }
 
+  /* 0a. Show-mobile-only: hidden by default, flex on mobile */
+  .show-mobile-only {
+    display: flex !important;
+  }
+
   /* 0b. Auto-hide middle columns in data tables (3rd, 4th, 5th columns) */
   .data-table th:nth-child(3),
   .data-table td:nth-child(3),
@@ -1612,6 +1617,10 @@ textarea:focus {
 
 .container.mobile-mode-force main {
   padding-bottom: 10px !important;
+}
+
+.container.mobile-mode-force .show-mobile-only {
+  display: flex !important;
 }
 
 .container.mobile-mode-force header {

@@ -56,8 +56,13 @@ export default function OfflineStatusBar() {
 
     const triggerDrain = useCallback(async () => {
         if (isDrainingRef.current) return;
+        // Guard set before the first await so concurrent callers see it immediately.
+        // Without this, two rapid online/session-restored events both pass the check
+        // before either sets the flag, causing double-submission of queued scans.
+        isDrainingRef.current = true;
         const count = await OfflineDB.getPendingCount();
         if (count === 0) {
+            isDrainingRef.current = false;
             setSyncState(SYNC.COMPLETED);
             setSyncMessage(t('offlineStatusBar.connectionRestored', '✅ Connection restored'));
             dismissTimer.current = setTimeout(() => {
@@ -67,7 +72,6 @@ export default function OfflineStatusBar() {
             return;
         }
 
-        isDrainingRef.current = true;
         setSyncState(SYNC.DRAINING);
         setSyncMessage(`Syncing ${count} change${count !== 1 ? 's' : ''}...`);
 
@@ -78,12 +82,15 @@ export default function OfflineStatusBar() {
 
         if (result.authExpired) {
             // Valid scans are preserved in the queue — only auth state is stale.
-            // Dispatch to App.jsx to show LoginView; drain resumes on session-restored.
+            // Delay trier-session-expired by one animation frame so React flushes the
+            // AUTH_EXPIRED banner render before App.jsx transitions to LoginView.
+            // Without the delay, React 18 batches both state updates and the banner
+            // never renders visibly.
             const n = result.remainingCount;
             setSyncState(SYNC.AUTH_EXPIRED);
             setSyncMessage(`${n} scan${n !== 1 ? 's' : ''} preserved — session expired`);
             console.warn(`[OfflineStatusBar] Sync paused — auth expired. ${n} items preserved in queue.`);
-            window.dispatchEvent(new CustomEvent('trier-session-expired'));
+            setTimeout(() => window.dispatchEvent(new CustomEvent('trier-session-expired')), 800);
         } else if (result.failed > 0 || result.conflicts > 0) {
             setSyncState(SYNC.REVIEW_REQUIRED);
             setSyncMessage(`${result.sent} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
@@ -109,6 +116,10 @@ export default function OfflineStatusBar() {
             if (online) {
                 await triggerDrain();
             } else {
+                // Cancel any pending auto-dismiss timer so the offline banner
+                // is not immediately hidden when the device goes offline while
+                // a COMPLETED or IDLE dismiss is scheduled.
+                clearTimeout(dismissTimer.current);
                 setSyncState(SYNC.IDLE);
                 setSyncMessage('');
             }

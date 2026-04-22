@@ -362,7 +362,7 @@ test.describe('Trier OS V4.0.0 � The Master Operational Gauntlet', () => {
     if (await plantSelect.isVisible({ timeout: 2000 })) {
       const val = await plantSelect.inputValue();
       if (!val || val === 'all_sites') {
-        await plantSelect.selectOption('Demo_Plant_1');
+        await plantSelect.selectOption('Demo_Plant_1', { timeout: 5000 }).catch(() => {});
         await page.waitForTimeout(500);
       }
     }

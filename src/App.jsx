@@ -68,7 +68,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
-import { LogOut, Settings, ClipboardList, PenTool, CalendarClock, BookOpen, Database as DatabaseIcon, Download, Archive, AlertTriangle, PhoneCall, Mail, Scan, TrendingDown, WifiOff, Monitor, LibraryBig, Zap, Info, UserPlus, Code, HelpCircle, IdCard } from 'lucide-react';
+import { LogOut, Settings, ClipboardList, PenTool, CalendarClock, BookOpen, Database as DatabaseIcon, Download, Archive, AlertTriangle, PhoneCall, Mail, Scan, TrendingDown, WifiOff, Monitor, LibraryBig, Zap, Info, UserPlus, Code, HelpCircle, IdCard, ArrowLeft } from 'lucide-react';
 import { DialogProvider } from './hooks/useDialog';
 import DialogInterceptor from './components/DialogInterceptor';
 import { ToastProvider, useToast } from './components/ToastProvider';
@@ -1089,6 +1089,24 @@ function App() {
 
                 {/* MAIN CONTENT AREA */}
                 <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px',  }} title={t('app.primaryViewContainerTip')}>
+
+                    {/* Mobile-only Mission Control back button — shows on any sub-route */}
+                    {location.pathname !== '/' && (
+                        <button
+                            className="show-mobile-only no-print"
+                            onClick={() => window.dispatchEvent(new CustomEvent('pf-nav', { detail: '' }))}
+                            style={{
+                                display: 'none', alignItems: 'center', gap: 6,
+                                padding: '8px 14px', borderRadius: 8, fontSize: '0.8rem',
+                                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                                color: '#94a3b8', cursor: 'pointer', alignSelf: 'flex-start',
+                                marginBottom: 2,
+                            }}
+                            title="Return to Mission Control"
+                        >
+                            <ArrowLeft size={14} /> Mission Control
+                        </button>
+                    )}
 
                     {isForeignPlant && (
                         <div className="glass-card" style={{

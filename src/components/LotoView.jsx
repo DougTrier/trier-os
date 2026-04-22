@@ -28,7 +28,7 @@
  * @param {string} plantLabel - Human-readable plant name for display
  */
 import React from 'react';
-import { LockKeyhole, ArrowLeft } from 'lucide-react';
+import { LockKeyhole } from 'lucide-react';
 import LotoPanel from './LotoPanel';
 import { TakeTourButton } from './ContextualTour';
 import { useTranslation } from '../i18n/index.jsx';
@@ -44,14 +44,6 @@ export default function LotoView({ plantId, plantLabel }) {
                 </h2>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <TakeTourButton tourId="loto" />
-                    <button
-                        onClick={() => window.dispatchEvent(new CustomEvent('pf-nav', { detail: '' }))}
-                        className="btn-nav"
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36 }}
-                        title={t('app.returnToMissionControl', 'Return to Mission Control')}
-                    >
-                        <ArrowLeft size={15} /> {t('app.missionControl', 'Mission Control')}
-                    </button>
                 </div>
             </div>
 

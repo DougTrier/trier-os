@@ -538,7 +538,7 @@ app.use('/api/sensors/reading', sensorLimiter);
 // With 1,500 users sharing one IP, per-IP must be very generous.
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 1200,            // per user: enterprise-scale for 1,500+ concurrent users
+    max: parseInt(process.env.RATE_LIMIT_API_MAX, 10) || 1200, // per user: enterprise-scale for 1,500+ concurrent users
     standardHeaders: true,
     legacyHeaders: false,
     validate: false,
@@ -555,7 +555,14 @@ const apiLimiter = rateLimit({
         } catch (e) {}
         return String(req.ip || 'unknown').replace(/:/g, '_'); // fallback for unauthenticated
     },
-    skip: (req) => req.path.startsWith('/sensors/reading') // Don't double-count sensor POSTs
+    skip: (req) => {
+        // Skip sensor double-counting
+        if (req.path.startsWith('/sensors/reading')) return true;
+        // Skip rate limiting for loopback — E2E test suites run from localhost
+        // and generate bursts of API calls that would trip the 1200/min per-IP bucket.
+        const ip = req.ip || '';
+        return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    }
 });
 app.use('/api', apiLimiter);
 

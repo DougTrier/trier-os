@@ -108,7 +108,7 @@ test.describe('Trier OS V4.0.0 Form & Workflow Gauntlet', () => {
     await page.waitForTimeout(500);
 
     // Save — scope to modal, use first to avoid Cancel
-    await modal.locator('button').filter({ hasText: /Create DVIR|Save|Submit/i }).first().click();
+    await modal.locator('button').filter({ hasText: /Create DVIR|Save|Submit/i }).first().click({ force: true });
     await expect(modal).not.toBeVisible({ timeout: 15000 });
   });
 

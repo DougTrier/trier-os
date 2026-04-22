@@ -2,6 +2,13 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
+/** Paths to pre-authenticated storageState files created by global-setup.js */
+export const AUTH = {
+  ghost_tech:  'tests/e2e/.auth/ghost_tech.json',
+  ghost_admin: 'tests/e2e/.auth/ghost_admin.json',
+  ghost_exec:  'tests/e2e/.auth/ghost_exec.json',
+};
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -9,7 +16,9 @@ export default defineConfig({
   retries: 1,
   timeout: 60000,
   expect: { timeout: 25000 },
-  workers: 2,
+  workers: 1,  // TASK-02: TokenVersion revocation means concurrent logins on the same account
+              // invalidate each other's sessions. Serial execution prevents the race.
+  globalSetup: './tests/e2e/global-setup.js',
   reporter: [
       ['html', { open: 'never', outputFolder: 'playwright-report' }],
       ['list'],
@@ -40,7 +49,12 @@ export default defineConfig({
         isMobile: true,
         deviceScaleFactor: 3,
       },
-      // Removed Desktop dependency — run independently so mobile doesn't wait on full desktop suite
+      // master-workflow: desktop-only grid layout, heading hidden at 360px
+      // offline-lan-sync: routeWebSocket() incompatible with isMobile emulation context
+      // qa-inspection: API-focused suite, server exhaustion after 90+ mobile tests causes cascading timeouts
+      // scanner-hardware: tests desktop scan state machine internals; mobile scanner covered by dual-mode + flaky-suspects S7
+      testIgnore: ['**/master-workflow.spec.js', '**/offline-lan-sync.spec.js', '**/qa-inspection.spec.js', '**/scanner-hardware.spec.js'],
     },
   ],
 });
+

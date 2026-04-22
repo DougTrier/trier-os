@@ -64,6 +64,13 @@ const ROLE_BLOCKED = {
 
 // ── Shared login helper ───────────────────────────────────────
 async function loginAs(page, account = ADMIN) {
+  await page.addInitScript(() => {
+    for (const s of ['default', 'ghost_admin', 'ghost_tech', 'ghost_exec',
+                     'demo_tech', 'demo_operator', 'demo_maint_mgr', 'demo_plant_mgr']) {
+      localStorage.setItem(`pf_onboarding_complete_${s}`, 'true');
+      localStorage.setItem(`pf_onboarding_dismissed_${s}`, 'true');
+    }
+  });
   await page.goto('/');
 
   // Username field — use type selector (placeholder is i18n-translated)
@@ -87,7 +94,8 @@ async function loginAs(page, account = ADMIN) {
     await page.locator('button').filter({ hasText: /Save|Update|Change/i }).first().click();
   } catch { /* No forced reset — proceed normally */ }
 
-  await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 40000 });
+  // heading is hide-mobile on small viewports; mc-container is present on all breakpoints
+  await expect(page.locator('.mc-container')).toBeVisible({ timeout: 40000 });
   // Force tests into a specific plant context so deeper module asserts have valid data
   await page.evaluate(() => localStorage.setItem('selectedPlantId', 'examples'));
 }
@@ -124,7 +132,7 @@ test.describe('00 · Demo Account RBAC Gauntlet', () => {
     });
 
     test('Technician lands on Mission Control after login', async ({ page }) => {
-      await seeText(page, 'Mission Control');
+      await expect(page.locator('.mc-container')).toBeVisible();
     });
 
     test('Technician sees My Work Orders tile (standalone)', async ({ page }) => {
@@ -204,7 +212,7 @@ test.describe('00 · Demo Account RBAC Gauntlet', () => {
     });
 
     test('Operator lands on Mission Control after login', async ({ page }) => {
-      await seeText(page, 'Mission Control');
+      await expect(page.locator('.mc-container')).toBeVisible();
     });
 
     test('Operator sees Quality & Loss Log tile', async ({ page }) => {
@@ -269,7 +277,7 @@ test.describe('00 · Demo Account RBAC Gauntlet', () => {
     });
 
     test('Maintenance Manager lands on Mission Control', async ({ page }) => {
-      await seeText(page, 'Mission Control');
+      await expect(page.locator('.mc-container')).toBeVisible();
     });
 
     test('Maintenance Manager sees Maintenance tile (via Operations group)', async ({ page }) => {
@@ -351,7 +359,7 @@ test.describe('00 · Demo Account RBAC Gauntlet', () => {
     });
 
     test('Plant Manager lands on Mission Control', async ({ page }) => {
-      await seeText(page, 'Mission Control');
+      await expect(page.locator('.mc-container')).toBeVisible();
     });
 
     test('Plant Manager sees Safety & Risk group tile', async ({ page }) => {
@@ -517,7 +525,8 @@ test.describe('01 · Auth & Header', () => {
 
   test('ghost_admin can log in and land on Mission Control', async ({ page }) => {
     await loginAs(page);
-    await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible();
+    // heading is hide-mobile on small viewports; mc-container is present on all breakpoints
+    await expect(page.locator('.mc-container')).toBeVisible();
   });
 
   test('Header renders all core controls after login', async ({ page }) => {
