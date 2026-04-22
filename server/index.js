@@ -461,14 +461,24 @@ const loginLimiter = rateLimit({
 });
 app.use('/api/auth/login', loginLimiter);
 
-// Sensor ingestion rate limit: 1,000 requests per minute per IP (PLC/SCADA traffic)
-// Mounted BEFORE the general limiter so sensor POSTs get their own bucket
+// Sensor ingestion rate limit: 1,000 requests per minute (PLC/SCADA traffic).
+// Audit 47 / M-8: key on plant + sensor identity, NOT req.ip. In factories all
+// PLC gateways NAT to one public IP, so per-IP limiting causes one chatty
+// device to exhaust the budget for every other sensor behind the same NAT.
+// Falls back to IP only when no sensor identity is discoverable (malformed
+// payload or unauthenticated legacy device).
 const sensorLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
     validate: false,
+    keyGenerator: (req) => {
+        const plant  = req.headers['x-plant-id'] || 'unknown';
+        const sensor = req.body?.sensorId || req.body?.deviceId || req.body?.sensor_id || req.body?.device_id;
+        if (sensor) return `${plant}:${sensor}`;
+        return `${plant}:${req.ip || 'unknown'}`;
+    },
     message: { error: 'Sensor rate limit exceeded (1000/min). Check PLC polling interval.' }
 });
 app.use('/api/sensors/reading', sensorLimiter);
