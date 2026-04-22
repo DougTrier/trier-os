@@ -199,13 +199,21 @@ function closeWorkOrderWithCosts(woId, costs, plantId = null) {
         }
 
         // 4. Update Work Order Status to 'Completed'
+        // Audit 47 / M-14: the sqlite handle is already plant-scoped (see the
+        // explicit plantId pass-through at the top of this function), so both
+        // lookups stay inside the correct plant DB. The new behavior is that
+        // total failure (neither ID nor WorkOrderNumber matches a row) now
+        // throws, rolling back the labor/parts/misc inserts rather than
+        // silently committing a partial close against no WO.
         try {
             const result = updateWOStatus.run(woId);
             if (result.changes === 0) {
-                // If the ID doesn't match a main Work ID row, try matching WorkOrderNumber
                 const fallback = sqlite.prepare(`UPDATE "Work" SET "StatusID" = ?, "CompDate" = CURRENT_TIMESTAMP WHERE "WorkOrderNumber" = ?`)
                       .run(COMPLETED_STATUS, String(woId));
                 console.log(`[CostLedger] WO status update fallback: ${fallback.changes} rows affected`);
+                if (fallback.changes === 0) {
+                    throw new Error(`Work order ${woId} not found in this plant — aborting close so labor/parts are not orphaned`);
+                }
             }
         } catch (e) {
             console.error(`[CostLedger] Failed to update WO status:`, e.message);
