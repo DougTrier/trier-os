@@ -66,33 +66,36 @@ router.post('/enroll', enrollLimiter, (req, res) => {
         return res.status(400).json({ error: 'Please select a plant location.' });
     }
 
-    // Check for duplicate pending requests
-    const existing = authDb.prepare(
+    // Audit 47 / M-15: do NOT leak whether an enrollment / account already
+    // exists for this name. The previous 409 responses let an attacker
+    // enumerate who had enrolled by probing names. Silently no-op duplicates
+    // so every caller sees the same generic success response.
+    const existingRequest = authDb.prepare(
         "SELECT 1 FROM enrollment_requests WHERE full_name = ? AND status = 'pending'"
     ).get(fullName.trim());
-    if (existing) {
-        return res.status(409).json({ error: 'An enrollment request for this name is already pending.' });
-    }
-
-    // Check if username already exists
     const existingUser = authDb.prepare('SELECT 1 FROM Users WHERE Username = ?').get(fullName.trim());
-    if (existingUser) {
-        return res.status(409).json({ error: 'An account with this name already exists. Please sign in or contact your admin.' });
-    }
+    const duplicate = existingRequest || existingUser;
 
     const validRoles = ['technician', 'mechanic', 'engineer', 'lab_tech', 'plant_manager', 'it_admin', 'executive', 'employee'];
     const role = validRoles.includes(requestedRole) ? requestedRole : 'technician';
 
-    authDb.prepare(`
-        INSERT INTO enrollment_requests (full_name, email, phone, requested_plant, requested_role, reason)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `).run(fullName.trim(), email || null, phone || null, requestedPlant, role, reason || null);
+    if (!duplicate) {
+        authDb.prepare(`
+            INSERT INTO enrollment_requests (full_name, email, phone, requested_plant, requested_role, reason)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(fullName.trim(), email || null, phone || null, requestedPlant, role, reason || null);
+        logAudit('GUEST', 'ENROLLMENT_REQUEST', requestedPlant, { name: fullName, role, email }, 'INFO', req.ip);
+    } else {
+        // Internal-only trail so admins can still see that an enumeration
+        // probe / duplicate attempt happened. Not exposed to the caller.
+        logAudit('GUEST', 'ENROLLMENT_DUPLICATE_SUPPRESSED', requestedPlant,
+            { name: fullName, reason: existingRequest ? 'pending_request_exists' : 'user_exists' },
+            'INFO', req.ip);
+    }
 
-    logAudit('GUEST', 'ENROLLMENT_REQUEST', requestedPlant, { name: fullName, role, email }, 'INFO', req.ip);
-
-    res.json({ 
-        success: true, 
-        message: 'Your enrollment request has been submitted. An administrator will review your request shortly.' 
+    res.json({
+        success: true,
+        message: 'Your enrollment request has been submitted. An administrator will review your request shortly.'
     });
 });
 
