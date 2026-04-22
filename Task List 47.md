@@ -8,16 +8,17 @@
 ## Summary
 
 - **Total Tasks:** 34
-- **Completed:** 5
-- **Remaining:** 29
+- **Completed:** 6
+- **Remaining:** 28
 - **Critical:** 0
-- **High:** 8 (5 done, 3 remaining)
+- **High:** 8 (6 done, 2 remaining)
 - **Medium:** 17 (0 done)
 - **Low:** 9 (0 done)
 
 Eight High-severity tasks block general-availability; most are small, surgical fixes. Medium-severity work is the bulk of the effort (17 tasks covering concurrency, delivery guarantees, rate-limit scoping, and secret handling). Lows are maintainability and future-proofing. None of the 34 tasks require architectural rework. Estimated total effort: 1 focused sprint for Wave 1, a second sprint for Wave 2, Waves 3 and 4 absorbable in backlog.
 
 **Progress log (most recent first):**
+- `56b3c01` — TASK-07 — ERP outbox idempotency
 - `1fc0908` — TASK-06 — Part stock negative-decrement race
 - `ab3208f` — TASK-05 — HA sync trigger race
 - `fcda760` — TASK-04 — HUB_TOKEN_SECRET isolation
@@ -38,7 +39,7 @@ Eight High-severity tasks: a broken safety guard allowing destruction of complet
 - [x] TASK-04 · H-8 · HUB_TOKEN_SECRET isolation — commit `fcda760`
 - [x] TASK-05 · H-2 · HA sync trigger race — commit `ab3208f`
 - [x] TASK-06 · H-3 · Part stock negative-decrement race — commit `1fc0908`
-- [ ] TASK-07 · H-4 · ERP outbox idempotency
+- [x] TASK-07 · H-4 · ERP outbox idempotency — commit `56b3c01`
 - [ ] TASK-08 · H-7 · Audit-log coverage sweep
 
 ---
@@ -325,7 +326,9 @@ Option B (cleaner, larger refactor): insert an `InventoryLedger` row per consump
 
 ---
 
-### TASK-07
+### TASK-07 ✅
+
+**Status:** Completed — commit `56b3c01`
 
 **Source Finding:** H-4
 
