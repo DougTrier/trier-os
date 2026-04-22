@@ -22,6 +22,7 @@
 const express = require('express');
 const router = express.Router();
 const { db: logisticsDb, logAudit } = require('./logistics_db');
+const { encrypt, decrypt, looksEncrypted } = require('./utils/cryptoSecrets');
 
 // ── Ensure tables exist ──────────────────────────────────────────────────────
 try {
@@ -72,11 +73,51 @@ try {
 }
 
 // ── Helper: Get settings as object ───────────────────────────────────────────
+// smtp_pass is stored AES-256-GCM encrypted (Audit 47 / M-5). Callers that
+// need to display settings to an admin use getSettings() and then mask the
+// password; callers that need to authenticate an SMTP session use
+// getSmtpPassPlaintext() to decrypt.
 function getSettings() {
     const rows = logisticsDb.prepare('SELECT setting_key, setting_value FROM email_settings').all();
     const settings = {};
     rows.forEach(r => settings[r.setting_key] = r.setting_value);
     return settings;
+}
+
+function getSmtpPassPlaintext() {
+    const row = logisticsDb.prepare(
+        "SELECT setting_value FROM email_settings WHERE setting_key = 'smtp_pass'"
+    ).get();
+    const stored = row?.setting_value || '';
+    if (!stored) return '';
+    if (looksEncrypted(stored)) {
+        try { return decrypt(stored); }
+        catch (e) {
+            console.warn('[Email] Failed to decrypt smtp_pass:', e.message);
+            return '';
+        }
+    }
+    // Legacy plaintext value that the migration below should have converted.
+    // If we still see it here, return as-is so email sending isn't broken.
+    return stored;
+}
+
+// Audit 47 / M-5 one-time migration: re-encrypt legacy plaintext smtp_pass.
+// Runs at module load; idempotent because looksEncrypted() detects already-
+// encrypted values and short-circuits.
+try {
+    const row = logisticsDb.prepare(
+        "SELECT setting_value FROM email_settings WHERE setting_key = 'smtp_pass'"
+    ).get();
+    if (row && row.setting_value && !looksEncrypted(row.setting_value)) {
+        const ct = encrypt(row.setting_value);
+        logisticsDb.prepare(
+            "UPDATE email_settings SET setting_value = ?, updated_at = datetime('now') WHERE setting_key = 'smtp_pass'"
+        ).run(ct);
+        console.log('[Email] Migrated legacy plaintext smtp_pass to AES-256-GCM at rest.');
+    }
+} catch (e) {
+    console.warn('[Email] smtp_pass migration skipped:', e.message);
 }
 
 // ── Helper: Send email ───────────────────────────────────────────────────────
@@ -101,7 +142,9 @@ async function sendEmail(to, subject, htmlBody, eventType = 'manual') {
             secure: settings.smtp_secure === 'true',
             auth: {
                 user: settings.smtp_user,
-                pass: settings.smtp_pass
+                // Audit 47 / M-5: decrypt at send-time. The DB holds ciphertext;
+                // this is the only place the plaintext exists in memory.
+                pass: getSmtpPassPlaintext()
             },
             tls: { rejectUnauthorized: false }
         });
@@ -178,7 +221,13 @@ router.put('/settings', (req, res) => {
         for (const [key, value] of Object.entries(updates)) {
             // Skip password field if it's the masked value
             if (key === 'smtp_pass' && value === '••••••••') continue;
-            upsert.run(key, String(value), updatedBy, String(value), updatedBy);
+            // Audit 47 / M-5: encrypt smtp_pass before persisting. Empty
+            // string passes through as-is (explicit clear of the credential).
+            let stored = String(value);
+            if (key === 'smtp_pass' && stored !== '') {
+                stored = encrypt(stored);
+            }
+            upsert.run(key, stored, updatedBy, stored, updatedBy);
         }
 
         logAudit(updatedBy, 'EMAIL_SETTINGS_UPDATED', 'system', { keys: Object.keys(updates) });
