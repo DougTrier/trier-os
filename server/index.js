@@ -412,8 +412,20 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-plant-id', 'x-lang']
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Audit 47 / M-1: global JSON body limit dropped from 50 MB → 5 MB.
+// Legitimate non-upload payloads are well under this; 50 MB worked as a
+// slow-loris amplifier (8 workers × 50 MB per stuck request). File uploads
+// (DXF, LiDAR, DB restore) use multer streaming and bypass express.json()
+// entirely. The known routes that can see moderately large JSON metadata
+// keep a higher limit via route-scoped parsers mounted first — express.json
+// sets req._body after parsing so the global parser below then short-circuits
+// for those paths.
+app.use('/api/import',            express.json({ limit: '25mb' }));
+app.use('/api/production-import', express.json({ limit: '25mb' }));
+app.use('/api/database',          express.json({ limit: '25mb' }));
+app.use('/api/plant-setup',       express.json({ limit: '25mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cookieParser()); // Task 1.2: must be before auth middleware so req.cookies.authToken is readable
 const _resolvedDataDir = require('./resolve_data_dir');
 app.use('/uploads', express.static(path.join(_resolvedDataDir, 'uploads')));
