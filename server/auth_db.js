@@ -119,8 +119,12 @@ db.prepare(`
 // Seed 'creator' system admin account — separate identity for administrative access
 const creatorAcctExists = db.prepare("SELECT 1 FROM Users WHERE Username = 'creator'").get();
 if (!creatorAcctExists) {
-    // SECURITY: Generate unique random password per deployment
-    const creatorPassword = crypto.randomBytes(10).toString('base64url');
+    // SECURITY: Generate unique random password per deployment.
+    // Audit 47 / L-7: 16 bytes (128 bits) replaces the previous 10 bytes.
+    // Base64url encoding yields ~22 characters — still copy-pastable and
+    // comfortably above NIST SP 800-63B entropy recommendations for a
+    // long-lived account-level secret.
+    const creatorPassword = crypto.randomBytes(16).toString('base64url');
     const creatorHash = bcrypt.hashSync(creatorPassword, 10);
     const result = db.prepare(`
         INSERT INTO Users (Username, PasswordHash, DefaultRole, MustChangePassword,
