@@ -148,11 +148,43 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Audit 47 / M-3: per-pre-auth-token attempt counter to block TOTP brute force.
+// A pre-auth token is valid for 5 minutes and there are 1,000,000 possible
+// 6-digit codes — without a counter an attacker who obtained a pre-auth token
+// could exhaust the entire code space inside the window.
+//
+// The Map key is a SHA-256 hash of the pre-auth token (we don't keep the raw
+// token in memory). After MAX_2FA_ATTEMPTS failures the hash is blacklisted and
+// the matching token is rejected until its natural JWT expiry. A successful
+// verify deletes the counter. A periodic sweep bounds memory by purging entries
+// older than 10 minutes (pre-auth tokens expire at 5 min, so 10 min is a safe
+// upper bound).
+const MAX_2FA_ATTEMPTS = 5;
+const preAuth2faAttempts = new Map();
+function _preAuthKey(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, rec] of preAuth2faAttempts) {
+        if (now - rec.firstSeen > 10 * 60 * 1000) preAuth2faAttempts.delete(key);
+    }
+}, 5 * 60 * 1000).unref?.();
+
 // ── TOTP 2FA Verification Endpoint ──
 router.post('/verify-2fa', async (req, res) => {
     const { preAuthToken, code } = req.body;
     if (!preAuthToken || !code) {
         return res.status(400).json({ error: 'Pre-auth token and authenticator code required' });
+    }
+
+    // Rate-limit check runs BEFORE any JWT / TOTP work so a blacklisted token
+    // gets a cheap rejection.
+    const attemptKey = _preAuthKey(preAuthToken);
+    const attemptRec = preAuth2faAttempts.get(attemptKey);
+    if (attemptRec && attemptRec.attempts >= MAX_2FA_ATTEMPTS) {
+        logAudit('creator', 'LOGIN_2FA_BLOCKED', null, { reason: 'Attempt limit exceeded' }, 'WARNING', req.ip);
+        return res.status(429).json({ error: 'Too many failed 2FA attempts. Log in again to request a fresh code.' });
     }
 
     try {
@@ -193,12 +225,21 @@ router.post('/verify-2fa', async (req, res) => {
 
         const delta = totp.validate({ token: code, window: 1 });
         if (delta === null) {
-            logAudit('creator', 'LOGIN_2FA_FAILED', null, { reason: 'Invalid TOTP code' }, 'WARNING', req.ip);
+            // Record the miss against this pre-auth token.
+            const rec = preAuth2faAttempts.get(attemptKey) || { attempts: 0, firstSeen: Date.now() };
+            rec.attempts += 1;
+            preAuth2faAttempts.set(attemptKey, rec);
+            const remaining = Math.max(0, MAX_2FA_ATTEMPTS - rec.attempts);
+            logAudit('creator', 'LOGIN_2FA_FAILED', null, { reason: 'Invalid TOTP code', attempts: rec.attempts, remaining }, 'WARNING', req.ip);
             return res.status(401).json({ error: 'Invalid authenticator code. Check your app and try again.' });
         }
 
         const user = authDb.prepare('SELECT * FROM Users WHERE UserID = ?').get(decoded.UserID);
         if (!user) return res.status(404).json({ error: 'User account not found' });
+
+        // Success — clear the attempt counter so a retry after legitimate
+        // typos doesn't penalize the user.
+        preAuth2faAttempts.delete(attemptKey);
 
         logAudit('creator', 'LOGIN_2FA_SUCCESS', null, {}, 'INFO', req.ip);
         return issueJWT(user, req, res);
