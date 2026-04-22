@@ -229,10 +229,10 @@ function issueJWT(user, req, res) {
 
     // Hub token — stored in localStorage (not httpOnly) so the PWA can pass it
     // as a WebSocket query param when connecting to the LAN hub offline.
-    // Uses a dedicated secret (HUB_TOKEN_SECRET) when configured so a stolen
-    // localStorage token cannot be replayed against the main API (different key).
-    // Minimal claims only: identity + plant, no roles.
-    const HUB_TOKEN_SECRET = process.env.HUB_TOKEN_SECRET || JWT_SECRET;
+    // Signed with HUB_TOKEN_SECRET (required, distinct from JWT_SECRET — enforced
+    // at boot in index.js) so a stolen localStorage token cannot be replayed
+    // against the main API. Minimal claims only: identity + plant, no roles.
+    const HUB_TOKEN_SECRET = process.env.HUB_TOKEN_SECRET;
     const hubToken = jwt.sign(
         { UserID: user.UserID, Username: user.Username, nativePlantId: homePlant },
         HUB_TOKEN_SECRET,

@@ -95,6 +95,47 @@ if (isMissingOrWeak) {
     console.log('✅ [SECURITY] Environment effectively hardened with unique session secret.');
 }
 
+// ── Boot-time HUB_TOKEN_SECRET auto-generation & isolation check (Audit 47 / H-8) ──
+// The hub token is stored in localStorage (not httpOnly) so the PWA can pass it as a
+// WebSocket query param when connecting to the LAN hub offline. Signing it with a
+// distinct secret means a stolen localStorage token cannot be replayed against the
+// main API. Any fallback to JWT_SECRET silently collapses that trust boundary, so:
+//   - missing: auto-generate in dev, hard-fail in production
+//   - equal to JWT_SECRET: always hard-fail (deliberate misconfiguration)
+const hubSecretMissing = !process.env.HUB_TOKEN_SECRET ||
+    process.env.HUB_TOKEN_SECRET.length < 32 ||
+    process.env.HUB_TOKEN_SECRET.startsWith('YOUR_') ||
+    process.env.HUB_TOKEN_SECRET.includes('CHANGE') ||
+    process.env.HUB_TOKEN_SECRET.includes('PLACEHOLDER');
+
+if (hubSecretMissing) {
+    if (process.env.NODE_ENV === 'production') {
+        console.error('🚨 [SECURITY] HUB_TOKEN_SECRET is missing or weak in production.');
+        console.error('   Set a strong HUB_TOKEN_SECRET (64+ hex chars), distinct from JWT_SECRET, and restart.');
+        process.exit(1);
+    }
+    console.log('🔒 [SECURITY] HUB_TOKEN_SECRET missing or weak. Generating persistent hub-token secret...');
+    const newHubSecret = crypto.randomBytes(64).toString('hex');
+    process.env.HUB_TOKEN_SECRET = newHubSecret;
+
+    const envPath = path.resolve(process.cwd(), '.env');
+    let envContent = '';
+    if (fs.existsSync(envPath)) {
+        envContent = fs.readFileSync(envPath, 'utf8');
+        envContent = envContent.replace(/^HUB_TOKEN_SECRET=.*[\r\n]*/gm, '');
+    }
+    envContent = `HUB_TOKEN_SECRET=${newHubSecret}\n` + envContent;
+    fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf8');
+    console.log('✅ [SECURITY] HUB_TOKEN_SECRET written to .env.');
+}
+
+if (process.env.HUB_TOKEN_SECRET === process.env.JWT_SECRET) {
+    console.error('🚨 [SECURITY] HUB_TOKEN_SECRET must not equal JWT_SECRET.');
+    console.error('   Sharing the key defeats hub-token isolation — a stolen localStorage token');
+    console.error('   would be replayable against the main API. Set distinct values in .env.');
+    process.exit(1);
+}
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser'); // Task 1.2: httpOnly cookie auth (INFO-01)
@@ -2114,7 +2155,7 @@ app.listen(PORT, '0.0.0.0', async () => {
             const centralUrl = `http://localhost:${PORT}`;
             lanHub.start({
                 dataDir: _resolvedDataDir,
-                jwtSecret: process.env.HUB_TOKEN_SECRET || process.env.JWT_SECRET,
+                jwtSecret: process.env.HUB_TOKEN_SECRET,
                 centralUrl,
             });
         } catch (err) {
