@@ -60,7 +60,17 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, tempDir),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_'))
 });
-const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } }); // 200MB — LiDAR scans can be very large
+const upload = multer({
+    storage,
+    limits: { fileSize: 200 * 1024 * 1024 }, // 200MB — LiDAR scans can be very large
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (!['.ply', '.obj'].includes(ext)) {
+            return cb(new Error('Only .ply and .obj files are accepted'));
+        }
+        cb(null, true);
+    }
+});
 
 // ══════════════════════════════════════════════
 // PLY Parser — ASCII Point Cloud Data
@@ -365,7 +375,7 @@ router.post('/', upload.single('lidarfile'), async (req, res) => {
         // 4. Save as floor plan (with lidarSourcePath for 3D viewer)
         const dbResult = logisticsDb.prepare(
             'INSERT INTO FloorPlans (plantId, name, imagePath, createdBy, planType, lidarSourcePath) VALUES (?, ?, ?, ?, ?, ?)'
-        ).run(plantId, name, imgRelPath, req.user?.username || 'system', planType || 'facility', lidarRelPath);
+        ).run(plantId, name, imgRelPath, req.user?.Username || 'system', planType || 'facility', lidarRelPath);
 
         // Clean up temp file
         try { fs.unlinkSync(req.file.path); } catch(e) {}

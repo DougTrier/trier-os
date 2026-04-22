@@ -95,6 +95,18 @@ function ensureScanColumns(conn) {
             );
         `);
     } catch { /* already exists */ }
+
+    // R-1 fix: UNIQUE constraint on ScanAuditLog.scanId enforces idempotency at the
+    // DB layer. Without this, concurrent cluster workers that both pass the pre-check
+    // SELECT could both insert audit entries for the same physical scan.
+    // Wrapped in try/catch so a pre-existing table with no duplicates migrates cleanly;
+    // if actual duplicates exist the index creation fails loudly so the operator can audit.
+    try {
+        conn.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_scan_audit_scanid ON ScanAuditLog(scanId)`);
+    } catch (e) {
+        console.warn('[scan] Could not create unique index on ScanAuditLog.scanId:', e.message,
+            '— check for duplicate scanId rows before this index can be applied.');
+    }
 }
 
 // Run migration on the default DB at startup — also called per-request below
@@ -204,10 +216,11 @@ function resolveReturnAt(conn, returnWindow) {
 // Returns a branch response the client uses to render the correct action prompt.
 router.post('/', (req, res) => {
     try {
-        const { scanId, assetId, userId, deviceTimestamp, offlineCaptured = false } = req.body;
+        const { scanId, assetId, deviceTimestamp, offlineCaptured = false } = req.body;
+        const userId = req.user?.UserID || req.user?.Username;
 
-        if (!scanId || !assetId || !userId || !deviceTimestamp) {
-            return res.status(400).json({ error: 'scanId, assetId, userId, and deviceTimestamp are required' });
+        if (!scanId || !assetId || !deviceTimestamp) {
+            return res.status(400).json({ error: 'scanId, assetId, and deviceTimestamp are required' });
         }
 
         const conn = db.getDb();
@@ -341,9 +354,17 @@ router.post('/', (req, res) => {
         }
 
         // Auto-create WO inside a transaction so WO + segment + audit are atomic.
+        // R-1: .immediate() acquires a write lock upfront so two cluster workers that
+        // both passed the pre-check SELECT above are serialized here. The inner re-check
+        // makes the UNIQUE INDEX on ScanAuditLog.scanId the authoritative dedup guard.
         const result = conn.transaction(() => {
-            const woNumber = `AUTO-${Date.now()}`;
-            const woInsert = conn.prepare(`
+            const alreadySeen = conn.prepare('SELECT auditEventId FROM ScanAuditLog WHERE scanId = ? LIMIT 1').get(scanId);
+            if (alreadySeen) return { duplicate: true };
+
+            // R-7: Timestamp alone collides when two workers hit this on the same ms.
+            // 3 random bytes (6 hex chars) makes collision probability negligible.
+            const woNumber = `AUTO-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+            conn.prepare(`
                 INSERT INTO Work
                     (WorkOrderNumber, Description, AstID, StatusID, TypeID, AddDate, UserID, AssignToID)
                 VALUES (?, ?, ?, ?, 'CORRECTIVE', datetime('now'), ?, ?)
@@ -363,7 +384,15 @@ router.post('/', (req, res) => {
             });
 
             return { woId, woNumber, segmentId };
-        })();
+        }).immediate();
+
+        if (result.duplicate) {
+            return res.json({
+                branch: 'AUTO_REJECT_DUPLICATE_SCAN',
+                message: 'Duplicate scan detected — no action taken.',
+                scanId,
+            });
+        }
 
         return res.json({
             branch: 'AUTO_CREATE_WO',
@@ -380,17 +409,20 @@ router.post('/', (req, res) => {
 
 // ── POST /api/scan/action ────────────────────────────────────────────────────
 // Submit the user's choice after a branch prompt was shown.
-// Body: { scanId, woId, userId, action, holdReason?, returnWindow?, deviceTimestamp }
+// Body: { scanId, woId, action, holdReason?, returnWindow?, deviceTimestamp }
 router.post('/action', (req, res) => {
     try {
         const {
-            scanId, woId, userId, action,
+            scanId, woId, action,
             holdReason, returnWindow, deviceTimestamp,
             offlineCaptured = false,
         } = req.body;
+        // R-2: userId must come from the authenticated JWT, never from req.body.
+        // req.body.userId was an open audit-log injection vector identical to A-5 on POST /.
+        const userId = req.user?.UserID || req.user?.Username;
 
-        if (!scanId || !woId || !userId || !action || !deviceTimestamp) {
-            return res.status(400).json({ error: 'scanId, woId, userId, action, and deviceTimestamp are required' });
+        if (!scanId || !woId || !action || !deviceTimestamp) {
+            return res.status(400).json({ error: 'scanId, woId, action, and deviceTimestamp are required' });
         }
 
         const conn = db.getDb();
@@ -715,10 +747,22 @@ router.post('/offline-sync', (req, res) => {
         }
 
         const conn = db.getDb();
+        // S-11: Ensure the UNIQUE INDEX on ScanAuditLog.scanId exists before any
+        // per-event processing. Without this, a DB that has only ever received
+        // offline-sync requests (no live POST / scans) has no dedup index, and
+        // concurrent offline-sync calls for the same scanId can create duplicate WOs.
+        ensureScanColumns(conn);
         const results = [];
 
         for (const event of events) {
-            const { scanId, assetId, userId, deviceTimestamp, userAction, holdReason } = event;
+            const { scanId, assetId, userId: eventUserId, deviceTimestamp, userAction, holdReason } = event;
+            // R-11: For direct client replays, the authenticated JWT user is the authoritative
+            // identity. Allowing event.userId lets any client write arbitrary names into
+            // audit logs. Hub replays are HMAC-verified — event.userId is the device user.
+            const userId = req.headers['x-hub-replay'] === '1'
+                ? eventUserId
+                : (req.user?.UserID || req.user?.Username);
+
             if (!scanId || !assetId || !userId || !deviceTimestamp) {
                 results.push({ scanId, status: 'FAILED', reason: 'Missing required fields' });
                 continue;
@@ -732,13 +776,21 @@ router.post('/offline-sync', (req, res) => {
             }
 
             try {
+                // S-11: .immediate() serializes concurrent offline-sync calls for the
+                // same scanId. The inner re-check is the authoritative dedup guard;
+                // the outer `seen` check above is an early-return optimization only.
                 const syncResult = conn.transaction(() => {
+                    const alreadySeenOffline = conn.prepare('SELECT auditEventId FROM ScanAuditLog WHERE scanId = ? LIMIT 1').get(scanId);
+                    if (alreadySeenOffline) return { status: 'SKIPPED', reason: 'Already processed' };
+
                     // Check for an existing active WO — offline conflict scenario
                     const activeWo = conn.prepare(`
                         SELECT ID, WorkOrderNumber, StatusID, AstID FROM Work
                         WHERE AstID = ? AND StatusID IN (${STATUS.IN_PROGRESS}, ${STATUS.OPEN})
                         ORDER BY ID DESC LIMIT 1
                     `).get(assetId);
+
+                    let txResult;
 
                     if (activeWo && userAction !== 'TAKE_OVER') {
                         // Auto-Join: open concurrent segment, flag for review
@@ -754,15 +806,20 @@ router.post('/offline-sync', (req, res) => {
                             decisionBranch: 'AUTO_JOIN_OFFLINE_CONFLICT',
                             deviceTimestamp, offlineCaptured: 1, conflictAutoResolved: 1, resolvedMode: 'AUTO_JOIN',
                         });
-                        return { status: 'SYNCED', branch: 'AUTO_JOIN_OFFLINE_CONFLICT', segmentId };
-                    }
-
-                    // No conflict — auto-create WO if needed
-                    if (!activeWo) {
+                        txResult = { status: 'SYNCED', branch: 'AUTO_JOIN_OFFLINE_CONFLICT', segmentId };
+                    } else if (!activeWo) {
+                        // No conflict — auto-create WO
                         const asset = conn.prepare('SELECT ID, Description FROM Asset WHERE ID = ? LIMIT 1').get(assetId);
-                        if (!asset) return { status: 'FAILED', reason: 'Asset not found' };
+                        if (!asset) {
+                            // R-9: Update queue inside transaction for consistency even on FAILED path.
+                            conn.prepare(`UPDATE OfflineScanQueue SET syncStatus = 'FAILED', failReason = ? WHERE scanId = ?`)
+                                .run('Asset not found', scanId);
+                            return { status: 'FAILED', reason: 'Asset not found' };
+                        }
 
-                        const woNumber = `AUTO-${Date.now()}`;
+                        // R-7: Same randomness guard as POST / — concurrent offline-sync
+                        // calls can land on the same millisecond.
+                        const woNumber = `AUTO-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
                         const woInsert = conn.prepare(`
                             INSERT INTO Work (WorkOrderNumber, Description, AstID, StatusID, TypeID, AddDate, UserID, AssignToID)
                             VALUES (?, ?, ?, ?, 'CORRECTIVE', ?, ?, ?)
@@ -777,15 +834,20 @@ router.post('/offline-sync', (req, res) => {
                             decisionBranch: 'AUTO_CREATE_WO',
                             deviceTimestamp, offlineCaptured: 1,
                         });
-                        return { status: 'SYNCED', branch: 'AUTO_CREATE_WO', woId, segmentId };
+                        txResult = { status: 'SYNCED', branch: 'AUTO_CREATE_WO', woId, segmentId };
+                    } else {
+                        txResult = { status: 'SYNCED', branch: 'ROUTE_TO_ACTIVE_WO' };
                     }
 
-                    return { status: 'SYNCED', branch: 'ROUTE_TO_ACTIVE_WO' };
-                })();
+                    // R-9: Update queue inside the transaction so WO creation and queue
+                    // status are always consistent. A crash between a committed transaction
+                    // and an external UPDATE would leave the WO created but the queue entry
+                    // still PENDING, causing a duplicate replay on the next reconnect.
+                    conn.prepare(`UPDATE OfflineScanQueue SET syncStatus = ?, syncedAt = datetime('now') WHERE scanId = ?`)
+                        .run(txResult.status, scanId);
 
-                // Update the offline queue record if it was submitted via that table
-                conn.prepare(`UPDATE OfflineScanQueue SET syncStatus = ?, syncedAt = datetime('now') WHERE scanId = ?`)
-                    .run(syncResult.status, scanId);
+                    return txResult;
+                }).immediate();
 
                 results.push({ scanId, ...syncResult });
             } catch (e) {
@@ -813,8 +875,9 @@ router.post('/offline-sync', (req, res) => {
 //
 // Body: { woId, userId, deskAction }
 router.post('/desk-action', (req, res) => {
-    const { woId, userId, deskAction } = req.body;
-    if (!woId || !userId || !deskAction) {
+    const { woId, deskAction } = req.body;
+    const userId = req.user?.UserID || req.user?.Username;
+    if (!woId || !deskAction) {
         return res.status(400).json({ error: 'woId, userId, and deskAction are required' });
     }
     const validActions = ['DESK_DISMISS', 'DESK_CLOSE', 'DESK_RESUME'];

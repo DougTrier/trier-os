@@ -63,7 +63,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { db: logDb, logAudit } = require('../logistics_db');
 
 // Project root (two levels up from server/routes/)
@@ -328,10 +328,9 @@ router.post('/git/commit', (req, res) => {
         const status = execSync('git status --porcelain', { cwd: PROJECT_ROOT }).toString().trim();
         if (!status) return res.status(400).json({ error: 'Nothing to commit — working tree is clean' });
         execSync('git add -A', { cwd: PROJECT_ROOT });
-        const safeUsername = String(req.user.Username || 'unknown').replace(/[^a-zA-Z0-9_\\-\\.]/g, '');
-        const safeMsg = message.trim().replace(/["`$\\]/g, '');
-        const msg = `${safeMsg}\n\nCommitted via Live Studio by ${safeUsername}`;
-        execSync(`git commit -m "${msg}"`, { cwd: PROJECT_ROOT });
+        const safeUsername = String(req.user.Username || 'unknown').replace(/[^a-zA-Z0-9_\-\.]/g, '');
+        const msg = `${message.trim()}\n\nCommitted via Live Studio by ${safeUsername}`;
+        execFileSync('git', ['commit', '-m', msg], { cwd: PROJECT_ROOT });
         const hash = execSync('git rev-parse --short HEAD', { cwd: PROJECT_ROOT }).toString().trim();
         logAudit(req.user.Username, 'STUDIO_COMMIT', null, { message: message.trim(), hash }, 'INFO', req.ip);
         res.json({ success: true, hash, message: message.trim() });
@@ -803,6 +802,8 @@ const Database = require('better-sqlite3');
 // Simulation sessions stored in memory (keyed by simId)
 const simSessions = new Map();
 
+const SAFE_PLANT_ID_SIM = /^[a-zA-Z0-9_-]{1,64}$/;
+
 // POST /api/studio/simulation/create
 // Clones the target plant DB, strips records after cutoffDate, stores simId.
 router.post('/simulation/create', (req, res) => {
@@ -812,6 +813,9 @@ router.post('/simulation/create', (req, res) => {
     // Validate date format YYYY-MM-DD
     if (!/^\d{4}-\d{2}-\d{2}$/.test(cutoffDate)) {
         return res.status(400).json({ error: 'cutoffDate must be YYYY-MM-DD' });
+    }
+    if (!SAFE_PLANT_ID_SIM.test(plantId)) {
+        return res.status(400).json({ error: 'Invalid plantId format' });
     }
 
     const dataDir  = require('../resolve_data_dir');

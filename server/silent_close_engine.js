@@ -45,27 +45,26 @@ function runForPlant(dbPath, plantName) {
 
         const thresholdHours = getThreshold(db);
 
-        // LEFT JOIN to Work so we can read holdReason before touching anything.
-        // We need holdReason to enforce exemptions — if we updated first we'd have
-        // to undo rows we shouldn't have touched, which is messier than reading first.
-        const staleSegments = db.prepare(`
-            SELECT ws.segmentId, ws.woId, ws.userId,
-                   w.holdReason, w.needsReview
-            FROM WorkSegments ws
-            LEFT JOIN Work w ON CAST(ws.woId AS TEXT) = CAST(w.ID AS TEXT)
-            WHERE ws.segmentState = 'Active'
-              AND ws.startTime < datetime('now', '-' || ? || ' hours')
-        `).all(thresholdHours);
-
-        if (staleSegments.length === 0) { db.close(); return 0; }
-
         let closed = 0;
 
-        // Wrap in a transaction: if the process is killed mid-loop we do not end
-        // up with partially-updated WOs where some segments are TimedOut but the
-        // Work row still has needsReview=0, which would silently lose the flag.
-        const processAll = db.transaction(() => {
-            for (const seg of staleSegments) {
+        // R-3: SELECT is moved inside the IMMEDIATE transaction so the holdReason
+        // snapshot and the UPDATE see the same DB state. Without this, a tech's
+        // WAITING_ON_PARTS hold action between the outer SELECT and the UPDATE
+        // would be silently overwritten with 'TimedOut' (TOCTOU).
+        // AND segmentState = 'Active' in the UPDATE is the inner guard: if a tech
+        // closes a segment normally (Active→Ended) while this transaction is
+        // running, changes === 0 and we skip the review flag entirely.
+        db.transaction(() => {
+            const freshSegments = db.prepare(`
+                SELECT ws.segmentId, ws.woId, ws.userId,
+                       w.holdReason, w.needsReview
+                FROM WorkSegments ws
+                LEFT JOIN Work w ON CAST(ws.woId AS TEXT) = CAST(w.ID AS TEXT)
+                WHERE ws.segmentState = 'Active'
+                  AND ws.startTime < datetime('now', '-' || ? || ' hours')
+            `).all(thresholdHours);
+
+            for (const seg of freshSegments) {
                 // Exempted hold reasons mean a tech explicitly paused the WO for a
                 // legitimate external dependency — closing it as timed-out would
                 // generate false-positive supervisor alerts and erode trust in the
@@ -75,11 +74,14 @@ function runForPlant(dbPath, plantName) {
                 // Close the stale segment with 'TimedOut' (not 'Ended') so that
                 // labor-time reports and the review queue can distinguish cron
                 // closures from tech-initiated closures without a separate flag.
-                db.prepare(`
+                // AND segmentState = 'Active' ensures a concurrent normal close wins.
+                const updateResult = db.prepare(`
                     UPDATE WorkSegments
                     SET endTime = datetime('now'), segmentState = 'TimedOut'
-                    WHERE segmentId = ?
+                    WHERE segmentId = ? AND segmentState = 'Active'
                 `).run(seg.segmentId);
+
+                if (updateResult.changes === 0) continue; // concurrently closed — skip
 
                 // Only write the review flag when it is not already set — avoids
                 // overwriting a more specific reviewReason (e.g. OFFLINE_CONFLICT)
@@ -96,9 +98,8 @@ function runForPlant(dbPath, plantName) {
 
                 closed++;
             }
-        });
+        }).immediate();
 
-        processAll();
         db.close();
         return closed;
     } catch (err) {

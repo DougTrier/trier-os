@@ -118,6 +118,18 @@ function hasImportPrivilege(user) {
     }
 }
 
+// Validate that a caller-supplied file path is a real, non-traversal, Access DB path
+function validateImportFilePath(filePath) {
+    if (!filePath || typeof filePath !== 'string') return 'File path is required';
+    if (filePath.includes('\x00')) return 'Invalid file path (null byte)';
+    const resolved = path.resolve(filePath);
+    const ext = path.extname(resolved).toLowerCase();
+    if (ext !== '.mdb' && ext !== '.accdb') return 'Only .mdb and .accdb files are supported';
+    if (!fs.existsSync(resolved)) return 'File not found';
+    if (!fs.statSync(resolved).isFile()) return 'Path is not a file';
+    return null; // ok
+}
+
 // Middleware: all import routes require import privilege
 router.use((req, res, next) => {
     if (!hasImportPrivilege(req.user)) {
@@ -188,18 +200,29 @@ router.post('/browse-custom', (req, res) => {
         if (!directory) {
             return res.status(400).json({ error: 'Directory path is required' });
         }
-        if (!fs.existsSync(directory)) {
-            return res.status(404).json({ error: `Directory not found: ${directory}` });
+        // Resolve to an absolute, normalized path to prevent traversal
+        const resolved = path.resolve(directory);
+        if (resolved !== path.normalize(directory.replace(/\\/g, '/')).replace(/\//g, path.sep) &&
+            resolved !== path.normalize(directory)) {
+            return res.status(400).json({ error: 'Path normalization mismatch — possible traversal attempt' });
+        }
+        // Block Windows and Linux system roots
+        const SYSTEM_PATH = /^(C:[/\\]Windows|C:[/\\]Program Files|\/etc|\/proc|\/sys|\/dev|\/boot)(\/|\\|$)/i;
+        if (SYSTEM_PATH.test(resolved)) {
+            return res.status(400).json({ error: 'Browsing system directories is not permitted' });
+        }
+        if (!fs.existsSync(resolved)) {
+            return res.status(404).json({ error: `Directory not found: ${resolved}` });
         }
 
-        const stats = fs.statSync(directory);
+        const stats = fs.statSync(resolved);
         if (!stats.isDirectory()) {
             return res.status(400).json({ error: 'Path is not a directory' });
         }
 
         const results = [];
-        scanForDatabaseFiles(directory, directory, results, 0);
-        res.json({ directory, files: results });
+        scanForDatabaseFiles(resolved, resolved, results, 0);
+        res.json({ directory: resolved, files: results });
     } catch (err) {
         console.error('Browse custom failed:', err);
         res.status(500).json({ error: 'Failed to browse directory: ' });
@@ -304,14 +327,10 @@ function scanForDatabaseFiles(dir, baseDir, results, depth = 0) {
 router.post('/open-access', (req, res) => {
     try {
         const { filePath } = req.body;
-        if (!filePath || !fs.existsSync(filePath)) {
-            return res.status(400).json({ error: 'File not found: ' + filePath });
-        }
+        const pathError = validateImportFilePath(filePath);
+        if (pathError) return res.status(400).json({ error: pathError });
 
-        const ext = path.extname(filePath).toLowerCase();
-        if (ext !== '.mdb' && ext !== '.accdb') {
-            return res.status(400).json({ error: 'Unsupported file format. Only .mdb and .accdb files are supported.' });
-        }
+        const ext = path.extname(path.resolve(filePath)).toLowerCase();
 
         let mdb = null;
         let useOledb = false;
@@ -431,7 +450,6 @@ router.post('/open-access', (req, res) => {
 
         res.json({
             file: path.basename(filePath),
-            path: filePath,
             format: ext === '.mdb' ? 'Access 97-2003' : 'Access 2007+',
             reader: useOledb ? 'oledb' : 'mdb-reader',
             oledbPassword: useOledb ? oledbPassword : undefined,
@@ -457,10 +475,9 @@ router.post('/open-access', (req, res) => {
 router.post('/browse-access-table', (req, res) => {
     try {
         const { filePath, tableName, page = 1, limit = 50, oledbPassword: reqOledbPwd } = req.body;
-        
-        if (!filePath || !fs.existsSync(filePath)) {
-            return res.status(400).json({ error: 'File not found' });
-        }
+
+        const pathError = validateImportFilePath(filePath);
+        if (pathError) return res.status(400).json({ error: pathError });
 
         let columns, allRows;
         let mdb = null;
@@ -648,9 +665,8 @@ router.post('/auto-match', (req, res) => {
         }
 
         const { filePath } = req.body;
-        if (!filePath || !fs.existsSync(filePath)) {
-            return res.status(400).json({ error: 'File not found' });
-        }
+        const pathError = validateImportFilePath(filePath);
+        if (pathError) return res.status(400).json({ error: pathError });
 
         // Open the Access database
         const buf = fs.readFileSync(filePath);
@@ -1007,6 +1023,10 @@ router.post('/browse-sql-table', async (req, res) => {
     if (!server || !database || !tableName) {
         return res.status(400).json({ error: 'Server, database, and tableName are required' });
     }
+    // Reject table names that cannot be safely bracket-quoted (must be alphanumeric + space + underscore)
+    if (!/^[\w\s]+$/.test(tableName)) {
+        return res.status(400).json({ error: 'Invalid table name format' });
+    }
 
     let pool;
     try {
@@ -1024,10 +1044,10 @@ router.post('/browse-sql-table', async (req, res) => {
         );
         const totalRows = countResult.recordset[0].total;
 
-        // Get columns
-        const colResult = await pool.request().query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${tableName}' AND TABLE_SCHEMA = 'dbo' ORDER BY ORDINAL_POSITION`
-        );
+        // Get columns (parameterized to prevent injection in INFORMATION_SCHEMA lookup)
+        const colResult = await pool.request()
+            .input('tn', sql.NVarChar(128), tableName)
+            .query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tn AND TABLE_SCHEMA = 'dbo' ORDER BY ORDINAL_POSITION`);
         const columns = colResult.recordset.map(c => c.COLUMN_NAME);
 
         // Get paginated data
@@ -1076,9 +1096,8 @@ router.post('/execute', (req, res) => {
     try {
         const { filePath, connectorId, selectedTables, deferredTables = [] } = req.body;
 
-        if (!filePath || !fs.existsSync(filePath)) {
-            return res.status(400).json({ error: 'Source file not found' });
-        }
+        const pathError = validateImportFilePath(filePath);
+        if (pathError) return res.status(400).json({ error: pathError });
         if (!selectedTables || selectedTables.length === 0) {
             return res.status(400).json({ error: 'No tables selected for import' });
         }
@@ -1512,11 +1531,6 @@ function getKnownPasswords() {
             if (Array.isArray(parsed)) passwords.push(...parsed);
         }
     } catch (e) { /* ignore */ }
-    
-    // Fallback: known PMC passwords (discovered during initial migration)
-    if (passwords.length === 0) {
-        passwords.push('D3pq@76R', 'At3!1734');
-    }
     
     return passwords;
 }

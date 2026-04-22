@@ -56,7 +56,16 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, tempDir),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_'))
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB — CAD files can be large
+const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB — CAD files can be large
+    fileFilter: (req, file, cb) => {
+        if (path.extname(file.originalname).toLowerCase() !== '.dxf') {
+            return cb(new Error('Only .dxf files are accepted'));
+        }
+        cb(null, true);
+    }
+});
 
 // ── Standard AutoCAD ACI color table → hex ──
 const DXF_COLORS = {
@@ -308,7 +317,7 @@ router.post('/', upload.single('dxffile'), async (req, res) => {
         // ── 6. Save as floor plan in database ──
         const result = logisticsDb.prepare(
             'INSERT INTO FloorPlans (plantId, name, imagePath, createdBy, planType) VALUES (?, ?, ?, ?, ?)'
-        ).run(plantId, name, imgRelPath, req.user?.username || 'system', planType || 'engineering');
+        ).run(plantId, name, imgRelPath, req.user?.Username || 'system', planType || 'engineering');
 
         // Clean up temp DXF file
         try { fs.unlinkSync(req.file.path); } catch(e) {}

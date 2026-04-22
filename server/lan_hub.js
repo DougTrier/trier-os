@@ -131,9 +131,13 @@ function getPendingScans(dataDir, plantId) {
     const db = getPlantDb(dataDir, plantId);
     try {
         ensureQueue(db);
-        // Include DEDUP_CLIENT entries older than 10 minutes as a fallback — if the
-        // client told us it would handle its scans but never came back online, the hub
-        // picks them up so no scan is permanently lost.
+        // Normal path: PENDING rows the hub owns and will replay to central server.
+        // Fallback path: DEDUP_CLIENT rows older than 10 minutes — the device declared
+        // ownership via SYNC_PENDING but never followed up with SYNC_COMPLETE (crash,
+        // power loss, or prolonged disconnect). The hub re-adopts them so no scan is lost.
+        // R-10: SYNCED_BY_CLIENT rows are excluded — the device sent SYNC_COMPLETE,
+        // confirming it already pushed those scans directly. Without that explicit signal
+        // the hub was the only thing preventing a double-replay after the 10-minute timer.
         return db.prepare(`
             SELECT * FROM OfflineScanQueue
             WHERE syncStatus = 'PENDING'
@@ -266,7 +270,20 @@ function startReconnectWatcher(centralUrl, dataDir, jwtSecret) {
     }, 30 * 1000); // check every 30 seconds
 }
 
+// R-4: Prevents concurrent drains when the setInterval fires again before the
+// previous async replay completes (e.g. central server is slow to respond).
+// Without this guard a second drain starts on the same PENDING rows, causing
+// each scan to be submitted twice and producing duplicate WOs on the server.
+let _replayInProgress = false;
+
 async function replayToServer(centralUrl, dataDir, jwtSecret) {
+    if (_replayInProgress) {
+        console.log('[LAN_HUB] Replay already in progress — skipping concurrent drain');
+        return;
+    }
+    _replayInProgress = true;
+    try {
+
     // Collect all pending scans across plants that connected to hub
     const seenPlants = new Set([..._clients.values()].map(c => c.plantId).filter(Boolean));
 
@@ -296,13 +313,26 @@ async function replayToServer(centralUrl, dataDir, jwtSecret) {
                     signal: AbortSignal.timeout(8000),
                 });
                 if (res.ok) {
-                    markSynced(dataDir, plantId, row.scanId);
-                    console.log(`[LAN_HUB] Replayed scan ${row.scanId} to central server`);
+                    const body = await res.json();
+                    const item = (body.results || []).find(r => r.scanId === row.scanId);
+                    // R-6: HTTP 200 is a transport acknowledgment, not per-scan success.
+                    // SYNCED = processed now; SKIPPED = already processed (idempotent) — both safe to mark synced.
+                    // FAILED = server could not process — leave as PENDING so the operator can see it and retry.
+                    if (!item || item.status !== 'FAILED') {
+                        markSynced(dataDir, plantId, row.scanId);
+                        console.log(`[LAN_HUB] Replayed scan ${row.scanId} to central server`);
+                    } else {
+                        console.warn(`[LAN_HUB] Scan ${row.scanId} failed on server: ${item.reason} — left as PENDING for retry`);
+                    }
                 }
             } catch (err) {
                 console.warn(`[LAN_HUB] Replay failed for scan ${row.scanId}:`, err.message);
             }
         }
+    }
+
+    } finally {
+        _replayInProgress = false;
     }
 }
 
@@ -319,10 +349,15 @@ function handleMessage(ws, raw, dataDir) {
         return;
     }
 
-    // Client declares its pending scanIds on connect so the hub won't double-replay
-    // them to the central server when it comes back online. The hub marks those rows
-    // DEDUP_CLIENT and skips them in replayToServer. A 10-minute fallback in
-    // getPendingScans ensures no scan is lost if the client fails to sync.
+    // R-10: Two-phase dedup protocol:
+    //   1. SYNC_PENDING — device declares the scanIds it owns on reconnect.
+    //      Hub marks them DEDUP_CLIENT and skips them in replayToServer.
+    //   2. SYNC_COMPLETE — device signals it successfully pushed those scans to
+    //      central. Hub marks them SYNCED_BY_CLIENT, permanently removing them
+    //      from the 10-minute fallback pool so the hub never re-replays them.
+    //
+    // The 10-minute fallback in getPendingScans still handles the case where the
+    // device crashes or loses power after SYNC_PENDING but before SYNC_COMPLETE.
     if (msg.type === 'SYNC_PENDING') {
         const { scanIds, plantId: msgPlantId } = msg;
         // Always use the plantId from the JWT-authenticated connection — never trust
@@ -349,6 +384,40 @@ function handleMessage(ws, raw, dataDir) {
             ws.send(JSON.stringify({ type: 'SYNC_ACK', acknowledged: acked }));
             if (acked.length > 0) {
                 console.log(`[LAN_HUB] Deduped ${acked.length} client-owned scans for plant=${plantId}`);
+            }
+        } finally {
+            db.close();
+        }
+        return;
+    }
+
+    // Phase 2 of the dedup protocol — device confirms it successfully pushed these
+    // scans to central. Marks them SYNCED_BY_CLIENT so the 10-minute fallback in
+    // getPendingScans never re-promotes them into the hub's replay queue.
+    if (msg.type === 'SYNC_COMPLETE') {
+        const { scanIds, plantId: msgPlantId } = msg;
+        const plantId = client?.plantId;
+        if (!Array.isArray(scanIds) || !plantId || scanIds.length === 0) return;
+        if (msgPlantId && msgPlantId !== plantId) {
+            console.warn(`[LAN_HUB] SECURITY: SYNC_COMPLETE plant override rejected user=${client?.userId} claimed=${msgPlantId} actual=${plantId}`);
+            return;
+        }
+
+        const db = getPlantDb(dataDir, plantId);
+        try {
+            ensureQueue(db);
+            const mark = db.prepare(`
+                UPDATE OfflineScanQueue SET syncStatus = 'SYNCED_BY_CLIENT', syncedAt = datetime('now')
+                WHERE scanId = ? AND syncStatus IN ('PENDING', 'DEDUP_CLIENT')
+            `);
+            const confirmed = [];
+            for (const scanId of scanIds) {
+                const info = mark.run(scanId);
+                if (info.changes > 0) confirmed.push(scanId);
+            }
+            ws.send(JSON.stringify({ type: 'SYNC_COMPLETE_ACK', confirmed }));
+            if (confirmed.length > 0) {
+                console.log(`[LAN_HUB] Client confirmed sync for ${confirmed.length} scans, plant=${plantId}`);
             }
         } finally {
             db.close();

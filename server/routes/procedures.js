@@ -86,7 +86,7 @@ router.get('/', (req, res) => {
                             let sql = 'SELECT * FROM Procedures';
                             let sqlParams = [];
                             if (where.length) {
-                                 sql += ' WHERE ' + where.join(' AND ').replace(/"/g, ''); 
+                                 sql += ' WHERE ' + where.join(' AND ');
                                  sqlParams = params;
                             }
                             const procs = tempDb.prepare(sql).all(...sqlParams);
@@ -159,9 +159,10 @@ router.get('/tasks', (req, res) => {
 router.put('/tasks/:id', (req, res) => {
     try {
         const { id } = req.params;
-        const fields = req.body;
-        
-        // Remove structural ID if present in body to avoid primary key conflicts
+        const { whitelist } = require('../validators');
+        const fields = whitelist(req.body, 'task');
+
+        // Remove structural ID to avoid primary key conflicts
         delete fields.ID;
 
         if (Object.keys(fields).length === 0) {
@@ -226,13 +227,18 @@ router.post('/ai-test', async (req, res) => {
 });
 
 
+const SAFE_PLANT_ID = /^[a-zA-Z0-9_-]{1,64}$/;
+
 router.get('/:id', (req, res) => {
     try {
         const { sourcePlant } = req.query;
         let targetDb = db.getDb();
-        
+
         // If viewing from corporate library, we might need to query a specific site db
         if (sourcePlant) {
+            if (!SAFE_PLANT_ID.test(sourcePlant)) {
+                return res.status(400).json({ error: 'Invalid sourcePlant identifier' });
+            }
             targetDb = db.getDb(sourcePlant);
         }
 
@@ -356,8 +362,10 @@ router.post('/clone', (req, res) => {
 router.post('/', (req, res) => {
     const dbInstance = db.getDb();
     try {
-        const { Tasks, ...fields } = req.body;
-        
+        const { Tasks, ...rawFields } = req.body;
+        const { whitelist } = require('../validators');
+        const fields = whitelist(rawFields, 'procedure');
+
         const createProc = dbInstance.transaction(() => {
             // A. Insert Procedure Metadata
             const columns = Object.keys(fields);
@@ -408,9 +416,14 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
     const dbInstance = db.getDb();
     try {
-        const { _tasks, _parts, ...fields } = req.body;
-        
+        const { _tasks, _parts, ...rawFields } = req.body;
+        const { whitelist } = require('../validators');
+        const fields = whitelist(rawFields, 'procedure');
+
         const columns = Object.keys(fields);
+        if (columns.length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided for update' });
+        }
         const sets = columns.map(c => `"${c}" = ?`).join(', ');
         const values = [...Object.values(fields), req.params.id];
 

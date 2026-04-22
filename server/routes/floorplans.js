@@ -185,7 +185,7 @@ router.post('/', upload.single('floorplan'), (req, res) => {
         const imagePath = `/uploads/floorplans/${plantId}/${req.file.filename}`;
         const result = logisticsDb.prepare(
             'INSERT INTO FloorPlans (plantId, name, imagePath, createdBy, planType, floorLevel, buildingName) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        ).run(plantId, name, imagePath, req.user?.username || 'system', planType || 'facility', floorLevel || '', buildingName || '');
+        ).run(plantId, name, imagePath, req.user?.Username || 'system', planType || 'facility', floorLevel || '', buildingName || '');
         res.status(201).json({ success: true, id: result.lastInsertRowid, imagePath });
     } catch (err) {
         res.status(500).json({ error: 'Failed to upload floor plan: ' });
@@ -207,7 +207,7 @@ router.post('/:id/blueprint', upload.single('blueprint'), (req, res) => {
         const blueprintPath = `/uploads/floorplans/${plan.plantId || '_default'}/${req.file.filename}`;
         
         // Auto-snapshot before blueprint change
-        snapshotVersion(req.params.id, 'Blueprint generated/updated', req.user?.username || 'system');
+        snapshotVersion(req.params.id, 'Blueprint generated/updated', req.user?.Username || 'system');
 
         // Delete old blueprint file if present (don't delete — keep for versioning)
         logisticsDb.prepare('UPDATE FloorPlans SET blueprintPath = ? WHERE id = ?').run(blueprintPath, req.params.id);
@@ -246,6 +246,17 @@ router.post('/import-url', async (req, res) => {
     try {
         const { url, name, plantId } = req.body;
         if (!url || !name || !plantId) return res.status(400).json({ error: 'url, name, and plantId are required' });
+
+        // SSRF guard: only allow http/https to public (non-private) addresses
+        let parsedUrl;
+        try { parsedUrl = new URL(url); } catch { return res.status(400).json({ error: 'Invalid URL format' }); }
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return res.status(400).json({ error: 'Only http and https URLs are supported' });
+        }
+        const PRIVATE_RANGE = /^(localhost$|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|::1$|0\.0\.0\.0|169\.254\.)/;
+        if (PRIVATE_RANGE.test(parsedUrl.hostname)) {
+            return res.status(400).json({ error: 'Private and local addresses are not permitted' });
+        }
 
         const http = url.startsWith('https') ? require('https') : require('http');
         const plantDir = path.join(baseUploadDir, plantId.replace(/[^a-zA-Z0-9_-]/g, '_'));
@@ -316,7 +327,7 @@ router.get('/:id/versions', (req, res) => {
 router.post('/:id/versions', (req, res) => {
     try {
         const { changeNote } = req.body;
-        const ver = snapshotVersion(req.params.id, changeNote || 'Manual snapshot', req.user?.username || 'system');
+        const ver = snapshotVersion(req.params.id, changeNote || 'Manual snapshot', req.user?.Username || 'system');
         if (!ver) return res.status(404).json({ error: 'Floor plan not found' });
         res.json({ success: true, versionNumber: ver });
     } catch (err) {
@@ -333,7 +344,7 @@ router.post('/:id/revert/:versionId', (req, res) => {
         if (!version) return res.status(404).json({ error: 'Version not found' });
 
         // Snapshot current state before reverting
-        snapshotVersion(req.params.id, `Before revert to v${version.versionNumber}`, req.user?.username || 'system');
+        snapshotVersion(req.params.id, `Before revert to v${version.versionNumber}`, req.user?.Username || 'system');
 
         // Revert the plan to the version's image/blueprint
         logisticsDb.prepare(
@@ -354,7 +365,7 @@ router.post('/:id/reupload', upload.single('floorplan'), (req, res) => {
         if (!plan) return res.status(404).json({ error: 'Floor plan not found' });
 
         // Snapshot current state
-        snapshotVersion(req.params.id, req.body.changeNote || 'Image re-uploaded', req.user?.username || 'system');
+        snapshotVersion(req.params.id, req.body.changeNote || 'Image re-uploaded', req.user?.Username || 'system');
 
         // Save new file
         const plantDir = path.join(baseUploadDir, plan.plantId || '_default');
@@ -497,7 +508,7 @@ router.post('/:id/annotations', (req, res) => {
             color || '#ef4444',
             strokeWidth || 3,
             fontSize || 14,
-            req.user?.username || 'system'
+            req.user?.Username || 'system'
         );
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {
@@ -590,7 +601,7 @@ router.post('/:id/zones', (req, res) => {
             hazardClass || '',
             capacity || 0,
             notes || '',
-            req.user?.username || 'system'
+            req.user?.Username || 'system'
         );
         res.status(201).json({ success: true, id: result.lastInsertRowid });
     } catch (err) {

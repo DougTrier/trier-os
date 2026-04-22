@@ -68,6 +68,15 @@ const whitelists = {
 
     chatProfile: [
         'FirstName', 'LastName', 'Email', 'Phone', 'PlantId', 'Department', 'PasswordHash'
+    ],
+
+    procedure: [
+        'ID', 'Descript', 'Priority', 'AstShut', 'PltShut', 'EstDown', 'Updated',
+        'Approval', 'Comment', 'UserID', 'Description', 'ProcedureCode'
+    ],
+
+    task: [
+        'ID', 'Descript', 'TaskTypID', 'Safety', 'Tasks', 'Comment', 'Description', 'Instructions'
     ]
 };
 

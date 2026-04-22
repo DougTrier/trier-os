@@ -1083,12 +1083,15 @@ app.post('/api/sync/replicate', (req, res) => {
     }
     console.log(`  ðŸ“¥ [HA] Receiving ${entries.length} replicated entries for [${plantId}]`);
     const result = haSync.applyReplicatedEntries(plantId, entries);
+    // errors must be the full array of { id, error } objects so the primary's
+    // R-5 fix can call result.errors.map(e => e.id) to exclude failed entries
+    // from markApplied. Sending a count (number) causes a TypeError on the primary
+    // and silently breaks HA sync whenever the secondary has any per-entry error.
     res.json({
         success: true,
         applied: result.applied,
         skipped: result.skipped,
-        errors: result.errors.length,
-        errorDetails: result.errors.slice(0, 5)
+        errors: result.errors,
     });
 });
 

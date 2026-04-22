@@ -160,7 +160,7 @@ router.get('/', (req, res) => {
                             `;
                             let sqlParams = [p.id, p.label];
                             if (where.length) {
-                                sql += ' WHERE ' + where.join(' AND ').replace(/"/g, ''); 
+                                sql += ' WHERE ' + where.join(' AND ');
                                 sqlParams = [...sqlParams, ...params];
                             }
                             

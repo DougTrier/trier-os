@@ -219,7 +219,12 @@ async function pushChangesToSecondary() {
 
                 if (response.ok) {
                     const result = await response.json();
-                    // Mark entries as applied
+                    // R-5: HTTP 200 is a transport acknowledgment, not per-entry success.
+                    // Inspect result.errors to exclude failed entries from markApplied so
+                    // they remain at applied=0 and are retried on the next sync cycle.
+                    const failedIds = new Set((result.errors || []).map(e => e.id));
+                    const successfulIds = entries.filter(e => !failedIds.has(e.id)).map(e => e.id);
+
                     const markApplied = plantDb.prepare(
                         `UPDATE sync_ledger SET applied = 1, applied_at = datetime('now') WHERE id = ?`
                     );
@@ -228,9 +233,16 @@ async function pushChangesToSecondary() {
                             markApplied.run(id);
                         }
                     });
-                    markTx(entries.map(e => e.id));
-                    totalPushed += entries.length;
-                    console.log(`  🔄 [HA] Pushed ${entries.length} changes for [${plant.id}] → Secondary`);
+
+                    if (successfulIds.length > 0) {
+                        markTx(successfulIds);
+                        totalPushed += successfulIds.length;
+                    }
+                    if (failedIds.size > 0) {
+                        totalErrors += failedIds.size;
+                        console.warn(`  ⚠️ [HA] ${failedIds.size} entries failed on secondary for [${plant.id}] — will retry on next cycle`);
+                    }
+                    console.log(`  🔄 [HA] Pushed ${successfulIds.length} changes for [${plant.id}] → Secondary`);
                 } else {
                     totalErrors++;
                     console.error(`  ❌ [HA] Secondary rejected push for [${plant.id}]: ${response.status}`);
@@ -451,16 +463,16 @@ function disableSyncTriggers(plantDb) {
 }
 
 /**
- * Re-enable sync triggers.
+ * Re-enable sync triggers dropped by disableSyncTriggers.
  */
 function enableSyncTriggers(plantDb) {
-    // We need to re-install them since SQLite doesn't support DISABLE TRIGGER
-    // But on the secondary, we generally DON'T want triggers since it's read-only
-    // Only re-enable if this is the primary
+    // R-8: disableSyncTriggers drops triggers with DROP TRIGGER IF EXISTS.
+    // installSyncInfrastructure recreates them with CREATE TRIGGER IF NOT EXISTS,
+    // so calling it here is idempotent and correct. Secondary servers must not
+    // have triggers — their writes come via applyReplicatedChanges, not triggers,
+    // and trigger-generated ledger entries would create phantom replication loops.
     if (SERVER_ROLE === 'primary') {
-        // The triggers are already installed from installSyncInfrastructure
-        // They were dropped by disableSyncTriggers, so we need to reinstall
-        // This is a no-op for secondary servers
+        installSyncInfrastructure(plantDb, SERVER_ID);
     }
 }
 
