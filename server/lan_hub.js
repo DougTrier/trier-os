@@ -577,4 +577,27 @@ function getStatus() {
     };
 }
 
-module.exports = { start, stop, getStatus, HUB_PORT };
+// Audit 47 / L-9 (pairs with H-5 TokenVersion): terminate any open hub
+// WebSocket(s) for a given userId. Called by routes that bump the main-API
+// TokenVersion — password change, admin reset, role/permission edit, user
+// delete — so a compromised-or-demoted user cannot keep a live LAN-hub
+// session after their session has been invalidated on the main API.
+// Close code 4001 is the application-defined signal the PWA uses to prompt
+// for re-authentication.
+function evictUser(userId) {
+    if (!_hub || !userId) return 0;
+    let closed = 0;
+    for (const [ws, client] of _clients) {
+        if (String(client.userId) === String(userId)) {
+            try { ws.close(4001, 'Session invalidated'); } catch (_) { /* already closing */ }
+            _clients.delete(ws);
+            closed += 1;
+        }
+    }
+    if (closed > 0) {
+        console.log(`[LAN_HUB] Evicted ${closed} hub session(s) for userId=${userId}`);
+    }
+    return closed;
+}
+
+module.exports = { start, stop, getStatus, evictUser, HUB_PORT };

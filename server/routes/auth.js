@@ -59,6 +59,18 @@ const crypto = require('crypto');
 const { db: logDb, logAudit } = require('../logistics_db');
 const { validatePassword } = require('../validators');
 
+// Audit 47 / L-9: best-effort evict of open LAN hub WebSocket(s) for a user
+// whose TokenVersion just bumped. The hub only runs in the Electron desktop
+// wrapper, so on headless deployments require('../lan_hub') throws or the
+// exported evictUser is a no-op when _hub isn't started — either way we
+// swallow the result.
+function _evictHubSessions(userId) {
+    try {
+        const lanHub = require('../lan_hub');
+        lanHub.evictUser?.(userId);
+    } catch (_) { /* hub not loaded — safe to ignore */ }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Audit 47 / M-17: out-of-band notifications for admin-initiated credential
@@ -644,6 +656,7 @@ router.post('/reset-password', async (req, res) => {
 
         logAudit(decoded.Username, 'PASSWORD_RESET_BY_ADMIN', null, { target: targetUsername }, 'WARNING', req.ip);
         _notifyUserOfAccountChange(user, { action: 'PASSWORD_RESET', adminUsername: decoded.Username, ip: req.ip });
+        _evictHubSessions(user.UserID);
 
         // Audit 47 / M-16: return the temp password as a dedicated field
         // instead of embedding it in prose. This lets reverse-proxy and
@@ -702,6 +715,7 @@ router.post('/change-password', async (req, res) => {
         ).run(hash, user.UserID);
 
         logAudit(decoded.Username, 'PASSWORD_CHANGE', null, { targetUser: user.Username }, 'INFO', req.ip);
+        _evictHubSessions(user.UserID);
 
         return res.json({ success: true, message: `Password updated successfully.` });
     } catch (err) {
@@ -803,6 +817,7 @@ router.post('/users/update-access', async (req, res) => {
         // role/permission and plant-role mutations have committed, so any live
         // session with the old claims is rejected on its next request.
         authDb.prepare('UPDATE Users SET TokenVersion = COALESCE(TokenVersion, 0) + 1 WHERE UserID = ?').run(user.UserID);
+        _evictHubSessions(user.UserID);
 
         logAudit(decoded.Username, 'ACCESS_UPDATED', null, { target: targetUsername, role: defaultRole, dashboard: canAccessDashboard, global: globalAccess, analytics: canViewAnalytics }, 'INFO', req.ip);
         // Out-of-band notification (M-17). Look up the user's current email so
@@ -983,6 +998,7 @@ router.post('/users/delete', async (req, res) => {
             authDb.prepare('DELETE FROM Users WHERE UserID = ?').run(userId);
         });
         deleteUser(targetUser.UserID);
+        _evictHubSessions(targetUser.UserID);
 
         logAudit(decoded.Username, 'USER_DELETED', null, { 
             deletedUser: targetUsername, 
