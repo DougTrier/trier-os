@@ -224,7 +224,11 @@ router.post('/keys', (req, res) => {
         const { label, permissions = 'read' } = req.body;
         const rawKey = 'pm_' + crypto.randomBytes(24).toString('hex');
         const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-        const keyPrefix = rawKey.substring(0, 10) + '...';
+        // Audit 47 / L-2: bump the display prefix from 10 → 20 chars so admins
+        // can uniquely identify which key to revoke at scale. The 'pm_' + 17
+        // hex chars that fit in 20 total gives 68 bits of discriminator —
+        // effectively zero collision risk across any realistic key population.
+        const keyPrefix = rawKey.substring(0, 20) + '...';
 
         logisticsDb.prepare(`
             INSERT INTO api_keys (key_hash, key_prefix, label, created_by, permissions)
