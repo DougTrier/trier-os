@@ -61,6 +61,39 @@ const { validatePassword } = require('../validators');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// Audit 47 / M-17: out-of-band notifications for admin-initiated credential
+// mutations. Email delivery is best-effort — sendEmail returns a structured
+// { success: false } when SMTP is not configured, so non-configured
+// deployments see no behavior change.
+function _notifyUserOfAccountChange(targetUserRow, { action, adminUsername, ip }) {
+    try {
+        if (!targetUserRow?.Email) return; // nothing to notify
+        const { sendEmail, buildEmailHtml } = require('../email_service');
+        const when = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }) + ' CST';
+        const subject = action === 'PASSWORD_RESET'
+            ? 'Your Trier OS password was reset'
+            : 'Your Trier OS access was updated';
+        const headline = action === 'PASSWORD_RESET'
+            ? 'Password reset by an administrator'
+            : 'Access / role updated by an administrator';
+        const body = `
+            <p>${headline} on your Trier OS account.</p>
+            <ul>
+                <li><strong>Administrator:</strong> ${adminUsername || 'unknown'}</li>
+                <li><strong>When:</strong> ${when}</li>
+                <li><strong>Source IP:</strong> ${ip || 'unknown'}</li>
+            </ul>
+            <p>If you did not expect this change, contact your security team immediately.</p>
+        `;
+        // Fire-and-forget — do not await, do not block the admin response.
+        Promise.resolve()
+            .then(() => sendEmail(targetUserRow.Email, subject, buildEmailHtml(subject, body, '#f59e0b'), action))
+            .catch(err => console.warn('[Auth] Notify email failed:', err.message));
+    } catch (e) {
+        console.warn('[Auth] Notify helper error:', e.message);
+    }
+}
+
 // ── RBAC Login Logic ─────────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
     const username = req.body.username || req.body.plantId;
@@ -610,6 +643,7 @@ router.post('/reset-password', async (req, res) => {
         ).run(hash, user.UserID);
 
         logAudit(decoded.Username, 'PASSWORD_RESET_BY_ADMIN', null, { target: targetUsername }, 'WARNING', req.ip);
+        _notifyUserOfAccountChange(user, { action: 'PASSWORD_RESET', adminUsername: decoded.Username, ip: req.ip });
 
         // Audit 47 / M-16: return the temp password as a dedicated field
         // instead of embedding it in prose. This lets reverse-proxy and
@@ -771,6 +805,12 @@ router.post('/users/update-access', async (req, res) => {
         authDb.prepare('UPDATE Users SET TokenVersion = COALESCE(TokenVersion, 0) + 1 WHERE UserID = ?').run(user.UserID);
 
         logAudit(decoded.Username, 'ACCESS_UPDATED', null, { target: targetUsername, role: defaultRole, dashboard: canAccessDashboard, global: globalAccess, analytics: canViewAnalytics }, 'INFO', req.ip);
+        // Out-of-band notification (M-17). Look up the user's current email so
+        // the notification goes to the address stored at update time.
+        const targetForNotify = authDb.prepare('SELECT UserID, Username, Email FROM Users WHERE UserID = ?').get(user.UserID);
+        if (targetForNotify) {
+            _notifyUserOfAccountChange(targetForNotify, { action: 'ACCESS_UPDATED', adminUsername: decoded.Username, ip: req.ip });
+        }
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
