@@ -84,8 +84,15 @@ function closeWorkOrderWithCosts(woId, costs, plantId = null) {
         VALUES (?, ?, ?, ?, ?, ?)
     `);
 
+    // Audit 47 / H-3: Atomic stock decrement with a negative-stock guard.
+    // The WHERE clause's `COALESCE("Stock",0) >= ?` precondition makes the UPDATE
+    // a no-op (changes=0) when stock is insufficient. Combined with IMMEDIATE
+    // transaction mode (see bottom of this function), two concurrent WO closes
+    // on the same part cannot both succeed when only one unit is available.
     const updateStock = sqlite.prepare(`
-        UPDATE "Part" SET "Stock" = COALESCE("Stock", 0) - ? WHERE "ID" = ?
+        UPDATE "Part"
+        SET "Stock" = COALESCE("Stock", 0) - ?
+        WHERE "ID" = ? AND COALESCE("Stock", 0) >= ?
     `);
 
     const insertMisc = sqlite.prepare(`
@@ -150,10 +157,27 @@ function closeWorkOrderWithCosts(woId, costs, plantId = null) {
                 throw e;
             }
             
-            // Decrement Stock (non-critical — allow graceful failure)
+            // Decrement Stock. Audit 47 / H-3: if the guarded UPDATE makes no
+            // changes, disambiguate between "part not in inventory catalog"
+            // (legacy graceful skip) and "insufficient stock" (must abort the
+            // WO close so we don't record consumption that can't be honored).
             try {
-                updateStock.run(Number(p.ActQty || 0), p.PartID);
+                const qty = Number(p.ActQty || 0);
+                if (qty > 0) {
+                    const stockResult = updateStock.run(qty, p.PartID, qty);
+                    if (stockResult.changes === 0) {
+                        const partRow = sqlite.prepare('SELECT "Stock" FROM "Part" WHERE "ID" = ?').get(p.PartID);
+                        if (partRow) {
+                            // Part exists but not enough stock → abort the transaction.
+                            throw new Error(`Insufficient stock for part ${p.PartID} (requested ${qty}, available ${Number(partRow.Stock || 0)})`);
+                        }
+                        // Part not in Part table — silent skip preserves legacy behavior.
+                    }
+                }
             } catch (e) {
+                // Escalate the intentional insufficient-stock throw; swallow schema-shape
+                // errors (missing Part table/column in legacy plant schemas) as before.
+                if (/^Insufficient stock/.test(e.message)) throw e;
                 console.warn(`[CostLedger] Stock update skipped for ${p.PartID}:`, e.message);
             }
         }
@@ -201,7 +225,9 @@ function closeWorkOrderWithCosts(woId, costs, plantId = null) {
         return { success: true, woId };
     });
 
-    return transaction(woId, labor, parts, misc);
+    // Audit 47 / H-3: run in IMMEDIATE mode so the write lock is acquired at
+    // BEGIN, serializing concurrent WO closes against the same plant DB.
+    return transaction.immediate(woId, labor, parts, misc);
 }
 
 module.exports = {
