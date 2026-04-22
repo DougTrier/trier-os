@@ -342,7 +342,22 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
+            // Audit 47 / M-7: 'unsafe-inline' removed from scriptSrc. The built
+            // dist/index.html contains only external <script src="..."> tags
+            // (verified — no inline JS), and none of our own code uses inline
+            // event handlers, so the restriction holds in practice and
+            // meaningfully narrows the XSS attack surface.
+            //
+            // 'unsafe-eval' is retained because Monaco Editor (Live Studio) and
+            // Cesium's shader compiler both require it at runtime. Removing it
+            // would break the in-app code editor. The ideal follow-up is a
+            // nonce-based CSP with eval scoped only to /studio; that requires
+            // HTML-template nonce injection and is tracked separately.
+            scriptSrc: ["'self'", "'unsafe-eval'", "blob:"],
+            // styleSrc keeps 'unsafe-inline' — React inline styles ({style={{}}})
+            // and many component libraries inject inline <style> blocks. A
+            // style-based XSS is much narrower than script-based, so this is an
+            // accepted trade-off for UI ergonomics.
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
             imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
