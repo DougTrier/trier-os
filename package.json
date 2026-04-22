@@ -1,6 +1,6 @@
 {
   "name": "trier-os",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "Trier OS — Enterprise Maintenance Management System",
   "main": "electron/main.js",
   "scripts": {
@@ -13,6 +13,8 @@
     "build": "vite build",
     "seed": "node server/seeders.js",
     "test": "npx playwright test",
+    "test:desktop": "npx playwright test --project=\"Desktop Chrome\"",
+    "test:mobile": "npx playwright test --project=\"Mobile Chrome (Zebra TC77)\"",
     "electron:dev": "set ELECTRON_DEV=true && electron electron/main.js",
     "electron:start": "electron electron/main.js",
     "electron:build": "vite build && electron-builder --config electron-builder.json"
