@@ -422,15 +422,23 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Allow private enterprise IPs (192.168.x.x, 10.x.x.x) for mobile scanner access
-        try {
-            const url = new URL(origin);
-            if (url.hostname.match(/^192\.168\.\d+\.\d+$/) || 
-                url.hostname.match(/^10\.\d+\.\d+\.\d+$/) || 
-                url.hostname.match(/^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/)) {
-                return callback(null, true);
-            }
-        } catch(e) {}
+        // Audit 47 / L-8: allow private enterprise IPs (192.168.x.x,
+        // 10.x.x.x, 172.16–31.x.x) for mobile scanner access on the
+        // factory LAN. This is an explicit trust-boundary decision: the
+        // deployment model assumes a trusted intranet. Air-gapped
+        // installations that want to disable this relaxation can set
+        // DISABLE_LAN_CORS=1 in .env, which forces every origin to
+        // match the explicit allowlist above.
+        if (process.env.DISABLE_LAN_CORS !== '1') {
+            try {
+                const url = new URL(origin);
+                if (url.hostname.match(/^192\.168\.\d+\.\d+$/) ||
+                    url.hostname.match(/^10\.\d+\.\d+\.\d+$/) ||
+                    url.hostname.match(/^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/)) {
+                    return callback(null, true);
+                }
+            } catch(e) {}
+        }
 
         console.warn(`[SEC-WARNING] CORS Check Rejected: [${origin}]. Origin must be exactly whitelisted in '.env' ALLOWED_ORIGINS.`);
         callback(new Error('CORS Error: Unauthorized Origin'), false);
