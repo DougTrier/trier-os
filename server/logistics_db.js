@@ -237,6 +237,43 @@ db.exec(`
 const { AsyncLocalStorage } = require('async_hooks');
 const auditContext = new AsyncLocalStorage();
 
+// Audit 47 / L-3: audit failures used to be silent (console.error only),
+// giving false assurance that compliance-critical events were recorded.
+// Track failure counters + last error so /api/health can surface the
+// condition, and CRITICAL/WARNING failures append to a flat-file fallback
+// log the operator can recover from.
+const fsAudit = require('fs');
+const pathAudit = require('path');
+const auditHealth = {
+    total: 0,
+    failed: 0,
+    lastFailureAt: null,
+    lastFailureReason: null,
+};
+function _emitAuditFailure(severity, entry, err) {
+    auditHealth.failed += 1;
+    auditHealth.lastFailureAt = new Date().toISOString();
+    auditHealth.lastFailureReason = err.message;
+    // Emit a process-level event for anyone who wants to hook it.
+    try { process.emit('audit:failure', { severity, entry, error: err }); } catch (_) { /* no listeners */ }
+    // CRITICAL / WARNING actions that failed to hit the AuditLog get a
+    // fallback flat-file line so forensic reconstruction is still possible.
+    if (severity === 'CRITICAL' || severity === 'WARNING') {
+        try {
+            const logPath = pathAudit.join(dataDir, 'audit-failover.log');
+            const line = JSON.stringify({ at: auditHealth.lastFailureAt, severity, error: err.message, entry }) + '\n';
+            fsAudit.appendFileSync(logPath, line);
+        } catch (fileErr) {
+            // If even the flat file fails we're out of options — at least
+            // this goes to stderr which the operator is likely watching.
+            console.error('[AuditLog] CRITICAL: fallback log write failed:', fileErr.message);
+        }
+    }
+}
+function getAuditHealth() {
+    return { ...auditHealth };
+}
+
 /**
  * Structured Logging Helper
  * @param {string} userId - ID of the user performing the action
@@ -247,13 +284,15 @@ const auditContext = new AsyncLocalStorage();
  * @param {string} ip - Source IP
  */
 function logAudit(userId, action, plantId = null, details = null, severity = 'INFO', ip = null) {
+    auditHealth.total += 1;
+    const entry = { userId: userId || 'SYSTEM', action, plantId, details, severity, ip };
     try {
         const stmt = db.prepare(`
             INSERT INTO AuditLog (UserID, Action, PlantID, Details, Severity, IPAddress)
             VALUES (?, ?, ?, ?, ?, ?)
         `);
         stmt.run(
-            userId || 'SYSTEM',
+            entry.userId,
             action,
             plantId,
             details ? JSON.stringify(details) : null,
@@ -266,6 +305,7 @@ function logAudit(userId, action, plantId = null, details = null, severity = 'IN
         if (store) store.audited = true;
     } catch (err) {
         console.error('❌ Failed to write to AuditLog:', err);
+        _emitAuditFailure(severity, entry, err);
     }
 }
 function syncGlobalAsset(data, plantId) {
@@ -425,6 +465,7 @@ module.exports = {
     db,
     logAudit,
     auditContext, // exported for auditTrail middleware
+    getAuditHealth, // exported for /api/health subsystem view
     isBackupAllowed,
     syncGlobalAsset,
     syncGlobalSOP,

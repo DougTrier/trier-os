@@ -70,6 +70,23 @@ router.get('/', (req, res) => {
         checks.integrations = { status: 'error' };
     }
 
+    // ── Audit-log health (Audit 47 / L-3) ─────────────────────────────────────
+    // Surfaces silent AuditLog write failures so monitoring catches them
+    // before a compliance review uncovers missing entries.
+    try {
+        const { getAuditHealth } = require('../logistics_db');
+        const ah = getAuditHealth();
+        checks.audit = {
+            status: ah.failed > 0 ? 'degraded' : 'ok',
+            totalAttempted: ah.total,
+            failed: ah.failed,
+            lastFailureAt: ah.lastFailureAt,
+        };
+    } catch (e) {
+        console.error('[health] audit probe failed:', e);
+        checks.audit = { status: 'error' };
+    }
+
     // ── Memory ────────────────────────────────────────────────────────────────
     const mem = process.memoryUsage();
     checks.memory = {
