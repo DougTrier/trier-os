@@ -8,14 +8,14 @@
 ## Summary
 
 - **Total Tasks:** 34
-- **Completed:** 8 (🎉 **Wave 1 done**)
-- **Remaining:** 26
+- **Completed:** 23 (🎉 **Waves 1 + 2 done**)
+- **Remaining:** 11 (Wave 3: 4, Wave 4: 7)
 - **Critical:** 0
 - **High:** 8 (8 done)
-- **Medium:** 17 (0 done)
+- **Medium:** 17 (15 done — 2 left in Wave 3)
 - **Low:** 9 (0 done)
 
-All eight High-severity blockers are shipped. Wave 2 (Core Hardening) is up next: 15 Medium tasks covering body-size limits, TOTP replay, rate-limiting, SMTP encryption, CSP tightening, webhook outbox retry, lidar path containment, and related hardening. Waves 3 and 4 stay absorbable in backlog.
+All Wave 1 (High) and Wave 2 (Core Hardening Mediums) blockers are shipped. Remaining work is Wave 3 (Stability & Observability — 4 tasks) and Wave 4 (Low-severity maintainability — 7 tasks). None require schema migrations or architectural change.
 
 **Progress log (most recent first):**
 - `a96fd26` — TASK-08 — Audit-log coverage sweep **(closes Wave 1)**
@@ -52,21 +52,23 @@ Eight High-severity tasks: a broken safety guard allowing destruction of complet
 
 Fifteen Medium tasks focused on correctness, concurrency, delivery guarantees, rate-limiting, and secret handling.
 
-- TASK-09 · M-1 · Reduce JSON body limit
-- TASK-10 · M-2 · TOTP replay cache
-- TASK-11 · M-3 · Rate-limit /verify-2fa
-- TASK-12 · M-4 · Rate-limit /enroll
-- TASK-13 · M-5 · Encrypt SMTP password
-- TASK-14 · M-7 · Tighten CSP
-- TASK-15 · M-8 · Sensor rate-limit key
-- TASK-16 · M-9 · lidar-source path containment
-- TASK-17 · M-10 · HA snapshot filename collision
-- TASK-18 · M-11 · Part adjustment .immediate()
-- TASK-19 · M-12 · Webhook outbox retry queue
-- TASK-20 · M-13 · Shorten LAN hub DEDUP_CLIENT window
-- TASK-21 · M-14 · CostLedger plant-scope fallback
-- TASK-22 · M-15 · Enrollment enumeration
-- TASK-23 · M-16 · Password-reset response hygiene
+- [x] TASK-09 · M-1 · Reduce JSON body limit — commit `38347bf`
+- [x] TASK-10 · M-2 · TOTP replay cache — commit `4840639`
+- [x] TASK-11 · M-3 · Rate-limit /verify-2fa — commit `046b96a`
+- [x] TASK-12 · M-4 · Rate-limit /enroll — commit `cf20739`
+- [x] TASK-13 · M-5 · Encrypt SMTP password — commit `e1cbebd`
+- [x] TASK-14 · M-7 · Tighten CSP (partial: unsafe-inline removed) — commit `8d98fe2`
+- [x] TASK-15 · M-8 · Sensor rate-limit key — commit `e67f673`
+- [x] TASK-16 · M-9 · lidar-source path containment — commit `3e55fb0`
+- [x] TASK-17 · M-10 · HA snapshot filename collision — commit `b473b22`
+- [x] TASK-18 · M-11 · Part adjustment .immediate() — commit `927e8c4`
+- [x] TASK-19 · M-12 · Webhook outbox retry queue — commit `fc51e4d`
+- [x] TASK-20 · M-13 · Shorten LAN hub DEDUP_CLIENT window — commit `e242c10`
+- [x] TASK-21 · M-14 · CostLedger plant-scope fallback — commit `a190473`
+- [x] TASK-22 · M-15 · Enrollment enumeration — commit `aff32d2`
+- [x] TASK-23 · M-16 · Password-reset response hygiene — commit `758ea3e`
+
+**🎉 Wave 2 complete — all 15 Medium items shipped.**
 
 ---
 
@@ -401,7 +403,9 @@ Partial audit coverage is worse than none: forensic review assumes completeness,
 
 ---
 
-### TASK-09
+### TASK-09 ✅
+
+**Status:** Completed — commit `38347bf`
 
 **Source Finding:** M-1
 
@@ -430,7 +434,9 @@ Process OOM kills drop every in-flight request; recovery is brief but visible. A
 
 ---
 
-### TASK-10
+### TASK-10 ✅
+
+**Status:** Completed — commit `4840639`
 
 **Source Finding:** M-2
 
@@ -468,7 +474,9 @@ logDb.prepare("INSERT OR REPLACE INTO creator_settings (Key, Value) VALUES ('tot
 
 ---
 
-### TASK-11
+### TASK-11 ✅
+
+**Status:** Completed — commit `046b96a`
 
 **Source Finding:** M-3
 
@@ -499,7 +507,9 @@ TOTP brute force defeats 2FA. The pre-auth token may be obtained through session
 
 ---
 
-### TASK-12
+### TASK-12 ✅
+
+**Status:** Completed — commit `cf20739`
 
 **Source Finding:** M-4
 
@@ -535,7 +545,9 @@ router.post('/enroll', enrollLimiter, ...);
 
 ---
 
-### TASK-13
+### TASK-13 ✅
+
+**Status:** Completed — commit `e1cbebd`
 
 **Source Finding:** M-5
 
@@ -567,7 +579,9 @@ A DB export, backup, or HA snapshot exposes the SMTP credentials. An attacker wi
 
 ---
 
-### TASK-14
+### TASK-14 ✅ (partial — unsafe-inline removed; unsafe-eval deferred pending nonce-based CSP)
+
+**Status:** Completed — commit `8d98fe2`
 
 **Source Finding:** M-7
 
@@ -599,7 +613,9 @@ Any XSS sink elsewhere in the app (a renderer that accepts HTML from the DB, a m
 
 ---
 
-### TASK-15
+### TASK-15 ✅
+
+**Status:** Completed — commit `e67f673`
 
 **Source Finding:** M-8
 
@@ -634,7 +650,9 @@ Retain `req.ip` as a fallback when sensor identity is missing.
 
 ---
 
-### TASK-16
+### TASK-16 ✅
+
+**Status:** Completed — commit `3e55fb0`
 
 **Source Finding:** M-9
 
@@ -666,7 +684,9 @@ if (!resolved.startsWith(path.resolve(dataDir) + path.sep)) {
 
 ---
 
-### TASK-17
+### TASK-17 ✅
+
+**Status:** Completed — commit `b473b22`
 
 **Source Finding:** M-10
 
@@ -699,7 +719,9 @@ const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 
 ---
 
-### TASK-18
+### TASK-18 ✅
+
+**Status:** Completed — commit `927e8c4`
 
 **Source Finding:** M-11
 
@@ -729,7 +751,9 @@ Confirm the read of current stock happens inside the transaction body so the wri
 
 ---
 
-### TASK-19
+### TASK-19 ✅
+
+**Status:** Completed — commit `fc51e4d`
 
 **Source Finding:** M-12
 
@@ -763,7 +787,9 @@ Mirror the ERP outbox pattern:
 
 ---
 
-### TASK-20
+### TASK-20 ✅
+
+**Status:** Completed — commit `e242c10`
 
 **Source Finding:** M-13
 
@@ -791,7 +817,9 @@ Operator confusion: the hub logs "failed to replay scan X" for scans that are ac
 
 ---
 
-### TASK-21
+### TASK-21 ✅
+
+**Status:** Completed — commit `a190473`
 
 **Source Finding:** M-14
 
@@ -821,7 +849,9 @@ Pass `plantId` explicitly into `closeWorkOrderWithCosts`.
 
 ---
 
-### TASK-22
+### TASK-22 ✅
+
+**Status:** Completed — commit `aff32d2`
 
 **Source Finding:** M-15
 
@@ -848,7 +878,9 @@ Return a generic success message regardless of duplicate state. Silently no-op o
 
 ---
 
-### TASK-23
+### TASK-23 ✅
+
+**Status:** Completed — commit `758ea3e`
 
 **Source Finding:** M-16
 
