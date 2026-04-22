@@ -8,23 +8,62 @@
 ## Summary
 
 - **Total Tasks:** 34
-- **Completed:** 23 (🎉 **Waves 1 + 2 done**)
-- **Remaining:** 11 (Wave 3: 4, Wave 4: 7)
-- **Critical:** 0
-- **High:** 8 (8 done)
-- **Medium:** 17 (15 done — 2 left in Wave 3)
-- **Low:** 9 (0 done)
+- **Completed:** 34 (🎉 **All four waves done**)
+- **Remaining:** 0
+- **Critical:** 0 / 0
+- **High:** 8 / 8
+- **Medium:** 17 / 17
+- **Low:** 9 / 9
 
-All Wave 1 (High) and Wave 2 (Core Hardening Mediums) blockers are shipped. Remaining work is Wave 3 (Stability & Observability — 4 tasks) and Wave 4 (Low-severity maintainability — 7 tasks). None require schema migrations or architectural change.
+Every finding from Audit 47 is now addressed in code. Two schema migrations
+(Users.TokenVersion, ERPOutbox.IdempotencyKey) applied live during the
+syntax-check runs. One follow-up was noted inline: TASK-14 partially shipped
+the CSP tighten (removed `'unsafe-inline'`; `'unsafe-eval'` retained pending
+nonce-based CSP that's tracked as future work since Monaco currently
+requires it).
 
 **Progress log (most recent first):**
-- `a96fd26` — TASK-08 — Audit-log coverage sweep **(closes Wave 1)**
+
+**Wave 4 (Improvements)**
+- `7a33f59` — TASK-34 — evict LAN hub WebSockets on TokenVersion bump
+- `49f81ca` — TASK-33 — document LAN CORS trust boundary + DISABLE_LAN_CORS flag
+- `fe05759` — TASK-32 — creator password entropy 80 → 128 bits
+- `8b3abc9` — TASK-31 — 30s request timeout + per-route long overrides
+- `c188fe5` — TASK-30 — conditional HSTS on HTTPS responses
+- `9410153` — TASK-29 — API-key display prefix 10 → 20 chars
+- (TASK-28 — already resolved; no commit needed)
+
+**Wave 3 (Stability & Observability)**
+- `6486057` — TASK-27 — logAudit callsites + runtime signature validator
+- `7f968fa` — TASK-26 — surface AuditLog failures via health + fallback log
+- `bbd9cec` — TASK-25 — notify user on admin password/role mutations
+- `59531c3` — TASK-24 — strip error detail from public /api/health
+
+**Wave 2 (Core Hardening)**
+- `8d98fe2` — TASK-14 — CSP unsafe-inline removed (partial)
+- `fc51e4d` — TASK-19 — webhook outbox retry queue
+- `e1cbebd` — TASK-13 — SMTP password AES-256-GCM at rest
+- `4840639` — TASK-10 — TOTP replay cache
+- `758ea3e` — TASK-23 — password-reset temp returned as field
+- `e242c10` — TASK-20 — LAN hub DEDUP window 10m → 3m
+- `38347bf` — TASK-09 — body-size 50mb → 5mb with route-scoped overrides
+- `046b96a` — TASK-11 — per-pre-auth-token 2FA attempt counter
+- `a190473` — TASK-21 — CostLedger aborts on missing WO
+- `927e8c4` — TASK-18 — part adjustment IMMEDIATE transaction
+- `b473b22` — TASK-17 — HA snapshot filename millis + random suffix
+- `3e55fb0` — TASK-16 — lidar-source path containment
+- `e67f673` — TASK-15 — sensor rate limit keyed on plant:sensor
+- `aff32d2` — TASK-22 — enrollment enumeration silenced
+- `cf20739` — TASK-12 — /enroll rate limit 5/hr/IP
+
+**Wave 1 (Immediate Fixes)**
+- `a96fd26` — TASK-08 — audit-log coverage sweep
 - `71f1a6e` — TASK-02 — TokenVersion claim for JWT revocation
 - `56b3c01` — TASK-07 — ERP outbox idempotency
 - `1fc0908` — TASK-06 — Part stock negative-decrement race
 - `ab3208f` — TASK-05 — HA sync trigger race
 - `fcda760` — TASK-04 — HUB_TOKEN_SECRET isolation
-- `ee1cf44` — TASK-03 — Invite-code plant override
+- `ee1cf44` — TASK-03 — invite-code plant override
 - `b23df21` — TASK-01 — WO delete status guard
 
 ---
@@ -76,10 +115,12 @@ Fifteen Medium tasks focused on correctness, concurrency, delivery guarantees, r
 
 Four tasks focused on logging correctness, user notification, and audit-system integrity.
 
-- TASK-24 · M-6 · Health endpoint error detail
-- TASK-25 · M-17 · Notify users on password/role change
-- TASK-26 · L-3 · logAudit failure visibility
-- TASK-27 · L-4 · logAudit parameter-order consistency
+- [x] TASK-24 · M-6 · Health endpoint error detail — commit `59531c3`
+- [x] TASK-25 · M-17 · Notify users on password/role change — commit `bbd9cec`
+- [x] TASK-26 · L-3 · logAudit failure visibility — commit `7f968fa`
+- [x] TASK-27 · L-4 · logAudit parameter-order consistency — commit `6486057`
+
+**🎉 Wave 3 complete.**
 
 ---
 
@@ -87,13 +128,15 @@ Four tasks focused on logging correctness, user notification, and audit-system i
 
 Seven Low-severity polish items for maintainability and future-proofing.
 
-- TASK-28 · L-1 · all_sites WHERE clause builder
-- TASK-29 · L-2 · Longer API key prefix
-- TASK-30 · L-5 · Conditional HSTS
-- TASK-31 · L-6 · Global request timeout
-- TASK-32 · L-7 · Creator password entropy
-- TASK-33 · L-8 · Document CORS LAN policy
-- TASK-34 · L-9 · Close hub WebSocket on role change
+- [x] TASK-28 · L-1 · all_sites WHERE clause builder — already resolved in prior commit (no `replace(/"/g, '')` remains anywhere)
+- [x] TASK-29 · L-2 · Longer API key prefix — commit `9410153`
+- [x] TASK-30 · L-5 · Conditional HSTS — commit `c188fe5`
+- [x] TASK-31 · L-6 · Global request timeout — commit `8b3abc9`
+- [x] TASK-32 · L-7 · Creator password entropy — commit `fe05759`
+- [x] TASK-33 · L-8 · Document CORS LAN policy — commit `49f81ca`
+- [x] TASK-34 · L-9 · Close hub WebSocket on role change — commit `7a33f59`
+
+**🎉 Wave 4 complete.**
 
 ---
 
@@ -911,7 +954,9 @@ Temp password is a live credential. Any place that serializes the response body 
 
 ---
 
-### TASK-24
+### TASK-24 ✅
+
+**Status:** Completed — commit `59531c3`
 
 **Source Finding:** M-6
 
@@ -943,7 +988,9 @@ Keep the full error in the server log; return only `{ status: 'error' }` to clie
 
 ---
 
-### TASK-25
+### TASK-25 ✅
+
+**Status:** Completed — commit `bbd9cec`
 
 **Source Finding:** M-17
 
@@ -973,7 +1020,9 @@ Out-of-band notification is the standard compensating control when admin actions
 
 ---
 
-### TASK-26
+### TASK-26 ✅
+
+**Status:** Completed — commit `7f968fa`
 
 **Source Finding:** L-3
 
@@ -1004,7 +1053,9 @@ Audit-system failures are a regulated-industry incident in their own right. Sile
 
 ---
 
-### TASK-27
+### TASK-27 ✅
+
+**Status:** Completed — commit `6486057`
 
 **Source Finding:** L-4
 
@@ -1035,7 +1086,9 @@ Audit entries end up with action strings in the UserID column. Search/query on A
 
 ---
 
-### TASK-28
+### TASK-28 ✅
+
+**Status:** Completed — already resolved in a prior commit; grep confirms no `replace(/"/g, '')` remains anywhere in the codebase.
 
 **Source Finding:** L-1
 
@@ -1063,7 +1116,9 @@ Build the `all_sites` query via a dedicated path that is aware of cross-plant al
 
 ---
 
-### TASK-29
+### TASK-29 ✅
+
+**Status:** Completed — commit `9410153`
 
 **Source Finding:** L-2
 
@@ -1095,7 +1150,9 @@ const displayHash = keyHash.substring(0, 12);
 
 ---
 
-### TASK-30
+### TASK-30 ✅
+
+**Status:** Completed — commit `c188fe5`
 
 **Source Finding:** L-5
 
@@ -1130,7 +1187,9 @@ app.use((req, res, next) => {
 
 ---
 
-### TASK-31
+### TASK-31 ✅
+
+**Status:** Completed — commit `8b3abc9`
 
 **Source Finding:** L-6
 
@@ -1162,7 +1221,9 @@ For routes that legitimately run longer (imports, analytics generation, backups)
 
 ---
 
-### TASK-32
+### TASK-32 ✅
+
+**Status:** Completed — commit `fe05759`
 
 **Source Finding:** L-7
 
@@ -1190,7 +1251,9 @@ const initialPassword = crypto.randomBytes(16).toString('base64url');
 
 ---
 
-### TASK-33
+### TASK-33 ✅
+
+**Status:** Completed — commit `49f81ca`
 
 **Source Finding:** L-8
 
@@ -1221,7 +1284,9 @@ An implicit trust boundary that isn't written down is a ticking clock; the next 
 
 ---
 
-### TASK-34
+### TASK-34 ✅
+
+**Status:** Completed — commit `7a33f59`
 
 **Source Finding:** L-9
 
