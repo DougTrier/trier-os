@@ -823,7 +823,18 @@ router.get('/:id/lidar-source', (req, res) => {
         
         const dataDir = require('../resolve_data_dir');
         const filePath = path.join(dataDir, plan.lidarSourcePath);
-        
+
+        // Audit 47 / M-9: defense-in-depth boundary check. lidarSourcePath comes
+        // from the DB — if any other code path ever writes a user-controlled
+        // string here, the unchecked path.join would hand an attacker
+        // arbitrary-file-read via this endpoint. Resolve and confirm the path
+        // stays inside dataDir.
+        const resolved = path.resolve(filePath);
+        const boundary = path.resolve(dataDir) + path.sep;
+        if (!resolved.startsWith(boundary)) {
+            return res.status(403).json({ error: 'Boundary escape detected' });
+        }
+
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: 'LiDAR source file not found on disk' });
         }
