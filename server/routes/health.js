@@ -39,13 +39,19 @@ const integMgr  = require('../integrations/integration-manager');
 router.get('/', (req, res) => {
     const checks = {};
 
+    // Audit 47 / M-6: this endpoint is pre-auth and reachable from the public
+    // network. Returning raw e.message leaks file paths, SQLite error codes,
+    // and Windows user directories to unauthenticated callers. Log the full
+    // error server-side, expose only { status: 'error' } to clients.
+
     // ── DB connectivity (logistics_db is always available) ────────────────────
     try {
         const logDb = require('../logistics_db').db;
         logDb.prepare('SELECT 1').get();
         checks.db = { status: 'ok' };
     } catch (e) {
-        checks.db = { status: 'error', detail: e.message };
+        console.error('[health] db probe failed:', e);
+        checks.db = { status: 'error' };
     }
 
     // ── Integration workers ───────────────────────────────────────────────────
@@ -60,7 +66,8 @@ router.get('/', (req, res) => {
             errors:       erroredWorkers.length,
         };
     } catch (e) {
-        checks.integrations = { status: 'error', detail: e.message };
+        console.error('[health] integrations probe failed:', e);
+        checks.integrations = { status: 'error' };
     }
 
     // ── Memory ────────────────────────────────────────────────────────────────
