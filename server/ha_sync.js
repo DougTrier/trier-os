@@ -283,7 +283,12 @@ function applyReplicatedEntries(plantId, entries) {
         try {
             const snapshotDir = path.join(dataDir, 'ha_snapshots');
             if (!fs.existsSync(snapshotDir)) fs.mkdirSync(snapshotDir, { recursive: true });
-            const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            // Audit 47 / M-10: include millis + random suffix so two snapshots
+            // taken in the same second get distinct filenames. Previous
+            // second-resolution timestamp caused the second snapshot to
+            // overwrite the first and silently lose a rollback point.
+            const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 23)
+                + '-' + require('crypto').randomBytes(3).toString('hex');
             const snapshotFile = path.join(snapshotDir, `${plantId}_pre_sync_${ts}.db`);
             const dbPath = path.join(dataDir, `${plantId}.db`);
             if (fs.existsSync(dbPath)) {
@@ -296,7 +301,12 @@ function applyReplicatedEntries(plantId, entries) {
                 const dbPath = path.join(dataDir, `${plantId}.db`);
                 const snapshotDir = path.join(dataDir, 'ha_snapshots');
                 if (!fs.existsSync(snapshotDir)) fs.mkdirSync(snapshotDir, { recursive: true });
-                const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                // Audit 47 / M-10: include millis + random suffix so two snapshots
+            // taken in the same second get distinct filenames. Previous
+            // second-resolution timestamp caused the second snapshot to
+            // overwrite the first and silently lose a rollback point.
+            const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 23)
+                + '-' + require('crypto').randomBytes(3).toString('hex');
                 const snapshotFile = path.join(snapshotDir, `${plantId}_pre_sync_${ts}.db`);
                 fs.copyFileSync(dbPath, snapshotFile);
                 results.snapshotFile = snapshotFile;
