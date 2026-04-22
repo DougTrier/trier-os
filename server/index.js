@@ -374,10 +374,22 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     originAgentCluster: false,
-    // HSTS disabled — HTTP (port 3000) and HTTPS (port 1938) run on separate ports.
-    // Enabling HSTS on HTTP causes browsers to upgrade requests, breaking asset loads.
+    // HSTS is globally disabled here — see the conditional middleware below
+    // which sets the header only on HTTPS responses so the HTTP port still
+    // serves its assets without the browser coercing an upgrade. Audit 47 / L-5.
     hsts: false
 }));
+
+// Audit 47 / L-5: apply HSTS only to responses served over HTTPS. Leaving
+// it off on the HTTP port preserves the mixed-port LAN deployment model
+// (HTTP 1937 + HTTPS 1938) while still enabling TLS-strip protection on
+// the secure port once a client has visited it.
+app.use((req, res, next) => {
+    if (req.secure) {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    next();
+});
 
 // â”€â”€ Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SEC-005 Mitigation: Explicit exact-match origin binding rather than loose regex
