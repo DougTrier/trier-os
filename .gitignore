@@ -125,3 +125,7 @@ Artifacts/
 .claude/
 ROADMAP.md
 Referring_Sites.md
+Audit 47.md
+
+# Legacy Playwright test result PDFs (superseded by versioned reports in playwright-reports/)
+Playwright_Test_Results_v3.3.1.pdf

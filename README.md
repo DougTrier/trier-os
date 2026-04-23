@@ -7,10 +7,12 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   
   **Industrial Operations Platform — Built for the Plant Floor**
 
+  [![Version](https://img.shields.io/badge/Version-3.5.1-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.5.1)
   [![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
   [![Node.js](https://img.shields.io/badge/Node.js-Express-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
   [![SQLite](https://img.shields.io/badge/SQLite-EDR%20Safe-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
   [![Cesium](https://img.shields.io/badge/Cesium-GIS%20Analytics-60A5FA?style=for-the-badge&logo=cesium&logoColor=white)](https://cesium.com/)
+  [![Playwright](https://img.shields.io/badge/Playwright-559%20Mobile%20%7C%20700%20Desktop-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
 
   [Features](#sparkles-the-advanced-engines) •
   [Installation](#gear-installation--quick-start) •
@@ -58,6 +60,24 @@ This is what the system does on day one, before anyone configures an algorithm o
 *Live Studio — Embedded Monaco IDE with deploy pipeline, blast-radius mapper, and deterministic simulation engine*
 
 </div>
+
+### 📱 Mobile (iPhone / iOS)
+
+Real-device screenshots from an iPhone running Trier OS v3.5.1 over a plant LAN:
+
+<div align="center">
+
+| Login | Mission Control | Safety Portal | Fleet & Truck Shop |
+|---|---|---|---|
+| ![Login](./docs/mobile/01-login-secure-access-portal.png) | ![Mission Control](./docs/mobile/02-mission-control-home.png) | ![Safety](./docs/mobile/03-safety-portal.png) | ![Fleet](./docs/mobile/06-fleet-truck-shop.png) |
+
+| Corporate Analytics | OpEx Intelligence | Enterprise Dashboard | SOP Library |
+|---|---|---|---|
+| ![Analytics](./docs/mobile/13-corporate-analytics-executive-intelligence.png) | ![OpEx](./docs/mobile/14-opex-intelligence-fy2026.png) | ![Dashboard](./docs/mobile/12-enterprise-dashboard-predictive-risk.png) | ![SOP](./docs/mobile/05-sop-methods-library.png) |
+
+</div>
+
+> Full set of 14 iPhone screenshots: [`docs/mobile/`](./docs/mobile/)
 
 ---
 
@@ -113,6 +133,33 @@ The application will automatically ignite at `http://localhost:5173`.
 ```bash
 git pull origin main
 ```
+
+---
+
+### 🐧 Linux
+
+The web application runs natively on Linux — no special configuration required:
+
+```bash
+git clone https://github.com/DougTrier/trier-os.git
+cd trier-os
+npm install
+npm run dev:full
+```
+
+Open `http://localhost:5173`. Log in with the `System Creator` account — credentials are printed to the terminal on first run.
+
+**Desktop installer (Electron):** The pre-built `.exe` / `.msi` installers in [Releases](https://github.com/DougTrier/trier-os/releases) are Windows-only. To compile a native Linux desktop app yourself:
+
+```bash
+# Install required system dependencies (Ubuntu/Debian/Mint)
+sudo apt-get install -y libopenjp2-tools rpm fakeroot
+
+npm run electron:build
+# Output: electron-dist/TrierOS-Setup-*.AppImage (or .deb/.rpm depending on your config)
+```
+
+> **Note:** electron-builder requires matching native modules for your distro. If the build fails, running the web app via `npm run dev:full` is the recommended Linux path and is fully functional.
 
 ---
 
