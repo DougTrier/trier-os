@@ -1,8 +1,8 @@
 # Trier OS — Quick Facts & Project Specifications
 
-**Version:** 3.4.1  
+**Version:** 3.5.1  
 **Development Started:** March 7, 2026  
-**Development Completed:** April 21, 2026  
+**Development Completed:** April 22, 2026  
 **Public Release:** April 9, 2026  
 **Total Build Time:** 37 days  
 **License:** MIT  
@@ -15,15 +15,14 @@
 
 | Metric | Value |
 |---|---|
-| Total Lines of Code (full repository) | **293,497** |
-| Core Application Logic (`.js`, `.jsx`) | **155,306** |
-| React UI Components | **162 modular interfaces** |
-| Backend API Routes | **196 route/server modules · 60,764 lines of server logic** |
-| i18n Translations | **11 languages · 100,100 lines** |
+| Core Application Logic (`.js`, `.jsx`) | **158,221 lines** |
+| React UI Components | **142 modular interfaces** |
+| Backend API Routes | **201 server modules · 91 route files · 62,348 lines** |
+| i18n Translations | **11 languages · 100,661 lines** |
 | Production Dependencies | **34 vetted packages** |
 | Languages Supported | **11** (EN, DE, ES, FR, JA, KO, PT, AR, HI, TR, ZH) |
 | Database Architecture | **Multi-tenant SQLite sharding** (one `.db` per plant) |
-| E2E Test Coverage | **8,630+ lines · 21 spec files · 600+ passing tests** |
+| E2E Test Coverage | **8,731 lines · 17 spec files · 559 mobile / 700 desktop passing** |
 | Development Started | **March 7, 2026** |
 | Public Release | **April 9, 2026** |
 | Total Build Time | **33 days** (pure Agentic Coding, single developer) |

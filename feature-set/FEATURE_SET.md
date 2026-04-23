@@ -1,7 +1,7 @@
 # Trier OS — Complete Feature Set Audit
-**Version:** 3.4.1  
-**Audited:** April 21, 2026  
-**Methodology:** Full codebase scan across 162 React components and 196 API route/server modules.
+**Version:** 3.5.1  
+**Audited:** April 22, 2026  
+**Methodology:** Full codebase scan across 142 React components and 201 server modules (91 API route files).
 
 Features are ordered by enterprise plant customer priority — i.e., what breaks production, costs money, or causes a safety incident if it fails or is absent.
 
