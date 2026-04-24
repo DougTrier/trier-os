@@ -28,6 +28,7 @@ import SmartDialog from './SmartDialog';
 import AssetTimeline from './AssetTimeline';
 import TribalKnowledge from './TribalKnowledge';
 import BomPanel from './BomPanel';
+import AssetLifecycleCard from './AssetLifecycleCard';
 import DigitalTwinView from './DigitalTwinView';
 import ScanEntryPoint from './ScanEntryPoint';
 import { Search, RefreshCw, Plus, ChevronLeft, ChevronRight, X, PenTool, Printer, AlertTriangle, Eye, Network, ChevronDown, Info, CheckCircle, Activity, TrendingDown, TrendingUp, Trash2, Gauge, Camera, QrCode, Cpu, Cog, Scale } from 'lucide-react';
@@ -1680,6 +1681,10 @@ export default function AssetsView({ plantId, plantLabel }) {
                         {/* ── Bill of Materials ── */}
                         {!isCreating && selectedAsset && (
                             <BomPanel assetId={selectedAsset.ID} isEditing={isEditing} />
+                        )}
+
+                        {!isCreating && selectedAsset && (
+                            <AssetLifecycleCard assetId={selectedAsset.ID} plantId={plantId || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'} />
                         )}
 
                         {/* ── Asset Photos (View Mode Only) ── */}

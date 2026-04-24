@@ -54,6 +54,34 @@ function computeMTBF(dates) {
     };
 }
 
+function computePredictiveConfidence(failureCount, stdDevDays, mtbfDays, lastFailureDate) {
+    const dataVolume = Math.min(failureCount / 10, 1.0);
+
+    let volatilityScore = 0.5;
+    if (mtbfDays > 0 && stdDevDays != null) {
+        volatilityScore = Math.max(0, 1.0 - (stdDevDays / mtbfDays));
+    }
+
+    let recencyScore = 0.5;
+    if (lastFailureDate) {
+        const daysSinceLast = (Date.now() - new Date(lastFailureDate).getTime()) / 86400000;
+        recencyScore = Math.max(0, 1.0 - daysSinceLast / 548);
+    }
+
+    const score = Math.min(1.0, dataVolume * 0.5 + volatilityScore * 0.3 + recencyScore * 0.2);
+    const rounded = Math.round(score * 100) / 100;
+    const band = rounded >= 0.75 ? 'HIGH' : rounded >= 0.40 ? 'MEDIUM' : 'LOW';
+    return { confidenceScore: rounded, confidenceBand: band };
+}
+
+function computeRankingConfidence(failuresLastYear, daysSinceLast) {
+    const dataVolume = Math.min(failuresLastYear / 10, 1.0);
+    const recencyScore = Math.max(0, 1.0 - daysSinceLast / 365);
+    const score = Math.round(Math.min(1.0, dataVolume * 0.6 + recencyScore * 0.4) * 100) / 100;
+    const band = score >= 0.75 ? 'HIGH' : score >= 0.40 ? 'MEDIUM' : 'LOW';
+    return { confidenceScore: score, confidenceBand: band };
+}
+
 // ── GET /api/predictive-maintenance/mtbf ──────────────────────────────────────
 // Returns MTBF per asset for all assets with ≥ 2 unplanned failures in the DB.
 router.get('/mtbf', (req, res) => {
@@ -154,7 +182,12 @@ router.get('/risk-ranking', (req, res) => {
             const riskScore = Math.round(
                 r.failuresLastYear * (1 + (r.criticalityScore || 0) / 10) * (0.5 + recencyFactor * 0.5)
             );
-            return { ...r, daysSinceLastFailure: daysSinceLast, riskScore };
+            return { 
+                ...r, 
+                daysSinceLastFailure: daysSinceLast, 
+                riskScore,
+                ...computeRankingConfidence(r.failuresLastYear, daysSinceLast)
+            };
         });
 
         ranked.sort((a, b) => b.riskScore - a.riskScore);
@@ -214,6 +247,7 @@ router.get('/forecast', (req, res) => {
                 predictedFailureDate: new Date(predictedMs).toISOString().split('T')[0],
                 daysUntilPredicted: daysUntil,
                 failureCount: stats.failureCount,
+                ...computePredictiveConfidence(stats.failureCount, stats.stdDevDays, stats.mtbfDays, dates[dates.length - 1])
             };
 
             if (daysUntil >= 0 && daysUntil <= 30)  windows.d30.push(entry);

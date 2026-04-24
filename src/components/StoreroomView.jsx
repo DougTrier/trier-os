@@ -30,7 +30,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Package, AlertTriangle, TrendingDown, DollarSign, BarChart2, RefreshCw, Info, ChevronDown, ChevronUp, Printer, Eye, Pencil, Save } from 'lucide-react';
+import { Package, AlertTriangle, TrendingDown, DollarSign, BarChart2, RefreshCw, Info, ChevronDown, ChevronUp, Printer, Eye, Pencil, Save, Zap } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
 const API = (path, plant) =>
@@ -191,6 +191,7 @@ export default function StoreroomView({ plantId, plantLabel }) {
     const [deadData, setDeadData] = useState(null);
     const [slowData, setSlowData] = useState(null);
     const [costData, setCostData] = useState(null);
+    const [optData, setOptData] = useState(null);
     const [error, setError] = useState(null);
 
     const load = useCallback(async () => {
@@ -198,18 +199,20 @@ export default function StoreroomView({ plantId, plantLabel }) {
         setError(null);
         try {
             const qs = `?days=${days}`;
-            const [sum, abc, dead, slow, cost] = await Promise.all([
+            const [sum, abc, dead, slow, cost, opt] = await Promise.all([
                 API(`/api/storeroom/summary${qs}`, plantId),
                 API(`/api/storeroom/abc-analysis${qs}`, plantId),
                 API(`/api/storeroom/dead-stock${qs}`, plantId),
                 API(`/api/storeroom/slow-moving${qs}`, plantId),
                 API(`/api/storeroom/carrying-cost${qs}`, plantId),
+                API(`/api/parts/optimization`, plantId),
             ]);
             setSummary(sum);
             setAbcData(abc);
             setDeadData(dead);
             setSlowData(slow);
             setCostData(cost);
+            setOptData(opt);
         } catch (e) {
             setError(t('storeroomView.failedToLoad', 'Failed to load storeroom data'));
         } finally {
@@ -225,6 +228,7 @@ export default function StoreroomView({ plantId, plantLabel }) {
         { id: 'dead', label: t('storeroomView.tabDeadStock', 'Dead Stock'), icon: <AlertTriangle size={14} /> },
         { id: 'slow', label: t('storeroomView.tabSlowMoving', 'Slow-Moving'), icon: <TrendingDown size={14} /> },
         { id: 'cost', label: t('storeroomView.tabCarryingCost', 'Carrying Cost'), icon: <DollarSign size={14} /> },
+        { id: 'opt', label: t('storeroomView.tabOptimization', 'Optimization'), icon: <Zap size={14} /> },
     ];
 
     return (
@@ -456,6 +460,58 @@ export default function StoreroomView({ plantId, plantLabel }) {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* OPTIMIZATION TAB */}
+                        {tab === 'opt' && optData && (
+                            <div className="glass-card" style={{ padding: 20 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                                    <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '14px 20px' }}>
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>REORDER RECOMMENDATIONS</div>
+                                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#10b981' }}>{optData.recommendations?.length || 0}</div>
+                                    </div>
+                                    <div style={{ color: '#64748b', fontSize: '0.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '10px 14px', maxWidth: 300 }}>
+                                        <Info size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                                        Parts identified below reorder thresholds or flagged as stockout risks.
+                                    </div>
+                                </div>
+                                {(!optData.recommendations || optData.recommendations.length === 0) ? (
+                                    <p style={{ color: '#10b981', fontSize:'0.85rem' }}>No items are currently below their reorder thresholds.</p>
+                                ) : (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                                    <th style={{...th, textAlign: 'left'}}>Part ID</th>
+                                                    <th style={{...th, textAlign: 'left'}}>Description</th>
+                                                    <th style={th}>Current Stock</th>
+                                                    <th style={th}>Reorder/Safety</th>
+                                                    <th style={th}>Suggested Qty</th>
+                                                    <th style={th}>Lead Time</th>
+                                                    <th style={{...th, color: '#f59e0b'}}>Risk</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {optData.recommendations.map((p, i) => (
+                                                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.15s', cursor: 'pointer' }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                        <td style={{ ...td, fontFamily: 'monospace', color: '#818cf8', textAlign: 'left' }}>{p.partId}</td>
+                                                        <td style={{ ...td, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }} title={p.description}>{p.description}</td>
+                                                        <td style={{ ...td, color: '#ef4444', fontWeight: 700 }}>{p.stock}</td>
+                                                        <td style={td}>{p.reorderPoint || p.safetyStock}</td>
+                                                        <td style={{ ...td, color: '#10b981', fontWeight: 700 }}>{p.suggestedOrderQty}</td>
+                                                        <td style={td}>{p.estimatedLeadTimeDays !== null ? `${p.estimatedLeadTimeDays}d` : '—'}</td>
+                                                        <td style={{ ...td, color: '#f59e0b', fontWeight: 700 }}>
+                                                            {p.isStockoutRisk ? 'Stockout Risk' : p.isCritical ? 'Critical' : ''}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>

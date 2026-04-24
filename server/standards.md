@@ -1,9 +1,102 @@
-# Trier OS — Server Security Standards
+# Trier OS — Server Standards
 
 **Maintained by:** Engineering  
-**Last updated:** 2026-04-21  
+**Last updated:** 2026-04-23  
 
 These are hard rules, not suggestions. Violations found in code review must be fixed before merge.
+
+See also: CLAUDE.md (architecture overview), CONTRIBUTING.md (header standard), SECURITY.md (deployment hardening).
+
+---
+
+## Architecture Rules (A-series)
+
+### Rule A-1: Plant DB Access Through AsyncLocalStorage Only
+
+**Rule:** Never open a plant database file directly. Always resolve the current plant DB
+through the `db()` helper in `database.js`, which reads from AsyncLocalStorage context
+set by middleware.
+
+```js
+// Correct
+const db = require('../database');
+const rows = db().prepare('SELECT * FROM Assets').all();
+
+// Wrong -- never do this
+const Database = require('better-sqlite3');
+const conn = new Database(`data/${plantId}.db`);
+```
+
+Direct opens bypass plant validation, context isolation, and the connection pool.
+The middleware chain guarantees that db() always resolves to the correct, validated plant.
+
+---
+
+### Rule A-2: Cross-Plant Data Belongs in trier_logistics.db
+
+**Rule:** Any data that must be visible across plant boundaries (LOTO permits, safety
+incidents, contractor records, audit trail, API keys, HA config) must live in
+`trier_logistics.db` via `logistics_db.js`. Never duplicate cross-plant records into
+per-plant databases.
+
+**Why:** Per-plant DBs are plant-scoped by design. Corporate rollups and cross-plant
+queries run against trier_logistics.db. Storing cross-plant data in per-plant DBs
+makes corporate reporting inconsistent and breaks the HA replication model.
+
+---
+
+### Rule A-3: Never Modify Existing Migration Files
+
+**Rule:** Once a migration file in `server/migrations/` has been committed, it is
+permanent. To change schema: create a new migration with the next sequence number.
+
+**Why:** Migrations are applied in order on startup. Editing an already-applied migration
+produces a state divergence between development and production databases that is
+structurally unrecoverable without a full rebuild.
+
+Naming: `NNN_description.js` — e.g. `029_add_criticality_score.js`
+
+---
+
+### Rule A-4: Scan State Machine Changes Require Full Path Review
+
+**Rule:** Any change to scan state transitions, auto-close logic, or the offline sync
+path requires review of all three files: `server/routes/scan.js`,
+`server/lan_hub.js`, and the `POST /offline-sync` handler. A change that is correct
+in the online path may silently corrupt state in the offline-replay path.
+
+Valid states: `IDLE -> ACTIVE -> WAITING -> CLOSED | AUTO_CLOSED`
+
+No new states or transitions may be added without updating the state diagram in
+`SCAN_STATE_MACHINE_SCHEMA_DELTA.md`.
+
+---
+
+### Rule A-5: New Routes Must Be Mounted With Full Middleware Chain
+
+**Rule:** Every new route file must be mounted in `server/index.js` with:
+1. `authMiddleware` (JWT validation + user context)
+2. `plantContextMiddleware` (AsyncLocalStorage setup from x-plant-id header)
+3. Rate limiter if the endpoint accepts unauthenticated or high-frequency requests
+
+Never mount a route before `authMiddleware` unless it is explicitly public
+(e.g. `/api/health`, `/api/auth/login`). Unauthenticated routes must be documented
+with a comment explaining why they are public.
+
+---
+
+### Rule A-6: LAN Hub Messages Are Untrusted Input
+
+**Rule:** The LAN Hub (port 1940) accepts WebSocket connections from plant-floor devices.
+Every message received by the hub must be validated as if it came from an untrusted
+client — because it did. Apply the same input validation rules as HTTP routes:
+validate plantId, sanitize scanId, verify JWT on connection upgrade.
+
+**Why:** The hub is a separate network surface. A compromised device on the plant LAN
+can connect directly to port 1940. The hub validates JWTs on WebSocket upgrade, but
+message-level payload validation is the route handler's responsibility.
+
+---
 
 ---
 

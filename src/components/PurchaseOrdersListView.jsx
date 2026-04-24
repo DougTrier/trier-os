@@ -44,6 +44,7 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
     const [isCreating, setIsCreating] = React.useState(false);
     const [editData, setEditData] = React.useState({});
     const [vendorDetails, setVendorDetails] = React.useState(null);
+    const [vendorScorecard, setVendorScorecard] = React.useState(null);
     const [isSavingDetails, setIsSavingDetails] = React.useState(false);
     const [promoteGlobal, setPromoteGlobal] = React.useState(true);
 
@@ -58,8 +59,19 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
     const fetchVendorDetails = React.useCallback(async (vendId) => {
         if (!vendId) {
             setVendorDetails(null);
+            setVendorScorecard(null);
             return;
         }
+
+        try {
+            const scRes = await fetch(`/api/vendors/scorecard?plantId=${encodeURIComponent(plantId)}&vendorId=${encodeURIComponent(vendId)}`, { headers: { 'x-plant-id': plantId } });
+            if (scRes.ok) {
+                setVendorScorecard(await scRes.json());
+            } else {
+                setVendorScorecard(null);
+            }
+        } catch (e) { setVendorScorecard(null); }
+
 
         // 1. Try local legacy system first (as migration source)
         try {
@@ -518,6 +530,40 @@ export default function PurchaseOrdersListView({ plantId, onPrint }) {
                                 </div>
                             </div>
                         </div>
+
+                        {!isEditing && vendorScorecard && (
+                            <div style={{ marginTop: '20px', padding: '25px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                <h3 style={{ marginBottom: '20px', fontSize: '1.1rem', color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Truck size={18} /> Vendor Performance Scorecard
+                                </h3>
+                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                    <div className="panel-box" style={{ flex: 1, minWidth: '150px' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>On-Time Delivery</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: vendorScorecard.onTimeDeliveryRate >= 90 ? '#10b981' : (vendorScorecard.onTimeDeliveryRate >= 75 ? '#f59e0b' : '#ef4444') }}>
+                                            {vendorScorecard.onTimeDeliveryRate != null ? `${vendorScorecard.onTimeDeliveryRate}%` : 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="panel-box" style={{ flex: 1, minWidth: '150px' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Quality NCRs (Defects)</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: vendorScorecard.qualityDefectCount > 0 ? '#ef4444' : '#10b981' }}>
+                                            {vendorScorecard.qualityDefectCount || 0}
+                                        </div>
+                                    </div>
+                                    <div className="panel-box" style={{ flex: 1, minWidth: '150px' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Promised Lead Time</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                            {vendorScorecard.avgPromisedLeadTime != null ? `${vendorScorecard.avgPromisedLeadTime}d` : 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="panel-box" style={{ flex: 1, minWidth: '150px' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Actual Lead Time</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: (vendorScorecard.avgActualLeadTime > vendorScorecard.avgPromisedLeadTime) ? '#ef4444' : '#10b981' }}>
+                                            {vendorScorecard.avgActualLeadTime != null ? `${vendorScorecard.avgActualLeadTime}d` : 'N/A'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div style={{ marginTop: '20px', padding: '25px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--glass-border)' }} className="no-print">
                             <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>{t('purchase.orders.list.logisticsMetadataComments')}</h3>

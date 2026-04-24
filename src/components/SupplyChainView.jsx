@@ -1490,15 +1490,18 @@ function SuppliersTab({ plantId }) {
 function AllSitesView() {
     const { t } = useTranslation();
     const [data, setData] = useState(null);
+    const [scorecardData, setScorecardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const r = await fetch('/api/supply-chain/all-sites', {
-                headers: {  }
-            });
-            if (r.ok) setData(await r.json());
+            const [r1, r2] = await Promise.all([
+                fetch('/api/supply-chain/all-sites', { headers: {} }),
+                fetch('/api/vendors/scorecard?plantId=all_sites', { headers: {} })
+            ]);
+            if (r1.ok) setData(await r1.json());
+            if (r2.ok) setScorecardData(await r2.json());
         } catch { /* network error */ } finally { setLoading(false); }
     }, []);
 
@@ -1589,6 +1592,51 @@ function AllSitesView() {
                     }
                 </div>
             </div>
+
+            {/* Worst Performers Vendor Scorecard */}
+            {scorecardData && scorecardData.worstPerformers && scorecardData.worstPerformers.length > 0 && (
+                <div style={cardStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <AlertTriangle size={14} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 4 }} />
+                            {t('supplyChain.worstPerformers', 'Corporate Rollup: Vendor Risk & Underperformance')}
+                        </div>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                        <thead>
+                            <tr style={{ color: '#64748b' }}>
+                                <th style={{ textAlign: 'left', paddingBottom: 6, fontWeight: 600 }}>{t('common.vendor', 'Vendor')}</th>
+                                <th style={{ textAlign: 'left', paddingBottom: 6, fontWeight: 600 }}>{t('common.plants', 'Plants')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.totalSpend', 'Spend Volume')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.onTimeDel', 'On-Time Delivery')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.avgLead', 'Avg Lead Time')}</th>
+                                <th style={{ textAlign: 'right', paddingBottom: 6, fontWeight: 600 }}>{t('supplyChain.qualityDefects', 'Quality Defects')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {scorecardData.worstPerformers.map(v => (
+                                <tr key={v.vendorId} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <td style={{ padding: '6px 0', color: '#f1f5f9', fontWeight: 600 }}>{v.vendorName}</td>
+                                    <td style={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+                                        {v.plants.map(p => p.replace(/_/g, ' ')).join(', ')}
+                                    </td>
+                                    <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{fmt(v.spend)}</td>
+                                    <td style={{ textAlign: 'right', color: v.onTimeDeliveryRate < 80 ? '#ef4444' : '#f59e0b', fontWeight: 600 }}>
+                                        {v.onTimeDeliveryRate != null ? `${v.onTimeDeliveryRate}%` : 'N/A'}
+                                    </td>
+                                    <td style={{ textAlign: 'right', color: v.avgActualLeadTime > v.avgPromisedLeadTime ? '#ef4444' : '#94a3b8' }}>
+                                        {v.avgActualLeadTime != null ? `${v.avgActualLeadTime}d` : 'N/A'}
+                                        {v.avgPromisedLeadTime != null && <span style={{ fontSize: '0.65rem', color: '#64748b', marginLeft: 4 }}>(vs {v.avgPromisedLeadTime}d)</span>}
+                                    </td>
+                                    <td style={{ textAlign: 'right', color: v.qualityDefectCount > 0 ? '#ef4444' : '#475569', fontWeight: v.qualityDefectCount > 0 ? 600 : 400 }}>
+                                        {v.qualityDefectCount}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

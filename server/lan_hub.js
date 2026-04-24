@@ -1,3 +1,10 @@
+// Copyright © 2026 Trier OS. All Rights Reserved.
+
+/**
+ * © 2026 Doug Trier. All Rights Reserved.
+ * Trier OS is proprietary software. Unauthorized copying,
+ * distribution, or reverse engineering is strictly prohibited.
+ */
 /**
  * Trier OS — LAN Hub
  * ==================
@@ -30,6 +37,7 @@ const http               = require('http');
 const jwt                = require('jsonwebtoken');
 const path               = require('path');
 const crypto             = require('crypto');
+const artifactCache      = require('./lan_hub_artifacts');
 
 const HUB_PORT = 1940;
 
@@ -214,6 +222,19 @@ function predictBranch(dataDir, plantId, assetId, userId) {
             };
         }
 
+        // ── Check for Digital Twin Schematic (Offline Blocked) ──
+        try {
+            const schematic = db.prepare('SELECT ID FROM digital_twin_schematics WHERE AssetID = ? LIMIT 1').get(assetId);
+            if (schematic) {
+                const pinsCount = db.prepare('SELECT COUNT(*) as c FROM digital_twin_pins WHERE SchematicID = ? AND LinkedAssetID IS NOT NULL').get(schematic.ID).c;
+                if (pinsCount > 0) {
+                    return { branch: 'ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED' };
+                }
+            }
+        } catch (e) {
+            // Ignore if tables don't exist yet
+        }
+
         const asset = db.prepare('SELECT ID, Description FROM Asset WHERE ID = ? LIMIT 1').get(assetId);
         if (!asset) return { branch: 'ASSET_NOT_FOUND', error: 'Asset not found in plant database' };
 
@@ -270,6 +291,14 @@ function startReconnectWatcher(centralUrl, dataDir, jwtSecret) {
             if (res.statusCode === 200) {
                 console.log('[LAN_HUB] Central server back online — replaying queued scans');
                 replayToServer(centralUrl, dataDir, jwtSecret);
+                
+                const plantId = [..._clients.values()].find(c => c.plantId)?.plantId;
+                const edgeMeshToken = process.env.EDGE_MESH_TOKEN;
+                if (plantId && edgeMeshToken) {
+                    const db = getPlantDb(dataDir, plantId);
+                    artifactCache.syncManifest(centralUrl, plantId, edgeMeshToken, path.join(dataDir, 'artifact_cache'), db).finally(() => db.close());
+                }
+
                 broadcast({ type: 'SERVER_ONLINE' });
             }
         });
@@ -469,6 +498,14 @@ function handleMessage(ws, raw, dataDir) {
             return;
         }
 
+        // Fail-closed: if twin selection is required but schematic is not cached offline,
+        // do NOT queue the parent scan. Replaying it on reconnect would create a WO
+        // against the parent asset, not the selected child component.
+        if (branch.branch === 'ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED') {
+            ws.send(JSON.stringify({ type: 'SCAN_ACK', ...branch, scanId }));
+            return;
+        }
+
         // Store in queue (idempotent on scanId)
         const result = queueScan(dataDir, plantId, { scanId, assetId, userId, deviceTimestamp, action });
         if (result.duplicate) {
@@ -491,12 +528,25 @@ function handleMessage(ws, raw, dataDir) {
 function start({ dataDir, jwtSecret, centralUrl }) {
     if (_hub) return;
 
+    const _cacheDir = path.join(dataDir, 'artifact_cache');
+
     _http = http.createServer((req, res) => {
         // Simple health endpoint so PWA can detect the hub without a WS connection
         if (req.url === '/hub/ping') {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ hub: true, clients: _clients.size }));
         } else {
+            const plantId = [..._clients.values()].find(c => c.plantId)?.plantId;
+            if (plantId) {
+                const _plantDb = getPlantDb(dataDir, plantId);
+                try {
+                    if (artifactCache.handleRequest(req, res, _cacheDir, _plantDb, jwtSecret)) {
+                        return; // handled
+                    }
+                } finally {
+                    _plantDb.close();
+                }
+            }
             res.writeHead(404);
             res.end();
         }

@@ -16,6 +16,7 @@
  * ENDPOINTS:
  *   GET    /           Full API documentation (OpenAPI-style JSON)
  *                      Lists all registered routes with methods, descriptions, and auth requirements
+ *   GET    /openapi.yaml Formal OpenAPI 3.1 specification (YAML)
  *   GET    /keys       List active API keys (admin only)
  *                      Returns: [{ id, name, prefix, createdAt, lastUsed, expiresAt }]
  *   POST   /keys       Generate a new API key
@@ -175,6 +176,53 @@ const apiEndpoints = [
     { method: 'GET', path: '/api/energy/asset-loads', desc: 'List asset load weights for energy calculation', auth: true, category: 'Energy & Utilities' },
     { method: 'PUT', path: '/api/energy/asset-loads/:id', desc: 'Update asset load category and IsHighLoad flag', auth: true, category: 'Energy & Utilities' },
     { method: 'GET', path: '/api/energy/arbitrage', desc: '24h load-shift arbitrage recommendations for high-load assets', auth: true, category: 'Energy & Utilities' },
+
+    // Vendor Analytics
+    { method: 'GET', path: '/api/vendors/scorecard', desc: 'Enterprise vendor performance and quality metrics', auth: true, category: 'Vendor Analytics' },
+
+    // Spare Parts Optimization
+    { method: 'GET', path: '/api/parts/optimization', desc: 'Inventory optimization metrics for a specific plant', auth: true, category: 'Spare Parts Optimization' },
+    { method: 'GET', path: '/api/parts/optimization/dead-stock', desc: 'List dead stock items with financial value', auth: true, category: 'Spare Parts Optimization' },
+    { method: 'GET', path: '/api/parts/optimization/corporate', desc: 'Rollup of dead stock and stockout risk across all plants', auth: true, category: 'Spare Parts Optimization' },
+
+    // Asset Lifecycle
+    { method: 'GET', path: '/api/asset-lifecycle/recommendations', desc: 'Repair vs replace recommendations based on historical data', auth: true, category: 'Asset Lifecycle' },
+    { method: 'GET', path: '/api/asset-lifecycle/forecast', desc: 'Capital expenditure forecast over 1/3/5 years', auth: true, category: 'Asset Lifecycle' },
+    { method: 'GET', path: '/api/asset-lifecycle/corporate-rollup', desc: 'Total replacement liability by plant and asset class', auth: true, category: 'Asset Lifecycle' },
+
+    // Edge Mesh
+    { method: 'POST', path: '/api/edge-mesh/artifacts', desc: 'Register a new artifact for edge distribution', auth: true, category: 'Edge Mesh' },
+    { method: 'GET', path: '/api/edge-mesh/artifacts', desc: 'List registered artifacts', auth: true, category: 'Edge Mesh' },
+    { method: 'DELETE', path: '/api/edge-mesh/artifacts', desc: 'Delete or supersede an artifact', auth: true, category: 'Edge Mesh' },
+    { method: 'GET', path: '/api/edge-mesh/sync-status', desc: 'Fleet-wide edge node sync status', auth: true, category: 'Edge Mesh' },
+    { method: 'POST', path: '/api/edge-mesh/sync-status/:plantId', desc: 'Edge node reports its sync status', auth: true, category: 'Edge Mesh' },
+    { method: 'GET', path: '/api/edge-mesh/pull-manifest', desc: 'Edge node polls for current manifests', auth: true, category: 'Edge Mesh' },
+    { method: 'GET', path: '/api/edge-mesh/download/:id', desc: 'Download artifact file via edge stream or direct', auth: true, category: 'Edge Mesh' },
+
+    // Operator Trust
+    { method: 'GET', path: '/api/operator-trust/recommendations', desc: 'List AI/system recommendations for operators', auth: true, category: 'Operator Trust' },
+    { method: 'POST', path: '/api/operator-trust/feedback', desc: 'Submit operator feedback (accept/reject) on recommendation', auth: true, category: 'Operator Trust' },
+    { method: 'GET', path: '/api/operator-trust/outcomes', desc: 'List outcomes of past recommendations', auth: true, category: 'Operator Trust' },
+    { method: 'GET', path: '/api/operator-trust/metrics', desc: 'Operator trust and adoption metrics', auth: true, category: 'Operator Trust' },
+
+    // Gatekeeper
+    { method: 'POST', path: '/api/gatekeeper/pre-certify', desc: 'Pre-certify an operation/request', auth: true, category: 'Gatekeeper' },
+    { method: 'GET', path: '/api/gatekeeper/audit', desc: 'List gatekeeper audit trail logs', auth: true, category: 'Gatekeeper' },
+    { method: 'GET', path: '/api/gatekeeper/audit/receipt/:requestId', desc: 'Get specific gatekeeper audit receipt', auth: true, category: 'Gatekeeper' },
+    { method: 'POST', path: '/api/gatekeeper/audit/verify', desc: 'Verify a gatekeeper receipt signature', auth: true, category: 'Gatekeeper' },
+
+    // Storeroom
+    { method: 'GET', path: '/api/storeroom/summary', desc: 'High-level storeroom value and stock summary', auth: true, category: 'Storeroom' },
+    { method: 'GET', path: '/api/storeroom/abc-analysis', desc: 'ABC inventory analysis (cost volume)', auth: true, category: 'Storeroom' },
+    { method: 'GET', path: '/api/storeroom/dead-stock', desc: 'List identified dead stock', auth: true, category: 'Storeroom' },
+    { method: 'GET', path: '/api/storeroom/slow-moving', desc: 'List slow-moving inventory parts', auth: true, category: 'Storeroom' },
+    { method: 'GET', path: '/api/storeroom/carrying-cost', desc: 'Calculate inventory carrying cost', auth: true, category: 'Storeroom' },
+    { method: 'GET', path: '/api/storeroom/obsolescence-risk', desc: 'Assess risk of obsolete components', auth: true, category: 'Storeroom' },
+
+    // Digital Twin
+    { method: 'GET', path: '/api/digital-twin/:assetId', desc: 'Get Digital Twin 3D model and metadata for asset', auth: true, category: 'Digital Twin' },
+    { method: 'POST', path: '/api/digital-twin/schematic', desc: 'Upload or link 2D schematic overlay', auth: true, category: 'Digital Twin' },
+    { method: 'POST', path: '/api/digital-twin/pin', desc: 'Drop an interactive pin on digital twin coordinates', auth: true, category: 'Digital Twin' }
 ];
 
 // ── GET /api/docs ────────────────────────────────────────────────────────────
@@ -256,6 +304,20 @@ router.delete('/keys/:id', (req, res) => {
         res.json({ success: true, message: 'API key revoked' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to revoke key' });
+    }
+});
+
+// ── GET /api/docs/openapi.yaml ───────────────────────────────────────────────
+router.get('/openapi.yaml', (req, res) => {
+    const fs = require('fs');
+    const yamlPath = require('path').join(__dirname, '../openapi.yaml');
+    try {
+        const content = fs.readFileSync(yamlPath, 'utf8');
+        res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.send(content);
+    } catch (e) {
+        res.status(500).json({ error: 'OpenAPI spec unavailable' });
     }
 });
 

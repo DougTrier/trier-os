@@ -31,6 +31,7 @@
 const express     = require('express');
 const router      = express.Router();
 const logisticsDb = require('../logistics_db').db;
+const requireGatekeeper = require('../middleware/require_gatekeeper');
 
 // ── Table initialization (idempotent) ─────────────────────────────────────────
 logisticsDb.exec(`
@@ -206,6 +207,27 @@ router.put('/:id', (req, res) => {
         logisticsDb.prepare(`UPDATE ManagementOfChange SET ${sets} WHERE ID = ?`)
             .run(...Object.values(fields), req.params.id);
 
+        if (fields.Status === 'COMPLETED') {
+            const moc = logisticsDb.prepare('SELECT PlantID FROM ManagementOfChange WHERE ID = ?').get(req.params.id);
+            if (moc) {
+                const affectedProcs = logisticsDb.prepare("SELECT ItemID FROM MOCAffectedItems WHERE MOCID = ? AND ItemType IN ('SOP', 'PROCEDURE')").all(req.params.id);
+                if (affectedProcs.length > 0) {
+                    const { getDb } = require('../database');
+                    const plantDb = getDb(moc.PlantID);
+                    const updateProc = plantDb.prepare('UPDATE Procedures SET SOPAcknowledgmentRequired = 1 WHERE ID = ?');
+                    const clearAcks = plantDb.prepare('DELETE FROM SOPAcknowledgments WHERE ProcedureID = ?');
+                    plantDb.transaction(() => {
+                        for (const p of affectedProcs) {
+                            try { 
+                                updateProc.run(p.ItemID); 
+                                clearAcks.run(p.ItemID);
+                            } catch(e) {}
+                        }
+                    })();
+                }
+            }
+        }
+
         res.json({ ok: true });
     } catch (err) {
         console.error('[moc] PUT /:id error:', err);
@@ -231,7 +253,9 @@ router.delete('/:id', (req, res) => {
 
 // ── POST /api/moc/:id/approve ─────────────────────────────────────────────────
 // Advance or reject the current pending approval stage.
-router.post('/:id/approve', (req, res) => {
+router.post('/:id/approve',
+    requireGatekeeper('MOC_APPROVE', req => req.params.id, 'MOC_RECORD'),
+    (req, res) => {
     try {
         const { decision, approvedBy, comments } = req.body;
         if (!decision || !['APPROVED', 'REJECTED'].includes(decision.toUpperCase())) {

@@ -225,82 +225,6 @@ setInterval(() => {
     } catch(e){}
 }, 5 * 60 * 1000);
 
-// ── Scheduled Report Delivery Cron ───────────────────────────────────────
-// Checks every 15 minutes for reports that are due and sends them via email.
-// The ScheduledReports table is managed via /api/scheduled-reports endpoints.
-console.log('[BOOT] Stage 5.6: Scheduled report delivery cron configured');
-setInterval(() => {
-    try {
-        const { db: logDb } = require('./logistics_db');
-        const hasTbl = logDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ScheduledReports'").get();
-        if (!hasTbl) return;
-
-        const now = new Date().toISOString();
-        const dueReports = logDb.prepare(
-            `SELECT * FROM ScheduledReports WHERE active = 1 AND nextSend <= ? ORDER BY nextSend ASC`
-        ).all(now);
-
-        if (dueReports.length === 0) return;
-
-        const emailService = require('./email_service_sender');
-
-        for (const report of dueReports) {
-            try {
-                const recipients = (report.recipients || '').split(/[,;\s]+/).filter(Boolean);
-                if (recipients.length === 0) continue;
-
-                // Calculate next send time
-                const [hours, minutes] = (report.timeOfDay || '07:00').split(':').map(Number);
-                const next = new Date();
-                next.setHours(hours, minutes, 0, 0);
-                if (report.schedule === 'daily') {
-                    next.setDate(next.getDate() + 1);
-                } else if (report.schedule === 'weekly') {
-                    const daysUntil = ((report.dayOfWeek || 1) - next.getDay() + 7) % 7 || 7;
-                    next.setDate(next.getDate() + daysUntil);
-                } else if (report.schedule === 'monthly') {
-                    next.setDate(report.dayOfMonth || 1);
-                    if (next <= new Date()) next.setMonth(next.getMonth() + 1);
-                }
-
-                // Send via email service if available
-                let sent = false;
-                try {
-                    if (emailService && typeof emailService.sendScheduledReport === 'function') {
-                        emailService.sendScheduledReport(report, recipients);
-                        sent = true;
-                    }
-                } catch (emailErr) {
-                    console.warn(`[ScheduledReports] Email send failed for "${report.reportName}": ${emailErr.message}`);
-                }
-
-                // Update lastSent and nextSend regardless (prevents double-fire on email failure)
-                logDb.prepare(
-                    `UPDATE ScheduledReports SET lastSent = ?, nextSend = ? WHERE id = ?`
-                ).run(now, next.toISOString(), report.id);
-
-                console.log(`📊 [ScheduledReports] ${ sent ? 'Sent' : 'Skipped (no email)' }: "${report.reportName}" → ${recipients.join(', ')} | Next: ${next.toISOString().split('T')[0]}`);
-
-            } catch (reportErr) {
-                console.error(`[ScheduledReports] Failed to process report ${report.id}:`, reportErr.message);
-            }
-        }
-    } catch (e) {
-        // Non-blocking — never crash the server over a report
-        console.warn('[ScheduledReports] Cron check failed:', e.message);
-    }
-}, 15 * 60 * 1000); // Check every 15 minutes
-
-// ── Utility Anomaly Detection Cron ───────────────────────────────────────────
-// Checks every 15 minutes for consumption spikes against configured thresholds.
-// Inserts UtilityAnomalies records; deduplicates within 24-hour windows.
-console.log('[BOOT] Stage 5.7: Utility anomaly detection cron configured');
-const { runUtilityAnomalyCheck } = require('./routes/utilities');
-setInterval(() => {
-    try { runUtilityAnomalyCheck(); }
-    catch (e) { console.warn('[UtilityAlerts] Cron failed:', e.message); }
-}, 15 * 60 * 1000);
-setImmediate(() => { try { runUtilityAnomalyCheck(); } catch (_) {} });
 
 // ── OpEx Self-Healing Outcome Cron ───────────────────────────────────────────
 // Runs every 24 hours. Re-measures each due 30/60/90-day outcome checkpoint
@@ -312,25 +236,6 @@ setInterval(() => {
     catch (e) { console.warn('[OpExCron] Cron failed:', e.message); }
 }, 24 * 60 * 60 * 1000);
 setImmediate(() => { try { runOpExOutcomeCron(); } catch (_) {} });
-
-// ── Metric Rollup Cron (8:00 AM and 3:00 PM daily) ────────────────────────────
-// Sweeps plant DBs → aggregates SensorReadings → upserts PlantMetricSummary
-// in corporate_master.db so the Equipment Intelligence tile stays current.
-// The dedup guard (lastRollupDate) prevents double-firing when the check
-// interval happens to tick twice within the same minute.
-console.log('[BOOT] Stage 5.8: Equipment metric rollup cron configured (08:00 + 15:00)');
-const { runMetricRollup } = require('./services/metric-rollup');
-let _lastRollupHour = null;  // tracks last hour that fired to prevent double-fire
-setInterval(() => {
-    const now  = new Date();
-    const hour = now.getHours();
-    const min  = now.getMinutes();
-    // Fire at 08:xx and 15:xx, but only once per hour
-    if ((hour === 8 || hour === 15) && min < 5 && _lastRollupHour !== `${now.toDateString()}_${hour}`) {
-        _lastRollupHour = `${now.toDateString()}_${hour}`;
-        runMetricRollup().catch(err => console.warn('[MetricRollup] Cron failed:', err.message));
-    }
-}, 60 * 1000);  // Check every minute — minimal overhead
 
 console.log('[BOOT] Stage 6: Creating Express app...');
 const app = express();
@@ -977,7 +882,11 @@ app.use('/api/work-orders', require('./routes/workOrders'));
 app.use('/api/scan',        require('./routes/scan'));         // Scan State Machine (P1)
 app.use('/api/config',      require('./routes/config'));       // PWA config cache (status IDs)
 app.use('/api/assets', require('./routes/assets'));
+app.use('/api/asset-lifecycle', require('./routes/asset-lifecycle')(db));
+app.use('/api/parts/optimization', require('./routes/spare-parts-optimization'));
 app.use('/api/parts', require('./routes/parts'));
+app.use('/api/shift-handover', require('./routes/shift-handover'));
+app.use('/api/sop-acknowledgment', require('./routes/sop-acknowledgment'));
 app.use('/api/contacts', require('./routes/contacts'));
 app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/procedures', require('./routes/procedures'));
@@ -1017,12 +926,16 @@ const escalationRoutes = require('./routes/escalation');
 app.use('/api/escalation', escalationRoutes);                            // Auto-Escalation Rules Engine (Feature 7)
 escalationRoutes.startEscalationEngine();
 app.use('/api/loto', require('./routes/loto'));                           // LOTO Digital Permits (Phase 3)
+app.use('/api/gatekeeper', require('./routes/gatekeeper_audit'));         // Gatekeeper Audit Ledger (P2-2)
+app.use('/api/gatekeeper', require('./routes/gatekeeper_config'));        // Adapter Config (P2-2 G8)
+app.use('/api/gatekeeper', require('./routes/gatekeeper_certify'));       // P7-2 Pre-Certify Proxy
 app.use('/api/safety-permits', require('./routes/safety_permits'));       // Hot Work & Confined Space Permits (Phase 3)
 app.use('/api/crosslinks', require('./routes/crosslinks'));               // Cross-Link Navigation (WOâ†”Assetâ†”Part chain)
 app.use('/api/fleet', require('./routes/fleet'));                         // Fleet & Truck Shop (Phase 4)
 app.use('/api/calibration', require('./routes/calibration'));             // Calibration Management (Phase 3)
 app.use('/api/safety-incidents', require('./routes/safety_incidents'));   // Safety Incident Tracker (Phase 3)
 app.use('/api/engineering', require('./routes/engineering'));             // Engineering Excellence (Phase 5)
+app.use('/api/vendors/scorecard', require('./routes/vendor-scorecard'));  // Vendor Scorecard (Phase 5)
 app.use('/api/vendor-portal', require('./routes/vendor_portal'));         // Vendor Portal (Phase 6)
 app.use('/api/tools', require('./routes/tools'));                         // Tool Checkout & Tracking (Phase 6)
 app.use('/api/contractors', require('./routes/contractors'));
@@ -1058,13 +971,15 @@ app.use('/api/operator-care',      require('./routes/operator_care'));      // P
 app.use('/api/turnaround',         require('./routes/turnaround'));         // P5 Shutdown / Turnaround Management — projects, tasks, budget, progress
 app.use('/api/predictive-maintenance', require('./routes/predictive_maintenance')); // P5 Predictive Maintenance — MTBF, risk ranking, failure forecast
 app.use('/api/vibration',      require('./routes/vibration'));       // P6 Vibration & Condition Monitoring Analytics (readings, alerts, trending, ISO 10816)
+app.use('/api/emissions', require('./routes/emissions')); // P6 Emissions & Carbon Intensity Tracking
+app.use('/api/dt-sync', require('./routes/dt_sync')); // P6 Digital Twin External Platform Integration
+app.use('/api/operator-trust', require('./routes/operator_trust')); // P7 Operator Trust Layer
+app.use('/api/edge-mesh', require('./routes/edge_mesh')); // P7 Distributed Edge Execution Mesh
+app.use('/api/saas', require('./routes/saas')); // P6 SaaS Enablement Layer
 app.use('/api/erp-connectors', require('./routes/erp_connectors')); // P6 ERP Connector Marketplace (SAP, Oracle, Dynamics 365, Infor + field mappings)
 app.use('/api/baseline',       require('./routes/baseline_engine')); // P7 Plant Behavioral Baseline Engine — drift detection, MTBF, failure freq baselines
 app.use('/api/causality',      require('./routes/causality'));        // P7 Explainable Operations Engine + Cross-System Causality Graph
 app.use('/api/containment',    require('./routes/containment'));      // P7 Failure Containment Scoring — live blast-radius meter (ISOLATED/PARTIAL/CASCADING)
-
-// ── ERP Write-Back Outbox Drain Worker ────────────────────────────────────────
-require('./services/erp-outbox').startDrainWorker();
 
 
 
@@ -2238,6 +2153,57 @@ const _httpServer = app.listen(PORT, '0.0.0.0', async () => {
             console.warn('[LAN_HUB] Failed to start:', err.message);
         }
     }
+});
+
+// ── NATS Bus Subscription ─────────────────────────────────────────────────────
+const bus = require('./services/bus');
+bus.connect().then(() => {
+    bus.subscribe('trier.anomaly.detected', (data) => {
+        console.log('[BUS] Anomaly check notification received:', data.timestamp);
+    });
+    bus.subscribe('trier.system.state', (data) => {
+        try {
+            const { setMode } = require('./middleware/degradedMode');
+            setMode(data.mode, data.reason || null, data.source || 'system');
+        } catch (err) {
+            console.warn('[BUS] Failed to apply system state from bus:', err.message);
+        }
+    });
+
+    const { setModeChangeHandler } = require('./middleware/degradedMode');    
+    const { sendAlertToSubscribers } = require('./email_service');
+
+    setModeChangeHandler(({ from, to, reason, setBy, since }) => {
+        if (to === 'ISOLATED' || to === 'ADVISORY_ONLY') {
+            const subject = `[Trier OS Alert] System entered ${to} mode`;     
+            const html = `
+                <p><strong>Trier OS system mode has changed.</strong></p>     
+                <table>
+                    <tr><td><strong>From:</strong></td><td>${from}</td></tr>  
+                    <tr><td><strong>To:</strong></td><td>${to}</td></tr>      
+                    <tr><td><strong>Reason:</strong></td><td>${reason || 'Not specified'}</td></tr>
+                    <tr><td><strong>Set by:</strong></td><td>${setBy}</td></tr>
+                    <tr><td><strong>Time:</strong></td><td>${since}</td></tr> 
+                </table>
+                <p>Check <code>GET /api/health</code> for current system status. Write operations are suspended until the system returns to NORMAL.</p>
+            `;
+            sendAlertToSubscribers('system_degraded', subject, html)
+                .catch(err => console.warn('[INDEX] Mode alert email failed:', err.message));
+        } else if (to === 'NORMAL' && from !== 'NORMAL') {
+            const subject = '[Trier OS] System recovered — back to NORMAL mode';
+            const html = `
+                <p><strong>Trier OS has recovered to NORMAL operational mode.</strong></p>
+                <table>
+                    <tr><td><strong>Previous mode:</strong></td><td>${from}</td></tr>
+                    <tr><td><strong>Recovered at:</strong></td><td>${since}</td></tr>
+                    <tr><td><strong>Triggered by:</strong></td><td>${setBy}</td></tr>
+                </table>
+                <p>Write operations have been restored. No further action required.</p>
+            `;
+            sendAlertToSubscribers('system_degraded', subject, html)
+                .catch(err => console.warn('[INDEX] Recovery alert email failed:', err.message));
+        }
+    });
 });
 
 // Graceful shutdown (SIGINT for manual, SIGTERM for PM2 cluster)

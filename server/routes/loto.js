@@ -44,6 +44,7 @@
 const express = require('express');
 const router = express.Router();
 const { db: logisticsDb, logAudit } = require('../logistics_db');
+const requireGatekeeper = require('../middleware/require_gatekeeper');
 
 // ── Initialize LOTO Tables ─────────────────────────────────────────────
 function initLotoTables() {
@@ -298,7 +299,9 @@ router.post('/permits', (req, res) => {
 });
 
 // ── POST /api/loto/permits/:id/sign — Add a signature ───────────────
-router.post('/permits/:id/sign', (req, res) => {
+router.post('/permits/:id/sign',
+    requireGatekeeper('LOTO_ACTIVATE', req => req.params.id, 'LOTO_PERMIT'),
+    (req, res) => {
     try {
         const { signedBy, signatureType, role } = req.body;
         if (!signedBy) return res.status(400).json({ error: 'signedBy is required' });

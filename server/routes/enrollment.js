@@ -33,7 +33,6 @@ const enrollLimiter = rateLimit({
     max: parseInt(process.env.RATE_LIMIT_ENROLL_MAX, 10) || 5,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => req.ip || 'unknown',
     message: { error: 'Enrollment rate limit exceeded. Try again later or contact your administrator.' },
 });
 

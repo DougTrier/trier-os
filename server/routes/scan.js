@@ -1,6 +1,11 @@
 // Copyright © 2026 Trier OS. All Rights Reserved.
 
 /**
+ * © 2026 Doug Trier. All Rights Reserved.
+ * Trier OS is proprietary software. Unauthorized copying,
+ * distribution, or reverse engineering is strictly prohibited.
+ */
+/**
  * scan.js — Scan State Machine API
  * ==================================
  * POST /api/scan is the single server-side entry point for every QR/barcode
@@ -37,8 +42,10 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database');
+const dataDir = require('../resolve_data_dir');
 
 // ── Idempotent migration: add scan-workflow columns to Work table ────────────
 // SQLite doesn't support IF NOT EXISTS for ALTER TABLE — use try/catch per col.
@@ -216,7 +223,7 @@ function resolveReturnAt(conn, returnWindow) {
 // Returns a branch response the client uses to render the correct action prompt.
 router.post('/', (req, res) => {
     try {
-        const { scanId, assetId, deviceTimestamp, offlineCaptured = false } = req.body;
+        const { scanId, assetId, deviceTimestamp, offlineCaptured = false, segmentReason } = req.body;
         const userId = req.user?.UserID || req.user?.Username;
 
         if (!scanId || !assetId || !deviceTimestamp) {
@@ -340,6 +347,105 @@ router.post('/', (req, res) => {
             });
         }
 
+        // ── Step 3.5: Digital Twin Schematic Check ───────────────────────────
+        const schematic = conn.prepare('SELECT ID, SchematicPath, Label FROM digital_twin_schematics WHERE AssetID = ? LIMIT 1').get(assetId);
+        if (schematic) {
+            const pins = conn.prepare('SELECT ID, PinLabel, XPercent, YPercent, LinkedAssetID FROM digital_twin_pins WHERE SchematicID = ? AND LinkedAssetID IS NOT NULL').all(schematic.ID);
+            if (pins && pins.length > 0) {
+                // Offline scans can't load schematic images — push to offline blocked branch
+                if (offlineCaptured) {
+                    writeAuditEntry(conn, {
+                        scanId, assetId, userId,
+                        previousState: null, nextState: null,
+                        decisionBranch: 'ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED',
+                        deviceTimestamp, offlineCaptured,
+                    });
+                    return res.json({ branch: 'ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED' });
+                }
+
+                const childData = {};
+                try {
+                    try { conn.exec(`ATTACH DATABASE '${path.join(dataDir, 'mfg_master.db')}' AS master`); } catch (_) { /* already attached */ }
+                    const childIds = pins.map(p => p.LinkedAssetID);
+                    if (childIds.length > 0) {
+                        const placeholders = childIds.map(() => '?').join(',');
+                        const rows = conn.prepare(`
+                            SELECT a.ID, m.CommonFailureModes 
+                            FROM Asset a 
+                            LEFT JOIN master.MasterEquipment m ON a.CategoryID = m.EquipmentTypeID OR a.Model = m.EquipmentTypeID
+                            WHERE a.ID IN (${placeholders})
+                        `).all(...childIds);
+                        
+                        rows.forEach(r => {
+                            try {
+                                childData[r.ID] = r.CommonFailureModes ? JSON.parse(r.CommonFailureModes) : [];
+                            } catch (_) { childData[r.ID] = []; }
+                        });
+                    }
+                } catch (_) { /* mfg_master.db absent or query failed — pins return with empty failureModes */ }
+                
+                pins.forEach(p => {
+                    p.failureModes = childData[p.LinkedAssetID] || [];
+                });
+                
+                writeAuditEntry(conn, {
+                    scanId, assetId, userId,
+                    previousState: null, nextState: null,
+                    decisionBranch: 'ROUTE_TO_DIGITAL_TWIN',
+                    deviceTimestamp, offlineCaptured
+                });
+                
+                return res.json({
+                    branch: 'ROUTE_TO_DIGITAL_TWIN',
+                    schematic: {
+                        id: schematic.ID,
+                        path: schematic.SchematicPath,
+                        label: schematic.Label,
+                        pins
+                    }
+                });
+            }
+        }
+
+        // ── Step 3.7: SOP Re-Acknowledgment Gate ─────────────────────────────────────
+        // Before creating a new WO against this asset, verify the tech has acknowledged
+        // all SOPs linked to this asset that were flagged by an MOC change.
+        // This is the enforcement gate — SOPAcknowledgmentBanner.jsx is only a passive warning.
+        {
+            let pendingSops = [];
+            try {
+                // ProcObj links Procedures to assets by ObjID = AssetID
+                pendingSops = conn.prepare(`
+                    SELECT DISTINCT p.ID, p.ProcedureCode, p.Descript, p.Updated
+                    FROM ProcObj po
+                    JOIN Procedures p ON p.ID = po.ProcID
+                    WHERE po.ObjID = ?
+                      AND p.SOPAcknowledgmentRequired = 1
+                      AND p.ID NOT IN (
+                          SELECT ProcedureID FROM SOPAcknowledgments WHERE TechID = ?
+                      )
+                `).all(assetId, userId);
+            } catch (err) {
+                console.error('[SCAN] Step 3.7 Error:', err);
+                // ProcObj or SOPAcknowledgments absent — gate passes, WO creation proceeds
+            }
+
+            if (pendingSops.length > 0) {
+                writeAuditEntry(conn, {
+                    scanId, assetId, userId,
+                    previousState: null, nextState: null,
+                    decisionBranch: 'REQUIRE_SOP_ACK',
+                    deviceTimestamp, offlineCaptured,
+                });
+                return res.json({
+                    branch: 'REQUIRE_SOP_ACK',
+                    pendingSops,
+                    message: `${pendingSops.length} procedure${pendingSops.length > 1 ? 's require' : ' requires'} acknowledgment before work can begin.`,
+                    assetId
+                });
+            }
+        }
+
         // ── Step 4: No WOs at all — auto-create WO and open first segment ────
         // Verify the asset exists before creating a WO against it.
         const asset = conn.prepare('SELECT ID, Description FROM Asset WHERE ID = ? LIMIT 1').get(assetId);
@@ -364,16 +470,26 @@ router.post('/', (req, res) => {
             // R-7: Timestamp alone collides when two workers hit this on the same ms.
             // 3 random bytes (6 hex chars) makes collision probability negligible.
             const woNumber = `AUTO-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-            conn.prepare(`
+            const desc = segmentReason 
+                ? `Work Order — ${asset.Description || assetId} — ${segmentReason}`
+                : `Work Order — ${asset.Description || assetId}`;
+                
+            const woInsert = conn.prepare(`
                 INSERT INTO Work
                     (WorkOrderNumber, Description, AstID, StatusID, TypeID, AddDate, UserID, AssignToID)
                 VALUES (?, ?, ?, ?, 'CORRECTIVE', datetime('now'), ?, ?)
-            `).run(woNumber, `Work Order — ${asset.Description || assetId}`, assetId,
+            `).run(woNumber, desc, assetId,
                 STATUS.IN_PROGRESS, userId, userId);
 
             // Use WorkOrderNumber as the stable identifier — ID column is TEXT PRIMARY KEY and not set here
+            const woRowId = woInsert.lastInsertRowid;
             const woId = woNumber;
-            const segmentId = openSegment(conn, { woId, userId, origin: offlineCaptured ? 'OFFLINE_SYNC' : 'SCAN' });
+            const segmentId = openSegment(conn, { 
+                woId, 
+                userId, 
+                origin: offlineCaptured ? 'OFFLINE_SYNC' : 'SCAN',
+                segmentReason 
+            });
 
             writeAuditEntry(conn, {
                 scanId, assetId, userId, woId,
@@ -382,6 +498,24 @@ router.post('/', (req, res) => {
                 decisionBranch: 'AUTO_CREATE_WO',
                 deviceTimestamp, offlineCaptured,
             });
+
+            // Auto-populate parts from AssetParts BOM — wrapped so absent BOM never fails WO creation
+            try {
+                const bomParts = conn.prepare(`
+                    SELECT ap.PartID, ap.Quantity, COALESCE(p.UnitCost, 0) AS UnitCost
+                    FROM AssetParts ap
+                    LEFT JOIN Part p ON ap.PartID = p.ID
+                    WHERE ap.AstID = ?
+                `).all(assetId);
+                if (bomParts.length > 0) {
+                    const insertWoPart = conn.prepare(
+                        'INSERT INTO WorkParts (WoID, PartID, EstQty, UnitCost, UseDate) VALUES (?, ?, ?, ?, datetime(\'now\'))'
+                    );
+                    for (const part of bomParts) {
+                        insertWoPart.run(woRowId, part.PartID, part.Quantity, part.UnitCost);
+                    }
+                }
+            } catch (_) { /* AssetParts absent or WorkParts schema mismatch — WO creation unaffected */ }
 
             return { woId, woNumber, segmentId };
         }).immediate();
@@ -755,7 +889,7 @@ router.post('/offline-sync', (req, res) => {
         const results = [];
 
         for (const event of events) {
-            const { scanId, assetId, userId: eventUserId, deviceTimestamp, userAction, holdReason } = event;
+            const { scanId, assetId, userId: eventUserId, deviceTimestamp, userAction, holdReason, segmentReason } = event;
             // R-11: For direct client replays, the authenticated JWT user is the authoritative
             // identity. Allowing event.userId lets any client write arbitrary names into
             // audit logs. Hub replays are HMAC-verified — event.userId is the device user.
@@ -820,14 +954,18 @@ router.post('/offline-sync', (req, res) => {
                         // R-7: Same randomness guard as POST / — concurrent offline-sync
                         // calls can land on the same millisecond.
                         const woNumber = `AUTO-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+                        const desc = segmentReason 
+                            ? `Work Order — ${asset.Description || assetId} — ${segmentReason}`
+                            : `Work Order — ${asset.Description || assetId}`;
+                            
                         const woInsert = conn.prepare(`
                             INSERT INTO Work (WorkOrderNumber, Description, AstID, StatusID, TypeID, AddDate, UserID, AssignToID)
                             VALUES (?, ?, ?, ?, 'CORRECTIVE', ?, ?, ?)
-                        `).run(woNumber, `Work Order — ${asset.Description || assetId}`, assetId,
+                        `).run(woNumber, desc, assetId,
                             STATUS.IN_PROGRESS, deviceTimestamp, userId, userId);
 
                         const woId = String(woInsert.lastInsertRowid);
-                        const segmentId = openSegment(conn, { woId, userId, origin: 'OFFLINE_SYNC' });
+                        const segmentId = openSegment(conn, { woId, userId, origin: 'OFFLINE_SYNC', segmentReason });
                         writeAuditEntry(conn, {
                             scanId, woId, assetId, userId,
                             previousState: null, nextState: STATUS.IN_PROGRESS,

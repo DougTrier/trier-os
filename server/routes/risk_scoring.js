@@ -231,6 +231,19 @@ function buildScore(plantId) {
     const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
     const status = score >= 80 ? 'Good Standing' : score >= 60 ? 'Needs Attention' : 'At Risk';
 
+    function computeRiskConfidence(factors) {
+        // Count dimensions that returned real (non-zero) data
+        const activeDimensions = ['safety', 'calibration', 'loto', 'pm', 'bonus'];
+        const populated = activeDimensions.filter(cat =>
+            factors.some(f => f.category === cat && f.value != null)
+        ).length;
+        const completeness = Math.min(populated / 5, 1.0);
+        // Data is always live (no staleness for risk score in v1)
+        const scoreVal = Math.round(completeness * 100) / 100;
+        const band = scoreVal >= 0.75 ? 'HIGH' : scoreVal >= 0.40 ? 'MEDIUM' : 'LOW';
+        return { confidenceScore: scoreVal, confidenceBand: band };
+    }
+
     const result = {
         score,
         grade,
@@ -240,6 +253,7 @@ function buildScore(plantId) {
         openNearMiss: openNearMissCount,
         overdueCalibration: overdueCalCount,
         openLoto: openLotoCount,
+        ...computeRiskConfidence(factors),
         calculatedAt: new Date().toISOString(),
         plantId: plantId || 'enterprise'
     };

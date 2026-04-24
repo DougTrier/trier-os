@@ -17,7 +17,12 @@
     "test:mobile": "npx playwright test --project=\"Mobile Chrome (Zebra TC77)\"",
     "electron:dev": "set ELECTRON_DEV=true && electron electron/main.js",
     "electron:start": "electron electron/main.js",
-    "electron:build": "vite build && electron-builder --config electron-builder.json"
+    "electron:build": "vite build && electron-builder --config electron-builder.json",
+    "cap:build": "vite build && npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android",
+    "cap:sync": "npx cap sync",
+    "cap:copy": "npx cap copy"
   },
   "pkg": {
     "assets": [
@@ -75,6 +80,8 @@
     "mdb-reader": "^3.2.0",
     "mssql": "^12.2.1",
     "multer": "^2.1.1",
+    "nats": "^2.29.3",
+    "opossum": "^9.0.0",
     "otpauth": "^9.5.0",
     "papaparse": "^5.5.3",
     "pdf-parse": "^2.4.5",

@@ -12,7 +12,9 @@
  *   GET  /api/ldap/config     — Get current LDAP config (password masked)
  *   PUT  /api/ldap/config     — Save LDAP configuration
  *   POST /api/ldap/test       — Test connection to AD server
- *   POST /api/ldap/sync       — Manual sync: pull users from AD → local
+ *   POST /api/ldap/sync       — Manual sync: pull users from AD → local; writes UserADGroups
+ *   GET  /api/ldap/role-map   — List GatekeeperRoleMap entries (AD group → ActionClass)
+ *   PUT  /api/ldap/role-map   — Upsert a GatekeeperRoleMap entry
  */
 const express = require('express');
 const router = express.Router();
@@ -260,7 +262,11 @@ module.exports = function(authDb) {
                             const pojo = entry.ppiPojo || entry.pojo || entry;
                             if (pojo.attributes) {
                                 pojo.attributes.forEach(a => {
-                                    attrs[a.type] = a.values ? a.values[0] : '';
+                                    if (a.type === 'memberOf') {
+                                        attrs[a.type] = a.values || [];
+                                    } else {
+                                        attrs[a.type] = a.values && a.values.length > 0 ? a.values[0] : '';
+                                    }
                                 });
                             }
                             users.push(attrs);
@@ -281,17 +287,19 @@ module.exports = function(authDb) {
 
                                 // Determine role from AD group membership
                                 let role = 'employee';
-                                const memberOf = u.memberOf || '';
+                                const memberOf = Array.isArray(u.memberOf) ? u.memberOf : (u.memberOf ? [u.memberOf] : []);
                                 for (const [adGroup, trierRole] of Object.entries(roleMap)) {
-                                    if (memberOf.toLowerCase().includes(adGroup.toLowerCase())) {
+                                    if (memberOf.some(g => g.toLowerCase().includes(adGroup.toLowerCase()))) {
                                         role = trierRole;
                                         break;
                                     }
                                 }
 
                                 // Check if user exists
+                                let userId;
                                 const existing = authDb.prepare('SELECT UserID FROM Users WHERE Username = ?').get(username);
                                 if (existing) {
+                                    userId = existing.UserID;
                                     // Update display name, email, etc.
                                     authDb.prepare(`
                                         UPDATE Users SET
@@ -314,7 +322,7 @@ module.exports = function(authDb) {
                                     // Create new user with random password (they'll auth via LDAP)
                                     const bcrypt = require('bcryptjs');
                                     const hash = bcrypt.hashSync('LDAP_AUTH_' + Date.now(), 10);
-                                    authDb.prepare(`
+                                    const resInsert = authDb.prepare(`
                                         INSERT INTO Users (Username, PasswordHash, DefaultRole, DisplayName, Email, Phone, Title)
                                         VALUES (?, ?, ?, ?, ?, ?, ?)
                                     `).run(
@@ -326,7 +334,18 @@ module.exports = function(authDb) {
                                         u.telephoneNumber || '',
                                         u.title || ''
                                     );
+                                    userId = resInsert.lastInsertRowid;
                                     created++;
+                                }
+
+                                // Delete stale groups for this user, then insert current ones
+                                authDb.prepare('DELETE FROM UserADGroups WHERE UserID = ?').run(userId);
+                                const insertGroup = authDb.prepare(
+                                    'INSERT OR IGNORE INTO UserADGroups (UserID, Username, ADGroup, SyncedAt) VALUES (?, ?, ?, ?)'
+                                );
+                                const now = new Date().toISOString();
+                                for (const group of memberOf) {
+                                    insertGroup.run(userId, username, group, now);
                                 }
                             }
 
@@ -368,6 +387,43 @@ module.exports = function(authDb) {
             });
         } catch (err) {
             res.json({ enabled: false });
+        }
+    });
+
+    // ── GET /api/ldap/role-map ──
+    router.get('/role-map', (req, res) => {
+        try {
+            const logisticsDb = require('../logistics_db').db;
+            const rows = logisticsDb.prepare('SELECT * FROM GatekeeperRoleMap ORDER BY ActionClass, ADGroup').all();
+            res.json(rows);
+        } catch (err) {
+            console.error('[LDAP] GET /role-map error:', err.message);
+            res.status(500).json({ error: 'Failed to fetch role map' });
+        }
+    });
+
+    // ── PUT /api/ldap/role-map ──
+    router.put('/role-map', (req, res) => {
+        try {
+            const { adGroup, actionClass, plantId, notes } = req.body;
+            if (!adGroup || !actionClass) return res.status(400).json({ error: 'adGroup and actionClass are required' });
+            
+            const validClasses = ['SAFETY_CRITICAL', 'NON_CRITICAL', 'ADVISORY', 'READ_ONLY'];
+            if (!validClasses.includes(actionClass)) {
+                return res.status(400).json({ error: 'Invalid actionClass' });
+            }
+
+            const logisticsDb = require('../logistics_db').db;
+            const result = logisticsDb.prepare(`
+                INSERT OR REPLACE INTO GatekeeperRoleMap 
+                (ADGroup, ActionClass, PlantID, Notes, UpdatedAt) 
+                VALUES (?, ?, ?, ?, datetime('now'))
+            `).run(adGroup, actionClass, plantId || null, notes || null);
+            
+            res.json({ ok: true, id: result.lastInsertRowid });
+        } catch (err) {
+            console.error('[LDAP] PUT /role-map error:', err.message);
+            res.status(500).json({ error: 'Failed to update role map' });
         }
     });
 

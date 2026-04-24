@@ -38,6 +38,13 @@ import { useTranslation } from '../i18n/index.jsx';
 import EquipmentIntelligenceSection from './EquipmentIntelligenceSection';
 import { API, fmt, fmtN, SEV_COLORS, KPICard, MiniBarChart, PlantScoreBadge, SeverityBadge, PlantSpendTable, AccessManager } from './CorporateAnalyticsWidgets';
 
+const otdColor = (rate) => {
+    if (rate === null || rate === undefined) return '#64748b';
+    if (rate >= 90) return '#10b981';
+    if (rate >= 75) return '#f59e0b';
+    return '#ef4444';
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -65,10 +72,10 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
     const [trackingData, setTrackingData] = useState(null);
     const [maintenanceKpis, setMaintenanceKpis] = useState(null);
     const [commitMsg, setCommitMsg] = useState('');
-    // BUG-03: commitPlantId ensures a specific plant is always selected before committing
-    // Defaults to the plantId prop (single-plant context) or empty (all-sites view).
     const [commitPlantId, setCommitPlantId] = useState(plantId || '');
     const [fleetSort, setFleetSort] = useState({ key: 'mileage', dir: -1 });
+    const [worstPerformers, setWorstPerformers] = useState([]);
+    const [sparePartsRollup, setSparePartsRollup] = useState([]);
 
     const fetchAll = useCallback(() => {
         setLoading(true);
@@ -122,7 +129,19 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
             fetch(`/api/maintenance-kpis/summary`, { headers: { 'x-plant-id': pid } })
                 .then(r => r.json()).then(d => { if (!d.error) setMaintenanceKpis(d); }).catch(() => {});
         }
-    }, [activeSection, opexData, opexLoading, trackingData, maintenanceKpis, vendorInflation, plantId]);
+        if (activeSection === 'financial' && worstPerformers.length === 0) {
+            fetch('/api/vendors/scorecard', { headers: { 'x-plant-id': 'all_sites' } })
+                .then(r => r.ok ? r.json() : null)
+                .then(d => { if (d) setWorstPerformers(d.worstPerformers || []); })
+                .catch(() => {});
+        }
+        if (activeSection === 'financial' && sparePartsRollup.length === 0) {
+            fetch('/api/parts/optimization/corporate', { headers: { 'x-plant-id': 'all_sites' } })
+                .then(r => r.ok ? r.json() : null)
+                .then(d => { if (d) setSparePartsRollup(d.rollup || []); })
+                .catch(() => {});
+        }
+    }, [activeSection, opexData, opexLoading, trackingData, maintenanceKpis, vendorInflation, plantId, worstPerformers.length, sparePartsRollup.length]);
 
 
     const sections = [
@@ -371,6 +390,9 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                 const laborPct = financial.operatingSpend > 0 ? Math.round((financial.labor / financial.operatingSpend) * 100) : 0;
                 const partsPct = financial.operatingSpend > 0 ? Math.round((financial.parts / financial.operatingSpend) * 100) : 0;
                 const miscPct = 100 - laborPct - partsPct;
+                
+                const totalDeadStockValue = sparePartsRollup.reduce((s, p) => s + (p.deadStockValue || 0), 0);
+                const totalStockoutRisk   = sparePartsRollup.reduce((s, p) => s + (p.stockoutRiskCount || 0), 0);
 
                 return (
                     <>
@@ -463,6 +485,85 @@ export default function CorporateAnalyticsView({ plantId, plantLabel }) {
                                 })()}
                             </div>
                         )}
+
+                        {/* Vendor Intelligence Summary & Spare Parts Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                            {/* Vendor Intelligence Summary */}
+                            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Truck size={16} /> Vendor Performance
+                                    </span>
+                                    <a href="/vendor-scorecard" style={{ fontSize: '0.85rem', color: '#818cf8', textDecoration: 'none' }}>
+                                        View Full Scorecard →
+                                    </a>
+                                </div>
+                                {worstPerformers.slice(0, 3).map(v => (
+                                    <div key={v.vendorId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem' }}>
+                                        <span style={{ color: '#e2e8f0' }}>{v.vendorName}</span>      
+                                        <span style={{ color: otdColor(v.onTimeDeliveryRate), fontWeight: 600 }}>
+                                            {v.onTimeDeliveryRate != null ? `${v.onTimeDeliveryRate}% OTD` : 'No data'}
+                                        </span>
+                                    </div>
+                                ))}
+                                {worstPerformers.length === 0 && (
+                                    <div style={{ fontSize: '0.85rem', color: '#64748b', padding: '6px 0' }}>No vendor data available.</div>
+                                )}
+                            </div>
+
+                            {/* Spare Parts Health Summary */}
+                            {sparePartsRollup.length > 0 && (
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Package size={16} /> Spare Parts Health
+                                        </span>
+                                        <a href="/storeroom" style={{ fontSize: '0.85rem', color: '#818cf8', textDecoration: 'none' }}>
+                                            View Storeroom →
+                                        </a>
+                                    </div>
+
+                                    {/* Headline KPIs */}
+                                    <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                                        <div style={{ flex: 1, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', padding: '10px 14px' }}>
+                                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dead Stock Value</div>
+                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ef4444' }}>
+                                                ${totalDeadStockValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                            </div>
+                                        </div>
+                                        <div style={{ flex: 1, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '6px', padding: '10px 14px' }}>
+                                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Stockout Risks</div>
+                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: totalStockoutRisk > 0 ? '#f59e0b' : '#10b981' }}>
+                                                {totalStockoutRisk} critical {totalStockoutRisk === 1 ? 'part' : 'parts'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Per-plant breakdown — top 5 by dead stock value */}
+                                    {[...sparePartsRollup]
+                                        .sort((a, b) => (b.deadStockValue || 0) - (a.deadStockValue || 0))
+                                        .slice(0, 5)
+                                        .map(p => (
+                                            <div key={p.plantId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem' }}>
+                                                <span style={{ color: '#e2e8f0' }}>{p.plantId.replace(/_/g, ' ')}</span>
+                                                <span style={{ display: 'flex', gap: '16px' }}>
+                                                    <span style={{ color: p.deadStockValue > 0 ? '#ef4444' : '#64748b', fontWeight: p.deadStockValue > 0 ? 600 : 400 }}>
+                                                        ${(p.deadStockValue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} dead
+                                                    </span>
+                                                    <span style={{ color: p.stockoutRiskCount > 0 ? '#f59e0b' : '#64748b', fontWeight: p.stockoutRiskCount > 0 ? 600 : 400 }}>
+                                                        {p.stockoutRiskCount} at risk
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        ))
+                                    }
+
+                                    {sparePartsRollup.length === 0 && (
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', padding: '6px 0' }}>No plant data available.</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </>
                 );
             })()}

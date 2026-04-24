@@ -5,7 +5,7 @@
  * Provides full offline resilience for mobile/tablet/desktop PWA users.
  */
 
-const CACHE_VERSION  = 'trier-v2026.04.09c';
+const CACHE_VERSION  = 'trier-v2026.04.23a';
 const API_CACHE      = 'trier-api-v2';
 const XLAT_CACHE_PFX = 'trier-xlat-'; // one cache per language
 

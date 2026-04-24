@@ -1,0 +1,2236 @@
+openapi: 3.1.0
+info:
+  title: Trier OS API
+  version: 3.5.1
+  description: |
+    Enterprise Industrial Operating System REST API.
+    Single-instance deployment — all plants connect to one corporate server.
+    Plant scope is set per-request via the x-plant-id header.
+  contact:
+    name: Trier OS Engineering
+  license:
+    name: Proprietary — © 2026 Trier OS. All Rights Reserved.
+servers:
+  - url: /api
+    description: Trier OS corporate server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: api_key
+  parameters:
+    PlantIdHeader:
+      name: x-plant-id
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]{1,64}$'
+      description: Plant database identifier. Use 'all_sites' for corporate-scoped endpoints.
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+tags:
+  - name: Authentication
+  - name: Work Orders
+  - name: Assets
+  - name: Inventory
+  - name: PM Schedules
+  - name: Notifications
+  - name: BI Export
+  - name: Webhooks
+  - name: Approvals
+  - name: Logistics
+  - name: Branding
+  - name: Search
+  - name: Safety & Compliance
+  - name: Risk Scoring
+  - name: Energy & Utilities
+  - name: Vendor Analytics
+  - name: Spare Parts Optimization
+  - name: Asset Lifecycle
+  - name: Edge Mesh
+  - name: Operator Trust
+  - name: Gatekeeper
+  - name: Storeroom
+  - name: Digital Twin
+paths:
+  /auth/login:
+    post:
+      summary: "Authenticate and receive JWT token"
+      operationId: postauthLogin
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /auth/register:
+    post:
+      summary: "Register a new user account"
+      operationId: postauthRegister
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /work-orders:
+    get:
+      summary: "List all work orders for current plant"
+      operationId: getworkOrders
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Create a new work order"
+      operationId: postworkOrders
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /work-orders/{id}:
+    get:
+      summary: "Get single work order with parts, tasks, labor"
+      operationId: getworkOrdersById
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update an existing work order"
+      operationId: putworkOrdersById
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    delete:
+      summary: "Delete a work order (completed WOs protected)"
+      operationId: deleteworkOrdersById
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /work-orders/stats:
+    get:
+      summary: "Work order statistics (counts by status, priority)"
+      operationId: getworkOrdersStats
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /work-orders/next-id:
+    get:
+      summary: "Get the next available work order ID"
+      operationId: getworkOrdersNextId
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /v2/work-orders/{id}/close:
+    post:
+      summary: "Close work order with full cost capture"
+      operationId: postv2WorkOrdersCloseById
+      tags:
+        - Work Orders
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /assets:
+    get:
+      summary: "List all assets for current plant"
+      operationId: getassets
+      tags:
+        - Assets
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Create a new asset"
+      operationId: postassets
+      tags:
+        - Assets
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /assets/{id}:
+    get:
+      summary: "Get single asset details"
+      operationId: getassetsById
+      tags:
+        - Assets
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update an asset"
+      operationId: putassetsById
+      tags:
+        - Assets
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /parts:
+    get:
+      summary: "List all parts for current plant"
+      operationId: getparts
+      tags:
+        - Inventory
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Create a new part"
+      operationId: postparts
+      tags:
+        - Inventory
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /parts/{id}:
+    get:
+      summary: "Get single part details"
+      operationId: getpartsById
+      tags:
+        - Inventory
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update a part"
+      operationId: putpartsById
+      tags:
+        - Inventory
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /parts/enterprise/low-stock:
+    get:
+      summary: "Cross-plant low stock alerts"
+      operationId: getpartsEnterpriseLowStock
+      tags:
+        - Inventory
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /pm-schedules:
+    get:
+      summary: "List PM schedules for current plant"
+      operationId: getpmSchedules
+      tags:
+        - PM Schedules
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /pm-schedules/calendar/events:
+    get:
+      summary: "Calendar event data for PM/WO items"
+      operationId: getpmSchedulesCalendarEvents
+      tags:
+        - PM Schedules
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /notifications:
+    get:
+      summary: "Get notifications for logged-in user"
+      operationId: getnotifications
+      tags:
+        - Notifications
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bi/work-orders:
+    get:
+      summary: "Export work orders (JSON or CSV)"
+      operationId: getbiWorkOrders
+      tags:
+        - BI Export
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: format
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bi/assets:
+    get:
+      summary: "Export assets (JSON or CSV)"
+      operationId: getbiAssets
+      tags:
+        - BI Export
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bi/pm-compliance:
+    get:
+      summary: "Export PM compliance status (JSON or CSV)"
+      operationId: getbiPmCompliance
+      tags:
+        - BI Export
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bi/parts-inventory:
+    get:
+      summary: "Export parts inventory (JSON or CSV)"
+      operationId: getbiPartsInventory
+      tags:
+        - BI Export
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bi/technician-performance:
+    get:
+      summary: "Export technician metrics (JSON or CSV)"
+      operationId: getbiTechnicianPerformance
+      tags:
+        - BI Export
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bi/reminder-insights:
+    get:
+      summary: "Export aggregated reminder metrics"
+      operationId: getbiReminderInsights
+      tags:
+        - BI Export
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /integrations/webhooks:
+    get:
+      summary: "List configured webhooks"
+      operationId: getintegrationsWebhooks
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Create a new webhook"
+      operationId: postintegrationsWebhooks
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /integrations/webhooks/{id}:
+    put:
+      summary: "Update webhook config"
+      operationId: putintegrationsWebhooksById
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    delete:
+      summary: "Delete a webhook"
+      operationId: deleteintegrationsWebhooksById
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /integrations/webhooks/{id}/test:
+    post:
+      summary: "Send test notification"
+      operationId: postintegrationsWebhooksTestById
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /approvals:
+    get:
+      summary: "List approvals (filter by status, type)"
+      operationId: getapprovals
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Submit item for approval"
+      operationId: postapprovals
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /approvals/stats:
+    get:
+      summary: "Approval queue statistics"
+      operationId: getapprovalsStats
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /approvals/{id}/approve:
+    put:
+      summary: "Approve a pending item"
+      operationId: putapprovalsApproveById
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /approvals/{id}/reject:
+    put:
+      summary: "Reject a pending item (reason required)"
+      operationId: putapprovalsRejectById
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /approvals/settings:
+    get:
+      summary: "Get approval threshold settings"
+      operationId: getapprovalsSettings
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update approval thresholds"
+      operationId: putapprovalsSettings
+      tags:
+        - Approvals
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /logistics/part-requests:
+    get:
+      summary: "Part transfer requests across plants"
+      operationId: getlogisticsPartRequests
+      tags:
+        - Logistics
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Create a part transfer request"
+      operationId: postlogisticsPartRequests
+      tags:
+        - Logistics
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /branding/logo:
+    get:
+      summary: "Get current logo image"
+      operationId: getbrandingLogo
+      tags:
+        - Branding
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Upload custom logo"
+      operationId: postbrandingLogo
+      tags:
+        - Branding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /search:
+    get:
+      summary: "Global search across WOs, assets, parts"
+      operationId: getsearch
+      tags:
+        - Search
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /safety-incidents:
+    get:
+      summary: "List safety incidents (supports ?status=open&type=Near-Miss)"
+      operationId: getsafetyIncidents
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Log a new safety incident or near-miss"
+      operationId: postsafetyIncidents
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /safety-incidents/{id}:
+    get:
+      summary: "Get single incident with full detail"
+      operationId: getsafetyIncidentsById
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update incident details or close it out"
+      operationId: putsafetyIncidentsById
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /calibration/instruments:
+    get:
+      summary: "List calibration instruments (supports ?status=overdue)"
+      operationId: getcalibrationInstruments
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Add a new instrument to calibration tracking"
+      operationId: postcalibrationInstruments
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /calibration/instruments/{id}:
+    get:
+      summary: "Get single instrument with calibration history"
+      operationId: getcalibrationInstrumentsById
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Record calibration event or update instrument"
+      operationId: putcalibrationInstrumentsById
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /loto/permits:
+    get:
+      summary: "List LOTO permits (supports ?status=open&assetId=)"
+      operationId: getlotoPermits
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Open a new LOTO permit"
+      operationId: postlotoPermits
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /loto/permits/{id}:
+    get:
+      summary: "Get single LOTO permit with isolation points"
+      operationId: getlotoPermitsById
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update or close a LOTO permit"
+      operationId: putlotoPermitsById
+      tags:
+        - Safety & Compliance
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /risk-scoring:
+    get:
+      summary: "Enterprise or per-plant risk score (0–100) with factor breakdown"
+      operationId: getriskScoring
+      tags:
+        - Risk Scoring
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: plantId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /risk-scoring/history:
+    get:
+      summary: "12-month risk score history for sparkline trend"
+      operationId: getriskScoringHistory
+      tags:
+        - Risk Scoring
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: plantId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /risk-scoring/{plantId}:
+    get:
+      summary: "Risk score for a specific plant"
+      operationId: getriskScoringByPlantId
+      tags:
+        - Risk Scoring
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: plantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Snapshot current score to RiskScoreHistory table"
+      operationId: putriskScoringByPlantId
+      tags:
+        - Risk Scoring
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: plantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/readings:
+    get:
+      summary: "List energy readings for current plant (supports ?meterType=Electric&limit=)"
+      operationId: getenergyReadings
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    post:
+      summary: "Log a new energy reading"
+      operationId: postenergyReadings
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/readings/{id}:
+    get:
+      summary: "Get single energy reading"
+      operationId: getenergyReadingsById
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Edit an existing energy reading"
+      operationId: putenergyReadingsById
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/targets:
+    get:
+      summary: "List monthly energy targets for current plant"
+      operationId: getenergyTargets
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/targets/{id}:
+    put:
+      summary: "Update energy target for a meter type"
+      operationId: putenergyTargetsById
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/tou:
+    get:
+      summary: "Get current time-of-use pricing tier and rate info"
+      operationId: getenergyTou
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/tou-config:
+    get:
+      summary: "Get TOU configuration (PeakStart, PeakEnd, multipliers)"
+      operationId: getenergyTouConfig
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    put:
+      summary: "Update TOU configuration for current plant"
+      operationId: putenergyTouConfig
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/asset-loads:
+    get:
+      summary: "List asset load weights for energy calculation"
+      operationId: getenergyAssetLoads
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/asset-loads/{id}:
+    put:
+      summary: "Update asset load category and IsHighLoad flag"
+      operationId: putenergyAssetLoadsById
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /energy/arbitrage:
+    get:
+      summary: "24h load-shift arbitrage recommendations for high-load assets"
+      operationId: getenergyArbitrage
+      tags:
+        - Energy & Utilities
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /vendors/scorecard:
+    get:
+      summary: "Enterprise vendor performance and quality metrics"
+      operationId: getvendorsScorecard
+      tags:
+        - Vendor Analytics
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /parts/optimization:
+    get:
+      summary: "Inventory optimization metrics for a specific plant"
+      operationId: getpartsOptimization
+      tags:
+        - Spare Parts Optimization
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /parts/optimization/dead-stock:
+    get:
+      summary: "List dead stock items with financial value"
+      operationId: getpartsOptimizationDeadStock
+      tags:
+        - Spare Parts Optimization
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /parts/optimization/corporate:
+    get:
+      summary: "Rollup of dead stock and stockout risk across all plants"
+      operationId: getpartsOptimizationCorporate
+      tags:
+        - Spare Parts Optimization
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /asset-lifecycle/recommendations:
+    get:
+      summary: "Repair vs replace recommendations based on historical data"
+      operationId: getassetLifecycleRecommendations
+      tags:
+        - Asset Lifecycle
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /asset-lifecycle/forecast:
+    get:
+      summary: "Capital expenditure forecast over 1/3/5 years"
+      operationId: getassetLifecycleForecast
+      tags:
+        - Asset Lifecycle
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /asset-lifecycle/corporate-rollup:
+    get:
+      summary: "Total replacement liability by plant and asset class"
+      operationId: getassetLifecycleCorporateRollup
+      tags:
+        - Asset Lifecycle
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /edge-mesh/artifacts:
+    post:
+      summary: "Register a new artifact for edge distribution"
+      operationId: postedgeMeshArtifacts
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    get:
+      summary: "List registered artifacts"
+      operationId: getedgeMeshArtifacts
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+    delete:
+      summary: "Delete or supersede an artifact"
+      operationId: deleteedgeMeshArtifacts
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /edge-mesh/sync-status:
+    get:
+      summary: "Fleet-wide edge node sync status"
+      operationId: getedgeMeshSyncStatus
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /edge-mesh/sync-status/{plantId}:
+    post:
+      summary: "Edge node reports its sync status"
+      operationId: postedgeMeshSyncStatusByPlantId
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: plantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /edge-mesh/pull-manifest:
+    get:
+      summary: "Edge node polls for current manifests"
+      operationId: getedgeMeshPullManifest
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /edge-mesh/download/{id}:
+    get:
+      summary: "Download artifact file via edge stream or direct"
+      operationId: getedgeMeshDownloadById
+      tags:
+        - Edge Mesh
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /operator-trust/recommendations:
+    get:
+      summary: "List AI/system recommendations for operators"
+      operationId: getoperatorTrustRecommendations
+      tags:
+        - Operator Trust
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /operator-trust/feedback:
+    post:
+      summary: "Submit operator feedback (accept/reject) on recommendation"
+      operationId: postoperatorTrustFeedback
+      tags:
+        - Operator Trust
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /operator-trust/outcomes:
+    get:
+      summary: "List outcomes of past recommendations"
+      operationId: getoperatorTrustOutcomes
+      tags:
+        - Operator Trust
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /operator-trust/metrics:
+    get:
+      summary: "Operator trust and adoption metrics"
+      operationId: getoperatorTrustMetrics
+      tags:
+        - Operator Trust
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /gatekeeper/pre-certify:
+    post:
+      summary: "Pre-certify an operation/request"
+      operationId: postgatekeeperPreCertify
+      tags:
+        - Gatekeeper
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /gatekeeper/audit:
+    get:
+      summary: "List gatekeeper audit trail logs"
+      operationId: getgatekeeperAudit
+      tags:
+        - Gatekeeper
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /gatekeeper/audit/receipt/{requestId}:
+    get:
+      summary: "Get specific gatekeeper audit receipt"
+      operationId: getgatekeeperAuditReceiptByRequestId
+      tags:
+        - Gatekeeper
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /gatekeeper/audit/verify:
+    post:
+      summary: "Verify a gatekeeper receipt signature"
+      operationId: postgatekeeperAuditVerify
+      tags:
+        - Gatekeeper
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /storeroom/summary:
+    get:
+      summary: "High-level storeroom value and stock summary"
+      operationId: getstoreroomSummary
+      tags:
+        - Storeroom
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /storeroom/abc-analysis:
+    get:
+      summary: "ABC inventory analysis (cost volume)"
+      operationId: getstoreroomAbcAnalysis
+      tags:
+        - Storeroom
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /storeroom/dead-stock:
+    get:
+      summary: "List identified dead stock"
+      operationId: getstoreroomDeadStock
+      tags:
+        - Storeroom
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /storeroom/slow-moving:
+    get:
+      summary: "List slow-moving inventory parts"
+      operationId: getstoreroomSlowMoving
+      tags:
+        - Storeroom
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /storeroom/carrying-cost:
+    get:
+      summary: "Calculate inventory carrying cost"
+      operationId: getstoreroomCarryingCost
+      tags:
+        - Storeroom
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /storeroom/obsolescence-risk:
+    get:
+      summary: "Assess risk of obsolete components"
+      operationId: getstoreroomObsolescenceRisk
+      tags:
+        - Storeroom
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /digital-twin/{assetId}:
+    get:
+      summary: "Get Digital Twin 3D model and metadata for asset"
+      operationId: getdigitalTwinByAssetId
+      tags:
+        - Digital Twin
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /digital-twin/schematic:
+    post:
+      summary: "Upload or link 2D schematic overlay"
+      operationId: postdigitalTwinSchematic
+      tags:
+        - Digital Twin
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /digital-twin/pin:
+    post:
+      summary: "Drop an interactive pin on digital twin coordinates"
+      operationId: postdigitalTwinPin
+      tags:
+        - Digital Twin
+      parameters:
+        - $ref: '#/components/parameters/PlantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error

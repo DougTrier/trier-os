@@ -109,7 +109,7 @@ module.exports = async (req, res, next) => {
 
         // ── 1. Enterprise Path Protection ───────────────────────────────────
         // Sensitive administrative routes are for IT Admins, the Creator, or verified Backup Personnel
-        const adminOnlyRoutes = ['/database/export', '/database/backup', '/analytics/narrative', '/ha/'];
+        const adminOnlyRoutes = ['/database/export', '/database/backup', '/analytics/narrative', '/ha/', '/gatekeeper'];
         if (adminOnlyRoutes.some(path => req.path.startsWith(path))) {
             const isBackupPath = req.path.startsWith('/database/export') || req.path.startsWith('/database/backup');
             const hasBackupPrivilege = isBackupPath && isBackupAllowed(req.user.Username);

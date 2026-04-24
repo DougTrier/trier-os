@@ -595,10 +595,30 @@ router.post('/', (req, res) => {
             } catch (e) { console.warn(`[Webhook] Critical WO dispatch failed: ${e.message}`); /* webhook failure should never block WO creation */ }
         }
 
+        // ── SOP Acknowledgment Check ──
+        let pendingSopWarning = false;
+        if (fields.AssignToID && fields.AstID) {
+            try {
+                const pendingSOPs = db.queryAll(`
+                    SELECT p.ID
+                    FROM Procedures p
+                    JOIN ProcObj po ON po.ProcID = p.ID
+                    WHERE po.ObjID = ? AND p.SOPAcknowledgmentRequired = 1
+                    AND p.ID NOT IN (
+                        SELECT ProcedureID FROM SOPAcknowledgments WHERE TechID = ?
+                    )
+                `, [fields.AstID, fields.AssignToID]);
+                if (pendingSOPs && pendingSOPs.length > 0) {
+                    pendingSopWarning = true;
+                }
+            } catch (e) {}
+        }
+
         res.status(201).json({
             success: true,
             id: result.lastInsertRowid,
-            message: 'Work order created'
+            message: 'Work order created',
+            pendingSopWarning
         });
     } catch (err) {
         console.error('POST /api/work-orders error:', err);
@@ -691,7 +711,33 @@ router.put('/:id', (req, res) => {
             } catch { /* non-blocking — downtime cost calc is advisory only */ }
         }
 
-        res.json({ success: true, message: 'Work order updated' });
+        // ── SOP Acknowledgment Check ──
+        let pendingSopWarning = false;
+        if (fields.AssignToID) {
+            try {
+                const woRow = db.queryOne(
+                    'SELECT AstID FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ?',
+                    [req.params.id, req.params.id, req.params.id]
+                );
+                const assetId = fields.AstID || (woRow && woRow.AstID);
+                if (assetId) {
+                    const pendingSOPs = db.queryAll(`
+                        SELECT p.ID
+                        FROM Procedures p
+                        JOIN ProcObj po ON po.ProcID = p.ID
+                        WHERE po.ObjID = ? AND p.SOPAcknowledgmentRequired = 1
+                        AND p.ID NOT IN (
+                            SELECT ProcedureID FROM SOPAcknowledgments WHERE TechID = ?
+                        )
+                    `, [assetId, fields.AssignToID]);
+                    if (pendingSOPs && pendingSOPs.length > 0) {
+                        pendingSopWarning = true;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        res.json({ success: true, message: 'Work order updated', pendingSopWarning });
     } catch (err) {
         console.error('PUT /api/work-orders/:id error:', err);
         res.status(500).json({ error: 'Failed to update work order' });

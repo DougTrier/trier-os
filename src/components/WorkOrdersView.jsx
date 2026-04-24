@@ -42,6 +42,7 @@ import DraftManager from '../utils/DraftManager';
 import useGPS from '../hooks/useGPS';
 import { useTranslation } from '../i18n/index.jsx';
 import { statusClass, formatDate } from '../utils/formatDate';
+import SOPAcknowledgmentBanner from './SOPAcknowledgmentBanner';
 
 
 export default function WorkOrdersView({ plantId, searchTerm, statusFilter: initialStatus = '', priorityFilter: initialPriority = '', typeFilter: initialType = '', assetFilter: initialAsset = '', calendarAction, onCalendarActionHandled }) {
@@ -659,6 +660,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
     return (
         <>
             <div className="glass-card" style={{ padding: 'var(--card-padding)', flex: 1, display: 'flex', flexDirection: 'column' }} title={t('work.orders.workOrdersManagementDatabase')}>
+            <SOPAcknowledgmentBanner plantId={plantId} />
             <div style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '15px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} title={t('work.orders.maintenanceRequestControlCenter')}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <h2 style={{ fontSize: '1.2rem' }} title={t('work.orders.listOfAllMaintenance')}>{t('work.orders.workOrdersDatabase')}</h2>

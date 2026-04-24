@@ -1670,6 +1670,25 @@ export default function AdminConsoleView({ plantId, plantLabel, plants }) {
                         <UserAccountsView />
                         <ApprovalQueue />
                         <EnrollmentQueue />
+                        <div className="panel-box" style={{ background: 'rgba(59,130,246,0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '1.2rem', margin: '0 0 5px 0', display: 'flex', alignItems: 'center', gap: '10px', color: '#3b82f6' }}>
+                                        <Lock size={20} /> Gatekeeper Safe Action Ledger
+                                    </h3>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                                        View the immutable ledger of pre-execution constraint proofs, cryptographic receipts, and causality logs for safety-critical write actions.
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => navigate('/gatekeeper-audit')} 
+                                    className="btn-primary" 
+                                    style={{ padding: '8px 20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                    Open Ledger →
+                                </button>
+                            </div>
+                        </div>
                         {/* Enterprise Onboarding moved to Facilities & Floor Plans → plant-setup-group portal */}
                     </div>
                 )}

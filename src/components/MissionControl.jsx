@@ -49,7 +49,7 @@
  * @param {function} setViewAsRole     Setter for the impersonation role
  */
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Factory, Wrench, Cog, Truck, Package, ShieldCheck, Lock, MessageSquare, BarChart3, Activity, ChevronRight, Scan, FlaskConical, Users, Monitor, Download, BookOpen, HardHat, Star, ShieldAlert, Lightbulb, Globe, Hammer, LockKeyhole, Server, Crown, Map, MapPin, Zap, Droplets, GraduationCap, Warehouse, ClipboardList, AlertTriangle, Clock, CheckCircle, RotateCcw, XCircle, RefreshCw } from 'lucide-react';
+import { Factory, Wrench, Cog, Truck, Package, ShieldCheck, Lock, MessageSquare, BarChart3, Activity, ChevronRight, Scan, FlaskConical, Users, Monitor, Download, BookOpen, HardHat, Star, ShieldAlert, Lightbulb, Globe, Hammer, LockKeyhole, Server, Crown, Map, MapPin, Zap, Droplets, GraduationCap, Warehouse, ClipboardList, AlertTriangle, Clock, CheckCircle, RotateCcw, XCircle, RefreshCw, Brain, Network, Leaf, Link2 } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
 import RoleAvatar from './RoleAvatar';
 import PlantNetworkStatus from './PlantNetworkStatus';
@@ -95,11 +95,14 @@ const ALL_TILES = {
     'maps':             { icon: Map,           accent: '#22c55e', title: 'Maps',                     desc: 'Facility maps, site layouts, campus navigation, and geographic plant views.',               pills: ['Site Map', 'Campus', 'GPS'],            workspace: 'maps' },
     'safety':           { icon: ShieldAlert,   accent: '#ef4444', title: 'Safety & Compliance',     desc: 'Hot work permits, confined space, safety incidents, calibration management, and OSHA tracking.', pills: ['Permits', 'Incidents', 'Calibration'],  workspace: 'safety' },
     'engineering-tools': { icon: Lightbulb,    accent: '#3b82f6', title: 'Engineering Tools',       desc: 'RCA, FMEA, repair vs replace, engineering change notices, capital projects, lube routes, oil analysis.', pills: ['RCA', 'FMEA', 'ECN', 'Lube', 'Oil'], workspace: 'engineering-tools' },
+    'operator-trust':   { icon: Brain,         accent: '#4f46e5', title: 'Operator Trust',          desc: 'Review and provide feedback on AI-driven system recommendations.', pills: ['Feedback', 'AI', 'Metrics'], route: '/operator-trust' },
     'vendor-portal':    { icon: Globe,         accent: '#a855f7', title: 'Vendor Portal',           desc: 'Vendor access tokens, RFQ workflow, vendor messaging, and procurement collaboration.',    pills: ['Access', 'RFQ', 'Messages'],            workspace: 'vendor-portal' },
+    'vendor-scorecard': { icon: Truck,         accent: '#8b5cf6', title: 'Vendor Scorecard',        desc: 'Ranked performance metrics, OTD rates, lead times, and NCR tracking.', pills: ['OTD', 'Lead Time', 'NCR'], route: '/vendor-scorecard' },
     'tool-crib':        { icon: Hammer,        accent: '#f59e0b', title: 'Tool Crib',               desc: 'Tool inventory, checkout and return, overdue tracking, condition reports, and asset value.',pills: ['Inventory', 'Checkout', 'Overdue'],     workspace: 'tools' },
     'contractors':      { icon: HardHat,       accent: '#06b6d4', title: 'Contractor Management',   desc: 'Contractor profiles, certifications, insurance tracking, job history, ratings, and spend.', pills: ['Profile', 'Certs', 'Jobs', 'Spend'],   workspace: 'contractors' },
     'loto':             { icon: LockKeyhole,   accent: '#dc2626', title: 'LOTO / Lockout-Tagout',   desc: 'Digital lockout-tagout permits, isolation points, energy source verification, and audit trail.', pills: ['Permits', 'Isolations', 'Audit'],  workspace: 'loto' },
     'it-department':    { icon: Server,        accent: '#6366f1', title: 'IT Department',           desc: 'Software licenses, hardware inventory, network infrastructure, and mobile device management.', pills: ['Software', 'Hardware', 'Network', 'Mobile'], workspace: 'it-department' },
+    'edge-mesh':        { icon: Network,       accent: '#818cf8', title: 'Edge Mesh',               desc: 'Manage artifact distribution and fleet sync status.', pills: ['Registry', 'Sync Status'], route: '/edge-mesh' },
     'it-metrics':       { icon: BarChart3,     accent: '#6366f1', title: 'IT Metrics',              desc: 'Financial intelligence: spending, depreciation, license utilization, hardware lifecycle, infrastructure health, and asset location map.', pills: ['Spend', 'Depreciation', 'Licenses', 'Lifecycle'], workspace: 'it-metrics' },
     'it-global-search': { icon: Globe,         accent: '#06b6d4', title: 'IT Global Search',        desc: 'Enterprise-wide IT asset search. Find any equipment across all plants by name, serial, tag, IP, or IMEI.', pills: ['Search', 'Cross-Plant', 'Locate'], workspace: 'it-global-search' },
     'it-alerts':        { icon: ShieldAlert,   accent: '#ef4444', title: 'IT Alerts',               desc: 'License expiry, warranty, offline infrastructure, MDM compliance, in-transit delays, and depreciation milestones.', pills: ['Expiry', 'Warranty', 'MDM', 'Transit'], workspace: 'it-alerts' },
@@ -112,6 +115,9 @@ const ALL_TILES = {
     'work-request-portal': { icon: ClipboardList, accent: '#10b981', title: 'Work Request Portal', desc: 'Submit a maintenance or repair request on behalf of an operator. No scanner needed — fill it out directly from any device.', pills: ['Submit', 'Status Check', 'No Login Needed'], workspace: 'work-request-portal' },
     'plant-setup':         { icon: Factory,       accent: '#0ea5e9', title: 'Plant Setup',          desc: 'Configure production model, units, SKUs, shifts, scheduling calendar, network settings, and facility parameters for this plant.', pills: ['Production', 'SKUs', 'Shifts', 'Network'], route: '/plant-setup' },
     'plant-onboarding':    { icon: Globe,         accent: '#6366f1', title: 'Enterprise Onboarding', desc: 'Provision a new facility using corporate master data — vendors, assets, SOPs, and parts pulled from the enterprise catalog.', pills: ['Vendors', 'Assets', 'SOPs', 'Parts'], route: '/plant-onboarding' },
+    'asset-lifecycle':     { icon: BarChart3,     accent: '#ec4899', title: 'Capital Replacement', desc: 'Repair vs replace recommendations based on accumulated costs, EUL, and MTBF trends.', pills: ['Forecast', 'Replace', 'Capital'], route: '/asset-lifecycle' },
+    'emissions': { icon: Leaf, accent: '#10b981', title: 'Emissions & Carbon', desc: 'Scope 1 and Scope 2 emissions tracking, carbon intensity per unit of production, and corporate ESG rollup with year-over-year trend.', pills: ['Scope 1', 'Scope 2', 'Intensity', 'ESG'], route: '/emissions' },
+    'digital-twin-sync': { icon: Link2, accent: '#6366f1', title: 'Digital Twin Integration', desc: 'Configure two-way sync with external digital twin platforms (Bentley iTwin, Siemens NX, PTC ThingWorx). Push asset registry outbound, pull spatial data inbound.', pills: ['Bentley', 'Siemens NX', 'ThingWorx', 'Sync History'], route: '/digital-twin-sync' },
 };
 
 const ROLE_TILES = {
@@ -120,33 +126,33 @@ const ROLE_TILES = {
     // Row 3: IT (group) | People & Comms (group) | Reports & Analytics | Plant Metrics
     // Last:  Corporate Analytics
     // Technicians: focused on their work queue, parts they need, safety, SOPs
-    technician: ['scanner', 'my-work-orders', 'parts-needed', 'assets-boms', 'quality-log', 'sops', 'tool-crib', 'loto', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
-    operator:   ['quality-log', 'sops', 'floor-plans', 'maps', 'work-request-portal'],
+    technician: ['scanner', 'my-work-orders', 'parts-needed', 'assets-boms', 'quality-log', 'operator-trust', 'sops', 'tool-crib', 'loto', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
+    operator:   ['quality-log', 'operator-trust', 'sops', 'floor-plans', 'maps', 'work-request-portal'],
     // Mechanics: same but with fleet/logistics and full asset access
-    mechanic:   ['scanner', 'my-work-orders', 'assets-boms', 'parts-needed', 'storeroom', 'logistics-fleet', 'tool-crib', 'loto', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
+    mechanic:   ['scanner', 'my-work-orders', 'assets-boms', 'parts-needed', 'storeroom', 'logistics-fleet', 'tool-crib', 'loto', 'sops', 'operator-trust', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
     // Engineers: assets, BOMs, engineering tools, supply chain visibility
-    engineer:   ['engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'sops', 'supply-chain', 'comms', 'floor-plans', 'maps', 'work-request-portal'],
+    engineer:   ['engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'sops', 'supply-chain', 'comms', 'floor-plans', 'maps', 'work-request-portal'],
     lab_tech:   ['quality-log', 'sops', 'safety', 'compliance', 'comms', 'floor-plans', 'maps', 'utilities'],
-    manager:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
+    manager:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'underwriter', 'sops',
+                 'asset-metrics', 'asset-lifecycle', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'scanner', 'work-request-portal'],
-    plant_manager: ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
+    plant_manager: ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'underwriter', 'sops',
+                 'asset-metrics', 'asset-lifecycle', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'scanner', 'work-request-portal'],
-    maintenance_manager: ['scanner', 'maintenance', 'my-work-orders', 'parts-needed', 'storeroom', 'asset-metrics', 'tool-crib', 'contractors', 'analytics', 'sops', 'loto', 'safety', 'floor-plans', 'maps', 'work-request-portal'],
-    corporate:  ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'storeroom', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'floor-plans', 'maps',
-                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'underwriter'],
-    executive:  ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'storeroom', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'floor-plans', 'maps',
-                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'underwriter'],
-    it_admin:   ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
-                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard',
+    maintenance_manager: ['scanner', 'maintenance', 'my-work-orders', 'parts-needed', 'storeroom', 'vendor-scorecard', 'asset-metrics', 'tool-crib', 'contractors', 'analytics', 'sops', 'loto', 'safety', 'operator-trust', 'floor-plans', 'maps', 'work-request-portal'],
+    corporate:  ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'storeroom', 'sops',
+                 'asset-metrics', 'asset-lifecycle', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'floor-plans', 'maps',
+                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'emissions', 'underwriter', 'edge-mesh'],
+    executive:  ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'storeroom', 'sops',
+                 'asset-metrics', 'asset-lifecycle', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'floor-plans', 'maps',
+                 'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'emissions', 'underwriter'],
+    it_admin:   ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'underwriter', 'sops',
+                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
+                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics'],
-    creator:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'parts-needed', 'storeroom', 'utilities', 'underwriter', 'sops',
-                 'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
-                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard',
+    creator:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'underwriter', 'sops',
+                 'asset-metrics', 'asset-lifecycle', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
+                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'corp-analytics', 'scanner', 'work-request-portal'],
     employee:   ['plant-overview', 'directory', 'comms', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
 };
@@ -159,12 +165,12 @@ const TILE_GROUPS = {
         title: 'Operations',
         desc: 'Work orders, PMs, assets, parts inventory, storeroom analytics, engineering tools, asset health metrics, and utilities.',
         pills: ['Jobs', 'Assets', 'Parts', 'Storeroom'],
-        children: ['maintenance', 'engineering-tools', 'asset-metrics', 'parts-needed', 'storeroom', 'utilities', 'work-request-portal']
+        children: ['maintenance', 'engineering-tools', 'operator-trust', 'asset-metrics', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'work-request-portal']
     },
-    'supply-chain-group': { icon: Package, accent: '#8b5cf6', title: 'Supply Chain', desc: 'Ingredients, packaging, chemicals, consumables — POs, receiving, vendor management, tool crib, and contractor management.', pills: ['Inventory', 'POs', 'Vendors', 'Tools', 'Contractors'], children: ['supply-chain', 'vendor-portal', 'tool-crib', 'contractors'] },
+    'supply-chain-group': { icon: Package, accent: '#8b5cf6', title: 'Supply Chain', desc: 'Ingredients, packaging, chemicals, consumables — POs, receiving, vendor management, tool crib, and contractor management.', pills: ['Inventory', 'POs', 'Vendors', 'Tools', 'Contractors'], children: ['supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'contractors'] },
     'safety-group': { icon: ShieldAlert, accent: '#ef4444', title: 'Safety & Risk', desc: 'Hot work permits, confined space, safety incidents, LOTO, compliance, OSHA tracking, and insurance risk scoring.', pills: ['Permits', 'LOTO', 'Compliance', 'Risk Score'], children: ['safety', 'loto', 'compliance', 'underwriter'] },
     'people-comms': { icon: Users, accent: '#6366f1', title: 'People & Comms', desc: 'Knowledge exchange messaging and enterprise directory.', pills: ['Chat', 'Directory'], children: ['comms', 'directory'] },
-    'it-group': { icon: Server, accent: '#6366f1', title: 'Information Technology', desc: 'IT asset management, software licensing, system administration, governance, and data integration.', pills: ['Assets', 'Metrics', 'Admin', 'Governance'], children: ['it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard'] },
+    'it-group': { icon: Server, accent: '#6366f1', title: 'Information Technology', desc: 'IT asset management, software licensing, system administration, governance, and data integration.', pills: ['Assets', 'Metrics', 'Admin', 'Governance'], children: ['it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync'] },
     'plant-setup-group': { icon: Factory, accent: '#0ea5e9', title: 'Facilities & Floor Plans', desc: 'Interactive facility floor plans, equipment placement zones, LiDAR 3D scanning, and site maps.', pills: ['Floor Plans', 'Campus Maps', 'CAD Models'], children: ['floor-plans', 'maps', 'plant-setup', 'plant-onboarding'] },
 };
 

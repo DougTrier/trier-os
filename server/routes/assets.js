@@ -1146,4 +1146,35 @@ router.delete('/:id/bom/:partId', (req, res) => {
     }
 });
 
+// ── PUT /api/assets/:id/emission-factor ──────────────────────────────────
+router.put('/:id/emission-factor', (req, res) => {
+    try {
+        const { scope1EmissionFactor, fuelType } = req.body;
+        const validFuels = ['natural_gas', 'propane', 'diesel', 'fuel_oil', 'coal'];
+        
+        if (typeof scope1EmissionFactor !== 'number' || scope1EmissionFactor < 0) {
+            return res.status(400).json({ error: 'scope1EmissionFactor must be a number >= 0' });
+        }
+        if (!validFuels.includes(fuelType)) {
+            return res.status(400).json({ error: 'Invalid fuelType' });
+        }
+
+        const plantDb = db.getDb();
+        plantDb.prepare('UPDATE Asset SET Scope1EmissionFactor = ?, FuelType = ? WHERE ID = ?')
+            .run(scope1EmissionFactor, fuelType, req.params.id);
+
+        const { logAudit } = require('../logistics_db');
+        logAudit(req.user?.Username || 'admin', 'ASSET_EMISSION_FACTOR_SET', req.headers['x-plant-id'], { 
+            assetId: req.params.id, 
+            scope1EmissionFactor, 
+            fuelType 
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('PUT /api/assets/:id/emission-factor error:', err);
+        res.status(500).json({ error: 'Failed to set emission factor' });
+    }
+});
+
 module.exports = router;

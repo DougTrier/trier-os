@@ -5,8 +5,9 @@ Security updates are strictly provided for the latest major version of Trier OS.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 3.3.0+  | :white_check_mark: |
-| < 3.3.0 | :x:                |
+| 3.5.x   | :white_check_mark: |
+| 3.4.x   | :white_check_mark: |
+| < 3.4.0 | :x:                |
 
 ## Reporting a Vulnerability
 

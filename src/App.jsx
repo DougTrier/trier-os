@@ -136,7 +136,15 @@ import SupplyChainView from './components/SupplyChainView';
 import USMapView from './components/USMapView';
 import UnderwriterView from './components/UnderwriterView';
 import StoreroomView from './components/StoreroomView';
+import ShiftHandoverView from './components/ShiftHandoverView';
+import GatekeeperAuditView from './components/GatekeeperAuditView';
+import OperatorTrustView from './components/OperatorTrustView';
+import VendorScorecardView from './components/VendorScorecardView';
+import EdgeMeshView from './components/EdgeMeshView';
+import EmissionsView from './components/EmissionsView';
+import DigitalTwinSyncView from './components/DigitalTwinSyncView';
 import TrainingView from './components/TrainingView';
+import AssetLifecycleView from './components/AssetLifecycleView';
 import PlantSetupView from './components/PlantSetupView';
 import ScannerWorkspace from './components/ScannerWorkspace';
 import useHardwareScanner from './hooks/useHardwareScanner';
@@ -1174,7 +1182,15 @@ function App() {
                         <Route path="/import-api" element={<ImportApiView currentPlant={selectedPlant} plantLabel={currentPlantLabel} userRole={activeUserRole} />} />
                         <Route path="/underwriter" element={<UnderwriterView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/storeroom" element={<StoreroomView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
+                        <Route path="/shift-handover" element={<ShiftHandoverView plantId={selectedPlant} />} />
+                        <Route path="/gatekeeper-audit" element={<GatekeeperAuditView plantId={selectedPlant} />} />
+                        <Route path="/operator-trust" element={<OperatorTrustView plantId={selectedPlant} />} />
+                        <Route path="/vendor-scorecard" element={<VendorScorecardView plantId={selectedPlant} />} />
+                        <Route path="/edge-mesh" element={<EdgeMeshView plantId={selectedPlant} />} />
+                        <Route path="/emissions" element={<EmissionsView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
+                        <Route path="/digital-twin-sync" element={<DigitalTwinSyncView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/training" element={<TrainingView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
+                        <Route path="/asset-lifecycle" element={<AssetLifecycleView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/scanner" element={<ScannerWorkspace plantId={scanPlantId} />} />
                         <Route path="/work-request-portal" element={<WorkRequestPortal />} />
                         <Route path="/plant-setup" element={<PlantSetupView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />

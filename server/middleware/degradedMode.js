@@ -43,6 +43,12 @@ let _modeSince      = new Date().toISOString();
 let _modeReason     = null;
 let _modeSetBy      = 'system'; // 'system' or username
 
+let _modeChangeHandler = null;
+
+function setModeChangeHandler(fn) {
+    _modeChangeHandler = fn;
+}
+
 function getMode() {
     return _currentMode;
 }
@@ -65,6 +71,10 @@ function _applyMode(mode, reason, setBy) {
     _modeReason  = reason;
     _modeSetBy   = setBy;
     console.log(`[DegradedMode] Mode changed: ${prev} → ${mode} (by ${setBy}${reason ? ': ' + reason : ''})`);
+    if (prev !== mode && _modeChangeHandler) {
+        try { _modeChangeHandler({ from: prev, to: mode, reason, setBy, since: _modeSince }); }
+        catch (err) { console.warn('[DegradedMode] Mode change handler error:', err.message); }
+    }
 }
 
 /**
@@ -129,3 +139,4 @@ module.exports.MODES     = MODES;
 module.exports.getMode   = getMode;
 module.exports.getModeInfo = getModeInfo;
 module.exports.setMode   = setMode;
+module.exports.setModeChangeHandler = setModeChangeHandler;

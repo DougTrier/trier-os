@@ -106,6 +106,8 @@ export default function ScanActionPrompt({
     const [error, setError] = useState('');
     const [screen, setScreen] = useState('main');           // main | hold_reason | return_window | team_close_confirm
     const [selectedHoldReason, setSelectedHoldReason] = useState(null);
+    const [selectedPin, setSelectedPin] = useState(null);
+    const [acknowledgedSops, setAcknowledgedSops] = useState([]);
 
     const { branch, context, wo, options = [], activeUsers = [] } = branchResponse || {};
 
@@ -227,6 +229,295 @@ export default function ScanActionPrompt({
     }
 
     // ── Main prompt screen ────────────────────────────────────────────────────
+    
+    // Branch: ROUTE_TO_DIGITAL_TWIN — schematic view with pins
+    if (branch === 'ROUTE_TO_DIGITAL_TWIN') {
+        const { schematic } = branchResponse;
+        
+        // If a pin is selected, show its failure modes
+        if (screen === 'pin_selected' && selectedPin) {
+            const pin = selectedPin;
+            return (
+                <div style={{ padding: '4px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                        <button onClick={() => { setScreen('main'); setSelectedPin(null); }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+                            <ArrowLeft size={20} />
+                        </button>
+                        <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>{pin?.PinLabel} — Select Issue</span>
+                    </div>
+                    {pin?.failureModes?.length > 0 ? (
+                        pin.failureModes.map((mode, i) => (
+                            <TapBtn
+                                key={mode}
+                                number={i + 1}
+                                variant="warning"
+                                onClick={async () => {
+                                    // Make a NEW scan request against the child asset, passing the failure mode
+                                    setSubmitting(true);
+                                    setError('');
+                                    try {
+                                        const res = await fetch('/api/scan', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'x-plant-id': plantId,
+                                            },
+                                            body: JSON.stringify({
+                                                scanId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                                                assetId: pin.LinkedAssetID,
+                                                userId,
+                                                deviceTimestamp: new Date().toISOString(),
+                                                segmentReason: mode
+                                            }),
+                                        });
+                                        const data = await res.json();
+                                        if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+                                        // The result of this new scan will be AUTO_CREATE_WO on the child asset.
+                                        onActionComplete(data);
+                                    } catch (err) {
+                                        setError(err.message);
+                                        setSubmitting(false);
+                                    }
+                                }}
+                                disabled={submitting}
+                            >
+                                {mode}
+                            </TapBtn>
+                        ))
+                    ) : (
+                        <TapBtn
+                            number={1}
+                            variant="warning"
+                            onClick={async () => {
+                                setSubmitting(true);
+                                setError('');
+                                try {
+                                    const res = await fetch('/api/scan', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'x-plant-id': plantId,
+                                        },
+                                        body: JSON.stringify({
+                                            scanId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                                            assetId: pin.LinkedAssetID,
+                                            userId,
+                                            deviceTimestamp: new Date().toISOString(),
+                                            segmentReason: 'General Maintenance'
+                                        }),
+                                    });
+                                    const data = await res.json();
+                                    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+                                    onActionComplete(data);
+                                } catch (err) {
+                                    setError(err.message);
+                                    setSubmitting(false);
+                                }
+                            }}
+                            disabled={submitting}
+                        >
+                            Start General Maintenance
+                        </TapBtn>
+                    )}
+                    {error && <ErrorBanner msg={error} />}
+                </div>
+            );
+        }
+
+        // Main schematic view
+        return (
+            <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
+                    Select Component
+                </div>
+                <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 16 }}>
+                    {schematic?.label || 'Digital Twin'}
+                </div>
+                
+                {/* Schematic Image Container */}
+                <div style={{ 
+                    position: 'relative', 
+                    width: '100%', 
+                    borderRadius: 8, 
+                    overflow: 'hidden',
+                    border: '1px solid #1e293b',
+                    background: '#0f172a'
+                }}>
+                    <img 
+                        src={schematic?.path} 
+                        alt="Digital Twin" 
+                        style={{ width: '100%', display: 'block' }}
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                        }}
+                    />
+                    <div style={{ display: 'none', padding: '40px 20px', color: '#f87171' }}>
+                        Image unavailable
+                    </div>
+
+                    {/* Pins */}
+                    {schematic?.pins?.map(pin => (
+                        <button
+                            key={pin.ID}
+                            onClick={() => {
+                                setSelectedPin(pin);
+                                setScreen('pin_selected');
+                            }}
+                            style={{
+                                position: 'absolute',
+                                left: `${pin.XPercent}%`,
+                                top: `${pin.YPercent}%`,
+                                transform: 'translate(-50%, -50%)',
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                background: 'rgba(239, 68, 68, 0.8)',
+                                border: '2px solid white',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                            title={pin.PinLabel}
+                        >
+                            <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'white' }} />
+                        </button>
+                    ))}
+                </div>
+
+                <button onClick={onCancel} style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 8, background: 'none', border: '1px solid #1e293b', color: '#475569', cursor: 'pointer', fontSize: 14 }}>
+                    Cancel
+                </button>
+            </div>
+        );
+    }
+    
+    // Branch: ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED
+    if (branch === 'ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED') {
+        return (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <AlertTriangle size={40} color="#f87171" style={{ marginBottom: 12 }} />
+                <div style={{ color: '#f87171', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Connect to Network</div>
+                <div style={{ color: '#94a3b8', fontSize: 13 }}>
+                    This asset has sub-components. Please connect to the network to select a specific component.
+                </div>
+                <button onClick={onCancel} style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 8, background: 'none', border: '1px solid #1e293b', color: '#475569', cursor: 'pointer', fontSize: 14 }}>
+                    Dismiss
+                </button>
+            </div>
+        );
+    }
+
+    // Branch: REQUIRE_SOP_ACK — tech must acknowledge updated SOPs before WO can be created
+    if (branch === 'REQUIRE_SOP_ACK') {
+        const { pendingSops, assetId } = branchResponse;
+        const allDone = acknowledgedSops.length >= pendingSops.length;
+
+        const handleAck = async (procId) => {
+            try {
+                const res = await fetch(`/api/sop-acknowledgment/${procId}/acknowledge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                    body: JSON.stringify({ plantId }),
+                });
+                if (res.ok) setAcknowledgedSops(prev => [...prev, procId]);
+            } catch (err) {
+                setError('Failed to record acknowledgment. Check your connection.');
+            }
+        };
+
+        const handleContinue = async () => {
+            // Re-scan with a fresh scanId — will now pass Step 3.7 and create the WO
+            setSubmitting(true);
+            try {
+                const res = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                    body: JSON.stringify({
+                        scanId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                        assetId,
+                        userId,
+                        deviceTimestamp: new Date().toISOString(),
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+                onActionComplete(data);
+            } catch (err) {
+                setError(err.message);
+                setSubmitting(false);
+            }
+        };
+
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <AlertTriangle size={20} color="#f59e0b" />
+                    <span style={{ color: '#f59e0b', fontSize: 15, fontWeight: 700 }}>
+                        Procedure Acknowledgment Required
+                    </span>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 16 }}>
+                    {branchResponse.message}
+                </p>
+
+                {pendingSops.map((sop, i) => {
+                    const done = acknowledgedSops.includes(sop.ID);
+                    return (
+                        <div key={sop.ID} style={{
+                            marginBottom: 12, padding: '12px 14px',
+                            borderRadius: 8, border: `1px solid ${done ? '#10b981' : '#334155'}`,
+                            background: done ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.03)',
+                        }}>
+                            <div style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                                {sop.ProcedureCode ? `${sop.ProcedureCode} — ` : ''}{sop.Descript || 'Unnamed Procedure'}
+                            </div>
+                            <div style={{ color: '#64748b', fontSize: 12, marginBottom: 10 }}>
+                                Updated: {sop.Updated ? new Date(sop.Updated).toLocaleDateString() : 'Unknown'}
+                            </div>
+                            {!done ? (
+                                <TapBtn
+                                    number={i + 1}
+                                    variant="warning"
+                                    onClick={() => handleAck(sop.ID)}
+                                >
+                                    I have read and understood this procedure
+                                </TapBtn>
+                            ) : (
+                                <div style={{ color: '#10b981', fontSize: 13, fontWeight: 600 }}>
+                                    ✓ Acknowledged
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {allDone && (
+                    <TapBtn
+                        number={pendingSops.length + 1}
+                        variant="success"
+                        onClick={handleContinue}
+                        disabled={submitting}
+                        style={{ marginTop: 8 }}
+                    >
+                        {submitting ? 'Starting work…' : 'Continue — Start Work'}
+                    </TapBtn>
+                )}
+                {error && <ErrorBanner msg={error} />}
+
+                <button onClick={onCancel} style={{
+                    marginTop: 12, width: '100%', padding: '10px',
+                    borderRadius: 8, background: 'none', border: '1px solid #1e293b',
+                    color: '#475569', cursor: 'pointer', fontSize: 13,
+                }}>
+                    Cancel
+                </button>
+            </div>
+        );
+    }
+
     // Branch: AUTO_CREATE_WO — work started, no further action needed
     if (branch === 'AUTO_CREATE_WO') {
         return (

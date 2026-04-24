@@ -97,6 +97,7 @@ export default function CatalogViewer() {
     const [sortCol, setSortCol] = useState('');
     const [sortDir, setSortDir] = useState('asc');
     const [expandedRow, setExpandedRow] = useState(null);
+    const [verticalFilter, setVerticalFilter] = useState('');
 
     // Translate database values (categories, descriptions)
     const translateValue = useCallback((colKey, value) => {
@@ -149,8 +150,14 @@ export default function CatalogViewer() {
             params.set('sort', sortCol);
             params.set('order', sortDir);
         }
+        
+        let endpoint = tab.endpoint;
+        if (tab.key === 'equipment' && verticalFilter) {
+            params.set('vertical', verticalFilter);
+        }
+
         try {
-            const res = await fetch(`${tab.endpoint}?${params}`, {
+            const res = await fetch(`${endpoint}?${params}`, {
                 headers: {  }
             });
             const json = await res.json();
@@ -159,12 +166,12 @@ export default function CatalogViewer() {
             console.error('Catalog fetch error:', e);
         }
         setLoading(false);
-    }, [activeTab, debouncedQuery, page, pageSize, sortCol, sortDir]);
+    }, [activeTab, debouncedQuery, page, pageSize, sortCol, sortDir, verticalFilter]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
     // Reset page on tab/search change
-    useEffect(() => { setPage(0); setExpandedRow(null); }, [activeTab, debouncedQuery]);
+    useEffect(() => { setPage(0); setExpandedRow(null); }, [activeTab, debouncedQuery, verticalFilter]);
 
     const columns = COLUMNS[activeTab] || [];
     const totalPages = Math.ceil((data.total || 0) / pageSize);
@@ -286,7 +293,28 @@ export default function CatalogViewer() {
                         );
                     })}
                 </div>
-                <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder={t('catalog.searchPlaceholder', 'Search equipment...')} style={{ minWidth: 280 }} />
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    {activeTab === 'equipment' && (
+                        <select
+                            value={verticalFilter}
+                            onChange={e => setVerticalFilter(e.target.value)}
+                            style={{
+                                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                                color: '#fff', borderRadius: '6px', padding: '8px 12px', fontSize: '0.85rem',
+                            }}
+                        >
+                            <option value="">All Industries</option>
+                            <option value="dairy">Dairy</option>
+                            <option value="manufacturing">Manufacturing & Automotive</option>
+                            <option value="mining">Mining & Extraction</option>
+                            <option value="energy">Energy Plants</option>
+                            <option value="agro">Agro-Industry</option>
+                            <option value="water">Water & Wastewater</option>
+                            <option value="logistics">Logistics & Ports</option>
+                        </select>
+                    )}
+                    <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder={t('catalog.searchPlaceholder', 'Search equipment...')} style={{ minWidth: 280 }} />
+                </div>
             </div>
 
             {/* Table */}
