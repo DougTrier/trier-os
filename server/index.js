@@ -2132,6 +2132,7 @@ const _httpServer = app.listen(PORT, '0.0.0.0', async () => {
             haSync.installSyncOnAllPlants();
             console.log('  ✅ [HA] Sync triggers installed on all plants');
             haSync.startSyncTimer();
+            require('./services/usage_meter').startMeteringCron();
             setInterval(() => haSync.cleanupLedger(), 24 * 60 * 60 * 1000);
         } catch (err) {
             console.error('  ❌ [HA] Sync initialization failed:', err.message);

@@ -48,6 +48,7 @@ export default function ShiftHandoverView({ plantId }) {
         }
     }, []);
 
+    // incoming and history tabs both display the same handover list — filter is applied client-side below
     useEffect(() => {
         if (tab === 'incoming' || tab === 'history') {
             loadHistory();
@@ -94,6 +95,7 @@ export default function ShiftHandoverView({ plantId }) {
         }
     };
 
+    // PENDING_ACK = submitted but incoming shift has not yet signed; ACKNOWLEDGED = chain of custody is closed
     const pendingHandovers = handovers.filter(h => h.Status === 'PENDING_ACK');
     const pastHandovers = handovers.filter(h => h.Status === 'ACKNOWLEDGED');
 
@@ -102,6 +104,7 @@ export default function ShiftHandoverView({ plantId }) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
                 {items.map((item, index) => {
+                    // preview endpoint returns camelCase; persisted handover items return PascalCase — normalize both
                     const type = item.ItemType || item.itemType;
                     const refId = item.RefID || item.refId;
                     const notes = item.Notes || item.notes;

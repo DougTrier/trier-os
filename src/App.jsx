@@ -144,6 +144,7 @@ import EdgeMeshView from './components/EdgeMeshView';
 import EmissionsView from './components/EmissionsView';
 import DigitalTwinSyncView from './components/DigitalTwinSyncView';
 import TimeMachineView from './components/TimeMachineView';
+import SaaSAdminView from './components/SaaSAdminView';
 import TrainingView from './components/TrainingView';
 import AssetLifecycleView from './components/AssetLifecycleView';
 import PlantSetupView from './components/PlantSetupView';
@@ -1191,6 +1192,7 @@ function App() {
                         <Route path="/emissions" element={<EmissionsView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/digital-twin-sync" element={<DigitalTwinSyncView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/time-machine" element={<TimeMachineView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
+                        <Route path="/saas-admin" element={<SaaSAdminView plantLabel={currentPlantLabel} />} />
                         <Route path="/training" element={<TrainingView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/asset-lifecycle" element={<AssetLifecycleView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/scanner" element={<ScannerWorkspace plantId={scanPlantId} />} />

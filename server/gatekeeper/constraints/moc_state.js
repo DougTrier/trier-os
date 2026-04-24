@@ -2,6 +2,7 @@
 
 const { db: logisticsDb } = require('../../logistics_db');
 
+// approval gate: MOC must be UNDER_REVIEW — submitted by the initiator but not yet approved or rejected
 function checkUnderReview(intent) {
     try {
         const row = logisticsDb.prepare(`
@@ -34,6 +35,7 @@ function checkUnderReview(intent) {
             failed: []
         };
     } catch (err) {
+        // internal DB error — empty failed[] signals a crash, not a named constraint failure; caller distinguishes via causalExplanation
         return {
             certified: false,
             passed: [],
@@ -43,6 +45,7 @@ function checkUnderReview(intent) {
     }
 }
 
+// close gate: APPROVED = decision made, IMPLEMENTING = changes in progress — both are valid states for closure
 function checkCloseable(intent) {
     try {
         const row = logisticsDb.prepare(`
@@ -76,6 +79,7 @@ function checkCloseable(intent) {
             failed: []
         };
     } catch (err) {
+        // internal DB error — empty failed[] signals a crash, not a named constraint failure; caller distinguishes via causalExplanation
         return {
             certified: false,
             passed: [],

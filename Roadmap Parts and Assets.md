@@ -235,7 +235,7 @@ companies and their supply chains -- this extends what is already built.
 - Corporate rollup: total Scope 1+2 by site, trend vs prior year
 - No new sensor infrastructure required -- uses existing Energy module readings
 
-### [DISCUSSION] SaaS Enablement Layer
+### [COMPLETE] SaaS Enablement Layer
 Trier OS is not a SaaS product, but ecosystem builders may want to wrap it in a
 SaaS offering. Building the right seams in now prevents a rewrite later and keeps
 control over how the platform is extended.
@@ -246,9 +246,22 @@ control over how the platform is extended.
 - Extension point documentation: formal SDK guide for ecosystem builders
 - Trier OS does not operate the SaaS infrastructure -- it only provides the plumbing
 
-### [DISCUSSION] Native Mobile App (iOS / Android)
-Native shell (Capacitor or React Native) for push notifications, deeper camera integration,
-and enterprise MDM distribution.
+### [COMPLETE] Native Mobile App (iOS / Android) — Architectural Decision: PWA
+Evaluated Capacitor and React Native wrappers. Rejected both as net-negative for this
+deployment model.
+
+Rationale: Trier OS runs airgapped on an IT-managed LAN. The PWA already covers the
+full capability set — QR/camera scanning via getUserMedia, offline operation via the LAN
+hub and service worker, any-device access with zero install friction, and instant
+zero-touch updates on every server deploy. Web Push covers iOS 16.4+ (all current MDM
+fleets) and all Android targets.
+
+A native build pipeline would introduce: Xcode/Android Studio toolchains, enterprise
+signing certs, IPA/APK artifact management, and a mandatory IT deployment touchpoint on
+every release — with no functional gain over the existing PWA.
+
+Decision: PWA is the Trier OS mobile app. This is not a gap; it is a deliberate
+architectural choice. See References/Mobile_App_Strategy.md for full tradeoff analysis.
 
 ### [COMPLETE] Digital Twin Integration
 Two-way sync between Trier OS asset registry and external digital twin platforms.
@@ -261,7 +274,7 @@ Two-way sync between Trier OS asset registry and external digital twin platforms
 > category. Each is defensible because it only works with a deterministic + unified
 > architecture -- competitors cannot bolt them on.
 
-### [DISCUSSION] Deterministic Time Machine (Plant State Rollback + Branching Simulation)
+### [COMPLETE] Deterministic Time Machine (Plant State Rollback + Branching Simulation)
 Not just event replay -- controlled rewind to any point T-X, decision modification, and
 deterministic forward simulation from that branch.
 

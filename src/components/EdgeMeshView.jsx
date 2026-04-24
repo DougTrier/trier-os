@@ -1,3 +1,5 @@
+// Copyright © 2026 Trier OS. All Rights Reserved.
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Network, Upload, RefreshCw, CheckCircle2, Clock, AlertTriangle, X, FileDigit } from 'lucide-react';
 
@@ -13,10 +15,13 @@ export default function EdgeMeshView({ plantId }) {
     const [registering, setRegistering] = useState(false);
     const [registerError, setRegisterError] = useState(null);
 
+    // memoized so the function reference stays stable — a new function each render would retrigger the useEffect that lists it as a dep
     const makeAPI = useMemo(() => {
         return (path, opts = {}) => {
+            // edge mesh is always enterprise-scoped; individual plants do not manage artifact distribution
             const headers = { 'x-plant-id': 'all_sites', ...opts.headers };
             if (!(opts.body instanceof FormData)) {
+                // fetch sets its own multipart boundary for FormData — do not override Content-Type here
                 headers['Content-Type'] = 'application/json';
             }
             return fetch(`/api${path}`, { ...opts, headers }).then(r => {
@@ -57,6 +62,7 @@ export default function EdgeMeshView({ plantId }) {
                 body: JSON.stringify({
                     name: registerForm.name,
                     type: registerForm.type,
+                    // API expects empty string for global scope; 'all_sites' is a UI-only sentinel
                     plantId: registerForm.plantId === 'all_sites' ? '' : registerForm.plantId,
                     filePath: registerForm.filePath
                 })
@@ -78,6 +84,7 @@ export default function EdgeMeshView({ plantId }) {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    // group sync rows by plant so the UI renders a per-plant section header rather than a flat list
     const groupedSync = useMemo(() => {
         const groups = {};
         for (const row of syncStatus) {

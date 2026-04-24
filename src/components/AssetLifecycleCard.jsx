@@ -12,6 +12,8 @@ export default function AssetLifecycleCard({ assetId, plantId }) {
     useEffect(() => {
         if (!assetId || !plantId) return;
         setLoading(true);
+        // no per-asset endpoint exists — load the full list and filter client-side;
+        // acceptable because the lifecycle view page already caches the same dataset on the same route
         fetch('/api/asset-lifecycle/recommendations', {
             headers: { 'x-plant-id': plantId }
         })
@@ -19,6 +21,7 @@ export default function AssetLifecycleCard({ assetId, plantId }) {
         .then(data => {
             if (data && data.recommendations) {
                 const found = data.recommendations.find(r => r.assetId === assetId);
+                // absence of a recommendation record means the asset is below all threshold triggers — healthy by definition
                 setRec(found || null);
             }
         })
@@ -47,6 +50,7 @@ export default function AssetLifecycleCard({ assetId, plantId }) {
 
     const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
 
+    // maps the three recommendation tiers to visual treatment — status codes come from the route's threshold logic
     const getStatusStyles = () => {
         if (rec.status === 'REPLACE_IMMEDIATELY') return { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.3)', text: '#fca5a5', icon: <AlertCircle size={24} color="#ef4444" /> };
         if (rec.status === 'PLAN_REPLACEMENT') return { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.3)', text: '#fcd34d', icon: <AlertTriangle size={24} color="#f59e0b" /> };

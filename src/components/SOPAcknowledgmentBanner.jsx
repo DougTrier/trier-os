@@ -39,6 +39,7 @@ export default function SOPAcknowledgmentBanner({ plantId }) {
             });
             
             if (res.ok) {
+                // optimistic removal: update list immediately without re-fetching, keeps the modal responsive mid-session
                 setPendingSOPs(prev => prev.filter(p => p.ID !== procId));
             }
         } catch (err) {
@@ -46,6 +47,8 @@ export default function SOPAcknowledgmentBanner({ plantId }) {
         }
     };
     
+    // intentional silent mount — this component renders nothing until there are items requiring action;
+    // the parent does not need to check for pending SOPs itself
     if (loading || pendingSOPs.length === 0) return null;
     
     return (

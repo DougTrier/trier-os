@@ -17,6 +17,7 @@ export default function AssetLifecycleView({ plantId, plantLabel }) {
         setLoading(true);
         const headers = { 'x-plant-id': plantId };
         
+        // all three datasets load in parallel; corporate rollup resolves null for plant-scoped views (not applicable per-plant)
         Promise.all([
             fetch('/api/asset-lifecycle/recommendations', { headers }).then(r => r.json()),
             fetch('/api/asset-lifecycle/forecast', { headers }).then(r => r.json()),
@@ -115,6 +116,7 @@ export default function AssetLifecycleView({ plantId, plantLabel }) {
                                                 </td>
                                                 <td style={{ padding: '12px 16px' }}>{formatCurrency(r.replacementCost)}</td>
                                                 <td style={{ padding: '12px 16px', color: '#f87171' }}>{formatCurrency(r.cumulativeRepairCost)}</td>
+                                                {/* business thresholds: ≥75% = critical replace (red), ≥50% = plan (amber), <50% = healthy (green) */}
                                                 <td style={{ padding: '12px 16px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                         <span style={{ fontWeight: 600, color: r.repairToReplaceRatio >= 75 ? '#ef4444' : r.repairToReplaceRatio >= 50 ? '#f59e0b' : '#10b981' }}>

@@ -3949,6 +3949,387 @@ const AboutView = () => {
                     ]
                 },
             ]
+        },
+        {
+            section: t('manual.s35.title', 'Part LIX: Emissions & Carbon Intensity Tracking'),
+            id: 'emissions-carbon',
+            navigateTo: '/emissions',
+            filePath: 'src/components/EmissionsView.jsx',
+            icon: <Activity size={22} />,
+            content: t('manual.s35.content', 'ESG-grade Scope 1 and Scope 2 emissions tracking built on top of the existing Energy module. No new sensor infrastructure required — all calculations use meter readings already logged in the system. Generates monthly and annual ESG reports exportable as PDF and CSV.'),
+            subsections: [
+                {
+                    title: t('manual.sub.173', 'LIX.1 Scope 1 & Scope 2 Emissions'),
+                    items: [
+                        t('manual.item.1623', 'Scope 1 — Direct Combustion: Emissions from on-site fuel use. Tracked per asset: natural gas boilers, diesel generators, propane process heaters, and fleet vehicles. Each asset with a combustion fuel type generates a CO2-equivalent figure from its logged meter readings.'),
+                        t('manual.item.1624', 'Scope 2 — Purchased Electricity: Plant-level electricity consumption (kWh from the Energy module) multiplied by the applicable regional grid carbon intensity factor. Grid factors are configurable per plant to reflect local utility mix.'),
+                        t('manual.item.1625', 'Carbon Intensity per Unit: Total plant emissions divided by production output — expressed as kg CO2e per unit produced. Tracks whether efficiency improvements are reducing the carbon cost per unit of output over time.'),
+                        t('manual.item.1626', 'Corporate Rollup: The /emissions corporate view aggregates Scope 1 and Scope 2 across all plants. Plants are ranked by total emissions and by carbon intensity per unit — identifying the highest-impact facilities and tracking year-over-year improvement trends.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.174', 'LIX.2 ESG Report Export'),
+                    items: [
+                        t('manual.item.1627', 'Monthly ESG Report: Generates a structured summary of Scope 1 and Scope 2 emissions for the selected month. Includes per-asset Scope 1 breakdown, total electricity-driven Scope 2 figure, and carbon intensity vs. production output.'),
+                        t('manual.item.1628', 'Annual ESG Report: Full-year rollup with month-by-month trend, year-over-year comparison, and a corporate summary covering all facilities. Export formats: PDF (for board and regulatory submissions) and CSV (for ESG data platforms and auditors).'),
+                        t('manual.item.1629', 'Access: Mission Control → Emissions & Carbon tile. Corporate view requires Manager-level access or above. Plant-level view is available to Engineers and Plant Managers.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s36.title', 'Part LX: Vendor / Supplier Performance Scorecard'),
+            id: 'vendor-scorecard',
+            navigateTo: '/vendor-scorecard',
+            filePath: 'src/components/VendorScorecardView.jsx',
+            icon: <Star size={22} />,
+            content: t('manual.s36.content', 'Automatic vendor performance analytics built entirely on existing purchase order and parts data — no new data entry required. Ranks every supplier on delivery, quality, and lead time accuracy, with a corporate rollup identifying the worst performers by plant and by spend volume.'),
+            subsections: [
+                {
+                    title: t('manual.sub.175', 'LX.1 Scorecard Metrics'),
+                    items: [
+                        t('manual.item.1630', 'On-Time Delivery Rate: Compares the PO due date to the actual receipt date in the Receiving Log. A receipt on or before the due date counts as on-time. Rate is expressed as a percentage over the selected period.'),
+                        t('manual.item.1631', 'Quality Defect Rate: NCR (Non-Conformance Report) count attributed to vendor-supplied parts, expressed as a defect rate against total parts received from that vendor. High defect rate triggers a quality flag on the scorecard.'),
+                        t('manual.item.1632', 'Lead Time Accuracy: Promised lead time (from the PO) vs. actual elapsed days from order to receipt. Chronic over-promising scores negatively regardless of whether the delivery was technically on time.'),
+                        t('manual.item.1633', 'Spend Volume: Total dollar value of parts received from each vendor in the period. Used to weight rankings — a 60% OTD rate from a high-spend vendor is a higher priority concern than the same rate from a minor supplier.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.176', 'LX.2 Corporate Rollup'),
+                    items: [
+                        t('manual.item.1634', 'Worst Performers by Plant: Identifies which vendors are failing most severely at each facility. Plant managers can see at a glance which suppliers are causing the most disruption to their local operation.'),
+                        t('manual.item.1635', 'Worst Performers by Spend: Enterprise-level view ranking vendors by performance weighted against total spend across all plants. Flags high-spend, low-performance suppliers for enterprise-level renegotiation or replacement.'),
+                        t('manual.item.1636', 'Access: Mission Control → Vendor Scorecard tile. Available to Plant Managers, Maintenance Managers, and Corporate/Executive roles.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s37.title', 'Part LXI: Asset Lifecycle & Capital Replacement Planning'),
+            id: 'asset-lifecycle',
+            navigateTo: '/assets',
+            filePath: 'src/components/AssetLifecycleView.jsx',
+            icon: <History size={22} />,
+            content: t('manual.s37.content', 'Answers the repair-vs-replace question with data instead of gut feel. Tracks cumulative repair costs against replacement costs and Expected Useful Life to generate replacement recommendations, payback calculations, and a multi-year capital expenditure forecast.'),
+            subsections: [
+                {
+                    title: t('manual.sub.177', 'LXI.1 Repair vs. Replace Analytics'),
+                    items: [
+                        t('manual.item.1637', "Expected Useful Life (EUL): Configured per asset class in Master Equipment. When an asset's age approaches or exceeds its EUL, it is flagged for replacement review regardless of current repair cost status."),
+                        t('manual.item.1638', 'Cumulative Repair Cost: Automatically summed from all closed work orders linked to the asset. No manual entry — the system calculates this from the WO labor and parts history already in the system.'),
+                        t('manual.item.1639', 'Replacement Recommendation Trigger: A recommendation is generated when cumulative repair cost exceeds the configured threshold (default: 60% of replacement cost), MTBF trend crosses the critical threshold, or the asset age exceeds EUL.'),
+                        t('manual.item.1640', 'Payback Period Calculator: Compares the current annual repair spend rate against the annualized cost of replacement (replacement cost divided by expected new asset life). Displays the break-even point in months.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.178', 'LXI.2 Capital Expenditure Forecast'),
+                    items: [
+                        t('manual.item.1641', '1 / 3 / 5 Year Forecast: Projects all assets expected to hit replacement threshold within 1, 3, and 5 years. Allows capital budget planning cycles to be driven by asset condition data rather than annual guesswork.'),
+                        t('manual.item.1642', 'Corporate Rollup: Total replacement liability by plant and by asset class across all facilities. Executives can see where capital concentration risk is highest across the enterprise.'),
+                        t('manual.item.1643', 'Access: Mission Control → Capital Replacement tile. Available to Engineers, Plant Managers, and Corporate/Executive roles.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s38.title', 'Part LXII: Spare Parts Inventory Optimization'),
+            id: 'spare-parts-optimization',
+            navigateTo: '/storeroom',
+            filePath: 'src/components/StoreroomView.jsx',
+            icon: <Database size={22} />,
+            content: t('manual.s38.content', 'Stocking recommendations driven by MTBF data and vendor lead times. Works entirely from data already in the system — no new inputs required. Surfaces dead stock, critical spare gaps, and reorder recommendations in the Storeroom view.'),
+            subsections: [
+                {
+                    title: t('manual.sub.179', 'LXII.1 Reorder Intelligence'),
+                    items: [
+                        t('manual.item.1644', 'Min/Max Reorder Calculation: Reorder point = (average daily usage × vendor lead time days) + safety stock factor. Updated automatically as usage patterns change over time. Displayed on each part record and surfaced in the reorder suggestion queue.'),
+                        t('manual.item.1645', 'Critical Spare Flagging: Parts whose absence would cause a Severity 1 production stoppage can be designated as Critical Spares. Critical spare stockout risk is elevated in the alert queue and reported separately to plant and corporate management.'),
+                        t('manual.item.1646', 'Reorder Suggestion Queue: Surfaces all parts currently below their calculated safety stock level, sorted by criticality. Plant buyers can action reorders directly from this list without searching through the full inventory.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.180', 'LXII.2 Dead Stock & Stockout Risk'),
+                    items: [
+                        t('manual.item.1647', 'Dead Stock Identification: Parts with zero work order consumption in the past 12 months are flagged as dead stock. Value of dead stock by plant is reported in the corporate storeroom rollup — a direct measure of capital tied up in unused parts.'),
+                        t('manual.item.1648', 'Stockout Risk Alert: Real-time flag for any critical spare whose quantity on hand has fallen below the calculated safety stock threshold. Pushes into the plant alert queue so buyers are notified before a stockout occurs, not after.'),
+                        t('manual.item.1649', 'ABC Classification: Parts are automatically classified as A (high-value, low-volume), B (medium), or C (low-value, high-volume). Classification is used to prioritize storeroom management attention and optimize physical storage layout.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s39.title', 'Part LXIII: Scan-to-Segment Work Order (Digital Twin Pin Entry)'),
+            id: 'scan-to-segment',
+            navigateTo: '/scan',
+            filePath: 'src/components/ScanView.jsx',
+            icon: <Scan size={22} />,
+            content: t('manual.s39.content', 'For complex machines with multiple sub-components, scanning the top-level asset QR no longer forces labor and parts to the machine level. The Digital Twin schematic appears and the technician taps the specific segment that failed — work orders are created against the exact sub-component.'),
+            subsections: [
+                {
+                    title: t('manual.sub.181', 'LXIII.1 Scan-to-Segment Flow'),
+                    items: [
+                        t('manual.item.1650', 'Step 1 — Scan the asset QR code. The system detects that this asset has a Digital Twin schematic with defined sub-component pins.'),
+                        t('manual.item.1651', 'Step 2 — The Digital Twin schematic loads on screen. Each sub-component is shown as a pin (e.g., Blowmold, Filler, Conveyor). Tap the segment that failed.'),
+                        t('manual.item.1652', "Step 3 — The pin's LinkedAssetID resolves the child asset. CommonFailureModes for that segment surface as one-tap job type options — no typing required."),
+                        t('manual.item.1653', 'Step 4 — The work order is created against the child AssetID (the segment), not the parent machine. The AssetParts bill of materials for that segment auto-populates the parts list.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.182', 'LXIII.2 What Scan-to-Segment Unlocks'),
+                    items: [
+                        t('manual.item.1654', 'Labor and parts are attributed to the correct sub-component. Over time, this builds per-segment MTBF, failure frequency, and cost histories — something impossible when all work is logged against the top-level machine.'),
+                        t('manual.item.1655', 'CommonFailureModes from MasterEquipment drive job type suggestions with one tap. This preserves the zero-keystroke contract even for complex multi-segment machines.'),
+                        t('manual.item.1656', 'Prerequisites: Digital Twin schematics must be loaded for the asset with pins placed on sub-components and LinkedAssetIDs set. No schema changes are required — digital_twin_pins.LinkedAssetID and the asset hierarchy cover it.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s40.title', 'Part LXIV: Shift Handover / Digital Turnover Log'),
+            id: 'shift-handover',
+            navigateTo: '/shift-handover',
+            filePath: 'src/components/ShiftHandoverView.jsx',
+            icon: <ClipboardList size={22} />,
+            content: t('manual.s40.content', "A formal digital shift-to-shift transfer record. The outgoing shift documents completed work, open work orders, failures, and safety concerns. The incoming shift acknowledges before taking over — replacing the 'outgoing shift didn't tell us' incident root cause with a timestamped, signed record."),
+            subsections: [
+                {
+                    title: t('manual.sub.183', 'LXIV.1 Creating a Turnover Log'),
+                    items: [
+                        t('manual.item.1657', 'At shift end, the outgoing supervisor or lead tech opens the Shift Handover module and creates a new turnover entry. The system pre-populates the date, shift, plant, and supervisor from the session context.'),
+                        t('manual.item.1658', 'The log entry captures: completed work orders (linked directly from WO records), open work orders still in progress, equipment that broke during the shift, any active holds or lockouts, safety flags or near-misses, and a freetext notes field.'),
+                        t('manual.item.1659', 'Active holds, safety flags, and open critical WOs are highlighted so the incoming shift cannot miss them. The log is read-only once submitted — no retroactive edits.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.184', 'LXIV.2 Acknowledgment & Chain of Custody'),
+                    items: [
+                        t('manual.item.1660', 'The incoming shift supervisor opens the pending turnover log, reviews all flagged items, and clicks Acknowledge. This creates a digital signature record — name, timestamp, shift — permanently attached to the log.'),
+                        t('manual.item.1661', 'Until acknowledged, the incoming shift has an unresolved item in their Mission Control review queue. They cannot dismiss it — they must read and sign the log.'),
+                        t('manual.item.1662', 'All turnover logs feed into the incident investigation chain. If a failure occurs in the first hours of a new shift, investigators can pull the turnover log to see exactly what the incoming shift was told at handover time.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s41.title', 'Part LXV: SOP Re-Acknowledgment on MOC Change'),
+            id: 'sop-reack',
+            navigateTo: '/sop',
+            filePath: 'src/components/SOPView.jsx',
+            icon: <BookOpen size={22} />,
+            content: t('manual.s41.content', 'Closes the gap between the Management of Change system and field execution. When an approved MOC changes a procedure, all linked SOPs are automatically flagged for re-acknowledgment — technicians must read and sign the updated version before their next job assignment.'),
+            subsections: [
+                {
+                    title: t('manual.sub.185', 'LXV.1 How SOP Re-Acknowledgment Works'),
+                    items: [
+                        t('manual.item.1663', 'On MOC Close: When a Management of Change record is closed with an Approved status, the system scans all SOPs linked to that MOC. Each linked SOP is flagged as requiring re-acknowledgment — a new version stamp is attached.'),
+                        t('manual.item.1664', 'WO Assignment Gate: When a work order is being assigned to a technician, the system checks whether that technician has any outstanding SOP re-acknowledgments for the procedures linked to that WO. Behavior is configurable: Warn (proceed with alert) or Hard-Block (assignment fails until acknowledged).'),
+                        t('manual.item.1665', 'Acknowledgment Record: When the technician reads the updated SOP and clicks Acknowledge, a record is created linking: technician name, SOP version acknowledged, timestamp, and the originating MOC number.'),
+                        t('manual.item.1666', 'Compliance Scorecard: Outstanding re-acknowledgments appear in the Training & Competency compliance scorecard. Plant managers can see which technicians are behind on acknowledgments and which SOPs have the highest outstanding counts.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s42.title', 'Part LXVI: Industry Vertical Catalog Packs'),
+            id: 'industry-catalogs',
+            navigateTo: '/master-catalog',
+            filePath: 'src/components/MasterCatalogView.jsx',
+            icon: <List size={22} />,
+            content: t('manual.s42.content', 'Trier OS ships with pre-built master data catalogs for six industrial verticals beyond the core dairy/food manufacturing catalog. Each vertical includes equipment types, common failure modes, parts, and cross-references to the shared core catalog — eliminating the blank-slate setup problem for new plant deployments.'),
+            subsections: [
+                {
+                    title: t('manual.sub.186', 'LXVI.1 Available Industry Catalogs'),
+                    items: [
+                        t('manual.item.1667', 'Manufacturing & Automotive: Robotic arm components, end-effectors, servo drives, CNC tooling, mold sets, press dies, fixturing, and assembly line conveyor components. CommonFailureModes seeded per equipment class.'),
+                        t('manual.item.1668', 'Mining & Extraction: Drill bits, rock bolts, shotcrete equipment, conveyor belt components, idlers, pulleys, haul truck drivetrain and hydraulic components, ventilation fans, and refuge chambers. GIS-linked asset locations tie to the 3D mapping module.'),
+                        t('manual.item.1669', 'Energy Plants: Turbine blades, seals, bearings, switchgear, breakers, transformer components, instrumentation (pressure transmitters, RTDs, flow meters), and cooling tower components.'),
+                        t('manual.item.1670', 'Logistics & Ports: Crane wire rope, sheaves, spreaders, RTG and reach stacker components, forklift mast and hydraulic components, dock levelers, seals, and restraints.'),
+                        t('manual.item.1671', 'Agro-Industry: Harvester blades, threshing components, grain augers, irrigation pumps, pivot components, food-grade seals, sanitary fittings, CIP components, and cold storage refrigeration components.'),
+                        t('manual.item.1672', 'Water & Wastewater: Pumps, impellers, mechanical seals, clarifier mechanisms, membrane filtration elements, chemical dosing systems, blower components, and SCADA instrument components. Heavily regulated (EPA, state DEQ) — catalog is designed for PTW and LOTO-compliant workflows.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.187', 'LXVI.2 Cross-Catalog Reference Engine'),
+                    items: [
+                        t('manual.item.1673', 'OEM Cross-Reference: Maps manufacturer part numbers to the master SKU. When a technician searches for a part by OEM number, the system returns the master record plus all equivalent aftermarket options.'),
+                        t('manual.item.1674', 'Industry-to-Core Mapping: Every vertical catalog entry links to its shared core catalog equivalent. Corporate spend rollups use the core SKU regardless of which vertical the part was ordered through — enabling true enterprise spend analysis across all facilities and verticals.'),
+                        t('manual.item.1675', "Search Coverage: A single parts search returns results from the plant's own vertical catalog, the shared core catalog, and cross-reference matches simultaneously. Technicians never need to know which catalog a part lives in."),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s43.title', 'Part LXVII: REST API Public Specification (OpenAPI 3.1)'),
+            id: 'rest-api',
+            navigateTo: '/api-docs',
+            filePath: 'server/routes/',
+            icon: <Key size={22} />,
+            content: t('manual.s43.content', 'A machine-readable OpenAPI 3.1 specification covering all Trier OS API route modules. Available at /api-docs as a live interactive endpoint. Enables hardware vendors and third-party integrators to build certified connectors without requiring source code access.'),
+            subsections: [
+                {
+                    title: t('manual.sub.188', 'LXVII.1 Using the API'),
+                    items: [
+                        t('manual.item.1676', 'Authentication: All API calls require a Bearer token in the Authorization header. Tokens are issued via POST /api/auth/login, or via API keys created in the Admin Console → Import & API Hub.'),
+                        t('manual.item.1677', 'Plant Context: All plant-scoped endpoints require the x-plant-id request header. Set this to the plant ID of the facility you are querying (e.g., Plant_1). Corporate-scope endpoints accept all_sites.'),
+                        t('manual.item.1678', 'Rate Limiting: The API enforces per-key rate limits configurable in Admin Console. API key usage is tracked in the UsageMeter — metered calls are logged per key and available in the SaaS Admin panel for billing export.'),
+                        t('manual.item.1679', 'Interactive Docs: Navigate to /api-docs on any running Trier OS instance to browse all endpoints, view request/response schemas, and execute test calls directly from the browser.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s44.title', 'Part LXVIII: Digital Twin Platform Integration'),
+            id: 'digital-twin-integration',
+            navigateTo: '/digital-twin',
+            filePath: 'src/components/DigitalTwinView.jsx',
+            icon: <Cloud size={22} />,
+            content: t('manual.s44.content', 'Two-way synchronization between the Trier OS asset registry and external digital twin platforms including Bentley iTwin, Siemens NX, and PTC ThingWorx. Push asset data outbound to maintain a live digital replica in the external platform; pull spatial data inbound to enrich Trier OS asset records.'),
+            subsections: [
+                {
+                    title: t('manual.sub.189', 'LXVIII.1 Sync Configuration'),
+                    items: [
+                        t('manual.item.1680', 'Access: Mission Control → IT Group → Digital Twin Integration tile. Requires IT Admin or Creator role.'),
+                        t('manual.item.1681', 'Add a Platform Connection: Select the platform type, enter the API endpoint URL, and provide credentials or API key. Test the connection before enabling live sync.'),
+                        t('manual.item.1682', 'Outbound Push (Trier → External): Asset registry changes are pushed to the configured external platform on a scheduled interval or on-demand via the Sync Now button.'),
+                        t('manual.item.1683', 'Inbound Pull (External → Trier): Spatial positioning data, 3D model references, and structural relationships are pulled from the external platform and linked to asset records, enriching the Digital Twin schematics visible in the scan flow.'),
+                        t('manual.item.1684', 'Sync History: Every sync operation is logged — platform, direction, record count, and any errors. The Sync History tab shows the last 30 operations with status indicators.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s45.title', 'Part LXIX: SaaS & Ecosystem Administration'),
+            id: 'saas-admin',
+            navigateTo: '/saas',
+            filePath: 'src/components/SaaSAdminView.jsx',
+            icon: <Globe size={22} />,
+            content: t('manual.s45.content', 'Platform administration for ecosystem builders who wrap Trier OS in a managed offering. Provides usage metering, API key plant-scoping, white-label instance configuration, and billing data export. Access restricted to Creator and IT Admin roles.'),
+            subsections: [
+                {
+                    title: t('manual.sub.190', 'LXIX.1 Usage Metering'),
+                    items: [
+                        t('manual.item.1685', 'Four KPI metrics tracked daily: API Calls (delta of total request count since previous snapshot), Active Users (distinct users with audit log entries in the period), Storage (total size of all database and upload files), and Seat Count (total licensed user accounts).'),
+                        t('manual.item.1686', 'Historical snapshots are recorded automatically at midnight UTC and on demand via the Snapshot Now button. History is displayed as a pivoted table — one row per day, one column per metric.'),
+                        t('manual.item.1687', 'Billing Export: Select a date range and download a CSV file containing all metered usage records in a format billing systems can consume. Use for monthly invoicing, usage reconciliation, or SLA reporting.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.191', 'LXIX.2 API Key Management & Instance Configuration'),
+                    items: [
+                        t('manual.item.1688', 'API Key Scoping: Each API key can be restricted to a specific set of plant IDs. A scoped key returns 403 for any request outside its allowed list. Leave scope blank to grant global access (default).'),
+                        t('manual.item.1689', "White-Label Configuration: Set a custom instance name, primary and secondary brand colors (hex, via native color picker), support email, and support URL. Toggle the 'Powered by Trier OS' branding on or off. Changes take effect immediately."),
+                        t('manual.item.1690', "All configuration changes are written to the AuditLog with the administrator's username, timestamp, and changed values — providing a full history of branding and access policy changes."),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s46.title', 'Part LXX: Operator Trust Layer — Human-in-the-Loop Recommendations'),
+            id: 'operator-trust',
+            navigateTo: '/operator-trust',
+            filePath: 'src/components/OperatorTrustView.jsx',
+            icon: <Users size={22} />,
+            content: t('manual.s46.content', 'Every system-generated recommendation surfaces with a confidence level, a plain-language explanation, and a record of past outcomes for similar recommendations. Operators approve, reject, or annotate every decision — and every outcome feeds back into the recommendation engine.'),
+            subsections: [
+                {
+                    title: t('manual.sub.192', 'LXX.1 Reviewing Recommendations'),
+                    items: [
+                        t('manual.item.1691', 'Access: Mission Control → Operator Trust tile. Available to Technicians, Engineers, Plant Managers, and Corporate roles — anyone who acts on system recommendations.'),
+                        t('manual.item.1692', 'Each recommendation card shows: the recommended action, the confidence score (0–100%), the data signals driving the recommendation, the number of times similar recommendations were previously approved or rejected, and the historical outcome rate.'),
+                        t('manual.item.1693', 'Approve: The operator agrees and proceeds. The approval is logged against the recommendation ID and the outcome is tracked when the linked work order is eventually closed.'),
+                        t('manual.item.1694', 'Reject: The operator disagrees. They must select a rejection reason (Wrong Asset, Wrong Failure Mode, Not Actionable Now, or Other). Rejection data trains the recommendation engine over time.'),
+                        t('manual.item.1695', 'Annotate: The operator adds a freetext note to the recommendation — capturing domain knowledge the system cannot infer from data alone. Annotations are visible to future operators reviewing the same asset.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.193', 'LXX.2 Feedback Loop'),
+                    items: [
+                        t('manual.item.1696', 'Outcome Tracking: When a work order linked to an approved recommendation is closed, the system records whether the recommended action resolved the issue. This outcome updates the recommendation model.'),
+                        t('manual.item.1697', "Trust Score: Each recommendation type accumulates a trust score based on historical accuracy. High-trust recommendations show a green confidence badge; low-trust recommendations show amber with an explicit 'verify before acting' notice."),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s47.title', 'Part LXXI: Deterministic Time Machine — Plant State Rollback & Branching Simulation'),
+            id: 'time-machine',
+            navigateTo: '/time-machine',
+            filePath: 'src/components/TimeMachineView.jsx',
+            icon: <Clock size={22} />,
+            content: t('manual.s47.content', "Not just event replay — controlled rewind to any point T-X, decision modification, and deterministic forward simulation from that branch. Answers: 'What if we hadn't made that change at 14:32?' Requires Creator or IT Admin role."),
+            subsections: [
+                {
+                    title: t('manual.sub.194', 'LXXI.1 Event Log & State Snapshots'),
+                    items: [
+                        t('manual.item.1698', "Every database change is captured by SQLite AFTER triggers that fire atomically within the same transaction as the originating write. Events — INSERT, UPDATE, DELETE — are stored in the plant's EventLog table with sub-second timestamps, the affected table, aggregate type, and full before/after payload."),
+                        t('manual.item.1699', 'State Snapshots are consistent point-in-time copies of the plant database, created automatically on every HA replication cycle. Each snapshot record includes the event watermark (highest EventID at snapshot time), the file hash, and the file size.'),
+                        t('manual.item.1700', 'The Timeline tab shows all state snapshots for the selected plant, sorted chronologically. Click any snapshot to see the events that occurred after it — the gap that would be replayed if you branch from that point.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.195', 'LXXI.2 Navigating the Timeline'),
+                    items: [
+                        t('manual.item.1701', 'Event Feed: The Events tab displays every logged event in descending order. Each event shows the table name, event type (INSERT / UPDATE / DELETE), the record identifier, and the exact timestamp. Click any event to expand its before/after payload diff — changed fields are highlighted in amber.'),
+                        t('manual.item.1702', 'Seek to Point: Use the Seek control to navigate to a specific timestamp. The system returns the exact state of the plant database at that moment — which snapshot to restore from and which events to replay on top of it to reach the requested time.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.196', 'LXXI.3 Creating and Using Branches'),
+                    items: [
+                        t('manual.item.1703', 'Branch From Before This Event: Click the branch icon on any event. The system creates an isolated branch database by restoring the nearest prior snapshot, replaying all events up to (but not including) the selected event, and registering the branch in memory.'),
+                        t('manual.item.1704', 'Branch Query: Once a branch is created, query its state against live plant APIs using the branch ID. This lets you compare what the plant looked like before a critical decision vs. after — without touching the live production database.'),
+                        t('manual.item.1705', 'Active Branches tab shows all currently open branches with creation timestamp, the event they diverged from, and record counts vs. the live database. Branches are held in process memory and cleared on server restart.'),
+                        t('manual.item.1706', 'Primary use case: Post-incident investigation. After an unplanned failure, navigate to the moment before the failure event, branch from that point, and query the branch to understand what the system state was before the problem occurred.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s48.title', 'Part LXXII: Safe Action Certification Layer — Pre-Execution Proof'),
+            id: 'safe-action-certification',
+            navigateTo: '/gatekeeper',
+            filePath: 'src/components/GatekeeperView.jsx',
+            icon: <Shield size={22} />,
+            content: t('manual.s48.content', 'Before any write action executes through the Gatekeeper service, Trier OS proves via simulation that the action will not violate defined safety and operational constraints. Returns: certified safe (proceed) or unsafe (blocked with full causal explanation). Certified actions receive a proof receipt stored in the audit log.'),
+            subsections: [
+                {
+                    title: t('manual.sub.197', 'LXXII.1 How Certification Works'),
+                    items: [
+                        t('manual.item.1707', "Every write action submitted through Gatekeeper is evaluated against the plant's constraint set before execution. Constraints include: active PTW permit requirements, MOC approval status, RBAC role permissions, system state (Normal / Advisory-Only / Isolated), and asset-specific safety flags."),
+                        t('manual.item.1708', 'Certified Safe: If all constraints pass, a proof receipt is generated containing the action ID, the certifying constraint set version, the timestamp, and the operator credentials. The receipt is written to the immutable audit log before the action executes.'),
+                        t('manual.item.1709', 'Unsafe — Blocked: If any constraint fails, the action is blocked immediately. The operator receives a full causal explanation: which constraint failed, why it failed, and what change would be required to make the action certifiable.'),
+                        t('manual.item.1710', 'The certification layer cannot be bypassed by application code. It is enforced at the Gatekeeper service boundary — a separate runtime from the main Trier OS process. No route handler, no admin shortcut, and no API key can skip the pre-execution check.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s49.title', 'Part LXXIII: Distributed Edge Execution Mesh (Trier Network Mesh)'),
+            id: 'edge-mesh',
+            navigateTo: '/edge-mesh',
+            filePath: 'src/components/EdgeMeshView.jsx',
+            icon: <Server size={22} />,
+            content: t('manual.s49.content', 'A peer-to-peer execution mesh that uses secure relay nodes to distribute and cache large artifacts — 3D Digital Twin models, large manual PDFs, firmware packages — across the plant floor. Devices serve artifacts to each other locally, eliminating network choke points and ensuring offline resilience.'),
+            subsections: [
+                {
+                    title: t('manual.sub.198', 'LXXIII.1 How the Mesh Works'),
+                    items: [
+                        t('manual.item.1711', 'Relay Nodes: Designated edge devices on the plant LAN are registered as relay nodes in the mesh registry. Each node stores a local artifact cache. When a device requests an artifact, the mesh locates the nearest node that has it cached and serves it from there.'),
+                        t('manual.item.1712', 'Artifact Types: Any file registered in the Artifact Registry can be distributed via the mesh: 3D Digital Twin models, equipment manuals (PDF), firmware packages, and SOP attachments. Artifacts are indexed by content hash — duplicate files are stored once.'),
+                        t('manual.item.1713', 'Cache Propagation: When a new artifact version is published, the mesh propagates the update to all registered nodes on the next sync cycle. Stale versions are automatically evicted based on a configurable TTL.'),
+                        t('manual.item.1714', 'Offline Resilience: Relay nodes continue serving cached artifacts even when the central server is unreachable. Technicians accessing Digital Twin schematics on the plant floor experience no disruption during a central server outage.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.199', 'LXXIII.2 Fleet Sync Status'),
+                    items: [
+                        t('manual.item.1715', 'Access: Mission Control → IT Group → Edge Mesh tile. Requires IT Admin or Creator role.'),
+                        t('manual.item.1716', 'Registry: The Artifact Registry tab shows all artifacts managed by the mesh — name, version, size, content hash, and which nodes have it cached. Use the Publish button to add a new artifact or upload a new version.'),
+                        t('manual.item.1717', 'Sync Status: The Sync Status tab shows every registered relay node — hostname, IP address, last heartbeat, cache hit rate, and sync lag. Nodes that have not sent a heartbeat in the configured interval are flagged as offline.'),
+                        t('manual.item.1718', 'Cache Hit Rate: The ratio of artifact requests served by a node from its local cache vs. requests requiring a central server fetch. A high hit rate means the mesh is working effectively; a low rate signals that the cache is undersized or artifacts are not being pre-positioned correctly.'),
+                    ]
+                },
+            ]
         }
     ];
 

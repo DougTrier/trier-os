@@ -21,6 +21,8 @@
  *   PUT /api/saas/instance-config     - Update instance config
  *   GET /api/saas/api-keys            - List API keys and scopes
  *   PUT /api/saas/api-keys/:id/scope  - Update API key plant scope
+ *   GET /api/saas/usage/history       - Get historical usage snapshots
+ *   POST /api/saas/snapshot-now       - Manually trigger a usage snapshot
  */
 
 const express = require('express');
@@ -138,6 +140,32 @@ router.get('/usage/breakdown', (req, res) => {
     }
 });
 
+router.get('/usage/history', requireAdmin, (req, res) => {
+    try {
+        const { days } = req.query;
+        const d = parseInt(days, 10) || 30;
+        const rows = logisticsDb.prepare(
+            `SELECT PeriodStart, Metric, Value, Unit FROM UsageMeter      
+             WHERE PlantID IS NULL AND PeriodStart >= datetime('now', '-' || ? || ' days')
+             ORDER BY PeriodStart ASC`
+        ).all(d);
+        res.json({ history: rows });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch history' });       
+    }
+});
+
+router.post('/snapshot-now', requireAdmin, (req, res) => {
+    try {
+        const { recordDailySnapshot } = require('../services/usage_meter');
+        const today = new Date().toISOString().slice(0, 10);
+        recordDailySnapshot(`${today}T00:00:00.000Z`, `${today}T23:59:59.999Z`);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Snapshot failed' });
+    }
+});
+
 router.get('/billing-export', requireAdmin, (req, res) => {
     try {
         const { startDate, endDate, format } = req.query;
@@ -252,7 +280,7 @@ router.put('/instance-config', requireAdmin, (req, res) => {
     }
 });
 
-router.get('/api-keys', (req, res) => {
+router.get('/api-keys', requireAdmin, (req, res) => {
     try {
         const keys = logisticsDb.prepare('SELECT * FROM api_keys').all();
         const formatted = keys.map(row => ({
@@ -274,7 +302,7 @@ router.get('/api-keys', (req, res) => {
     }
 });
 
-router.put('/api-keys/:id/scope', (req, res) => {
+router.put('/api-keys/:id/scope', requireAdmin, (req, res) => {
     try {
         const { id } = req.params;
         const { scope_plants } = req.body;

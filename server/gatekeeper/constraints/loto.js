@@ -2,6 +2,7 @@
 
 const { db: logisticsDb } = require('../../logistics_db');
 
+// prevents double-lockout: a second LOTO cannot be activated while one is already ACTIVE on the same asset
 function checkActivate(intent) {
     try {
         const row = logisticsDb.prepare(`
@@ -26,6 +27,7 @@ function checkActivate(intent) {
             failed: []
         };
     } catch (err) {
+        // internal DB error — empty failed[] signals a crash, not a named constraint failure
         return {
             certified: false,
             passed: [],
@@ -35,6 +37,7 @@ function checkActivate(intent) {
     }
 }
 
+// void gate: only an ACTIVE permit can be voided — CLEARED or EXPIRED permits are already resolved
 function checkVoid(intent) {
     try {
         const row = logisticsDb.prepare(`
@@ -68,6 +71,7 @@ function checkVoid(intent) {
             failed: []
         };
     } catch (err) {
+        // internal DB error — empty failed[] signals a crash, not a named constraint failure
         return {
             certified: false,
             passed: [],

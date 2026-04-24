@@ -329,6 +329,21 @@ The following capabilities are **unique to Trier OS** â��⬝ no competitor
 | **LVI** | [OpEx Intelligence â��⬝ Analytics Engine](#chapter-56-opex-intelligence--analytics-engine) | � |
 | **LVII** | [Corporate Analytics — 11-Tab Enterprise Intelligence Suite](#chapter-57-corporate-analytics--11-tab-enterprise-intelligence-suite) | ★ |
 | **LVIII** | [Zero-Keyboard Work Order Scanner — Scan State Machine](#chapter-58-zero-keyboard-work-order-scanner--scan-state-machine) | ★ |
+| **LIX** | [Emissions & Carbon Intensity Tracking](#chapter-59-emissions--carbon-intensity-tracking) | ★ |
+| **LX** | [Vendor / Supplier Performance Scorecard](#chapter-60-vendor--supplier-performance-scorecard) | ★ |
+| **LXI** | [Asset Lifecycle & Capital Replacement Planning](#chapter-61-asset-lifecycle--capital-replacement-planning) | ★ |
+| **LXII** | [Spare Parts Inventory Optimization](#chapter-62-spare-parts-inventory-optimization) | ★ |
+| **LXIII** | [Scan-to-Segment Work Order — Digital Twin Pin Entry](#chapter-63-scan-to-segment-work-order-digital-twin-pin-entry) | ★ |
+| **LXIV** | [Shift Handover / Digital Turnover Log](#chapter-64-shift-handover--digital-turnover-log) | ★ |
+| **LXV** | [SOP Re-Acknowledgment on MOC Change](#chapter-65-sop-re-acknowledgment-on-moc-change) | ★ |
+| **LXVI** | [Industry Vertical Catalog Packs](#chapter-66-industry-vertical-catalog-packs) | ★ |
+| **LXVII** | [REST API Public Specification (OpenAPI 3.1)](#chapter-67-rest-api-public-specification-openapi-31) | ★ |
+| **LXVIII** | [Digital Twin Platform Integration](#chapter-68-digital-twin-platform-integration) | ★ |
+| **LXIX** | [SaaS & Ecosystem Administration](#chapter-69-saas--ecosystem-administration) | ★ |
+| **LXX** | [Operator Trust Layer — Human-in-the-Loop Recommendations](#chapter-70-operator-trust-layer--human-in-the-loop-recommendations) | ★ |
+| **LXXI** | [Deterministic Time Machine — Plant State Rollback & Branching Simulation](#chapter-71-deterministic-time-machine--plant-state-rollback--branching-simulation) | ★ |
+| **LXXII** | [Safe Action Certification Layer — Pre-Execution Proof](#chapter-72-safe-action-certification-layer--pre-execution-proof) | ★ |
+| **LXXIII** | [Distributed Edge Execution Mesh (Trier Network Mesh)](#chapter-73-distributed-edge-execution-mesh-trier-network-mesh) | ★ |
 
 ---
 
@@ -5294,3 +5309,375 @@ Devices that have been offline for more than one cache TTL interval may hold sta
 - Stale indicators are shown if the reconnect fetch is delayed by more than 3 seconds.
 
 For supervisors, the Mission Control dashboard shows a **live device presence count** reflecting how many devices are currently connected to the plant's LAN Hub. A count of zero while the hub is expected to be running is a signal that connectivity on the plant floor should be investigated.
+
+---
+
+## Chapter 59: Emissions & Carbon Intensity Tracking
+
+ESG-grade Scope 1 and Scope 2 emissions tracking built on top of the existing Energy module. No new sensor infrastructure is required — all calculations use meter readings already logged in the system. Generates monthly and annual ESG reports exportable as PDF and CSV.
+
+### 59.1 Scope 1 — Direct Combustion
+
+Scope 1 covers on-site fuel combustion: natural gas boilers, diesel generators, propane process heaters, and fleet vehicles. Each asset with a combustion fuel type configured in the Asset Registry generates a CO₂-equivalent figure automatically from its logged meter readings. The emission factor (kg CO₂e per unit of fuel) is set per fuel type in Plant Setup and can be adjusted to match regional regulatory standards.
+
+Assets without a combustion fuel type are excluded from Scope 1 calculations — no configuration required for electrical-only equipment.
+
+### 59.2 Scope 2 — Purchased Electricity
+
+Scope 2 covers plant-level electricity consumption. The Emissions module reads cumulative kWh totals from the Energy module and multiplies them by the regional grid carbon intensity factor configured per plant. Grid factors are expressed in kg CO₂e per kWh and are updated by the plant administrator when utility providers publish revised coefficients.
+
+Carbon intensity per unit of output is calculated by dividing total plant emissions (Scope 1 + Scope 2) by production output logged for the period. This tracks whether operational efficiency improvements are actually reducing the carbon cost per unit produced over time.
+
+### 59.3 Corporate Rollup & ESG Report Export
+
+The corporate Emissions view aggregates Scope 1 and Scope 2 figures across all plants. Plants are ranked by total emissions and by carbon intensity per unit, identifying the highest-impact facilities and tracking year-over-year improvement trends.
+
+**Monthly ESG Report:** A structured summary of Scope 1 and Scope 2 emissions for the selected month — per-asset Scope 1 breakdown, total electricity-driven Scope 2 figure, and carbon intensity vs. production output.
+
+**Annual ESG Report:** Full-year rollup with month-by-month trend, year-over-year comparison, and a corporate summary covering all facilities. Export formats: PDF (for board and regulatory submissions) and CSV (for ESG data platforms and third-party auditors).
+
+**Access:** Mission Control → Emissions & Carbon tile. Corporate view requires Manager-level access or above. Plant-level view is available to Engineers and Plant Managers.
+
+---
+
+## Chapter 60: Vendor / Supplier Performance Scorecard
+
+Automatic vendor performance analytics built entirely on existing purchase order and parts data — no new data entry required. Every supplier is ranked on delivery rate, quality defect rate, and lead time accuracy. A corporate rollup identifies the worst performers by plant and by spend volume.
+
+### 60.1 Scorecard Metrics
+
+**On-Time Delivery Rate:** Compares the PO due date to the actual receipt date in the Receiving Log. A receipt on or before the due date counts as on-time. Rate is expressed as a percentage over the selected period.
+
+**Quality Defect Rate:** NCR (Non-Conformance Report) count attributed to vendor-supplied parts, expressed as a defect rate against total parts received from that vendor. A high defect rate triggers a quality flag on the scorecard card.
+
+**Lead Time Accuracy:** Promised lead time (from the PO) vs. actual elapsed days from order to receipt. Chronic over-promising scores negatively regardless of whether the delivery was technically on time — a vendor who promises 5 days and delivers in 8 consistently is flagged even when the PO due date had buffer.
+
+**Spend Volume:** Total dollar value of parts received from each vendor in the period. Used to weight rankings — a 60% OTD rate from a high-spend vendor is a higher-priority concern than the same rate from a minor supplier.
+
+### 60.2 Corporate Rollup
+
+**Worst Performers by Plant:** Identifies which vendors are failing most severely at each facility. Plant managers see at a glance which suppliers are causing the most disruption to their local operation.
+
+**Worst Performers by Spend:** Enterprise-level view ranking vendors by performance weighted against total spend across all plants. Flags high-spend, low-performance suppliers for enterprise-level renegotiation or replacement action.
+
+**Access:** Mission Control → Vendor Scorecard tile. Available to Plant Managers, Maintenance Managers, and Corporate/Executive roles.
+
+---
+
+## Chapter 61: Asset Lifecycle & Capital Replacement Planning
+
+Answers the repair-vs-replace question with data instead of gut feel. Tracks cumulative repair costs against replacement costs and Expected Useful Life to generate replacement recommendations, payback calculations, and a multi-year capital expenditure forecast.
+
+### 61.1 Repair vs. Replace Analytics
+
+**Expected Useful Life (EUL):** Configured per asset class in Master Equipment. When an asset's age approaches or exceeds its EUL, it is flagged for replacement review regardless of current repair cost status.
+
+**Cumulative Repair Cost:** Automatically summed from all closed work orders linked to the asset. No manual entry — the system calculates this from WO labor and parts history already in the system.
+
+**Replacement Recommendation Trigger:** A recommendation is generated when any of the following conditions are true:
+- Cumulative repair cost exceeds the configured threshold (default: 60% of replacement cost)
+- MTBF trend crosses the critical degradation threshold
+- Asset age exceeds Expected Useful Life
+
+**Payback Period Calculator:** Compares the current annual repair spend rate against the annualized cost of replacement (replacement cost divided by expected new asset life). Displays the break-even point in months — the point at which replacing the asset becomes cheaper than continuing to repair it.
+
+### 61.2 Capital Expenditure Forecast
+
+**1 / 3 / 5 Year Forecast:** Projects all assets expected to hit the replacement recommendation threshold within 1, 3, and 5 years. Allows capital budget planning cycles to be driven by asset condition data rather than annual guesswork or political estimation.
+
+**Corporate Rollup:** Total replacement liability by plant and by asset class across all facilities. Executives can see where capital concentration risk is highest across the enterprise and align budget discussions with actual asset health data.
+
+**Access:** Mission Control → Capital Replacement tile. Available to Engineers, Plant Managers, and Corporate/Executive roles.
+
+---
+
+## Chapter 62: Spare Parts Inventory Optimization
+
+Stocking recommendations driven by MTBF data and vendor lead times, working entirely from data already in the system. No new inputs required. Surfaces dead stock, critical spare gaps, and reorder recommendations in the Storeroom view.
+
+### 62.1 Reorder Intelligence
+
+**Min/Max Reorder Calculation:** Reorder point = (average daily usage × vendor lead time days) + safety stock factor. Updated automatically as usage patterns change over time. Displayed on each part record in the Storeroom and surfaced in the reorder suggestion queue.
+
+**Critical Spare Flagging:** Parts whose absence would cause a Severity 1 production stoppage can be designated as Critical Spares by the storeroom manager. Critical spare stockout risk is elevated in the alert queue and reported separately to plant and corporate management — these parts are never allowed to slip below safety stock without generating a visible alert.
+
+**Reorder Suggestion Queue:** Surfaces all parts currently below their calculated safety stock level, sorted by criticality. Plant buyers can action reorders directly from this list without searching through the full inventory.
+
+### 62.2 Dead Stock & Stockout Risk
+
+**Dead Stock Identification:** Parts with zero work order consumption in the past 12 months are flagged as dead stock. The value of dead stock by plant is reported in the corporate storeroom rollup — a direct measure of capital tied up in obsolete or redundant inventory.
+
+**Stockout Risk Alert:** Real-time flag for any critical spare whose quantity on hand has fallen below the calculated safety stock threshold. Pushes into the plant alert queue so buyers are notified before a stockout occurs — not after the line is down.
+
+**ABC Classification:** Parts are automatically classified as A (high-value, low-volume), B (medium), or C (low-value, high-volume). Classification is used to prioritize storeroom management attention, set cycle count frequency, and optimize physical storage layout for the fastest-moving items.
+
+---
+
+## Chapter 63: Scan-to-Segment Work Order — Digital Twin Pin Entry
+
+For complex machines with multiple sub-components, scanning the top-level asset QR tag no longer forces labor and parts to the machine level. When a Digital Twin schematic with defined pins exists for the asset, the technician taps the specific segment that failed — and the work order is created against the exact sub-component automatically.
+
+### 63.1 Scan-to-Segment Flow
+
+1. **Scan the asset QR code.** The system detects that this asset has a Digital Twin schematic with defined sub-component pins and loads it on screen.
+2. **Tap the failing segment.** Each sub-component is shown as a pin on the schematic (e.g., Blowmold, Filler, Conveyor). The technician taps the one that failed.
+3. **Failure modes surface instantly.** The pin's `LinkedAssetID` resolves the child asset. `CommonFailureModes` for that segment surface as one-tap job type options — no typing required.
+4. **Work order created against the segment.** The WO is created against the child AssetID, not the parent machine. The AssetParts bill of materials for that segment auto-populates the parts list.
+
+The zero-keystroke contract is preserved: no typing, no navigation, one tap to lock in the segment.
+
+### 63.2 What Scan-to-Segment Unlocks
+
+Labor and parts are attributed to the correct sub-component. Over time, this builds per-segment MTBF, failure frequency, and cost histories — data that is impossible to produce when all work is logged against the top-level machine.
+
+`CommonFailureModes` from `MasterEquipment` drive job type suggestions with a single tap, even for the most complex multi-segment machinery.
+
+**Prerequisites:** Digital Twin schematics must be loaded for the asset with pins placed on sub-components and `LinkedAssetIDs` set. No schema changes are required — `digital_twin_pins.LinkedAssetID` and the existing asset hierarchy cover the full data model.
+
+---
+
+## Chapter 64: Shift Handover / Digital Turnover Log
+
+A formal digital shift-to-shift transfer record. The outgoing shift documents completed work, open work orders, failures, and active safety concerns. The incoming shift acknowledges before taking over — converting the most common incident root cause ("outgoing shift didn't tell us") into a timestamped, signed, immutable record.
+
+### 64.1 Creating a Turnover Log
+
+At shift end, the outgoing supervisor or lead technician opens the Shift Handover module and creates a new turnover entry. The system pre-populates the date, shift, plant, and supervisor name from the session context.
+
+The log entry captures:
+- **Completed work orders** — linked directly from WO records, not typed summaries
+- **Open work orders** still in progress and their current state
+- **Equipment failures** that occurred during the shift
+- **Active holds or lockouts** currently in effect
+- **Safety flags or near-misses** from the shift
+- **Freetext notes** for anything not covered by structured fields
+
+Active holds, safety flags, and open critical WOs are visually highlighted so the incoming shift cannot overlook them. The log becomes read-only on submission — no retroactive edits are possible.
+
+### 64.2 Acknowledgment & Chain of Custody
+
+The incoming shift supervisor opens the pending turnover log, reviews all flagged items, and clicks **Acknowledge**. This creates a digital signature record — name, timestamp, and shift identifier — permanently attached to the log.
+
+Until acknowledged, the incoming shift has an unresolved item pinned in their Mission Control review queue. The acknowledgment cannot be dismissed without reading and signing the log.
+
+All turnover logs feed into the incident investigation chain. If a failure occurs in the first hours of a new shift, investigators can retrieve the turnover log and see the exact state the incoming shift was briefed on at handover time.
+
+---
+
+## Chapter 65: SOP Re-Acknowledgment on MOC Change
+
+Closes the gap between the Management of Change system and field execution. When an approved MOC changes a procedure, all linked SOPs are automatically flagged for re-acknowledgment. Technicians must read and sign the updated version before their next job assignment can proceed.
+
+### 65.1 How SOP Re-Acknowledgment Works
+
+**On MOC Close:** When a Management of Change record is closed with an Approved status, the system scans all SOPs linked to that MOC. Each linked SOP is flagged as requiring re-acknowledgment and a new version stamp is attached.
+
+**WO Assignment Gate:** When a work order is being assigned to a technician, the system checks whether that technician has any outstanding SOP re-acknowledgments for procedures linked to that WO. Behavior is configurable per plant:
+- **Warn mode:** Assignment proceeds with an alert notifying the assigner that the technician has outstanding acknowledgments.
+- **Hard-Block mode:** Assignment fails until the technician has acknowledged all required SOP updates.
+
+**Acknowledgment Record:** When the technician reads the updated SOP and clicks Acknowledge, a permanent record is created: technician name, SOP version acknowledged, timestamp, and the originating MOC number. This record is immutable.
+
+**Compliance Scorecard:** Outstanding re-acknowledgments appear in the Training & Competency compliance scorecard. Plant managers can see which technicians are behind on acknowledgments and which SOPs have the highest outstanding counts — allowing targeted follow-up before the next work order is issued.
+
+---
+
+## Chapter 66: Industry Vertical Catalog Packs
+
+Trier OS ships with pre-built master data catalogs for six industrial verticals beyond the core dairy/food manufacturing catalog. Each vertical includes equipment types, common failure modes, parts lists, and cross-references to the shared core catalog — eliminating the blank-slate setup burden for new plant deployments in non-dairy industries.
+
+### 66.1 Available Industry Catalogs
+
+**Manufacturing & Automotive:** Robotic arm components, end-effectors, servo drives, CNC tooling, mold sets, press dies, fixturing, and assembly line conveyor components. `CommonFailureModes` seeded per equipment class from industry maintenance data.
+
+**Mining & Extraction:** Drill bits, rock bolts, shotcrete equipment, conveyor belt components, idlers, pulleys, haul truck drivetrain and hydraulic components, ventilation fans, and refuge chambers. GIS-linked asset locations tie directly to the 3D mapping module.
+
+**Energy Plants:** Turbine blades, seals, bearings, switchgear, breakers, transformer components, instrumentation (pressure transmitters, RTDs, flow meters), and cooling tower fill media and drift eliminators.
+
+**Logistics & Ports:** Crane wire rope, sheaves, spreaders, RTG and reach stacker components, forklift mast and hydraulic components, dock levelers, seals, and vehicle restraints.
+
+**Agro-Industry:** Harvester blades, threshing components, grain augers, irrigation pumps, pivot components, food-grade seals, sanitary fittings, CIP components, and cold storage refrigeration components.
+
+**Water & Wastewater:** Pumps, impellers, mechanical seals, clarifier mechanisms, membrane filtration elements, chemical dosing systems, blower components, and SCADA instrument components. Heavily regulated (EPA, state DEQ) — the catalog is pre-configured for PTW and LOTO-compliant workflows.
+
+### 66.2 Cross-Catalog Reference Engine
+
+**OEM Cross-Reference:** Maps manufacturer part numbers to the master SKU. When a technician searches by OEM number, the system returns the master record plus all equivalent aftermarket options.
+
+**Industry-to-Core Mapping:** Every vertical catalog entry links to its shared core catalog equivalent. Corporate spend rollups use the core SKU regardless of which vertical the part was ordered through — enabling true enterprise spend analysis across all facilities and verticals without manual reconciliation.
+
+**Search Coverage:** A single parts search returns results from the plant's own vertical catalog, the shared core catalog, and cross-reference matches simultaneously. Technicians never need to know which catalog a part lives in.
+
+---
+
+## Chapter 67: REST API Public Specification (OpenAPI 3.1)
+
+A machine-readable OpenAPI 3.1 specification covering all Trier OS API route modules. Available at `/api-docs` as a live interactive endpoint. Enables hardware vendors and third-party integrators to build certified connectors without requiring source code access.
+
+### 67.1 Authentication & Plant Context
+
+All API calls require a Bearer token in the `Authorization` header. Tokens are issued via `POST /api/auth/login`, or via API keys created in the Admin Console → Import & API Hub.
+
+All plant-scoped endpoints require the `x-plant-id` request header. Set this to the plant database ID of the facility being queried (e.g., `Plant_1`). Corporate-scope endpoints accept `all_sites` as the plant context.
+
+### 67.2 Rate Limiting & Metering
+
+The API enforces per-key rate limits configurable in Admin Console. API key usage is tracked in the UsageMeter — metered calls are logged per key and are available in the SaaS Admin panel for billing export. Rate limit headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`) are returned on every response.
+
+### 67.3 Interactive Documentation
+
+Navigate to `/api-docs` on any running Trier OS instance to browse all endpoints, view request and response schemas, and execute test calls directly from the browser using the embedded Swagger UI. No separate tool installation is required.
+
+---
+
+## Chapter 68: Digital Twin Platform Integration
+
+Two-way synchronization between the Trier OS asset registry and external digital twin platforms including Bentley iTwin, Siemens NX, and PTC ThingWorx. Push asset data outbound to maintain a live digital replica in the external platform; pull spatial data inbound to enrich Trier OS asset records.
+
+### 68.1 Sync Configuration
+
+**Access:** Mission Control → IT Group → Digital Twin Integration tile. Requires IT Admin or Creator role.
+
+**Add a Platform Connection:** Select the platform type from the supported list, enter the API endpoint URL, and provide credentials or API key. Use the **Test Connection** button before enabling live sync.
+
+**Outbound Push (Trier → External):** Asset registry changes — new assets, updated fields, decommissions — are pushed to the configured external platform on a scheduled interval or on-demand via the **Sync Now** button. The payload format is configurable per platform type.
+
+**Inbound Pull (External → Trier):** Spatial positioning data, 3D model references, and structural relationships are pulled from the external platform and linked to Trier OS asset records, enriching the Digital Twin schematics visible in the scan-to-segment flow.
+
+**Sync History:** Every sync operation is logged — platform name, sync direction, record count, and any per-record errors. The Sync History tab shows the last 30 operations with status indicators. Failed syncs generate an alert in Mission Control.
+
+---
+
+## Chapter 69: SaaS & Ecosystem Administration
+
+Platform administration for ecosystem builders who wrap Trier OS in a managed offering. Provides usage metering, API key plant-scoping, white-label instance configuration, and billing data export. Access is restricted to Creator and IT Admin roles.
+
+### 69.1 Usage Metering
+
+Four KPI metrics are tracked daily via the `UsageMeter` service:
+
+| Metric | Definition |
+|---|---|
+| **API Calls** | Delta of total request count since the previous snapshot |
+| **Active Users** | Distinct users with audit log entries in the period |
+| **Storage** | Total size of all database files and uploads on disk |
+| **Seat Count** | Total licensed user accounts in the system |
+
+Historical snapshots are recorded automatically at midnight UTC and on demand via the **Snapshot Now** button in the SaaS Admin panel. History is displayed as a pivoted table — one row per day, one column per metric.
+
+**Billing Export:** Select a date range and download a CSV file containing all metered usage records in a format billing systems can consume directly. Use for monthly invoicing, usage reconciliation, or SLA reporting.
+
+### 69.2 API Key Management & Instance Configuration
+
+**API Key Scoping:** Each API key can be restricted to a specific set of plant IDs. A scoped key returns `403 Forbidden` for any request outside its allowed plant list. Leave the scope blank to grant global access (the default for administrative keys).
+
+**White-Label Configuration:** Set a custom instance name, primary and secondary brand colors (hex values, editable via native color picker), support email, and support URL. Toggle the "Powered by Trier OS" attribution on or off. Changes take effect immediately across all connected clients.
+
+All configuration changes are written to the AuditLog with the administrator's username, timestamp, and the changed field values — providing a full history of branding and access policy changes for compliance review.
+
+---
+
+## Chapter 70: Operator Trust Layer — Human-in-the-Loop Recommendations
+
+Every system-generated recommendation surfaces with three mandatory disclosures: the confidence level, a plain-language explanation of the supporting data, and a record of past outcomes for similar recommendations. Operators approve, reject, or annotate every decision — and every outcome feeds back into the recommendation engine.
+
+### 70.1 Reviewing Recommendations
+
+**Access:** Mission Control → Operator Trust tile. Available to Technicians, Engineers, Plant Managers, and Corporate roles — anyone who acts on system-generated recommendations.
+
+Each recommendation card shows:
+- The recommended action and target asset
+- Confidence score (0–100%) with color coding (green ≥ 80%, amber 60–79%, red < 60%)
+- Data signals that drove the recommendation (e.g., MTBF degradation rate, similar failure history)
+- Historical approval/rejection count for this recommendation type on this asset class
+- Past outcome rate: percentage of previously approved similar recommendations that resolved the issue
+
+**Approve:** The operator agrees and proceeds. The approval is logged against the recommendation ID and the outcome is tracked when the linked work order closes.
+
+**Reject:** The operator disagrees. A rejection reason is required: Wrong Asset, Wrong Failure Mode, Not Actionable Now, or Other. Rejection data trains the recommendation engine over time, reducing false positives for that asset class.
+
+**Annotate:** The operator adds a freetext note to the recommendation — capturing domain knowledge the system cannot infer from sensor data alone. Annotations are visible to future operators reviewing the same asset, building institutional knowledge in the system.
+
+### 70.2 Feedback Loop
+
+**Outcome Tracking:** When a work order linked to an approved recommendation is closed, the system records whether the recommended action resolved the issue. This outcome updates the recommendation model's confidence calibration.
+
+**Trust Score:** Each recommendation type accumulates a trust score based on historical accuracy. High-trust recommendations (≥ 85% historical resolution rate) show a green confidence badge. Low-trust recommendations show amber with an explicit "verify before acting" notice — surfacing uncertainty directly to the operator rather than hiding it.
+
+---
+
+## Chapter 71: Deterministic Time Machine — Plant State Rollback & Branching Simulation
+
+Not just event replay — controlled rewind to any point T-X, decision modification, and deterministic forward simulation from that branch. Answers: "What if we hadn't made that change at 14:32?" Requires Creator or IT Admin role.
+
+### 71.1 Event Log & State Snapshots
+
+Every database write in Trier OS is captured by SQLite `AFTER` triggers that fire atomically within the same transaction as the originating write. Events — `INSERT`, `UPDATE`, `DELETE` — are stored in the plant's `EventLog` table with sub-second timestamps, the affected table name, aggregate type, and the full before/after payload as JSON.
+
+State Snapshots are consistent point-in-time copies of the plant database, created automatically on every HA replication cycle. Each snapshot record includes the event watermark (highest `EventID` at snapshot time), the file hash (SHA-256), and the file size. Snapshots can also be created on demand.
+
+The **Timeline tab** shows all state snapshots for the selected plant, sorted chronologically. Clicking any snapshot reveals the events that occurred after it — the gap that would be replayed to reach any point between that snapshot and the next.
+
+### 71.2 Navigating the Timeline
+
+**Event Feed:** The Events tab displays every logged event in descending order. Each row shows the table name, event type (INSERT / UPDATE / DELETE), the record identifier, and the exact timestamp. Expanding a row shows the before/after payload diff — changed fields highlighted in amber.
+
+**Seek to Point:** The Seek control accepts an ISO 8601 timestamp. The system calculates which snapshot to restore from and which events to replay on top of it to reconstruct the exact database state at the requested moment.
+
+### 71.3 Creating and Using Branches
+
+**Branch From Before This Event:** Click the branch icon on any event row. The system creates an isolated branch database by restoring the nearest prior snapshot, replaying all events up to (but not including) the selected event, and registering the branch in memory under a generated branch ID.
+
+**Branch Query:** Once a branch is created, query its state using live plant API endpoints with the `?branch=<branchId>` parameter. This lets you compare pre-decision and post-decision plant state without touching the live production database.
+
+**Active Branches tab** shows all currently open branches with creation timestamp, the event they diverged from, and record counts vs. the live database. Branches are held in process memory and cleared on server restart — they are not persisted to disk.
+
+**Primary use case:** Post-incident investigation. After an unplanned failure, navigate to the moment before the failure event, branch from that point, and query the branch to understand exactly what the system state was before the problem occurred — enabling root cause analysis without disturbing the live record.
+
+---
+
+## Chapter 72: Safe Action Certification Layer — Pre-Execution Proof
+
+Before any write action executes through the Gatekeeper service, Trier OS proves via simulation that the action will not violate defined safety and operational constraints. Returns either **certified safe** (proceed) or **unsafe — blocked** (full causal explanation returned). Certified actions receive a proof receipt stored permanently in the audit log.
+
+### 72.1 How Certification Works
+
+Every write action submitted through Gatekeeper is evaluated against the plant's constraint set before any mutation occurs. The constraint evaluation covers:
+
+- **Active PTW permit requirements** — does a valid active permit cover this asset and this action class?
+- **MOC approval status** — does this action require an approved change record that is not yet in place?
+- **RBAC role permissions** — does the requesting user's role authorize this specific action class?
+- **System state** — is the plant in Normal, Advisory-Only, or Isolated state? Advisory-Only blocks write actions by definition.
+- **Asset-specific safety flags** — is the asset locked out, under an active LOTO, or flagged with a hold that prevents this action?
+
+**Certified Safe:** If all constraints pass, a proof receipt is generated containing the action ID, the certifying constraint set version, the evaluation timestamp, and the operator credentials. The receipt is written to the immutable audit log before the action executes.
+
+**Unsafe — Blocked:** If any constraint fails, the action is blocked immediately. The operator receives a full causal explanation: which constraint failed, why it failed (with the specific data that triggered the failure), and what change would be required to make the action certifiable (e.g., "Obtain a valid PTW for asset Q-11, Blowmold segment, class: Safety-Critical").
+
+**The certification layer cannot be bypassed by application code.** It is enforced at the Gatekeeper service boundary — a separate runtime from the main Trier OS process. No route handler, no admin shortcut, and no API key can skip the pre-execution constraint check.
+
+---
+
+## Chapter 73: Distributed Edge Execution Mesh (Trier Network Mesh)
+
+A peer-to-peer execution mesh that uses secure relay nodes to distribute and cache large artifacts — 3D Digital Twin models, large manual PDFs, firmware packages — across the plant floor. Devices serve artifacts to each other locally, eliminating network choke points and guaranteeing offline resilience.
+
+### 73.1 How the Mesh Works
+
+**Relay Nodes:** Designated edge devices on the plant LAN are registered as relay nodes in the mesh registry. Each node maintains a local artifact cache on disk. When any device requests an artifact, the mesh controller locates the nearest node that has it cached and serves it from there — bypassing the central server entirely for that request.
+
+**Artifact Types:** Any file registered in the Artifact Registry can be distributed via the mesh: 3D Digital Twin models, equipment manuals (PDF), firmware packages, SOP attachments, and training videos. Artifacts are indexed by content hash (SHA-256) — physically identical files are stored once regardless of how many plants or assets reference them.
+
+**Cache Propagation:** When a new artifact version is published to the registry, the mesh propagates the update to all registered nodes on the next sync cycle. Stale versions are automatically evicted from node caches based on a configurable TTL. Out-of-date nodes that miss the propagation window receive the update on their next successful heartbeat check-in.
+
+**Offline Resilience:** Relay nodes continue serving cached artifacts even when the central Trier OS server is unreachable. Technicians accessing Digital Twin schematics on the plant floor, or pulling up equipment manuals during a maintenance window, experience no disruption during a central server outage. The mesh itself does not require continuous internet connectivity.
+
+### 73.2 Fleet Sync Status
+
+**Access:** Mission Control → IT Group → Edge Mesh tile. Requires IT Admin or Creator role.
+
+**Registry:** The Artifact Registry tab shows all artifacts managed by the mesh — name, version, size, content hash, upload timestamp, and which relay nodes have it cached. Use the **Publish** button to add a new artifact or upload a new version to replace an existing one.
+
+**Sync Status:** The Sync Status tab shows every registered relay node — hostname, IP address, last heartbeat timestamp, cache hit rate, and current sync lag (time since last successful propagation). Nodes that have not sent a heartbeat within the configured interval are flagged as offline and highlighted in red.
+
+**Cache Hit Rate:** The ratio of artifact requests served by a node from its local cache vs. requests that required a central server fetch. A high hit rate (> 90%) indicates the mesh is working effectively. A persistently low hit rate signals that the node's cache is undersized for the artifacts being requested, or that artifacts are not being pre-positioned before work begins.

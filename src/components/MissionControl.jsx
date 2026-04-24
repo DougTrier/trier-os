@@ -119,6 +119,7 @@ const ALL_TILES = {
     'emissions': { icon: Leaf, accent: '#10b981', title: 'Emissions & Carbon', desc: 'Scope 1 and Scope 2 emissions tracking, carbon intensity per unit of production, and corporate ESG rollup with year-over-year trend.', pills: ['Scope 1', 'Scope 2', 'Intensity', 'ESG'], route: '/emissions' },
     'digital-twin-sync': { icon: Link2, accent: '#6366f1', title: 'Digital Twin Integration', desc: 'Configure two-way sync with external digital twin platforms (Bentley iTwin, Siemens NX, PTC ThingWorx). Push asset registry outbound, pull spatial data inbound.', pills: ['Bentley', 'Siemens NX', 'ThingWorx', 'Sync History'], route: '/digital-twin-sync' },
     'time-machine': { icon: GitBranch, accent: '#8b5cf6', title: 'Time Machine', desc: 'Deterministic state replay & branching', route: '/time-machine' },
+    'saas-admin': { icon: Globe, accent: '#0ea5e9', title: 'SaaS & Ecosystem', desc: 'Metering, API key scoping, white-label config', pills: ['Metering', 'API Keys', 'Branding'], route: '/saas-admin' },
 };
 
 const ROLE_TILES = {
@@ -149,11 +150,11 @@ const ROLE_TILES = {
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'utilities', 'emissions', 'underwriter'],
     it_admin:   ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'underwriter', 'sops',
                  'asset-metrics', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
-                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync', 'time-machine',
+                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync', 'time-machine', 'saas-admin',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics'],
     creator:    ['safety', 'loto', 'compliance', 'quality-log', 'maintenance', 'engineering-tools', 'operator-trust', 'parts-needed', 'storeroom', 'utilities', 'emissions', 'underwriter', 'sops',
                  'asset-metrics', 'asset-lifecycle', 'logistics-fleet', 'supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'floor-plans', 'maps', 'plant-setup', 'plant-onboarding',
-                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync', 'time-machine',
+                 'it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync', 'time-machine', 'saas-admin',
                  'comms', 'directory', 'contractors', 'analytics', 'plant-metrics', 'corp-analytics', 'scanner', 'work-request-portal'],
     employee:   ['plant-overview', 'directory', 'comms', 'sops', 'floor-plans', 'maps', 'utilities', 'work-request-portal'],
 };
@@ -171,7 +172,7 @@ const TILE_GROUPS = {
     'supply-chain-group': { icon: Package, accent: '#8b5cf6', title: 'Supply Chain', desc: 'Ingredients, packaging, chemicals, consumables — POs, receiving, vendor management, tool crib, and contractor management.', pills: ['Inventory', 'POs', 'Vendors', 'Tools', 'Contractors'], children: ['supply-chain', 'vendor-scorecard', 'vendor-portal', 'tool-crib', 'contractors'] },
     'safety-group': { icon: ShieldAlert, accent: '#ef4444', title: 'Safety & Risk', desc: 'Hot work permits, confined space, safety incidents, LOTO, compliance, OSHA tracking, and insurance risk scoring.', pills: ['Permits', 'LOTO', 'Compliance', 'Risk Score'], children: ['safety', 'loto', 'compliance', 'underwriter'] },
     'people-comms': { icon: Users, accent: '#6366f1', title: 'People & Comms', desc: 'Knowledge exchange messaging and enterprise directory.', pills: ['Chat', 'Directory'], children: ['comms', 'directory'] },
-    'it-group': { icon: Server, accent: '#6366f1', title: 'Information Technology', desc: 'IT asset management, software licensing, system administration, governance, and data integration.', pills: ['Assets', 'Metrics', 'Admin', 'Governance'], children: ['it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync', 'time-machine'] },
+    'it-group': { icon: Server, accent: '#6366f1', title: 'Information Technology', desc: 'IT asset management, software licensing, system administration, governance, and data integration.', pills: ['Assets', 'Metrics', 'Admin', 'Governance'], children: ['it-department', 'it-metrics', 'it-global-search', 'it-alerts', 'governance', 'admin-console', 'import-wizard', 'edge-mesh', 'digital-twin-sync', 'time-machine', 'saas-admin'] },
     'plant-setup-group': { icon: Factory, accent: '#0ea5e9', title: 'Facilities & Floor Plans', desc: 'Interactive facility floor plans, equipment placement zones, LiDAR 3D scanning, and site maps.', pills: ['Floor Plans', 'Campus Maps', 'CAD Models'], children: ['floor-plans', 'maps', 'plant-setup', 'plant-onboarding'] },
 };
 

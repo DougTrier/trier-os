@@ -78,7 +78,7 @@ module.exports = function(db) {
 
     // Access control — all routes require creator or it_admin
     router.use((req, res, next) => {
-        if (!['creator', 'it_admin'].includes(req.user?.role)) {
+        if (!['creator', 'it_admin'].includes(req.user?.globalRole)) {
             return res.status(403).json({ error: 'Time Machine requires creator or it_admin role' });
         }
         next();
