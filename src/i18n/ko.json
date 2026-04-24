@@ -9423,5 +9423,12 @@
   "mc.tile.work-request-portal.desc": "운영자를 대신하여 유지보수 또는 수리 요청을 제출하십시오. 스캐너가 필요하지 않습니다. 모든 장치에서 직접 작성하세요.",
   "mc.tile.work-request-portal.pill.No Login Needed": "로그인이 필요하지 않습니다",
   "mc.tile.work-request-portal.pill.Status Check": "상태 확인",
-  "mc.tile.work-request-portal.pill.Submit": "제출하다"
+  "mc.tile.work-request-portal.pill.Submit": "제출하다",
+  "mc.tile.operations.pill.Assets": "자산",
+  "mc.tile.operations.pill.Parts": "부분품",
+  "mc.tile.operations.pill.Storeroom": "저장실",
+  "mc.tile.safety-group.pill.Risk Score": "위험 점수",
+  "mc.tile.supply-chain-group.pill.Contractors": "계약자",
+  "mc.tile.supply-chain-group.pill.Inventory": "목록",
+  "mc.tile.supply-chain-group.pill.POs": "PO"
 }

@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "Operatör adına bakım veya onarım talebi gönderin. Tarayıcıya gerek yok; doğrudan herhangi bir cihazdan doldurun.",
   "mc.tile.work-request-portal.pill.No Login Needed": "Giriş Yapmanıza Gerek Yok",
   "mc.tile.work-request-portal.pill.Status Check": "Durum Kontrolü",
-  "mc.tile.work-request-portal.pill.Submit": "Göndermek"
+  "mc.tile.work-request-portal.pill.Submit": "Göndermek",
+  "mc.tile.operations.pill.Assets": "Varlıklar",
+  "mc.tile.operations.pill.Parts": "Parçalar",
+  "mc.tile.operations.pill.Storeroom": "Depo",
+  "mc.tile.safety-group.pill.Risk Score": "Risk Puanı",
+  "mc.tile.supply-chain-group.pill.Contractors": "Yükleniciler",
+  "mc.tile.supply-chain-group.pill.Inventory": "Envanter",
+  "mc.tile.supply-chain-group.pill.POs": "PO'lar"
 }

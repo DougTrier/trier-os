@@ -9428,5 +9428,12 @@
   "mc.tile.work-request-portal.desc": "Senden Sie im Namen eines Betreibers eine Wartungs- oder Reparaturanfrage. Kein Scanner erforderlich – füllen Sie es direkt von jedem Gerät aus aus.",
   "mc.tile.work-request-portal.pill.No Login Needed": "Kein Login erforderlich",
   "mc.tile.work-request-portal.pill.Status Check": "Statusprüfung",
-  "mc.tile.work-request-portal.pill.Submit": "Einreichen"
+  "mc.tile.work-request-portal.pill.Submit": "Einreichen",
+  "mc.tile.operations.pill.Assets": "Vermögenswerte",
+  "mc.tile.operations.pill.Parts": "Teile",
+  "mc.tile.operations.pill.Storeroom": "Abstellraum",
+  "mc.tile.safety-group.pill.Risk Score": "Risikobewertung",
+  "mc.tile.supply-chain-group.pill.Contractors": "Auftragnehmer",
+  "mc.tile.supply-chain-group.pill.Inventory": "Inventar",
+  "mc.tile.supply-chain-group.pill.POs": "Bestellungen"
 }

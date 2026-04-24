@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "オペレーターに代わってメンテナンスまたは修理のリクエストを送信します。 スキャナーは必要ありません。どのデバイスからでも直接入力できます。",
   "mc.tile.work-request-portal.pill.No Login Needed": "ログインは必要ありません",
   "mc.tile.work-request-portal.pill.Status Check": "ステータスチェック",
-  "mc.tile.work-request-portal.pill.Submit": "提出する"
+  "mc.tile.work-request-portal.pill.Submit": "提出する",
+  "mc.tile.operations.pill.Assets": "資産",
+  "mc.tile.operations.pill.Parts": "部品",
+  "mc.tile.operations.pill.Storeroom": "物置",
+  "mc.tile.safety-group.pill.Risk Score": "リスクスコア",
+  "mc.tile.supply-chain-group.pill.Contractors": "請負業者",
+  "mc.tile.supply-chain-group.pill.Inventory": "在庫",
+  "mc.tile.supply-chain-group.pill.POs": "PO"
 }

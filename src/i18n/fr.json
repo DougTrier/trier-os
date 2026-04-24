@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "Soumettre une demande d’entretien ou de réparation au nom d’un opérateur. Aucun scanner n'est nécessaire : remplissez-le directement depuis n'importe quel appareil.",
   "mc.tile.work-request-portal.pill.No Login Needed": "Aucune connexion requise",
   "mc.tile.work-request-portal.pill.Status Check": "Vérification de l'état",
-  "mc.tile.work-request-portal.pill.Submit": "Soumettre"
+  "mc.tile.work-request-portal.pill.Submit": "Soumettre",
+  "mc.tile.operations.pill.Assets": "Actifs",
+  "mc.tile.operations.pill.Parts": "Parties",
+  "mc.tile.operations.pill.Storeroom": "Débarras",
+  "mc.tile.safety-group.pill.Risk Score": "Score de risque",
+  "mc.tile.supply-chain-group.pill.Contractors": "Entrepreneuses",
+  "mc.tile.supply-chain-group.pill.Inventory": "Inventaire",
+  "mc.tile.supply-chain-group.pill.POs": "PO"
 }

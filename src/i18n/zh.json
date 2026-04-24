@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "代表操作员提交维护或维修请求。 无需扫描仪 - 直接从任何设备填写。",
   "mc.tile.work-request-portal.pill.No Login Needed": "无需登录",
   "mc.tile.work-request-portal.pill.Status Check": "状态检查",
-  "mc.tile.work-request-portal.pill.Submit": "提交"
+  "mc.tile.work-request-portal.pill.Submit": "提交",
+  "mc.tile.operations.pill.Assets": "资产",
+  "mc.tile.operations.pill.Parts": "部分",
+  "mc.tile.operations.pill.Storeroom": "库房",
+  "mc.tile.safety-group.pill.Risk Score": "风险评分",
+  "mc.tile.supply-chain-group.pill.Contractors": "承包商",
+  "mc.tile.supply-chain-group.pill.Inventory": "存货",
+  "mc.tile.supply-chain-group.pill.POs": "采购订单"
 }

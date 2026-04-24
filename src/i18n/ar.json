@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "تقديم طلب صيانة أو إصلاح نيابة عن المشغل. لا حاجة إلى ماسح ضوئي - قم بملئه مباشرة من أي جهاز.",
   "mc.tile.work-request-portal.pill.No Login Needed": "لا حاجة لتسجيل الدخول",
   "mc.tile.work-request-portal.pill.Status Check": "التحقق من الحالة",
-  "mc.tile.work-request-portal.pill.Submit": "يُقدِّم"
+  "mc.tile.work-request-portal.pill.Submit": "يُقدِّم",
+  "mc.tile.operations.pill.Assets": "أصول",
+  "mc.tile.operations.pill.Parts": "أجزاء",
+  "mc.tile.operations.pill.Storeroom": "مخزن",
+  "mc.tile.safety-group.pill.Risk Score": "درجة المخاطرة",
+  "mc.tile.supply-chain-group.pill.Contractors": "المقاولون",
+  "mc.tile.supply-chain-group.pill.Inventory": "جرد",
+  "mc.tile.supply-chain-group.pill.POs": "أوامر الشراء"
 }

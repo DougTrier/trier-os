@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "किसी ऑपरेटर की ओर से रखरखाव या मरम्मत का अनुरोध सबमिट करें। किसी स्कैनर की आवश्यकता नहीं - इसे किसी भी उपकरण से सीधे भरें।",
   "mc.tile.work-request-portal.pill.No Login Needed": "कोई लॉगिन आवश्यक नहीं",
   "mc.tile.work-request-portal.pill.Status Check": "स्थिति की जांच",
-  "mc.tile.work-request-portal.pill.Submit": "जमा करना"
+  "mc.tile.work-request-portal.pill.Submit": "जमा करना",
+  "mc.tile.operations.pill.Assets": "संपत्ति",
+  "mc.tile.operations.pill.Parts": "पार्ट्स",
+  "mc.tile.operations.pill.Storeroom": "गोदाम",
+  "mc.tile.safety-group.pill.Risk Score": "जोखिम स्कोर",
+  "mc.tile.supply-chain-group.pill.Contractors": "ठेकेदारों",
+  "mc.tile.supply-chain-group.pill.Inventory": "भंडार",
+  "mc.tile.supply-chain-group.pill.POs": "पीओ"
 }

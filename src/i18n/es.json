@@ -9429,5 +9429,12 @@
   "mc.tile.work-request-portal.desc": "Presentar una solicitud de mantenimiento o reparación en nombre de un operador. No se necesita escáner: complételo directamente desde cualquier dispositivo.",
   "mc.tile.work-request-portal.pill.No Login Needed": "No es necesario iniciar sesión",
   "mc.tile.work-request-portal.pill.Status Check": "Verificación de estado",
-  "mc.tile.work-request-portal.pill.Submit": "Entregar"
+  "mc.tile.work-request-portal.pill.Submit": "Entregar",
+  "mc.tile.operations.pill.Assets": "Activos",
+  "mc.tile.operations.pill.Parts": "Regiones",
+  "mc.tile.operations.pill.Storeroom": "Despensa",
+  "mc.tile.safety-group.pill.Risk Score": "Puntuación de riesgo",
+  "mc.tile.supply-chain-group.pill.Contractors": "Contratistas",
+  "mc.tile.supply-chain-group.pill.Inventory": "Inventario",
+  "mc.tile.supply-chain-group.pill.POs": "órdenes de compra"
 }
