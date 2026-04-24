@@ -942,6 +942,7 @@ app.use('/api/contractors', require('./routes/contractors'));
 app.use('/api/intelligence', require('./routes/intelligence'));
              // Contractor Management (Phase 6)
 app.use('/api/digital-twin', require('./routes/digitalTwin')(db));        // Digital Twin (Phase 4)
+app.use('/api/time-machine', require('./routes/time_machine')(db));       // Deterministic Time Machine (Phase 7)
 app.use('/api/catalog', require('./routes/catalog'));                      // Master Data Catalog (Phase 5)
 app.use('/api/catalog/enrich', require('./routes/catalog_enrichment'));    // Catalog Enrichment Engine (2-tier)
 app.use('/api', require('./routes/gap_features'));  // WO Attachments, Failure Codes, Scheduled Reports (Gap Analysis)

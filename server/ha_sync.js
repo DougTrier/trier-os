@@ -295,6 +295,7 @@ function applyReplicatedEntries(plantId, entries) {
                 plantDb.prepare('VACUUM INTO ?').run(snapshotFile); // SQLite 3.27+
             }
             results.snapshotFile = snapshotFile;
+            recordStateSnapshot(plantDb, snapshotFile);
         } catch (snapErr) {
             // Fallback: simple file copy if VACUUM INTO isn't supported
             try {
@@ -310,6 +311,7 @@ function applyReplicatedEntries(plantId, entries) {
                 const snapshotFile = path.join(snapshotDir, `${plantId}_pre_sync_${ts}.db`);
                 fs.copyFileSync(dbPath, snapshotFile);
                 results.snapshotFile = snapshotFile;
+                recordStateSnapshot(plantDb, snapshotFile);
             } catch (copyErr) {
                 console.warn(`  ⚠️ [HA] Snapshot failed for [${plantId}]:`, copyErr.message);
             }
@@ -751,6 +753,45 @@ async function consistencyCheck(plantId) {
     }
 }
 
+/**
+ * Record a state snapshot in the StateSnapshot table.
+ */
+function recordStateSnapshot(plantDb, snapshotFile) {
+    try {
+        const hasTable = plantDb.prepare(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name='StateSnapshot'`
+        ).get();
+        if (!hasTable) return;
+
+        const hasEventLog = plantDb.prepare(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name='EventLog'`
+        ).get();
+
+        let watermark = 0;
+        if (hasEventLog) {
+            const maxEvent = plantDb.prepare(`SELECT MAX(EventID) as max_id FROM EventLog`).get();
+            watermark = maxEvent?.max_id ?? 0;
+        }
+
+        const fs = require('fs');
+        const crypto = require('crypto');
+        
+        if (!fs.existsSync(snapshotFile)) return;
+        
+        const stat = fs.statSync(snapshotFile);
+        const fileBuffer = fs.readFileSync(snapshotFile);
+        const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+        plantDb.prepare(`
+            INSERT INTO StateSnapshot (EventWatermark, FilePath, FileHash, SizeBytes, CreatedBy)
+            VALUES (?, ?, ?, ?, ?)
+        `).run(watermark, snapshotFile, fileHash, stat.size, 'SYSTEM');
+
+    } catch (err) {
+        console.warn(`  ⚠️ [HA] Failed to record state snapshot:`, err.message);
+    }
+}
+
 module.exports = {
     SERVER_ROLE,
     SERVER_ID,
@@ -772,5 +813,6 @@ module.exports = {
     disableSyncTriggers,
     enableSyncTriggers,
     rollbackToSnapshot,
-    listSnapshots
+    listSnapshots,
+    recordStateSnapshot
 };
