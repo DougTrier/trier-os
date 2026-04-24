@@ -125,7 +125,24 @@ Artifacts/
 .claude/
 ROADMAP.md
 Referring_Sites.md
-Audit 47.md
 
-# Legacy Playwright test result PDFs (superseded by versioned reports in playwright-reports/)
-Playwright_Test_Results_v3.3.1.pdf
+# Internal archive (task lists, completed roadmaps, audit docs — local only)
+References/
+
+# Runtime edge device keys
+data/edge_keys/
+
+# NATS broker binary and extracted directory
+tools/
+
+# Playwright auth cache
+tests/e2e/.auth/
+
+# One-off debug/utility scripts
+read_*.js
+test_*.js
+test-*.js
+test_output*.txt
+test_out.txt
+debug_*.txt
+missing_keys.json

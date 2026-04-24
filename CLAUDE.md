@@ -220,5 +220,5 @@ result succeeded.
 
 ## Current Version
 
-v3.5.1 — See CHANGELOG.md and ROADMAP.md for history.
-Active roadmap: Roadmap Parts and Assets.md
+v3.6.2 — See CHANGELOG.md and ROADMAP.md for history.
+Completed roadmaps and task lists archived in References/.
