@@ -14,8 +14,10 @@
  *   ROUTE_TO_ACTIVE_WO / OTHER_USER  → Join, Take Over, Escalate
  *   ROUTE_TO_WAITING_WO              → Resume Waiting WO, Create New WO, View Status
  *   ROUTE_TO_ESCALATED_WO            → Join Response, Take Over Response, View Status
- *   AUTO_CREATE_WO                   → Confirmation only (no further action needed)
+ *   AUTO_CREATE_WO                   → Close WO, Waiting, Scan/Add Parts, Escalate, Continue Later
  *   AUTO_REJECT_DUPLICATE_SCAN       → Warning only
+ *   ROUTE_TO_CHILD_SELECTOR          → Tap-list of sub-components + Add New Sub-Component
+ *   ROUTE_TO_PART_CHECKOUT           → Part info + quantity picker (direct part QR scan)
  *
  * When the WAITING option is selected, a secondary picker surfaces the
  * hold reason taxonomy (tech-selectable codes only). SCHEDULED_RETURN
@@ -37,8 +39,8 @@
  *   onCancel        {function}  Called when user dismisses without action
  */
 
-import React, { useState, useCallback } from 'react';
-import { CheckCircle, Clock, AlertTriangle, Users, UserCheck, UserX, Plus, Eye, ArrowLeft } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { CheckCircle, Clock, AlertTriangle, Users, UserCheck, UserX, Plus, Eye, ArrowLeft, Package, Camera, Search, Layers } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
 
 // ── Tech-selectable hold reason codes (never show UNKNOWN_HOLD on device) ────
@@ -104,12 +106,132 @@ export default function ScanActionPrompt({
     const { t } = useTranslation();
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [screen, setScreen] = useState('main');           // main | hold_reason | return_window | team_close_confirm
+    const [screen, setScreen] = useState('main'); // main | hold_reason | return_window | team_close_confirm | parts_search | parts_quantity | add_child
     const [selectedHoldReason, setSelectedHoldReason] = useState(null);
     const [selectedPin, setSelectedPin] = useState(null);
     const [acknowledgedSops, setAcknowledgedSops] = useState([]);
+    // Parts checkout state
+    const [partsWoId, setPartsWoId] = useState(null);
+    const [partSearchQuery, setPartSearchQuery] = useState('');
+    const [partSearchResults, setPartSearchResults] = useState([]);
+    const [partSearchLoading, setPartSearchLoading] = useState(false);
+    const [selectedPart, setSelectedPart] = useState(null);
+    const [partQty, setPartQty] = useState(1);
+    const [partsAdded, setPartsAdded] = useState([]);
+    // Add sub-component state
+    const [addChildName, setAddChildName] = useState('');
+    const [addChildPhoto, setAddChildPhoto] = useState(null);
+    const [childSaving, setChildSaving] = useState(false);
+    const photoInputRef = useRef(null);
 
     const { branch, context, wo, options = [], activeUsers = [] } = branchResponse || {};
+
+    // ── Debounced parts search ────────────────────────────────────────────────
+    useEffect(() => {
+        if (screen !== 'parts_search') return;
+        if (!partSearchQuery.trim()) { setPartSearchResults([]); return; }
+        const timer = setTimeout(async () => {
+            setPartSearchLoading(true);
+            try {
+                const res = await fetch(`/api/scan/parts-search?q=${encodeURIComponent(partSearchQuery)}`, {
+                    headers: { 'x-plant-id': plantId },
+                });
+                const data = await res.json();
+                setPartSearchResults(data.parts || []);
+            } catch (_) { setPartSearchResults([]); }
+            setPartSearchLoading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [partSearchQuery, screen, plantId]);
+
+    // ── Open parts screen for a given WO ─────────────────────────────────────
+    const openPartsScreen = (woId) => {
+        setPartsWoId(woId);
+        setPartSearchQuery('');
+        setPartSearchResults([]);
+        setPartsAdded([]);
+        setScreen('parts_search');
+    };
+
+    // ── Commit parts checkout ─────────────────────────────────────────────────
+    const handlePartCheckout = async () => {
+        if (!selectedPart || !partQty || !partsWoId) return;
+        setSubmitting(true);
+        setError('');
+        try {
+            const res = await fetch('/api/scan/parts-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                body: JSON.stringify({ woId: partsWoId, partId: selectedPart.id, quantity: partQty }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+            setPartsAdded(prev => [...prev, { ...selectedPart, qty: partQty }]);
+            setSelectedPart(null);
+            setPartQty(1);
+            setPartSearchQuery('');
+            setPartSearchResults([]);
+            setScreen('parts_search');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // ── Scan a child asset after selecting from picker ────────────────────────
+    const handleChildSelect = async (child) => {
+        setSubmitting(true);
+        setError('');
+        try {
+            const newScanId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const newTimestamp = new Date().toISOString();
+            const res = await fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                body: JSON.stringify({ scanId: newScanId, assetId: child.ID, userId, deviceTimestamp: newTimestamp }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+            onActionComplete({ ...data, scanId: newScanId, deviceTimestamp: newTimestamp });
+        } catch (err) {
+            setError(err.message);
+            setSubmitting(false);
+        }
+    };
+
+    // ── Create a new child asset then scan into it ────────────────────────────
+    const handleAddChild = async () => {
+        if (!addChildName.trim()) return;
+        setChildSaving(true);
+        setError('');
+        try {
+            const createRes = await fetch('/api/scan/add-child-asset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                body: JSON.stringify({
+                    name: addChildName.trim(),
+                    parentId: branchResponse?.parentAsset?.id,
+                    photoDataUrl: addChildPhoto || null,
+                }),
+            });
+            const created = await createRes.json();
+            if (!createRes.ok) throw new Error(created.error || `Server error ${createRes.status}`);
+            const newScanId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const newTimestamp = new Date().toISOString();
+            const scanRes = await fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                body: JSON.stringify({ scanId: newScanId, assetId: created.id, userId, deviceTimestamp: newTimestamp }),
+            });
+            const scanData = await scanRes.json();
+            if (!scanRes.ok) throw new Error(scanData.error || `Server error ${scanRes.status}`);
+            onActionComplete({ ...scanData, scanId: newScanId, deviceTimestamp: newTimestamp });
+        } catch (err) {
+            setError(err.message);
+            setChildSaving(false);
+        }
+    };
 
     // ── Submit an action to POST /api/scan/action ─────────────────────────────
     const submitAction = useCallback(async ({ action, holdReason, returnWindow }) => {
@@ -197,6 +319,175 @@ export default function ScanActionPrompt({
                         {w.label}
                     </TapBtn>
                 ))}
+                {error && <ErrorBanner msg={error} />}
+            </div>
+        );
+    }
+
+    // ── Parts search screen ───────────────────────────────────────────────────
+    if (screen === 'parts_search') {
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <button onClick={() => setScreen('main')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+                        <ArrowLeft size={20} />
+                    </button>
+                    <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>Add Parts to WO</span>
+                </div>
+
+                {partsAdded.length > 0 && (
+                    <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                        {partsAdded.map((p, i) => (
+                            <div key={i} style={{ color: '#86efac', fontSize: 13 }}>✓ {p.description} × {p.qty}</div>
+                        ))}
+                    </div>
+                )}
+
+                <div style={{ position: 'relative', marginBottom: 12 }}>
+                    <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+                    <input
+                        autoFocus
+                        type="text"
+                        placeholder="Search by name or part ID…"
+                        value={partSearchQuery}
+                        onChange={e => setPartSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%', boxSizing: 'border-box',
+                            padding: '10px 12px 10px 34px', borderRadius: 8,
+                            background: '#1e293b', border: '1px solid #334155',
+                            color: '#f1f5f9', fontSize: 14,
+                        }}
+                    />
+                </div>
+
+                {partSearchLoading && <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>Searching…</div>}
+
+                {partSearchResults.map(p => (
+                    <TapBtn key={p.ID} variant="default"
+                        onClick={() => { setSelectedPart({ id: p.ID, description: p.description }); setPartQty(1); setScreen('parts_quantity'); }}>
+                        <Package size={16} />
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{p.description}</div>
+                            <div style={{ fontSize: 12, color: '#64748b' }}>{p.ID}{p.location ? ` · ${p.location}` : ''} · {p.available ?? '?'} in stock</div>
+                        </div>
+                    </TapBtn>
+                ))}
+
+                {partSearchQuery && !partSearchLoading && partSearchResults.length === 0 && (
+                    <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>No parts found</div>
+                )}
+
+                {partsAdded.length > 0 && (
+                    <button onClick={() => setScreen('main')} style={{ marginTop: 12, width: '100%', padding: '12px', borderRadius: 8, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: '#86efac', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+                        Done — {partsAdded.length} part{partsAdded.length > 1 ? 's' : ''} added
+                    </button>
+                )}
+                {error && <ErrorBanner msg={error} />}
+            </div>
+        );
+    }
+
+    // ── Parts quantity picker screen ──────────────────────────────────────────
+    if (screen === 'parts_quantity' && selectedPart) {
+        const QTY_OPTIONS = [1, 2, 3, 4, 5, 10, 20];
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <button onClick={() => setScreen('parts_search')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+                        <ArrowLeft size={20} />
+                    </button>
+                    <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>How many?</span>
+                </div>
+                <div style={{ marginBottom: 20, padding: '10px 14px', borderRadius: 8, background: '#1e293b', border: '1px solid #334155' }}>
+                    <div style={{ color: '#f1f5f9', fontWeight: 600 }}>{selectedPart.description}</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
+                    {QTY_OPTIONS.map(q => (
+                        <button key={q} onClick={() => setPartQty(q)}
+                            style={{
+                                padding: '16px 8px', borderRadius: 10, fontSize: 18, fontWeight: 700,
+                                background: partQty === q ? '#2563eb' : '#1e293b',
+                                border: `1px solid ${partQty === q ? '#3b82f6' : '#334155'}`,
+                                color: partQty === q ? '#fff' : '#94a3b8', cursor: 'pointer',
+                            }}>
+                            {q}
+                        </button>
+                    ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, gridColumn: 'span 4' }}>
+                        <button onClick={() => setPartQty(v => Math.max(1, v - 1))} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }}>−</button>
+                        <span style={{ flex: 2, textAlign: 'center', color: '#f1f5f9', fontSize: 20, fontWeight: 700 }}>{partQty}</span>
+                        <button onClick={() => setPartQty(v => v + 1)} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }}>+</button>
+                    </div>
+                </div>
+                <TapBtn variant="success" onClick={handlePartCheckout} disabled={submitting}>
+                    <CheckCircle size={18} /> Add {partQty} × {selectedPart.description}
+                </TapBtn>
+                {error && <ErrorBanner msg={error} />}
+            </div>
+        );
+    }
+
+    // ── Add sub-component screen ──────────────────────────────────────────────
+    if (screen === 'add_child') {
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <button onClick={() => setScreen('main')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+                        <ArrowLeft size={20} />
+                    </button>
+                    <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>Add Sub-Component</span>
+                </div>
+
+                <input
+                    autoFocus
+                    type="text"
+                    placeholder="Name this sub-component…"
+                    value={addChildName}
+                    onChange={e => setAddChildName(e.target.value)}
+                    style={{
+                        width: '100%', boxSizing: 'border-box', marginBottom: 12,
+                        padding: '12px 14px', borderRadius: 8,
+                        background: '#1e293b', border: '1px solid #334155',
+                        color: '#f1f5f9', fontSize: 15,
+                    }}
+                />
+
+                {/* Camera capture */}
+                <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = ev => setAddChildPhoto(ev.target.result);
+                        reader.readAsDataURL(file);
+                    }}
+                />
+                <button
+                    onClick={() => photoInputRef.current?.click()}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                        marginBottom: 16, padding: '12px 14px', borderRadius: 8,
+                        background: addChildPhoto ? 'rgba(16,185,129,0.1)' : '#1e293b',
+                        border: `1px solid ${addChildPhoto ? 'rgba(16,185,129,0.4)' : '#334155'}`,
+                        color: addChildPhoto ? '#86efac' : '#64748b', cursor: 'pointer', fontSize: 14,
+                    }}
+                >
+                    <Camera size={18} />
+                    {addChildPhoto ? 'Photo captured — tap to retake' : 'Take photo (optional)'}
+                </button>
+
+                {addChildPhoto && (
+                    <img src={addChildPhoto} alt="preview" style={{ width: '100%', borderRadius: 8, marginBottom: 12, maxHeight: 160, objectFit: 'cover' }} />
+                )}
+
+                <TapBtn variant="success" onClick={handleAddChild} disabled={childSaving || !addChildName.trim()}>
+                    <Layers size={18} /> {childSaving ? 'Saving…' : 'Save & Start Work on This Component'}
+                </TapBtn>
                 {error && <ErrorBanner msg={error} />}
             </div>
         );
@@ -431,20 +722,22 @@ export default function ScanActionPrompt({
         const handleContinue = async () => {
             // Re-scan with a fresh scanId — will now pass Step 3.7 and create the WO
             setSubmitting(true);
+            const newScanId = crypto.randomUUID
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const newTimestamp = new Date().toISOString();
             try {
                 const res = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
-                    body: JSON.stringify({
-                        scanId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                        assetId,
-                        userId,
-                        deviceTimestamp: new Date().toISOString(),
-                    }),
+                    body: JSON.stringify({ scanId: newScanId, assetId, userId, deviceTimestamp: newTimestamp }),
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-                onActionComplete(data);
+                // Reset before transitioning so the next screen's buttons are active.
+                // Thread scanId + timestamp so POST /api/scan/action can reference this scan.
+                setSubmitting(false);
+                onActionComplete({ ...data, scanId: newScanId, deviceTimestamp: newTimestamp });
             } catch (err) {
                 setError(err.message);
                 setSubmitting(false);
@@ -518,17 +811,37 @@ export default function ScanActionPrompt({
         );
     }
 
-    // Branch: AUTO_CREATE_WO — work started, no further action needed
+    // Branch: AUTO_CREATE_WO — WO created and segment opened; tech is now active
     if (branch === 'AUTO_CREATE_WO') {
         return (
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                <CheckCircle size={44} color="#22c55e" style={{ marginBottom: 12 }} />
-                <div style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Work Started</div>
-                <div style={{ color: '#64748b', fontSize: 14 }}>WO {wo?.number} — {wo?.description || ''}</div>
-                <button onClick={onCancel} style={{ marginTop: 20, background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 14 }}>
-                    Done
-                </button>
-            </div>
+            <PromptShell wo={wo} subtitle="Work Started — In Progress" onCancel={onCancel}>
+                <TapBtn number={1} variant="success"
+                    onClick={() => submitAction({ action: 'CLOSE_WO' })}
+                    disabled={submitting}>
+                    <CheckCircle size={18} /> Close Work Order
+                </TapBtn>
+                <TapBtn number={2} variant="warning"
+                    onClick={() => setScreen('hold_reason')}
+                    disabled={submitting}>
+                    <Clock size={18} /> Waiting…
+                </TapBtn>
+                <TapBtn number={3} variant="neutral"
+                    onClick={() => openPartsScreen(wo?.id)}
+                    disabled={submitting}>
+                    <Package size={18} /> Scan / Add Parts
+                </TapBtn>
+                <TapBtn number={4} variant="neutral"
+                    onClick={() => submitAction({ action: 'ESCALATE' })}
+                    disabled={submitting}>
+                    <AlertTriangle size={18} /> Escalate
+                </TapBtn>
+                <TapBtn number={5} variant="neutral"
+                    onClick={() => submitAction({ action: 'CONTINUE_LATER' })}
+                    disabled={submitting}>
+                    Continue Later
+                </TapBtn>
+                {error && <ErrorBanner msg={error} />}
+            </PromptShell>
         );
     }
 
@@ -590,10 +903,103 @@ export default function ScanActionPrompt({
         );
     }
 
+    // Branch: ROUTE_TO_CHILD_SELECTOR — parent asset has sub-components, no schematic configured
+    if (branch === 'ROUTE_TO_CHILD_SELECTOR') {
+        const { parentAsset, children = [] } = branchResponse;
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{parentAsset?.description || parentAsset?.id}</div>
+                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>Select the sub-component you're working on</div>
+                </div>
+                {children.map((child, i) => (
+                    <TapBtn key={child.ID} number={i + 1} variant="default" onClick={() => handleChildSelect(child)} disabled={submitting}>
+                        <Layers size={16} />
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600 }}>{child.Description}</div>
+                            {child.Model && <div style={{ fontSize: 12, color: '#64748b' }}>{child.Model}</div>}
+                        </div>
+                    </TapBtn>
+                ))}
+                <TapBtn number={children.length + 1} variant="neutral" onClick={() => { setAddChildName(''); setAddChildPhoto(null); setScreen('add_child'); }} disabled={submitting}>
+                    <Plus size={16} /> Add New Sub-Component
+                </TapBtn>
+                {error && <ErrorBanner msg={error} />}
+                <button onClick={onCancel} style={{ marginTop: 8, width: '100%', padding: '12px', borderRadius: 8, background: 'none', border: '1px solid #1e293b', color: '#475569', cursor: 'pointer', fontSize: 14 }}>
+                    Skip — Work on Whole Asset
+                </button>
+            </div>
+        );
+    }
+
+    // Branch: ROUTE_TO_PART_CHECKOUT — scanned ID is a part barcode
+    if (branch === 'ROUTE_TO_PART_CHECKOUT') {
+        const { part, activeWo } = branchResponse;
+        if (screen === 'parts_quantity' && selectedPart) {
+            const QTY_OPTIONS = [1, 2, 3, 4, 5, 10, 20];
+            return (
+                <div style={{ padding: '4px 0' }}>
+                    <div style={{ marginBottom: 20, padding: '10px 14px', borderRadius: 8, background: '#1e293b', border: '1px solid #334155' }}>
+                        <div style={{ color: '#f1f5f9', fontWeight: 600 }}>{part.description}</div>
+                        {activeWo ? <div style={{ color: '#64748b', fontSize: 13 }}>WO {activeWo.id}</div> : <div style={{ color: '#f87171', fontSize: 13 }}>No active work order — start work on an asset first</div>}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
+                        {QTY_OPTIONS.map(q => (
+                            <button key={q} onClick={() => setPartQty(q)}
+                                style={{ padding: '16px 8px', borderRadius: 10, fontSize: 18, fontWeight: 700, background: partQty === q ? '#2563eb' : '#1e293b', border: `1px solid ${partQty === q ? '#3b82f6' : '#334155'}`, color: partQty === q ? '#fff' : '#94a3b8', cursor: 'pointer' }}>
+                                {q}
+                            </button>
+                        ))}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, gridColumn: 'span 4' }}>
+                            <button onClick={() => setPartQty(v => Math.max(1, v - 1))} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }}>−</button>
+                            <span style={{ flex: 2, textAlign: 'center', color: '#f1f5f9', fontSize: 20, fontWeight: 700 }}>{partQty}</span>
+                            <button onClick={() => setPartQty(v => v + 1)} style={{ flex: 1, padding: 10, borderRadius: 8, background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }}>+</button>
+                        </div>
+                    </div>
+                    {activeWo && (
+                        <TapBtn variant="success" onClick={async () => {
+                            setSubmitting(true);
+                            setError('');
+                            try {
+                                const res = await fetch('/api/scan/parts-checkout', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                                    body: JSON.stringify({ woId: activeWo.id, partId: part.id, quantity: partQty }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+                                onActionComplete(data);
+                            } catch (err) { setError(err.message); setSubmitting(false); }
+                        }} disabled={submitting}>
+                            <CheckCircle size={18} /> Add {partQty} to WO {activeWo.id}
+                        </TapBtn>
+                    )}
+                    {error && <ErrorBanner msg={error} />}
+                </div>
+            );
+        }
+        return (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <Package size={44} color="#3b82f6" style={{ marginBottom: 12 }} />
+                <div style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{part.description}</div>
+                <div style={{ color: '#64748b', fontSize: 13, marginBottom: 4 }}>{part.id}{part.location ? ` · ${part.location}` : ''}</div>
+                <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 20 }}>{part.available ?? '?'} in stock</div>
+                {activeWo ? (
+                    <TapBtn variant="success" onClick={() => { setSelectedPart({ id: part.id, description: part.description }); setPartQty(1); setScreen('parts_quantity'); }}>
+                        <Plus size={18} /> Add to WO {activeWo.id}
+                    </TapBtn>
+                ) : (
+                    <div style={{ color: '#f87171', fontSize: 13, padding: '12px 0' }}>No active work order — scan an asset first to start work, then scan parts to add them.</div>
+                )}
+                <button onClick={onCancel} style={{ marginTop: 12, background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 14 }}>Dismiss</button>
+            </div>
+        );
+    }
+
     // Branch: ROUTE_TO_ACTIVE_WO — active WO context
     if (branch === 'ROUTE_TO_ACTIVE_WO') {
 
-        // Another user is active — Join / Take Over / Escalate
+        // Another user is active — Join / Take Over / Escalate / Supervisor management
         if (context === 'OTHER_USER_ACTIVE') {
             return (
                 <PromptShell wo={wo} subtitle={`Active — ${activeUsers.length} technician(s) on this WO`} onCancel={onCancel}>
@@ -608,6 +1014,16 @@ export default function ScanActionPrompt({
                         <UserCheck size={18} /> Take Over
                     </TapBtn>
                     <TapBtn number={3} variant="neutral"
+                        onClick={() => setScreen('hold_reason')}
+                        disabled={submitting}>
+                        <Clock size={18} /> Put on Hold
+                    </TapBtn>
+                    <TapBtn number={4} variant="danger"
+                        onClick={() => setScreen('team_close_confirm')}
+                        disabled={submitting}>
+                        <CheckCircle size={18} /> Close Work Order
+                    </TapBtn>
+                    <TapBtn number={5} variant="neutral"
                         onClick={() => submitAction({ action: 'ESCALATE' })}
                         disabled={submitting}>
                         <AlertTriangle size={18} /> Escalate
@@ -665,11 +1081,16 @@ export default function ScanActionPrompt({
                     <Clock size={18} /> Waiting…
                 </TapBtn>
                 <TapBtn number={3} variant="neutral"
+                    onClick={() => openPartsScreen(wo?.id)}
+                    disabled={submitting}>
+                    <Package size={18} /> Scan / Add Parts
+                </TapBtn>
+                <TapBtn number={4} variant="neutral"
                     onClick={() => submitAction({ action: 'ESCALATE' })}
                     disabled={submitting}>
                     <AlertTriangle size={18} /> Escalate
                 </TapBtn>
-                <TapBtn number={4} variant="neutral"
+                <TapBtn number={5} variant="neutral"
                     onClick={() => submitAction({ action: 'CONTINUE_LATER' })}
                     disabled={submitting}>
                     Continue Later

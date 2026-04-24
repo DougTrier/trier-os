@@ -43,6 +43,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const path = require('path');
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database');
 const dataDir = require('../resolve_data_dir');
@@ -407,6 +408,32 @@ router.post('/', (req, res) => {
             }
         }
 
+        // ── Step 3.6: Child asset picker fallback ────────────────────────────────────
+        // When an asset has registered sub-components but no visual schematic, surface
+        // a tap-to-select list so the WO is created against the specific sub-component.
+        {
+            const childAssets = conn.prepare(`
+                SELECT ID, Description, Model, PartNumber FROM Asset
+                WHERE ParentAssetID = ? AND (IsDeleted IS NULL OR IsDeleted = 0)
+                ORDER BY SortOrder ASC, Description ASC
+            `).all(assetId);
+
+            if (childAssets.length > 0) {
+                const parentRow = conn.prepare('SELECT Description FROM Asset WHERE ID = ? LIMIT 1').get(assetId);
+                writeAuditEntry(conn, {
+                    scanId, assetId, userId,
+                    previousState: null, nextState: null,
+                    decisionBranch: 'ROUTE_TO_CHILD_SELECTOR',
+                    deviceTimestamp, offlineCaptured,
+                });
+                return res.json({
+                    branch: 'ROUTE_TO_CHILD_SELECTOR',
+                    parentAsset: { id: assetId, description: parentRow?.Description || assetId },
+                    children: childAssets,
+                });
+            }
+        }
+
         // ── Step 3.7: SOP Re-Acknowledgment Gate ─────────────────────────────────────
         // Before creating a new WO against this asset, verify the tech has acknowledged
         // all SOPs linked to this asset that were flagged by an MOC change.
@@ -450,6 +477,27 @@ router.post('/', (req, res) => {
         // Verify the asset exists before creating a WO against it.
         const asset = conn.prepare('SELECT ID, Description FROM Asset WHERE ID = ? LIMIT 1').get(assetId);
         if (!asset) {
+            // Maybe the scanned QR is a part barcode — check Part table before returning 404
+            const part = conn.prepare(
+                'SELECT ID, Descript, Description, Stock, Location FROM Part WHERE ID = ? LIMIT 1'
+            ).get(assetId);
+            if (part) {
+                const activeSegment = conn.prepare(`
+                    SELECT ws.woId FROM WorkSegments ws
+                    WHERE ws.userId = ? AND ws.segmentState = 'Active'
+                    ORDER BY ws.startTime DESC LIMIT 1
+                `).get(userId);
+                return res.json({
+                    branch: 'ROUTE_TO_PART_CHECKOUT',
+                    part: {
+                        id: part.ID,
+                        description: part.Description || part.Descript,
+                        available: part.Stock,
+                        location: part.Location,
+                    },
+                    activeWo: activeSegment ? { id: activeSegment.woId } : null,
+                });
+            }
             writeAuditEntry(conn, {
                 scanId, assetId, userId,
                 previousState: null, nextState: null,
@@ -470,18 +518,21 @@ router.post('/', (req, res) => {
             // R-7: Timestamp alone collides when two workers hit this on the same ms.
             // 3 random bytes (6 hex chars) makes collision probability negligible.
             const woNumber = `AUTO-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-            const desc = segmentReason 
+            const desc = segmentReason
                 ? `Work Order — ${asset.Description || assetId} — ${segmentReason}`
                 : `Work Order — ${asset.Description || assetId}`;
-                
+
+            // el_work_insert trigger writes NEW.ID to EventLog.AggregateID (NOT NULL).
+            // Compute next ID inside the IMMEDIATE transaction to satisfy that constraint.
+            const nextWoId = (conn.prepare('SELECT COALESCE(MAX(ID), 0) + 1 AS n FROM Work').get()?.n) || 1;
+
             const woInsert = conn.prepare(`
                 INSERT INTO Work
-                    (WorkOrderNumber, Description, AstID, StatusID, TypeID, AddDate, UserID, AssignToID)
-                VALUES (?, ?, ?, ?, 'CORRECTIVE', datetime('now'), ?, ?)
-            `).run(woNumber, desc, assetId,
+                    (ID, WorkOrderNumber, Description, AstID, StatusID, TypeID, AddDate, UserID, AssignToID)
+                VALUES (?, ?, ?, ?, ?, 'CORRECTIVE', datetime('now'), ?, ?)
+            `).run(nextWoId, woNumber, desc, assetId,
                 STATUS.IN_PROGRESS, userId, userId);
 
-            // Use WorkOrderNumber as the stable identifier — ID column is TEXT PRIMARY KEY and not set here
             const woRowId = woInsert.lastInsertRowid;
             const woId = woNumber;
             const segmentId = openSegment(conn, { 
@@ -517,7 +568,7 @@ router.post('/', (req, res) => {
                 }
             } catch (_) { /* AssetParts absent or WorkParts schema mismatch — WO creation unaffected */ }
 
-            return { woId, woNumber, segmentId };
+            return { woId, woNumber, segmentId, desc };
         }).immediate();
 
         if (result.duplicate) {
@@ -531,7 +582,7 @@ router.post('/', (req, res) => {
         return res.json({
             branch: 'AUTO_CREATE_WO',
             message: 'Work Started',
-            wo: { id: result.woId, number: result.woNumber },
+            wo: { id: result.woId, number: result.woNumber, description: result.desc },
             segmentId: result.segmentId,
         });
 
@@ -767,6 +818,66 @@ router.get('/active-segments', (req, res) => {
         `).all();
         res.json({ segments });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/scan/asset-status/:assetId ──────────────────────────────────────
+// Live work status for an asset card: active WO, how many techs are currently
+// working (WorkSegments), and when work was last performed.
+// Consumed by ScanEntryPoint to render the richer status badge.
+router.get('/asset-status/:assetId', (req, res) => {
+    try {
+        const { assetId } = req.params;
+        if (!assetId) return res.status(400).json({ error: 'assetId required' });
+        const conn = req.db;
+        ensureScanColumns(conn);
+
+        const activeWo = conn.prepare(`
+            SELECT w.ID, w.WorkOrderNumber, w.Description, w.StatusID, w.holdReason, w.AssignToID
+            FROM Work w
+            WHERE w.AstID = ?
+              AND w.StatusID != ${STATUS.COMPLETED}
+              AND (w.IsDeleted IS NULL OR w.IsDeleted = 0)
+            ORDER BY w.ID DESC
+            LIMIT 1
+        `).get(assetId);
+
+        if (!activeWo) {
+            const lastWork = conn.prepare(`
+                SELECT MAX(ws.endTime) as lastWorked
+                FROM WorkSegments ws
+                JOIN Work w ON CAST(ws.woId AS TEXT) = CAST(w.ID AS TEXT)
+                WHERE w.AstID = ?
+            `).get(assetId);
+            return res.json({ activeWo: null, activeTechs: [], lastWorked: lastWork?.lastWorked || null });
+        }
+
+        const activeSegments = conn.prepare(`
+            SELECT userId, startTime
+            FROM WorkSegments
+            WHERE woId = ? AND segmentState = 'Active'
+            ORDER BY startTime ASC
+        `).all(String(activeWo.ID));
+
+        const lastWork = conn.prepare(`
+            SELECT MAX(endTime) as lastWorked FROM WorkSegments WHERE woId = ?
+        `).get(String(activeWo.ID));
+
+        res.json({
+            activeWo: {
+                id: activeWo.ID,
+                number: activeWo.WorkOrderNumber,
+                description: activeWo.Description,
+                statusId: activeWo.StatusID,
+                holdReason: activeWo.holdReason || null,
+                assignedTo: activeWo.AssignToID || null,
+            },
+            activeTechs: activeSegments.map(s => ({ userId: s.userId, since: s.startTime })),
+            lastWorked: lastWork?.lastWorked || null,
+        });
+    } catch (err) {
+        console.error('[scan] GET /api/scan/asset-status error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -1079,6 +1190,117 @@ router.post('/desk-action', (req, res) => {
     } catch (err) {
         console.error('[scan] POST /api/scan/desk-action error:', err);
         res.status(500).json({ error: 'Desk action failed', detail: err.message });
+    }
+});
+
+// ── GET /api/scan/parts-search ───────────────────────────────────────────────
+// Lightweight part lookup for the scan flow parts-checkout UI.
+// Returns up to 20 matching parts by name, legacy Descript, or ID.
+router.get('/parts-search', (req, res) => {
+    try {
+        const { q = '' } = req.query;
+        if (!q.trim()) return res.json({ parts: [] });
+        const conn = db.getDb();
+        const term = `%${q.trim()}%`;
+        const parts = conn.prepare(`
+            SELECT ID,
+                   COALESCE(Description, Descript) AS description,
+                   Stock AS available,
+                   Location AS location,
+                   UnitCost
+            FROM Part
+            WHERE (COALESCE(Description, Descript) LIKE ? OR ID LIKE ?)
+              AND (IsDeleted IS NULL OR IsDeleted = 0)
+            ORDER BY COALESCE(Description, Descript)
+            LIMIT 20
+        `).all(term, term);
+        res.json({ parts });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/scan/parts-checkout ────────────────────────────────────────────
+// Add a part to a work order's parts list. Idempotent: increments qty if part
+// already exists on the WO rather than inserting a duplicate row.
+router.post('/parts-checkout', (req, res) => {
+    try {
+        const { woId, partId, quantity } = req.body;
+        const userId = req.user?.UserID || req.user?.Username;
+        if (!woId || !partId || !quantity) {
+            return res.status(400).json({ error: 'woId, partId, and quantity are required' });
+        }
+        const qty = Number(quantity);
+        if (!Number.isFinite(qty) || qty < 1) {
+            return res.status(400).json({ error: 'quantity must be a positive number' });
+        }
+        const conn = db.getDb();
+        const wo = conn.prepare(
+            'SELECT ID FROM Work WHERE WorkOrderNumber = ? OR CAST(ID AS TEXT) = ? LIMIT 1'
+        ).get(String(woId), String(woId));
+        if (!wo) return res.status(404).json({ error: 'Work order not found' });
+
+        const part = conn.prepare(
+            'SELECT ID, COALESCE(Description, Descript) AS description, UnitCost FROM Part WHERE ID = ? LIMIT 1'
+        ).get(String(partId));
+        if (!part) return res.status(404).json({ error: 'Part not found' });
+
+        const existing = conn.prepare(
+            'SELECT id, EstQty FROM WorkParts WHERE WoID = ? AND PartID = ? LIMIT 1'
+        ).get(wo.ID, part.ID);
+        if (existing) {
+            conn.prepare('UPDATE WorkParts SET EstQty = EstQty + ? WHERE id = ?').run(qty, existing.id);
+        } else {
+            conn.prepare(
+                "INSERT INTO WorkParts (WoID, PartID, EstQty, UnitCost, UseDate) VALUES (?, ?, ?, ?, datetime('now'))"
+            ).run(wo.ID, part.ID, qty, part.UnitCost || 0);
+        }
+        res.json({ ok: true, partAdded: { id: part.ID, description: part.description, quantity: qty } });
+    } catch (err) {
+        console.error('[scan] POST /parts-checkout error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/scan/add-child-asset ───────────────────────────────────────────
+// Quick-register a sub-component under a parent asset from the scan flow.
+// Accepts an optional base64 photoDataUrl that is saved to disk as a JPEG.
+// After creation the caller should POST /api/scan with the new child ID.
+router.post('/add-child-asset', (req, res) => {
+    try {
+        const { name, parentId, photoDataUrl } = req.body;
+        const userId = req.user?.UserID || req.user?.Username;
+        if (!name || !parentId) {
+            return res.status(400).json({ error: 'name and parentId are required' });
+        }
+
+        const conn = db.getDb();
+        const parent = conn.prepare('SELECT ID, Description, LocationID FROM Asset WHERE ID = ? LIMIT 1').get(String(parentId));
+        if (!parent) return res.status(404).json({ error: 'Parent asset not found' });
+
+        // Generate a unique child ID: parent prefix + hex timestamp suffix
+        const suffix = Date.now().toString(16).slice(-6);
+        const childId = `${parentId.slice(0, 10)}-${suffix}`.toUpperCase();
+
+        // Persist optional photo
+        let photoPath = null;
+        if (photoDataUrl && photoDataUrl.startsWith('data:image/')) {
+            const photoDir = path.join(__dirname, '..', 'data', 'asset-photos');
+            if (!fs.existsSync(photoDir)) fs.mkdirSync(photoDir, { recursive: true });
+            const base64Data = photoDataUrl.replace(/^data:image\/\w+;base64,/, '');
+            photoPath = path.join(photoDir, `${childId}.jpg`);
+            fs.writeFileSync(photoPath, Buffer.from(base64Data, 'base64'));
+        }
+
+        conn.prepare(`
+            INSERT INTO Asset (ID, Description, ParentAssetID, LocationID, Active, OperationalStatus)
+            VALUES (?, ?, ?, ?, 1, 'In Production')
+        `).run(childId, name.trim(), parent.ID, parent.LocationID || null);
+
+        res.status(201).json({ ok: true, id: childId, description: name.trim() });
+    } catch (err) {
+        console.error('[scan] POST /add-child-asset error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 

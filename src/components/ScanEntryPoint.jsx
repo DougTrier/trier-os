@@ -29,11 +29,32 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Scan, QrCode, CheckCircle, X } from 'lucide-react';
+import { Scan, QrCode, CheckCircle, X, Users, Clock, AlertCircle, PauseCircle } from 'lucide-react';
 import ScanActionPrompt from './ScanActionPrompt';
 
 // Confirmation overlay duration — matches ScanCapture spec
 const CONFIRM_FLASH_MS = 1000;
+
+const WO_STATUS_LABEL = {
+    20: { label: 'Open — Not Started',         color: '#60a5fa', icon: 'open'    },
+    30: { label: 'In Progress',                 color: '#22c55e', icon: 'active'  },
+    31: { label: 'On Hold — Waiting on Parts',  color: '#f59e0b', icon: 'hold'   },
+    32: { label: 'On Hold — Waiting on Vendor', color: '#f59e0b', icon: 'hold'   },
+    33: { label: 'Escalated',                   color: '#f87171', icon: 'alert'  },
+    35: { label: 'On Hold',                     color: '#f59e0b', icon: 'hold'   },
+};
+
+function relativeTime(isoString) {
+    if (!isoString) return null;
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days  = Math.floor(diff / 86400000);
+    if (mins < 1)   return 'just now';
+    if (mins < 60)  return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+}
 
 // ── Inline QR code rendered to a <canvas> via the qrcode package ─────────────
 // Uses dynamic import so the 40 KB qrcode bundle doesn't affect initial load.
@@ -77,10 +98,26 @@ export default function ScanEntryPoint({ assetId, plantId, userId }) {
     const [branchResult, setBranchResult] = useState(null); // full POST /api/scan response
     const [error, setError]             = useState('');
     const [showQR, setShowQR]           = useState(false);
+    const [assetStatus, setAssetStatus] = useState(null);   // { activeWo, activeTechs, lastWorked }
     const confirmTimerRef               = useRef(null);
 
     // Cleanup on unmount
     useEffect(() => () => clearTimeout(confirmTimerRef.current), []);
+
+    // Fetch live work status — active WO, tech count, last activity timestamp
+    useEffect(() => {
+        if (!assetId || !plantId) return;
+        fetch(`/api/scan/asset-status/${encodeURIComponent(assetId)}`, {
+            headers: { 'x-plant-id': plantId },
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => setAssetStatus(data ?? null))
+            .catch(() => {}); // non-critical — degrades gracefully
+    }, [assetId, plantId, branchResult]); // re-check after an action completes
+
+    const activeWo = assetStatus?.activeWo ?? null;
+    const activeTechs = assetStatus?.activeTechs ?? [];
+    const lastWorked = assetStatus?.lastWorked ?? null;
 
     // ── Trigger the scan state machine with the known assetId ─────────────────
     const startWork = useCallback(async () => {
@@ -130,8 +167,25 @@ export default function ScanEntryPoint({ assetId, plantId, userId }) {
         }
     }, [assetId, plantId, userId, scanning, confirming]);
 
-    const handleActionComplete = useCallback(() => {
-        setBranchResult(null);
+    // Branches that come from POST /api/scan (not action results) and should
+    // re-render the action prompt. Action results like PROMPT_TEAM_CLOSE,
+    // STATE_WAITING_xxx, STATE_RESUMED, DESK_RESUME, etc. are NOT scan branches
+    // and must NOT re-render — they should close the modal.
+    const SCAN_BRANCHES = new Set([
+        'AUTO_CREATE_WO', 'ROUTE_TO_ACTIVE_WO', 'ROUTE_TO_WAITING_WO',
+        'ROUTE_TO_ESCALATED_WO', 'ROUTE_TO_CHILD_SELECTOR', 'ROUTE_TO_DIGITAL_TWIN',
+        'ROUTE_TO_DIGITAL_TWIN_OFFLINE_BLOCKED', 'ROUTE_TO_PART_CHECKOUT',
+        'REQUIRE_SOP_ACK', 'AUTO_REJECT_DUPLICATE_SCAN',
+    ]);
+
+    const handleActionComplete = useCallback((result) => {
+        // Only chain if this is a real scan branch (e.g., child asset selected → new scan result).
+        // Action completion results (WAITING, TEAM_CLOSE, RESUME, etc.) always close the modal.
+        if (result?.branch && SCAN_BRANCHES.has(result.branch)) {
+            setBranchResult(result);
+        } else {
+            setBranchResult(null);
+        }
         setError('');
     }, []);
 
@@ -267,24 +321,113 @@ export default function ScanEntryPoint({ assetId, plantId, userId }) {
                     </div>
                 )}
 
+                {/* Asset work status panel — WO state, active techs, last worked */}
+                {(activeWo || lastWorked) && (() => {
+                    const statusMeta = activeWo ? (WO_STATUS_LABEL[activeWo.statusId] || { label: `Status ${activeWo.statusId}`, color: '#94a3b8', icon: 'open' }) : null;
+                    const isOnHold   = statusMeta?.icon === 'hold';
+                    const isEscalated = statusMeta?.icon === 'alert';
+                    const accentColor = statusMeta?.color || '#94a3b8';
+                    return (
+                        <div style={{
+                            marginBottom: 10, borderRadius: 8,
+                            border: `1px solid ${accentColor}33`,
+                            background: `${accentColor}0d`,
+                            overflow: 'hidden',
+                        }}>
+                            {/* WO identity row */}
+                            {activeWo && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '7px 12px', borderBottom: activeTechs.length > 0 || lastWorked ? `1px solid ${accentColor}22` : 'none',
+                                }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: accentColor, flexShrink: 0 }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ color: accentColor, fontSize: 12, fontWeight: 600 }}>
+                                            {isEscalated && <AlertCircle size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />}
+                                            {isOnHold && <PauseCircle size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />}
+                                            {statusMeta.label}
+                                        </div>
+                                        <div style={{ color: '#64748b', fontSize: 11, marginTop: 1 }}>
+                                            {activeWo.number || `WO #${activeWo.id}`}
+                                            {activeWo.description ? ` — ${activeWo.description}` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Active technicians row */}
+                            {activeTechs.length > 0 && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: 7,
+                                    padding: '6px 12px',
+                                    borderBottom: lastWorked ? `1px solid ${accentColor}22` : 'none',
+                                }}>
+                                    <Users size={12} color="#22c55e" />
+                                    <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>
+                                        {activeTechs.length === 1
+                                            ? `${activeTechs[0].userId} is actively working`
+                                            : `${activeTechs.length} technicians currently working`}
+                                    </span>
+                                    {activeTechs.length > 1 && (
+                                        <span style={{ color: '#64748b', fontSize: 11 }}>
+                                            ({activeTechs.map(t => t.userId).join(', ')})
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Last worked row */}
+                            {lastWorked && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: 7,
+                                    padding: '6px 12px',
+                                }}>
+                                    <Clock size={12} color="#64748b" />
+                                    <span style={{ color: '#64748b', fontSize: 11 }}>
+                                        Last worked {relativeTime(lastWorked)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
+
                 {/* Primary action — calls the same state machine as a physical scan */}
-                <button
-                    onClick={startWork}
-                    disabled={scanning || confirming}
-                    style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        gap: 8, width: '100%', padding: '12px 16px', borderRadius: 8,
-                        background: scanning || confirming ? '#1e293b' : '#10b981',
-                        border: 'none', color: '#fff',
-                        fontSize: 15, fontWeight: 700,
-                        cursor: scanning || confirming ? 'default' : 'pointer',
-                        opacity: scanning || confirming ? 0.6 : 1,
-                        transition: 'opacity 0.15s',
-                    }}
-                >
-                    <Scan size={18} />
-                    {scanning ? 'Loading…' : 'Start Work on This Asset'}
-                </button>
+                {(() => {
+                    const sid = activeWo?.statusId;
+                    const btnBg    = scanning || confirming ? '#1e293b'
+                        : sid === 33 ? '#dc2626'   // escalated — red
+                        : sid === 30 ? '#f59e0b'   // in progress — amber (manage)
+                        : sid >= 31 && sid <= 35 ? '#3b82f6'  // on hold — blue (resume)
+                        : sid === 20 ? '#6366f1'   // open/assigned — indigo
+                        : '#10b981';               // no WO — green (start)
+                    const btnColor = (sid === 30) ? '#1c1a00' : '#fff';
+                    const btnLabel = scanning ? 'Loading…'
+                        : sid === 33 ? 'Manage Escalated Work Order'
+                        : sid === 30 ? 'Manage Active Work Order'
+                        : (sid >= 31 && sid <= 35) ? 'Resume Work'
+                        : sid === 20 ? 'Start Assigned Work'
+                        : 'Start Work on This Asset';
+                    return (
+                        <button
+                            onClick={startWork}
+                            disabled={scanning || confirming}
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                gap: 8, width: '100%', padding: '12px 16px', borderRadius: 8,
+                                background: btnBg,
+                                border: 'none', color: btnColor,
+                                fontSize: 15, fontWeight: 700,
+                                cursor: scanning || confirming ? 'default' : 'pointer',
+                                opacity: scanning || confirming ? 0.6 : 1,
+                                transition: 'background 0.2s, opacity 0.15s',
+                            }}
+                        >
+                            <Scan size={18} />
+                            {btnLabel}
+                        </button>
+                    );
+                })()}
             </div>
         </>
     );

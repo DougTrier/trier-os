@@ -1361,7 +1361,7 @@ export default function AssetsView({ plantId, plantLabel }) {
                                     <ScanEntryPoint
                                         assetId={selectedAsset.ID}
                                         plantId={plantId}
-                                        userId={localStorage.getItem('userId') || localStorage.getItem('userRole') || 'unknown'}
+                                        userId={localStorage.getItem('currentUser') || localStorage.getItem('userId') || localStorage.getItem('userRole') || 'unknown'}
                                     />
                                 </div>
                             )}
