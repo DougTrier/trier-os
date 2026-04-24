@@ -136,19 +136,19 @@ function LossEntryForm({ plantId, existingLog, onSaved, onCancel }) {
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.area', 'Area')}</label>
                     <select value={form.Area} onChange={e => set('Area', e.target.value)} style={dynInputStyle}>
                         <option value="">{t('quality.select', '-- Select --')}</option>
-                        {AREAS.map(a => <option key={a}>{a}</option>)}
+                        {AREAS.map(a => <option key={a} value={a}>{t(`quality.area.${a.replace(/\s+/g, '_')}`, a)}</option>)}
                     </select>
                 </div>
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.productType', 'Product Type')}</label>
                     <select value={form.ProductType} onChange={e => set('ProductType', e.target.value)} style={dynInputStyle}>
                         <option value="">{t('quality.select', '-- Select --')}</option>
-                        {PRODUCTS.map(p => <option key={p}>{p}</option>)}
+                        {PRODUCTS.map(p => <option key={p} value={p}>{t(`quality.product.${p.replace(/\s+/g, '_')}`, p)}</option>)}
                     </select>
                 </div>
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.lossType', 'Loss Type')}</label>
                     <select value={form.LossType} onChange={e => set('LossType', e.target.value)} style={{ ...dynInputStyle, color: form.LossType ? '#f59e0b' : '#64748b' }}>
                         <option value="">{t('quality.select', '-- Select --')}</option>
-                        {LOSS_TYPES.map(l => <option key={l}>{l}</option>)}
+                        {LOSS_TYPES.map(l => <option key={l} value={l}>{t(`quality.lossType.${l.replace(/\s+/g, '_')}`, l)}</option>)}
                     </select>
                 </div>
                 <div style={fieldStyle}>
@@ -212,9 +212,9 @@ function LossLogTable({ rows, loading, onSelect, isAllSites }) {
                             {isAllSites && <td><span style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 4, fontSize: '0.8rem' }}>{(r._plantId || '—').replace(/_/g, ' ')}</span></td>}
                             <td>{r.LogDate}</td>
                             <td>{r.Shift || '—'}</td>
-                            <td>{r.Area || '—'}</td>
-                            <td>{r.ProductType || '—'}</td>
-                            <td style={{ color: '#f59e0b', fontWeight: 600 }}>{r.LossType}</td>
+                            <td>{r.Area ? t(`quality.area.${r.Area.replace(/\s+/g, '_')}`, r.Area) : '—'}</td>
+                            <td>{r.ProductType ? t(`quality.product.${r.ProductType.replace(/\s+/g, '_')}`, r.ProductType) : '—'}</td>
+                            <td style={{ color: '#f59e0b', fontWeight: 600 }}>{r.LossType ? t(`quality.lossType.${r.LossType.replace(/\s+/g, '_')}`, r.LossType) : '—'}</td>
                             <td>{r.Quantity} {r.Unit}</td>
                             <td style={{ color: r.TotalValue > 0 ? '#ef4444' : '#475569', fontWeight: 700 }}>{r.TotalValue > 0 ? fmt(r.TotalValue) : '—'}</td>
                             <td>{r.MeterID || '—'}</td>
@@ -637,11 +637,11 @@ function QualitySummaryTab({ plantId }) {
                             <th>{t('quality.colTotalValue', 'Total Value')}</th>
                         </tr></thead>
                         <tbody>
-                            {summary.productLoss.byType.map(t => (
-                                <tr key={t.LossType}>
-                                    <td style={{ fontWeight: 600 }}>{t.LossType}</td>
-                                    <td>{t.cnt}</td>
-                                    <td style={{ color: '#ef4444', fontWeight: 700 }}>{fmt(t.val)}</td>
+                            {summary.productLoss.byType.map(lt => (
+                                <tr key={lt.LossType}>
+                                    <td style={{ fontWeight: 600 }}>{lt.LossType ? t(`quality.lossType.${lt.LossType.replace(/\s+/g, '_')}`, lt.LossType) : '—'}</td>
+                                    <td>{lt.cnt}</td>
+                                    <td style={{ color: '#ef4444', fontWeight: 700 }}>{fmt(lt.val)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -661,7 +661,7 @@ function QualitySummaryTab({ plantId }) {
                         <tbody>
                             {summary.productLoss.byArea.map(a => (
                                 <tr key={a.Area}>
-                                    <td style={{ fontWeight: 600 }}>{a.Area || t('quality.unspecified', 'Unspecified')}</td>
+                                    <td style={{ fontWeight: 600 }}>{a.Area ? t(`quality.area.${a.Area.replace(/\s+/g, '_')}`, a.Area) : t('quality.unspecified', 'Unspecified')}</td>
                                     <td>{a.cnt}</td>
                                     <td style={{ color: '#f59e0b', fontWeight: 700 }}>{fmt(a.val)}</td>
                                 </tr>

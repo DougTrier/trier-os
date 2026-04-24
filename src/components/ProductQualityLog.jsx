@@ -105,19 +105,19 @@ function LossEntryForm({ plantId, onSaved }) {
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.areaRequired', 'Area *')}</label>
                     <select value={form.Area} onChange={e => set('Area', e.target.value)} style={inputStyle}>
                         <option value="">{t('quality.select', 'Select...')}</option>
-                        {AREAS.map(a => <option key={a}>{a}</option>)}
+                        {AREAS.map(a => <option key={a} value={a}>{t(`quality.area.${a.replace(/\s+/g, '_')}`, a)}</option>)}
                     </select>
                 </div>
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.productType', 'Product Type')}</label>
                     <select value={form.ProductType} onChange={e => set('ProductType', e.target.value)} style={inputStyle}>
                         <option value="">{t('quality.select', 'Select...')}</option>
-                        {PRODUCTS.map(p => <option key={p}>{p}</option>)}
+                        {PRODUCTS.map(p => <option key={p} value={p}>{t(`quality.product.${p.replace(/\s+/g, '_')}`, p)}</option>)}
                     </select>
                 </div>
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.lossTypeRequired', 'Loss Type *')}</label>
                     <select value={form.LossType} onChange={e => set('LossType', e.target.value)} style={inputStyle}>
                         <option value="">{t('quality.select', 'Select...')}</option>
-                        {LOSS_TYPES.map(t => <option key={t}>{t}</option>)}
+                        {LOSS_TYPES.map(l => <option key={l} value={l}>{t(`quality.lossType.${l.replace(/\s+/g, '_')}`, l)}</option>)}
                     </select>
                 </div>
                 <div style={fieldStyle}><label style={labelStyle}>{t('quality.quantityLost', 'Quantity Lost')}</label>
@@ -360,9 +360,9 @@ function LossLogTable({ rows }) {
                         <tr key={r.ID}>
                             <td style={td}>{r.LogDate}</td>
                             <td style={td}>{r.Shift || '—'}</td>
-                            <td style={td}>{r.Area || '—'}</td>
-                            <td style={td}>{r.ProductType || '—'}</td>
-                            <td style={{ ...td, color: '#f59e0b', fontWeight: 600 }}>{r.LossType}</td>
+                            <td style={td}>{r.Area ? t(`quality.area.${r.Area.replace(/\s+/g, '_')}`, r.Area) : '—'}</td>
+                            <td style={td}>{r.ProductType ? t(`quality.product.${r.ProductType.replace(/\s+/g, '_')}`, r.ProductType) : '—'}</td>
+                            <td style={{ ...td, color: '#f59e0b', fontWeight: 600 }}>{r.LossType ? t(`quality.lossType.${r.LossType.replace(/\s+/g, '_')}`, r.LossType) : '—'}</td>
                             <td style={td}>{r.Quantity} {r.Unit}</td>
                             <td style={{ ...td, color: r.TotalValue > 0 ? '#ef4444' : '#475569', fontWeight: 700 }}>{r.TotalValue > 0 ? fmt(r.TotalValue) : '—'}</td>
                             <td style={td}>{r.MeterID || '—'}</td>
@@ -585,7 +585,7 @@ export default function ProductQualityLog({ plantId, onClose }) {
                                     <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>{t('quality.lossByType', 'Loss by Type')}</div>
                                     {summary.productLoss.byType.map(row => (
                                         <div key={row.LossType} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.82rem' }}>
-                                            <span>{row.LossType}</span>
+                                            <span>{row.LossType ? t(`quality.lossType.${row.LossType.replace(/\s+/g, '_')}`, row.LossType) : '—'}</span>
                                             <div style={{ display: 'flex', gap: 16 }}>
                                                 <span style={{ color: '#64748b' }}>{row.cnt} {t('quality.events', 'events')}</span>
                                                 <span style={{ color: '#ef4444', fontWeight: 700 }}>{fmt(row.val)}</span>
