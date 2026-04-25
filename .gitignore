@@ -146,3 +146,12 @@ test_output*.txt
 test_out.txt
 debug_*.txt
 missing_keys.json
+
+# Vendor catalogs (proprietary PDFs + extracted temp text — not redistributable, very large)
+Catalogs/
+
+# Generated SQL output from catalog extraction scripts (can be regenerated, up to 100MB+)
+scripts/*.sql
+
+# Catalog extraction prompt batches and LLM results
+scripts/Catalogs/
