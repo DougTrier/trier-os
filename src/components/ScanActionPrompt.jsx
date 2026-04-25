@@ -40,8 +40,9 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { CheckCircle, Clock, AlertTriangle, Users, UserCheck, UserX, Plus, Eye, ArrowLeft, Package, Camera, Search, Layers } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, Users, UserCheck, UserX, Plus, Eye, ArrowLeft, Package, Camera, Search, Layers, RotateCcw } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
+import WorkOrderPartsCart from './WorkOrderPartsCart';
 
 // ── Tech-selectable hold reason codes (never show UNKNOWN_HOLD on device) ────
 const HOLD_REASONS = [
@@ -107,7 +108,7 @@ export default function ScanActionPrompt({
     const [submitting, setSubmitting] = useState(false);
     const [sopSuccess, setSopSuccess] = useState(false); // WO created after SOP ack — show confirmation before transition
     const [error, setError] = useState('');
-    const [screen, setScreen] = useState('main'); // main | hold_reason | return_window | team_close_confirm | parts_search | parts_quantity | add_child
+    const [screen, setScreen] = useState('main'); // main | hold_reason | return_window | team_close_confirm | parts_search | parts_quantity | add_child | batch_scan | batch_confirm
     const [selectedHoldReason, setSelectedHoldReason] = useState(null);
     const [selectedPin, setSelectedPin] = useState(null);
     const [acknowledgedSops, setAcknowledgedSops] = useState([]);
@@ -127,6 +128,15 @@ export default function ScanActionPrompt({
     const [addChildPhoto, setAddChildPhoto] = useState(null);
     const [childSaving, setChildSaving] = useState(false);
     const photoInputRef = useRef(null);
+    // AUTO_ADDED_PART undo state
+    const [autoAddUndone, setAutoAddUndone] = useState(false);
+    // Batch scan state
+    const [batchItems, setBatchItems] = useState([]); // [{ partId, description, qty }]
+    const [batchInput, setBatchInput] = useState('');
+    const [batchLookupLoading, setBatchLookupLoading] = useState(false);
+    const [batchError, setBatchError] = useState('');
+    const [batchSubmitting, setBatchSubmitting] = useState(false);
+    const batchInputRef = useRef(null);
 
     const { branch, context, wo, options = [], activeUsers = [] } = branchResponse || {};
 
@@ -165,6 +175,75 @@ export default function ScanActionPrompt({
             .then(data => setWoParts(data.parts || []))
             .catch(() => setWoParts([]))
             .finally(() => setWoPartsLoading(false));
+    };
+
+    // ── Open batch scan mode ──────────────────────────────────────────────────
+    const openBatchScan = (woId) => {
+        setPartsWoId(woId);
+        setBatchItems([]);
+        setBatchInput('');
+        setBatchError('');
+        setScreen('batch_scan');
+        setTimeout(() => batchInputRef.current?.focus(), 100);
+    };
+
+    // ── Batch: look up a barcode/part ID and add to session list ─────────────
+    const handleBatchScan = async (rawInput) => {
+        const q = rawInput.trim();
+        if (!q) return;
+        setBatchInput('');
+        setBatchLookupLoading(true);
+        setBatchError('');
+        try {
+            const res = await fetch(`/api/scan/parts-search?q=${encodeURIComponent(q)}`, {
+                headers: { 'x-plant-id': plantId },
+            });
+            const data = await res.json();
+            const parts = data.parts || [];
+            // Exact ID match first, then first result
+            const match = parts.find(p => p.ID === q || p.ID?.toLowerCase() === q.toLowerCase()) || parts[0];
+            if (match) {
+                setBatchItems(prev => {
+                    const existing = prev.find(i => i.partId === match.ID);
+                    if (existing) {
+                        return prev.map(i => i.partId === match.ID ? { ...i, qty: i.qty + 1 } : i);
+                    }
+                    return [...prev, { partId: match.ID, description: match.description, qty: 1, status: 'matched' }];
+                });
+                if (navigator.vibrate) navigator.vibrate(80);
+            } else {
+                setBatchItems(prev => [...prev, { partId: null, description: q, qty: 1, status: 'unknown', raw: q }]);
+            }
+        } catch (_) {
+            setBatchError('Lookup failed — check connection');
+        }
+        setBatchLookupLoading(false);
+        setTimeout(() => batchInputRef.current?.focus(), 50);
+    };
+
+    // ── Batch: commit all matched items to the WO ─────────────────────────────
+    const commitBatchScan = async () => {
+        const matched = batchItems.filter(i => i.status === 'matched' && i.partId);
+        if (!matched.length || !partsWoId) return;
+        setBatchSubmitting(true);
+        setBatchError('');
+        const results = [];
+        for (const item of matched) {
+            try {
+                const res = await fetch('/api/scan/parts-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                    body: JSON.stringify({ woId: partsWoId, partId: item.partId, quantity: item.qty }),
+                });
+                const data = await res.json();
+                results.push({ ...item, ok: res.ok, error: res.ok ? null : (data.error || 'Failed') });
+            } catch (e) {
+                results.push({ ...item, ok: false, error: e.message });
+            }
+        }
+        setBatchItems(results);
+        setBatchSubmitting(false);
+        setScreen('batch_confirm');
     };
 
     // ── Commit parts checkout ─────────────────────────────────────────────────
@@ -334,6 +413,131 @@ export default function ScanActionPrompt({
                     </TapBtn>
                 ))}
                 {error && <ErrorBanner msg={error} />}
+            </div>
+        );
+    }
+
+    // ── Batch scan screen ────────────────────────────────────────────────────
+    if (screen === 'batch_scan') {
+        const matched  = batchItems.filter(i => i.status === 'matched');
+        const unknown  = batchItems.filter(i => i.status === 'unknown');
+        const canCommit = matched.length > 0 && !batchSubmitting;
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <button onClick={() => setScreen('main')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+                        <ArrowLeft size={20} />
+                    </button>
+                    <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>Batch Add Parts</span>
+                    {batchLookupLoading && <span style={{ marginLeft: 'auto', color: '#64748b', fontSize: 12 }}>Looking up…</span>}
+                </div>
+
+                {/* Scanner input — autoFocus catches physical scanner keystrokes */}
+                <div style={{ position: 'relative', marginBottom: 14 }}>
+                    <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none' }} />
+                    <input
+                        ref={batchInputRef}
+                        autoFocus
+                        type="text"
+                        placeholder="Scan part barcode or type part ID…"
+                        value={batchInput}
+                        onChange={e => setBatchInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleBatchScan(batchInput); }}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px 11px 34px', borderRadius: 8, background: '#1e293b', border: '1px solid #3b82f6', color: '#f1f5f9', fontSize: 14, outline: 'none' }}
+                    />
+                </div>
+                {batchInput && (
+                    <button onClick={() => handleBatchScan(batchInput)} style={{ width: '100%', padding: '9px', borderRadius: 8, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
+                        Add "{batchInput}"
+                    </button>
+                )}
+
+                {/* Scanned list */}
+                {matched.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.07em', marginBottom: 6, textTransform: 'uppercase' }}>Scanned</div>
+                        {matched.map((item) => (
+                            <div key={item.partId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 5, borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                <Package size={14} color="#10b981" />
+                                <div style={{ flex: 1, fontSize: 14, color: '#86efac', fontWeight: 600 }}>{item.description}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <button onClick={() => setBatchItems(prev => prev.map(p => p === item ? { ...p, qty: Math.max(1, p.qty - 1) } : p))} style={{ width: 26, height: 26, borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                                    <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 16, minWidth: 20, textAlign: 'center' }}>{item.qty}</span>
+                                    <button onClick={() => setBatchItems(prev => prev.map(p => p === item ? { ...p, qty: p.qty + 1 } : p))} style={{ width: 26, height: 26, borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                                    <button onClick={() => setBatchItems(prev => prev.filter(p => p !== item))} style={{ width: 26, height: 26, borderRadius: 6, background: 'none', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Unknown barcodes */}
+                {unknown.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', letterSpacing: '0.07em', marginBottom: 6, textTransform: 'uppercase' }}>Needs Review</div>
+                        {unknown.map((item) => (
+                            <div key={item.raw} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 4, borderRadius: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                <AlertTriangle size={13} color="#f59e0b" />
+                                <span style={{ flex: 1, fontSize: 13, color: '#fbbf24' }}>{item.raw}</span>
+                                <button onClick={() => setBatchItems(prev => prev.filter(p => p !== item))} style={{ padding: '3px 8px', borderRadius: 5, background: 'none', border: '1px solid rgba(255,255,255,0.08)', color: '#64748b', cursor: 'pointer', fontSize: 12 }}>Remove</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {batchError && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={13} />{batchError}</div>}
+
+                {batchItems.length === 0 && !batchLookupLoading && (
+                    <div style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                        Scan or type part barcodes above
+                    </div>
+                )}
+
+                {/* Commit */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <TapBtn variant="success" onClick={commitBatchScan} disabled={!canCommit}>
+                        <CheckCircle size={18} /> All Parts Added ({matched.length})
+                    </TapBtn>
+                </div>
+                {batchItems.length > 0 && (
+                    <button onClick={() => setBatchItems(prev => prev.slice(0, -1))} style={{ width: '100%', marginTop: 6, padding: '9px', borderRadius: 8, background: 'none', border: '1px solid #1e293b', color: '#475569', cursor: 'pointer', fontSize: 13 }}>
+                        Undo Last
+                    </button>
+                )}
+                <button onClick={() => setScreen('main')} style={{ width: '100%', marginTop: 5, padding: '8px', borderRadius: 8, background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: 13 }}>
+                    Cancel — discard session
+                </button>
+            </div>
+        );
+    }
+
+    // ── Batch confirm screen ──────────────────────────────────────────────────
+    if (screen === 'batch_confirm') {
+        const committed = batchItems.filter(i => i.ok);
+        const failed    = batchItems.filter(i => !i.ok && i.status === 'matched');
+        return (
+            <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <CheckCircle size={22} color="#10b981" />
+                    <span style={{ color: '#10b981', fontSize: 15, fontWeight: 700 }}>Parts Added to WO</span>
+                </div>
+                {committed.map(item => (
+                    <div key={item.partId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 5, borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        <CheckCircle size={14} color="#10b981" />
+                        <span style={{ flex: 1, color: '#86efac', fontSize: 14 }}>{item.description}</span>
+                        <span style={{ color: '#10b981', fontWeight: 700, fontSize: 14 }}>×{item.qty}</span>
+                    </div>
+                ))}
+                {failed.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 5, borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                        <AlertTriangle size={13} color="#f87171" />
+                        <span style={{ flex: 1, color: '#f87171', fontSize: 13 }}>{item.description}</span>
+                        <span style={{ color: '#f87171', fontSize: 12 }}>{item.error}</span>
+                    </div>
+                ))}
+                <button onClick={() => setScreen('main')} style={{ marginTop: 16, width: '100%', padding: '13px', borderRadius: 9, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.35)', color: '#10b981', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+                    Continue Work
+                </button>
             </div>
         );
     }
@@ -588,6 +792,52 @@ export default function ScanActionPrompt({
 
     // ── Main prompt screen ────────────────────────────────────────────────────
     
+    // Branch: AUTO_ADDED_PART — part scanned while WO active; already added 1 qty
+    if (branch === 'AUTO_ADDED_PART') {
+        const { part, qtyAdded = 1, totalQty, woId: addedWoId, woDescription, movementId } = branchResponse;
+
+        const handleUndo = async () => {
+            try {
+                await fetch('/api/scan/undo-part-add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                    body: JSON.stringify({ woId: addedWoId, partId: part?.id, movementId, qty: qtyAdded }),
+                });
+                setAutoAddUndone(true);
+                setTimeout(() => onCancel(), 1400);
+            } catch (_) {}
+        };
+
+        if (autoAddUndone) {
+            return (
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                    <RotateCcw size={36} color="#64748b" style={{ marginBottom: 10 }} />
+                    <div style={{ color: '#64748b', fontSize: 15, fontWeight: 600 }}>Undone</div>
+                </div>
+            );
+        }
+
+        return (
+            <div style={{ textAlign: 'center', padding: '28px 8px' }}>
+                <CheckCircle size={48} color="#10b981" style={{ marginBottom: 10 }} />
+                <div style={{ color: '#10b981', fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Added</div>
+                <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{part?.description}</div>
+                <div style={{ color: '#64748b', fontSize: 13 }}>
+                    {totalQty > 1 ? `Qty ${totalQty} on WO` : 'Added to WO'}{part?.available != null ? ` · ${part.available} left in stock` : ''}
+                </div>
+                {woDescription && <div style={{ color: '#475569', fontSize: 12, marginTop: 6 }}>{woDescription}</div>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 22 }}>
+                    <button onClick={onCancel} style={{ flex: 2, padding: '13px', borderRadius: 9, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+                        Done — Scan Next
+                    </button>
+                    <button onClick={handleUndo} style={{ flex: 1, padding: '13px', borderRadius: 9, background: 'none', border: '1px solid #334155', color: '#64748b', cursor: 'pointer', fontSize: 14 }}>
+                        Undo
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // Branch: ROUTE_TO_DIGITAL_TWIN — schematic view with pins
     if (branch === 'ROUTE_TO_DIGITAL_TWIN') {
         const { schematic } = branchResponse;
@@ -912,33 +1162,36 @@ export default function ScanActionPrompt({
     // Branch: AUTO_CREATE_WO — WO created and segment opened; tech is now active
     if (branch === 'AUTO_CREATE_WO') {
         return (
-            <PromptShell wo={wo} subtitle="Work Started — In Progress" onCancel={onCancel}>
+            <PromptShell wo={wo} subtitle="In Progress" statePill={<StatePill label="STARTED" variant="started" />} onCancel={onCancel}>
                 <TapBtn number={1} variant="success"
                     onClick={() => submitAction({ action: 'CLOSE_WO' })}
                     disabled={submitting}>
                     <CheckCircle size={18} /> Close Work Order
                 </TapBtn>
-                <TapBtn number={2} variant="warning"
-                    onClick={() => setScreen('hold_reason')}
+                <TapBtn number={2} variant="default"
+                    onClick={() => openBatchScan(wo?.id)}
                     disabled={submitting}>
-                    <Clock size={18} /> Waiting…
+                    <Package size={18} /> Add Parts
                 </TapBtn>
-                <TapBtn number={3} variant="neutral"
-                    onClick={() => openPartsScreen(wo?.id)}
-                    disabled={submitting}>
-                    <Package size={18} /> Scan / Add Parts
-                </TapBtn>
-                <TapBtn number={4} variant="neutral"
-                    onClick={() => submitAction({ action: 'ESCALATE' })}
-                    disabled={submitting}>
-                    <AlertTriangle size={18} /> Escalate
-                </TapBtn>
-                <TapBtn number={5} variant="neutral"
-                    onClick={() => submitAction({ action: 'CONTINUE_LATER' })}
-                    disabled={submitting}>
-                    Continue Later
-                </TapBtn>
+                <MoreOptions>
+                    <TapBtn number={3} variant="warning"
+                        onClick={() => setScreen('hold_reason')}
+                        disabled={submitting}>
+                        <Clock size={18} /> Waiting…
+                    </TapBtn>
+                    <TapBtn number={4} variant="neutral"
+                        onClick={() => submitAction({ action: 'ESCALATE' })}
+                        disabled={submitting}>
+                        <AlertTriangle size={18} /> Escalate
+                    </TapBtn>
+                    <TapBtn number={5} variant="neutral"
+                        onClick={() => submitAction({ action: 'CONTINUE_LATER' })}
+                        disabled={submitting}>
+                        Continue Later
+                    </TapBtn>
+                </MoreOptions>
                 {error && <ErrorBanner msg={error} />}
+                <WorkOrderPartsCart woId={wo?.id} assetId={wo?.assetId} plantId={plantId} onOpenSearch={() => openBatchScan(wo?.id)} />
             </PromptShell>
         );
     }
@@ -960,7 +1213,7 @@ export default function ScanActionPrompt({
     // Branch: ROUTE_TO_WAITING_WO — waiting WO exists, offer Resume or New
     if (branch === 'ROUTE_TO_WAITING_WO') {
         return (
-            <PromptShell wo={wo} subtitle={`On Hold — ${wo?.holdReason || ''}`} onCancel={onCancel}>
+            <PromptShell wo={wo} subtitle={`On Hold — ${wo?.holdReason || ''}`} statePill={<StatePill label="ON HOLD" variant="hold" />} onCancel={onCancel}>
                 <TapBtn number={1} variant="success"
                     onClick={() => submitAction({ action: 'RESUME_WAITING_WO' })}
                     disabled={submitting}>
@@ -982,7 +1235,7 @@ export default function ScanActionPrompt({
     // Branch: ROUTE_TO_ESCALATED_WO — escalated WO, offer Join/Take Over
     if (branch === 'ROUTE_TO_ESCALATED_WO') {
         return (
-            <PromptShell wo={wo} subtitle="⚠ Escalated — Response Required" onCancel={onCancel}>
+            <PromptShell wo={wo} subtitle="Response Required" statePill={<StatePill label="ESCALATED" variant="escalated" />} onCancel={onCancel}>
                 <TapBtn number={1} variant="danger"
                     onClick={() => submitAction({ action: 'JOIN' })}
                     disabled={submitting}>
@@ -1097,10 +1350,10 @@ export default function ScanActionPrompt({
     // Branch: ROUTE_TO_ACTIVE_WO — active WO context
     if (branch === 'ROUTE_TO_ACTIVE_WO') {
 
-        // Another user is active — Join / Take Over / Escalate / Supervisor management
+        // Another user is active — Join / Take Over
         if (context === 'OTHER_USER_ACTIVE') {
             return (
-                <PromptShell wo={wo} subtitle={`Active — ${activeUsers.length} technician(s) on this WO`} onCancel={onCancel}>
+                <PromptShell wo={wo} subtitle={`${activeUsers.length} technician(s) on this WO`} statePill={<StatePill label="ACTIVE" variant="active" />} activeUsers={activeUsers} onCancel={onCancel}>
                     <TapBtn number={1} variant="success"
                         onClick={() => submitAction({ action: 'JOIN' })}
                         disabled={submitting}>
@@ -1111,21 +1364,23 @@ export default function ScanActionPrompt({
                         disabled={submitting}>
                         <UserCheck size={18} /> Take Over
                     </TapBtn>
-                    <TapBtn number={3} variant="neutral"
-                        onClick={() => setScreen('hold_reason')}
-                        disabled={submitting}>
-                        <Clock size={18} /> Put on Hold
-                    </TapBtn>
-                    <TapBtn number={4} variant="danger"
-                        onClick={() => setScreen('team_close_confirm')}
-                        disabled={submitting}>
-                        <CheckCircle size={18} /> Close Work Order
-                    </TapBtn>
-                    <TapBtn number={5} variant="neutral"
-                        onClick={() => submitAction({ action: 'ESCALATE' })}
-                        disabled={submitting}>
-                        <AlertTriangle size={18} /> Escalate
-                    </TapBtn>
+                    <MoreOptions>
+                        <TapBtn number={3} variant="neutral"
+                            onClick={() => setScreen('hold_reason')}
+                            disabled={submitting}>
+                            <Clock size={18} /> Put on Hold
+                        </TapBtn>
+                        <TapBtn number={4} variant="danger"
+                            onClick={() => setScreen('team_close_confirm')}
+                            disabled={submitting}>
+                            <CheckCircle size={18} /> Close Work Order
+                        </TapBtn>
+                        <TapBtn number={5} variant="neutral"
+                            onClick={() => submitAction({ action: 'ESCALATE' })}
+                            disabled={submitting}>
+                            <AlertTriangle size={18} /> Escalate
+                        </TapBtn>
+                    </MoreOptions>
                     {error && <ErrorBanner msg={error} />}
                 </PromptShell>
             );
@@ -1134,17 +1389,59 @@ export default function ScanActionPrompt({
         // This user is active, others also active — multi-tech prompt
         if (context === 'MULTI_TECH') {
             return (
-                <PromptShell wo={wo} subtitle="Active — Multiple Technicians" onCancel={onCancel}>
-                    <TapBtn number={1} variant="neutral"
-                        onClick={() => submitAction({ action: 'LEAVE_WORK' })}
-                        disabled={submitting}>
-                        <UserX size={18} /> Leave Work
-                    </TapBtn>
-                    <TapBtn number={2} variant="danger"
+                <PromptShell wo={wo} subtitle="Multiple Technicians" statePill={<StatePill label="IN PROGRESS" variant="active" />} onCancel={onCancel}>
+                    <TapBtn number={1} variant="danger"
                         onClick={() => setScreen('team_close_confirm')}
                         disabled={submitting}>
                         <CheckCircle size={18} /> Close for Team
                     </TapBtn>
+                    <TapBtn number={2} variant="default"
+                        onClick={() => openBatchScan(wo?.id)}
+                        disabled={submitting}>
+                        <Package size={18} /> Add Parts
+                    </TapBtn>
+                    <MoreOptions>
+                        <TapBtn number={3} variant="warning"
+                            onClick={() => setScreen('hold_reason')}
+                            disabled={submitting}>
+                            <Clock size={18} /> Waiting…
+                        </TapBtn>
+                        <TapBtn number={4} variant="neutral"
+                            onClick={() => submitAction({ action: 'LEAVE_WORK' })}
+                            disabled={submitting}>
+                            <UserX size={18} /> Leave Work
+                        </TapBtn>
+                        <TapBtn number={5} variant="neutral"
+                            onClick={() => submitAction({ action: 'ESCALATE' })}
+                            disabled={submitting}>
+                            <AlertTriangle size={18} /> Escalate
+                        </TapBtn>
+                        <TapBtn number={6} variant="neutral"
+                            onClick={() => submitAction({ action: 'CONTINUE_LATER' })}
+                            disabled={submitting}>
+                            Continue Later
+                        </TapBtn>
+                    </MoreOptions>
+                    {error && <ErrorBanner msg={error} />}
+                    <WorkOrderPartsCart woId={wo?.id} assetId={wo?.assetId} plantId={plantId} onOpenSearch={() => openBatchScan(wo?.id)} />
+                </PromptShell>
+            );
+        }
+
+        // Solo active (or RESUMED_NO_SEGMENT) — standard single-tech prompt
+        return (
+            <PromptShell wo={wo} subtitle="In Progress" statePill={<StatePill label="IN PROGRESS" variant="active" />} onCancel={onCancel}>
+                <TapBtn number={1} variant="success"
+                    onClick={() => submitAction({ action: 'CLOSE_WO' })}
+                    disabled={submitting}>
+                    <CheckCircle size={18} /> Close Work Order
+                </TapBtn>
+                <TapBtn number={2} variant="default"
+                    onClick={() => openBatchScan(wo?.id)}
+                    disabled={submitting}>
+                    <Package size={18} /> Add Parts
+                </TapBtn>
+                <MoreOptions>
                     <TapBtn number={3} variant="warning"
                         onClick={() => setScreen('hold_reason')}
                         disabled={submitting}>
@@ -1160,42 +1457,16 @@ export default function ScanActionPrompt({
                         disabled={submitting}>
                         Continue Later
                     </TapBtn>
-                    {error && <ErrorBanner msg={error} />}
-                </PromptShell>
-            );
-        }
-
-        // Solo active (or RESUMED_NO_SEGMENT) — standard single-tech prompt
-        return (
-            <PromptShell wo={wo} subtitle="In Progress" onCancel={onCancel}>
-                <TapBtn number={1} variant="success"
-                    onClick={() => submitAction({ action: 'CLOSE_WO' })}
-                    disabled={submitting}>
-                    <CheckCircle size={18} /> Close Work Order
-                </TapBtn>
-                <TapBtn number={2} variant="warning"
-                    onClick={() => setScreen('hold_reason')}
-                    disabled={submitting}>
-                    <Clock size={18} /> Waiting…
-                </TapBtn>
-                <TapBtn number={3} variant="neutral"
-                    onClick={() => openPartsScreen(wo?.id)}
-                    disabled={submitting}>
-                    <Package size={18} /> Scan / Add Parts
-                </TapBtn>
-                <TapBtn number={4} variant="neutral"
-                    onClick={() => submitAction({ action: 'ESCALATE' })}
-                    disabled={submitting}>
-                    <AlertTriangle size={18} /> Escalate
-                </TapBtn>
-                <TapBtn number={5} variant="neutral"
-                    onClick={() => submitAction({ action: 'CONTINUE_LATER' })}
-                    disabled={submitting}>
-                    Continue Later
-                </TapBtn>
+                </MoreOptions>
                 {error && <ErrorBanner msg={error} />}
+                <WorkOrderPartsCart woId={wo?.id} assetId={wo?.assetId} plantId={plantId} onOpenSearch={() => openBatchScan(wo?.id)} />
             </PromptShell>
         );
+    }
+
+    // Branch: ASSET_NOT_FOUND — 404 path; catalogSuggestion/enrichment behind one tap
+    if (branch === 'ASSET_NOT_FOUND') {
+        return <NotFoundPrompt branchResponse={branchResponse} onCancel={onCancel} />;
     }
 
     // Fallback — unknown branch
@@ -1208,20 +1479,171 @@ export default function ScanActionPrompt({
     );
 }
 
+// ── STATE pill ────────────────────────────────────────────────────────────────
+function StatePill({ label, variant }) {
+    const c = {
+        started:   { bg: 'rgba(37,99,235,0.15)',   border: '#3b82f6', text: '#93c5fd'  },
+        active:    { bg: 'rgba(16,185,129,0.15)',   border: '#10b981', text: '#6ee7b7'  },
+        hold:      { bg: 'rgba(245,158,11,0.15)',   border: '#f59e0b', text: '#fbbf24'  },
+        escalated: { bg: 'rgba(239,68,68,0.15)',    border: '#ef4444', text: '#f87171'  },
+        unknown:   { bg: 'rgba(71,85,105,0.2)',     border: '#475569', text: '#94a3b8'  },
+    }[variant] || { bg: 'rgba(71,85,105,0.2)', border: '#475569', text: '#94a3b8' };
+    return (
+        <span style={{
+            display: 'inline-flex', alignItems: 'center',
+            padding: '3px 10px', borderRadius: 20,
+            background: c.bg, border: `1px solid ${c.border}`,
+            color: c.text, fontSize: 11, fontWeight: 700, letterSpacing: '0.07em',
+        }}>
+            {label}
+        </span>
+    );
+}
+
+// ── Collapsible secondary actions (buttons 3+) ────────────────────────────────
+function MoreOptions({ children }) {
+    const [open, setOpen] = React.useState(false);
+    return (
+        <>
+            <button
+                onClick={() => setOpen(o => !o)}
+                style={{
+                    width: '100%', marginTop: 4, padding: '10px 14px', borderRadius: 10,
+                    background: 'none', border: '1px solid #1e293b',
+                    color: '#475569', cursor: 'pointer', fontSize: 13, textAlign: 'left',
+                }}
+            >
+                {open ? '▲ Fewer options' : '▾ More options'}
+            </button>
+            {open && children}
+        </>
+    );
+}
+
+// ── Unknown asset prompt (404 path) ──────────────────────────────────────────
+function NotFoundPrompt({ branchResponse, onCancel }) {
+    const [detailsOpen, setDetailsOpen] = React.useState(false);
+    const { assetId, catalogSuggestion, enrichmentId, liveState, digitalTwin, peerTwin } = branchResponse || {};
+    const hasContext = !!(catalogSuggestion || liveState || digitalTwin || peerTwin || enrichmentId);
+
+    return (
+        <div style={{ padding: '4px 0' }}>
+            <div style={{ marginBottom: 20 }}>
+                <StatePill label="UNKNOWN" variant="unknown" />
+                <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginTop: 10 }}>
+                    {assetId}
+                </div>
+                <div style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>
+                    Not registered in this plant
+                </div>
+            </div>
+
+            {catalogSuggestion && (
+                <div style={{
+                    padding: '10px 14px', borderRadius: 8, marginBottom: 16,
+                    background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)',
+                }}>
+                    <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', marginBottom: 4 }}>
+                        CATALOG MATCH
+                    </div>
+                    <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 600 }}>
+                        {catalogSuggestion.description}
+                    </div>
+                    {(catalogSuggestion.category || catalogSuggestion.primaryMaker) && (
+                        <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>
+                            {[catalogSuggestion.category, catalogSuggestion.primaryMaker].filter(Boolean).join(' · ')}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', marginBottom: 4 }}>
+                NEXT
+            </div>
+            <TapBtn number={1} variant="neutral" onClick={onCancel}>
+                Try Another Scan
+            </TapBtn>
+
+            {hasContext && (
+                <button
+                    onClick={() => setDetailsOpen(o => !o)}
+                    style={{
+                        width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 10,
+                        background: 'none', border: '1px solid #1e293b',
+                        color: '#475569', cursor: 'pointer', fontSize: 13, textAlign: 'left',
+                    }}
+                >
+                    {detailsOpen ? '▲ Hide details' : '▾ Additional context'}
+                </button>
+            )}
+
+            {detailsOpen && (
+                <div style={{
+                    marginTop: 8, padding: '12px 14px', borderRadius: 8,
+                    background: '#0f172a', border: '1px solid #1e293b',
+                    fontSize: 13, color: '#94a3b8',
+                }}>
+                    {liveState && (
+                        <div style={{ marginBottom: 6 }}>
+                            <span style={{ color: '#64748b', fontWeight: 600 }}>Live state: </span>
+                            {liveState.stale ? 'stale' : 'recent'} telemetry ({liveState.source})
+                        </div>
+                    )}
+                    {digitalTwin && (
+                        <div style={{ marginBottom: 6 }}>
+                            <span style={{ color: '#64748b', fontWeight: 600 }}>Digital twin: </span>
+                            {digitalTwin.format} · {digitalTwin.source}
+                        </div>
+                    )}
+                    {peerTwin && (
+                        <div style={{ marginBottom: 6 }}>
+                            <span style={{ color: '#64748b', fontWeight: 600 }}>Peer twin: </span>
+                            {peerTwin.format} from {peerTwin.contributedBy}
+                        </div>
+                    )}
+                    {enrichmentId && (
+                        <div style={{ color: '#475569', fontStyle: 'italic' }}>
+                            Semantic analysis in progress…
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ── Shared prompt wrapper ─────────────────────────────────────────────────────
-function PromptShell({ wo, subtitle, onCancel, children }) {
+function PromptShell({ wo, subtitle, statePill, activeUsers, onCancel, children }) {
+    // Derive LAST line: active users trump lastAction; show nothing if neither present
+    let lastLine = null;
+    if (activeUsers && activeUsers.length > 0) {
+        lastLine = `Currently active: ${activeUsers.join(', ')}`;
+    } else if (wo?.lastAction?.label) {
+        lastLine = wo.lastAction.label;
+    }
+
     return (
         <div style={{ padding: '4px 0' }}>
             {wo && (
                 <div style={{ marginBottom: 20 }}>
+                    {statePill && <div style={{ marginBottom: 8 }}>{statePill}</div>}
                     <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>
                         {wo.description || `WO ${wo.number}`}
                     </div>
                     <div style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>
                         {wo.number} · {subtitle}
                     </div>
+                    {lastLine && (
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
+                            <span style={{ color: '#475569', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', flexShrink: 0 }}>LAST</span>
+                            <span style={{ color: '#64748b', fontSize: 13 }}>{lastLine}</span>
+                        </div>
+                    )}
                 </div>
             )}
+            <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', marginBottom: 4 }}>
+                NEXT
+            </div>
             {children}
             <button
                 onClick={onCancel}

@@ -68,11 +68,19 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
     const [scanValue, setScanValue] = useState('');
     const [scanFeedback, setScanFeedback] = useState('');
     const scanInputRef = useRef(null);
+    const searchTimerRef = useRef(null);
 
     useEffect(() => {
         fetchItems();
         if (isAuditMode) fetchStandardization();
     }, [activeTab]);
+
+    // Server-side search for parts — client-side filter is insufficient for 647k records
+    useEffect(() => {
+        if (activeTab !== 'parts') return;
+        clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(fetchItems, 450);
+    }, [searchTerm]);
 
     const fetchStandardization = async () => {
         try {
@@ -89,40 +97,53 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
     const fetchItems = async () => {
         setLoading(true);
         setError(null);
+        setItems([]);
         setPreviewItem(null);
         setPreviewDetails(null);
         try {
+            const q = searchTerm ? `&q=${encodeURIComponent(searchTerm)}` : '';
             let endpoint = '';
-            if (activeTab === 'vendors') endpoint = '/api/logistics/global-vendors/list';
-            if (activeTab === 'assets') endpoint = '/api/logistics/global-assets';
-            if (activeTab === 'sops') endpoint = '/api/logistics/global-sops';
-            if (activeTab === 'parts') endpoint = '/api/logistics/global-parts';
+            if (activeTab === 'vendors') endpoint = `/api/catalog/onboarding/vendors?limit=300${q}`;
+            if (activeTab === 'assets') endpoint = `/api/catalog/onboarding/equipment?limit=500${q}`;
+            if (activeTab === 'sops')   endpoint = '/api/logistics/global-sops';
+            if (activeTab === 'parts')  endpoint = `/api/catalog/onboarding/parts?limit=200${q}`;
 
             const res = await fetch(endpoint);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            
-            // Normalize data for display
+
             let normalized = [];
             if (activeTab === 'vendors') {
-                normalized = data.map(v => {
-                    const location = [v.City, v.State].filter(Boolean).join(', ');
-                    return { 
-                        id: v.ID, 
-                        title: v.Name, 
-                        subtitle: location || 'Enterprise Registry Record', 
-                        raw: v 
-                    };
-                });
+                normalized = data.map(v => ({
+                    id: v.VendorID,
+                    title: v.CompanyName,
+                    subtitle: [v.Region, v.Categories].filter(Boolean).join(' · ') || 'Master Vendor',
+                    raw: v
+                }));
             }
-            if (activeTab === 'assets') normalized = data.map(a => ({ id: a.ID, title: a.Description, subtitle: a.Manufacturer + ' | ' + a.Model, raw: a }));
-            if (activeTab === 'sops') normalized = data.map(s => ({ id: s.ID, title: s.Description, subtitle: 'Standard Procedure', raw: s }));
+            if (activeTab === 'assets') {
+                normalized = data.map(r => ({
+                    id: r.EquipmentTypeID,
+                    title: r.Description,
+                    subtitle: (r.primaryMaker || 'Various') + ' | ' + (r.Category || 'Equipment'),
+                    raw: r
+                }));
+            }
+            if (activeTab === 'sops') {
+                normalized = data.map(s => ({ id: s.ID, title: s.Description, subtitle: 'Standard Procedure', raw: s }));
+            }
             if (activeTab === 'parts') {
-                normalized = data.map(p => ({ id: p.ID, title: p.Description, subtitle: `$${p.UnitCost || 0} | Class: ${p.ClassID || 'N/A'}`, raw: p }));
+                normalized = data.map(p => ({
+                    id: p.MasterPartID,
+                    title: p.StandardizedName || p.Description,
+                    subtitle: (p.Manufacturer || 'N/A') + ' | ' + (p.Category || ''),
+                    raw: p
+                }));
             }
 
             setItems(normalized);
         } catch (err) {
-            setError("Failed to load global items.");
+            setError("Failed to load catalog items.");
         } finally {
             setLoading(false);
         }
@@ -133,10 +154,14 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
         setLoadingPreview(true);
         setPreviewDetails(null);
         try {
-            // Some tabs might need extra detail fetch
             if (activeTab === 'vendors') {
                 const res = await fetch(`/api/logistics/global-vendors/${encodeURIComponent(item.id)}`);
                 setPreviewDetails(await res.json());
+            } else if (activeTab === 'assets') {
+                // Fetch typical parts linked to this equipment type
+                const typRes = await fetch(`/api/catalog/equipment/${encodeURIComponent(item.id)}/typical-parts`);
+                const typicalParts = typRes.ok ? await typRes.json() : [];
+                setPreviewDetails({ ...item.raw, typicalParts });
             } else {
                 setPreviewDetails(item.raw);
             }
@@ -163,47 +188,38 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                 const raw = item.raw;
                 
                 if (type === 'vendors') {
+                    // Source: MasterVendors from mfg_master.db
                     const vendorData = {
-                        ID: raw.ID,
-                        Description: raw.Name,
-                        Address: raw.Address || '',
-                        City: raw.City || '',
-                        State: raw.State || '',
-                        Zip: raw.Zip || '',
+                        ID: raw.VendorID,
+                        Description: raw.CompanyName,
                         Phone: raw.Phone || '',
-                        StandardEmail: raw.Email || '',
                         Website: raw.Website || '',
-                        Vendor: 1 
+                        StandardEmail: raw.SalesRepEmail || '',
+                        Address: raw.Address || '',
+                        Vendor: 1
                     };
                     const res = await fetch('/api/v2/network/vendor/import', {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'x-plant-id': plantId
-                        },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                         body: JSON.stringify({ vendorData })
                     });
                     if (!res.ok) throw new Error("Vendor import failed");
                 } else if (type === 'assets') {
-                    // Map registry names back to legacy database columns
+                    // Source: MasterEquipment from mfg_master.db
                     const assetData = {
-                        ID: raw.ID,
                         Description: raw.Description,
-                        Model: raw.Model,
-                        Manufacturer: raw.Manufacturer,
-                        AssetType: raw.AssetType,
-                        UsefulLife: raw.UsefulLife,
-                        AssetTag: raw.AssetTag,
-                        Quantity: 0, 
+                        Model: raw.EquipmentTypeID,
+                        Manufacturer: raw.primaryMaker || '',
+                        AssetType: raw.Category || 'Equipment',
+                        UsefulLife: raw.UsefulLifeYears || null,
+                        AssetTag: '',
+                        Quantity: 0,
                         OperationalStatus: 'In Production',
-                        Active: 1
+                        Active: 1,
                     };
                     const res = await fetch('/api/assets', {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'x-plant-id': plantId
-                        },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                         body: JSON.stringify(assetData)
                     });
                     if (!res.ok) throw new Error("Asset import failed");
@@ -222,18 +238,17 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                     });
                     if (!res.ok) throw new Error("SOP import failed");
                 } else if (type === 'parts') {
+                    // Source: MasterParts from mfg_master.db
                     const res = await fetch('/api/parts', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-plant-id': plantId
-                        },
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                         body: JSON.stringify({
-                            ID: raw.ID,
-                            Description: raw.Description,
-                            UnitCost: raw.UnitCost,
-                            ClassID: raw.ClassID,
-                            Stock: 0
+                            ID: raw.MasterPartID,
+                            Description: raw.StandardizedName || raw.Description,
+                            Manufacturer: raw.Manufacturer || '',
+                            UnitCost: raw.TypicalPriceMin || raw.TypicalPriceMax || 0,
+                            ClassID: raw.Category || 'C',
+                            Stock: 0,
                         })
                     });
                     if (!res.ok) throw new Error("Part import failed");
@@ -397,12 +412,37 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
                 )}
 
                 {activeTab === 'assets' && (
-                    <div className="preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
-                        <div className="info-blob"><label>{t('onboarding.manufacturer')}</label><div>{previewDetails.Manufacturer || 'Generic'}</div></div>
-                        <div className="info-blob"><label>{t('onboarding.modelNumber')}</label><div>{previewDetails.Model || 'N/A'}</div></div>
-                        <div className="info-blob"><label>{t('onboarding.assetCategory')}</label><div>{previewDetails.AssetType || 'Standard Equipment'}</div></div>
-                        <div className="info-blob"><label>{t('onboarding.usefulLife')}</label><div>{previewDetails.UsefulLife || 10} Years (Est)</div></div>
-                    </div>
+                    <>
+                        <div className="preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+                            <div className="info-blob"><label>{t('onboarding.manufacturer')}</label><div>{previewDetails.primaryMaker || 'Various'}</div></div>
+                            <div className="info-blob"><label>{t('onboarding.assetCategory')}</label><div>{previewDetails.Category || 'Equipment'}</div></div>
+                            <div className="info-blob"><label>PM Interval</label><div>{previewDetails.PMIntervalDays ? `${previewDetails.PMIntervalDays} days` : 'N/A'}</div></div>
+                            <div className="info-blob"><label>{t('onboarding.usefulLife')}</label><div>{previewDetails.UsefulLifeYears ? `${previewDetails.UsefulLifeYears} yrs` : 'N/A'}</div></div>
+                            <div className="info-blob"><label>Expected MTBF</label><div>{previewDetails.ExpectedMTBF_Hours ? `${previewDetails.ExpectedMTBF_Hours.toLocaleString()} hrs` : 'N/A'}</div></div>
+                            <div className="info-blob"><label>Typical Warranty</label><div>{previewDetails.TypicalWarrantyMonths ? `${previewDetails.TypicalWarrantyMonths} months` : 'N/A'}</div></div>
+                        </div>
+                        {previewDetails.allMakers?.length > 1 && (
+                            <div className="info-blob"><label>Known Makers</label><div>{previewDetails.allMakers.join(', ')}</div></div>
+                        )}
+                        {previewDetails.typicalParts?.length > 0 && (
+                            <div>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>
+                                    Typical Parts ({previewDetails.typicalParts.length})
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    {previewDetails.typicalParts.map(p => (
+                                        <div key={p.MasterPartID} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 6, fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <span>{p.StandardizedName || p.Description}</span>
+                                            <span style={{ color: '#94a3b8', marginLeft: 12, whiteSpace: 'nowrap' }}>{p.Manufacturer || ''}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {previewDetails.typicalParts?.length === 0 && (
+                            <div style={{ fontSize: '0.8rem', color: '#475569', fontStyle: 'italic' }}>No typical parts linked in master catalog yet.</div>
+                        )}
+                    </>
                 )}
 
                 {activeTab === 'sops' && (
@@ -421,10 +461,16 @@ export default function OnboardingWizard({ onClose, plantId, plantLabel, mode = 
 
                 {activeTab === 'parts' && (
                     <div className="preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
-                        <div className="info-blob"><label>{t('onboarding.enterprisePartId')}</label><div>{previewDetails.ID}</div></div>
-                        <div className="info-blob"><label>{t('onboarding.masterListPrice')}</label><div style={{ color: '#10b981', fontWeight: 'bold' }}>${previewDetails.UnitCost}</div></div>
-                        <div className="info-blob"><label>{t('onboarding.materialClass')}</label><div>{previewDetails.ClassID || 'N/A'}</div></div>
-                        <div className="info-blob"><label>{t('onboarding.syncOrigin')}</label><div>{previewDetails.LastSyncFromPlant || 'Central'}</div></div>
+                        <div className="info-blob"><label>{t('onboarding.enterprisePartId')}</label><div>{previewDetails.MasterPartID}</div></div>
+                        <div className="info-blob"><label>{t('onboarding.manufacturer')}</label><div>{previewDetails.Manufacturer || 'N/A'}</div></div>
+                        <div className="info-blob"><label>{t('onboarding.assetCategory')}</label><div>{previewDetails.Category || 'N/A'}</div></div>
+                        <div className="info-blob"><label>{t('onboarding.masterListPrice')}</label><div style={{ color: '#10b981', fontWeight: 'bold' }}>
+                            {previewDetails.TypicalPriceMin && previewDetails.TypicalPriceMax
+                                ? `$${previewDetails.TypicalPriceMin} – $${previewDetails.TypicalPriceMax}`
+                                : previewDetails.TypicalPriceMin ? `$${previewDetails.TypicalPriceMin}` : 'N/A'}
+                        </div></div>
+                        <div className="info-blob"><label>UOM</label><div>{previewDetails.UOM || 'EA'}</div></div>
+                        <div className="info-blob"><label>Lead Time</label><div>{previewDetails.LeadTimeDays ? `${previewDetails.LeadTimeDays} days` : 'N/A'}</div></div>
                     </div>
                 )}
 

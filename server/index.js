@@ -155,6 +155,21 @@ console.log('[BOOT] Stage 4: Running migrations...');
 runMigrations();
 console.log('[BOOT] Stage 5: Migrations done');
 
+// ── Phase 2: WO Outcome Tracking — background finalization ────────────────────
+// Provisional outcomes (Resolved=NULL) are finalized here, not inline on WO close.
+// Any pending outcome older than ResolutionWindowMin with no follow-up → Resolved=1.
+const outcomeTracker = require('./services/outcomeTracker');
+setTimeout(() => outcomeTracker.finalizeExpired(), 30_000); // first pass 30s after boot
+setInterval(() => outcomeTracker.finalizeExpired(), 5 * 60_000); // then every 5 minutes
+
+// ── Phase 4: Time-Saved Baseline — cross-plant aggregation ───────────────────
+// Sweeps all plant DBs for Resolved=1 outcomes and recomputes baselines in
+// trier_logistics.db. Runs hourly; first pass is deferred 2min post-boot so
+// migrations and DB connections settle before the sweep begins.
+const timeSaved = require('./services/timeSaved');
+setTimeout(() => timeSaved.recomputeBaselines(), 2 * 60_000);
+setInterval(() => timeSaved.recomputeBaselines(), 60 * 60_000);
+
 // â”€â”€ Master Data Catalog Protection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // The mfg_master.db is the crown jewel â€” verify it exists and is intact
 console.log('[BOOT] Stage 5.1: Verifying Master Data Catalog...');
@@ -2175,6 +2190,51 @@ bus.connect().then(() => {
             setMode(data.mode, data.reason || null, data.source || 'system');
         } catch (err) {
             console.warn('[BUS] Failed to apply system state from bus:', err.message);
+        }
+    });
+
+    // trier.asset.telemetry — last-known-good state snapshot (Tier 2 twin contract)
+    // Payload: { plantId, assetId, source, state: { pressure, temp, status, ... }, staleAfterS? }
+    bus.subscribe('trier.asset.telemetry', (data) => {
+        if (!data || !data.plantId || !data.assetId || !data.state) return;
+        const SAFE = /^[a-zA-Z0-9_-]{1,64}$/;
+        if (!SAFE.test(data.plantId) || !SAFE.test(String(data.assetId))) return;
+        try {
+            const plantPath = require('path').join(__dirname, '..', 'data', `${data.plantId}.db`);
+            const plantDb = new (require('better-sqlite3'))(plantPath);
+
+            // Read old state before update for change detection (trigger 6)
+            const oldRow = plantDb.prepare(
+                'SELECT StateJSON FROM AssetLiveState WHERE AssetID = ? LIMIT 1'
+            ).get(String(data.assetId));
+
+            plantDb.prepare(`
+                INSERT INTO AssetLiveState (AssetID, Source, StateJSON, LastUpdated, StaleAfterS)
+                VALUES (?, ?, ?, datetime('now'), ?)
+                ON CONFLICT(AssetID) DO UPDATE SET
+                    Source      = excluded.Source,
+                    StateJSON   = excluded.StateJSON,
+                    LastUpdated = excluded.LastUpdated,
+                    StaleAfterS = excluded.StaleAfterS
+            `).run(
+                String(data.assetId),
+                data.source || 'nats',
+                JSON.stringify(data.state),
+                data.staleAfterS || 300
+            );
+            plantDb.close();
+
+            // Triggers 5 + 6: invalidate explain cache on threshold breach or state transition
+            const BREACH = new Set(['warning', 'fault', 'alarm', 'error', 'critical', 'down']);
+            const newStatus = (data.state.status || data.state.state || '').toLowerCase();
+            const oldState  = oldRow ? JSON.parse(oldRow.StateJSON || '{}') : null;
+            const oldStatus = oldState ? (oldState.status || oldState.state || '').toLowerCase() : null;
+            if (BREACH.has(newStatus) || newStatus !== oldStatus) {
+                const { invalidate: invalidateExplain } = require('./services/explainCache');
+                invalidateExplain(data.plantId, String(data.assetId));
+            }
+        } catch (err) {
+            console.warn('[BUS] trier.asset.telemetry write failed:', err.message);
         }
     });
 

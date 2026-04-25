@@ -91,6 +91,7 @@
     "react-dom": "^19.2.4",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.1",
+    "sqlite-vec": "^0.1.9",
     "tesseract.js": "^7.0.0",
     "three": "^0.183.2",
     "vite-plugin-cesium": "^1.2.23",

@@ -216,6 +216,19 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
             });
 
             if (!res.ok) {
+                if (res.status === 404) {
+                    // Asset not found — treat as a valid branch, never throw
+                    const data = await res.json().catch(() => ({}));
+                    const notFoundResult = { ...data, branch: 'ASSET_NOT_FOUND' };
+                    setConfirmation({ assetId, assetName: assetId, woStatus: 'Not in system', branch: 'ASSET_NOT_FOUND' });
+                    setMode('confirming');
+                    confirmTimerRef.current = setTimeout(() => {
+                        setConfirmation(null);
+                        setMode('idle');
+                        onResult({ ...notFoundResult, scanId, deviceTimestamp });
+                    }, CONFIRM_FLASH_MS);
+                    return;
+                }
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.error || `Server error ${res.status}`);
             }
@@ -227,7 +240,7 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
             setConfirmation({
                 assetId,
                 assetName: data.wo?.description || assetId,
-                woStatus: data.wo ? `WO ${data.wo.number}` : 'New Work Order',
+                woStatus: data.wo ? `WO ${data.wo.number}` : data.branch === 'ASSET_NOT_FOUND' ? 'Not in system' : 'New Work Order',
                 branch: data.branch,
                 offline: !!data._offlinePredicted,
             });
@@ -272,12 +285,15 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
                         borderRadius: 16, padding: '32px 40px', textAlign: 'center',
                         minWidth: 280, maxWidth: 360,
                     }}>
-                        <CheckCircle size={40} color="#22c55e" style={{ marginBottom: 12 }} />
+                        {confirmation.branch === 'ASSET_NOT_FOUND'
+                            ? <AlertTriangle size={40} color="#f59e0b" style={{ marginBottom: 12 }} />
+                            : <CheckCircle size={40} color="#22c55e" style={{ marginBottom: 12 }} />
+                        }
                         <div style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', marginBottom: 6 }}>
                             {confirmation.assetId}
                         </div>
-                        <div style={{ fontSize: 14, color: '#94a3b8', marginBottom: 4 }}>
-                            {confirmation.assetName}
+                        <div style={{ fontSize: 14, color: confirmation.branch === 'ASSET_NOT_FOUND' ? '#fbbf24' : '#94a3b8', marginBottom: 4 }}>
+                            {confirmation.branch === 'ASSET_NOT_FOUND' ? 'Unknown asset' : confirmation.assetName}
                         </div>
                         <div style={{ fontSize: 13, color: '#64748b' }}>
                             {confirmation.woStatus}

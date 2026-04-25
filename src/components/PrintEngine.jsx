@@ -58,6 +58,25 @@ import { formatDate } from '../utils/formatDate';
  * @param {string} plantLabel   — Human-readable plant name for document header
  * @param {object} branding     — { documentLogo: url|null, dashboardLogo: url|null }
  */
+// Renders a QR code from text using the local `qrcode` package — no external API calls.
+const AsyncQRImage = ({ text, size, style, alt }) => {
+    const [dataUrl, setDataUrl] = React.useState(null);
+    React.useEffect(() => {
+        if (!text) return;
+        import('qrcode').then(QRCode =>
+            QRCode.default.toDataURL(text, { margin: 1, width: size || 200, color: { dark: '#000000FF', light: '#FFFFFFFF' } })
+                .then(url => setDataUrl(url))
+                .catch(e => console.error('QR generation failed:', e))
+        );
+    }, [text, size]);
+    if (!dataUrl) return (
+        <div style={{ ...style, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#94a3b8' }}>
+            QR…
+        </div>
+    );
+    return <img src={dataUrl} alt={alt || 'QR'} style={style} />;
+};
+
 const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null, documentLogo: null } }) => {
     const { t } = useTranslation();
     const [qrCode, setQrCode] = React.useState(null);
@@ -1983,6 +2002,116 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
             break;
         }
 
+        // ── CAD / Drawing reference sheet ─────────────────────────────────────
+        // Prints a field-friendly one-page reference with QR code pointing to the
+        // file URL. Watermarked with asset ID, format, revision, and timestamp.
+        case 'cad-drawing': {
+            const { url, format, refId, revision = '1.0' } = data;
+            const now = new Date().toLocaleString();
+            content = (
+                <div style={{ fontFamily: 'Arial, sans-serif', padding: '30px', maxWidth: '7.5in' }}>
+                    {renderHeader(`${format || 'Drawing'} Reference Sheet — ${refId || ''}`, `DRW-${(refId || 'REF').toUpperCase()}-${new Date().toISOString().split('T')[0]}`)}
+
+                    <div style={{ display: 'flex', gap: 40, marginBottom: 24 }}>
+                        <div style={{ flex: 1 }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9pt' }}>
+                                <tbody>
+                                    {[
+                                        ['Equipment ID', refId || '—'],
+                                        ['Drawing Format', format || '—'],
+                                        ['Revision', revision],
+                                        ['Printed By', '________________________'],
+                                        ['Printed At', now],
+                                        ['Source URL', url ? url.substring(0, 60) + (url.length > 60 ? '...' : '') : '—'],
+                                    ].map(([label, val], i) => (
+                                        <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
+                                            <td style={{ padding: '5px 8px', fontWeight: 700, fontSize: '8pt', textTransform: 'uppercase', color: '#475569', width: '35%' }}>{label}</td>
+                                            <td style={{ padding: '5px 8px', fontSize: '9pt', color: '#1e293b' }}>{val}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {url && (
+                            <div style={{ textAlign: 'center' }}>
+                                <AsyncQRImage text={url} size={200} style={{ width: 140, height: 140 }} alt="QR to drawing" />
+                                <div style={{ fontSize: '7.5pt', color: '#64748b', marginTop: 6 }}>Scan to open drawing</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ border: '1.5px dashed #94a3b8', borderRadius: 8, padding: '20px 24px', marginBottom: 20, background: '#f8fafc' }}>
+                        <div style={{ fontSize: '9pt', fontWeight: 700, color: '#475569', marginBottom: 8, textTransform: 'uppercase' }}>Drawing Preview</div>
+                        {['SVG','IFC','DXF'].includes((format || '').toUpperCase()) ? (
+                            <div style={{ fontSize: '8.5pt', color: '#1e293b' }}>
+                                Open the URL below or scan the QR code to view the drawing in your browser.
+                                For DXF files, use AutoCAD, DraftSight, or LibreCAD.
+                                For IFC files, use BIM Vision or xeokit.
+                            </div>
+                        ) : (
+                            <div style={{ fontSize: '8.5pt', color: '#1e293b' }}>
+                                Open the URL below or scan the QR code to download the {format} file.
+                                STEP/IGES files can be opened in FreeCAD, SolidWorks, or CATIA.
+                            </div>
+                        )}
+                        <div style={{ marginTop: 12, fontSize: '8pt', fontFamily: 'monospace', wordBreak: 'break-all', background: '#e2e8f0', padding: '6px 10px', borderRadius: 5 }}>
+                            {url || '—'}
+                        </div>
+                    </div>
+
+                    {/* Watermark bar */}
+                    <div style={{ borderTop: '2px solid #1e293b', paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: '7.5pt', color: '#64748b' }}>
+                        <span><strong>TRIER OS</strong> — CONTROLLED DOCUMENT</span>
+                        <span>Asset: {refId || '—'} | Rev: {revision} | {now}</span>
+                        <span>UNCONTROLLED IF PRINTED</span>
+                    </div>
+
+                    {renderSignatures(['Tech Signature', 'Supervisor Review', 'Date'])}
+                </div>
+            );
+            break;
+        }
+
+        // ── Semantic search results print ────────────────────────────────────
+        case 'semantic-results': {
+            const { query: semQ, results: semResults = [] } = data;
+            content = (
+                <>
+                    {renderHeader('Semantic Equipment Search Results', `SEM-${new Date().toISOString().split('T')[0]}`)}
+                    <p style={{ fontStyle: 'italic', fontSize: '9pt', color: '#64748b', marginBottom: 12 }}>
+                        Search query: "{semQ}" — {semResults.length} results — Printed {new Date().toLocaleString()}
+                    </p>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt' }}>
+                        <thead>
+                            <tr>
+                                {['Match %', 'Equipment ID', 'Description', 'Category', 'Manufacturer', 'MTBF (hrs)', 'PM Interval'].map((h, i) => (
+                                    <th key={i} style={{ padding: '5px 6px', textAlign: 'left', borderBottom: '2px solid #1e293b', fontWeight: 700, fontSize: '7pt', textTransform: 'uppercase' }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {semResults.map((r, i) => (
+                                <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff', pageBreakInside: 'avoid' }}>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: r.similarity >= 75 ? '#059669' : r.similarity >= 50 ? '#d97706' : '#94a3b8' }}>
+                                        {Math.round(r.similarity)}%
+                                    </td>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0', fontFamily: 'monospace', fontSize: '7.5pt' }}>{r.id}</td>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0' }}>{r.description}</td>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0' }}>{r.category || '—'}</td>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0' }}>{r.primaryMaker || '—'}</td>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0' }}>{r.mtbfHours ? r.mtbfHours.toLocaleString() : '—'}</td>
+                                    <td style={{ padding: '4px 6px', borderBottom: '1px solid #e2e8f0' }}>{r.pmIntervalDays ? `${r.pmIntervalDays}d` : '—'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {renderSectionHeader('Notes')}
+                    <div style={{ height: 60, border: '1px solid #e2e8f0', borderRadius: 4 }} />
+                </>
+            );
+            break;
+        }
+
         case 'asset-qr-label': {
             const baseUrl = window.systemBaseUrl || window.location.origin;
             const params = new URLSearchParams({
@@ -1994,7 +2123,6 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                 plant: data.plantId || '',
             });
             const smartUrl = `${baseUrl}/?${params.toString()}`;
-            const labelQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(smartUrl)}`;
             content = (
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '20px' }}>
                     <div style={{
@@ -2004,8 +2132,7 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)', pageBreakAfter: 'always'
                     }}>
                         <img src={branding.documentLogo || "/assets/TrierLogoPrint.png"} alt="Trier OS" style={{ height: '20px', marginBottom: '8px', opacity: 0.7 }} />
-                        <img src={labelQrUrl} alt={`QR: ${data.ID}`} style={{ width: '220px', height: '220px', marginBottom: '12px' }}
-                            onLoad={() => window.dispatchEvent(new Event('qr-loaded'))} />
+                        <AsyncQRImage text={smartUrl} size={300} style={{ width: '220px', height: '220px', marginBottom: '12px' }} alt={`QR: ${data.ID}`} />
                         <div style={{ fontSize: '28pt', fontWeight: '900', color: '#1e1b4b', letterSpacing: '2px', textAlign: 'center', marginBottom: '6px', fontFamily: 'monospace' }}>
                             {data.ID}
                         </div>
@@ -2055,14 +2182,13 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                                     plant: data.plantId || '',
                                 });
                                 const smartUrl = `${baseUrl}/?${params.toString()}`;
-                                const cellQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(smartUrl)}`;
                                 return (
                                     <div key={idx} style={{
                                         border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center',
                                         padding: '8px 12px', gap: '12px', overflow: 'hidden',
                                         width: '4in', height: '2in', boxSizing: 'border-box'
                                     }}>
-                                        <img src={cellQrUrl} alt={asset.ID} style={{ width: '75px', height: '75px', flexShrink: 0 }} />
+                                        <AsyncQRImage text={smartUrl} size={150} style={{ width: '75px', height: '75px', flexShrink: 0 }} alt={asset.ID} />
                                         <div style={{ flex: 1, overflow: 'hidden' }}>
                                             <div style={{ fontSize: '16pt', fontWeight: '900', color: '#1e1b4b', fontFamily: 'monospace', letterSpacing: '1px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {asset.ID}
@@ -2088,7 +2214,6 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
         }
 
         case 'site-access-pack':
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.url)}`;
             content = (
                 <>
                     {/* Compact Header for 1-page fit */}
@@ -2117,11 +2242,7 @@ const PrintEngine = ({ type, data, plantLabel, branding = { dashboardLogo: null,
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                            <img src={qrUrl} 
-                                alt="Access QR" 
-                                style={{ width: '130px', height: '130px' }} 
-                                onLoad={() => window.dispatchEvent(new Event('qr-loaded'))}
-                            />
+                            <AsyncQRImage text={data.url} size={150} style={{ width: '130px', height: '130px' }} alt="Access QR" />
                             <div style={{ fontSize: '0.6rem', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>{t('print.engine.scanToAccessPortal')}</div>
                         </div>
                     </div>

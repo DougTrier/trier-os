@@ -1177,4 +1177,67 @@ router.put('/:id/emission-factor', (req, res) => {
     }
 });
 
+// ── GET /api/assets/:id/explain ──────────────────────────────────────────────
+// "Explain This Asset" — deterministic snapshot: live state, recent failures,
+// PM status, contextual artifacts, recommended actions.
+//
+// Cache path (warm): served from in-memory explainCache — zero DB queries.
+// Miss path: computeExplain() runs synchronously, result is cached for next hit.
+// Failure path: returns minimal deterministic payload + warmAsync for recovery.
+const explainCache = require('../services/explainCache');
+
+router.get('/:id/explain', (req, res) => {
+    const assetId = req.params.id;
+    const plantId = (req.headers['x-plant-id'] || 'Demo_Plant_1').trim();
+
+    const debug = process.env.NODE_ENV !== 'production';
+
+    // Cache hit — no DB queries
+    const cached = explainCache.get(plantId, assetId);
+    if (cached) return res.json(debug ? { ...cached, cacheStatus: 'hit' } : cached);
+
+    // Cache miss — compute, cache, return
+    try {
+        const payload = explainCache.computeExplain(plantId, assetId);
+        if (payload) {
+            explainCache.set(plantId, assetId, payload);
+            return res.json(debug ? { ...payload, cacheStatus: 'miss' } : payload);
+        }
+    } catch (err) {
+        console.error('[assets/:id/explain]', err.message);
+    }
+
+    // Fallback: DB unavailable or schema mismatch — minimal payload, warm async
+    explainCache.warmAsync(plantId, assetId);
+    return res.json({
+        assetId,
+        identity:            { ID: assetId, Description: assetId },
+        liveState:           null,
+        recentFailures:      [],
+        pmStatus:            null,
+        contextualArtifacts: [],
+        recommendedActions:  [],
+        generatedAt:         new Date().toISOString(),
+        ...(debug && { cacheStatus: 'fallback' }),
+    });
+});
+
+// ── GET /api/assets/:id/artifacts/usage ─────────────────────────────────────
+// Record or retrieve artifact usage for an asset (delegates to catalog route
+// but scoped by assetId for simpler frontend calls).
+router.get('/:id/artifacts', (req, res) => {
+    const assetId = req.params.id;
+    try {
+        const plant = db();
+        const has = plant.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='plant_artifacts'").get();
+        if (!has) return res.json([]);
+        const rows = plant.prepare(
+            `SELECT * FROM plant_artifacts WHERE EntityID = ? AND IsDeleted = 0 ORDER BY CreatedAt DESC`
+        ).all(String(assetId));
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

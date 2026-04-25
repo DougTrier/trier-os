@@ -1731,4 +1731,85 @@ router.get('/warranty-cost-avoidance', (req, res) => {
     }
 });
 
+// ── GET /api/analytics/failure-taxonomy ──────────────────────────────────
+// Cross-plant failure pattern analysis from normalized PlantFailureEvents.
+// Returns top failure modes, hottest equipment types, and per-plant breakdown.
+router.get('/failure-taxonomy', (req, res) => {
+    try {
+        const lg = logisticsDb();
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+
+        const topModes = lg.prepare(`
+            SELECT FailureMode, FailureClass, Severity,
+                   COUNT(*) AS occurrences,
+                   COUNT(DISTINCT PlantID) AS plantCount,
+                   COUNT(DISTINCT EquipmentTypeID) AS equipmentTypes
+            FROM PlantFailureEvents
+            WHERE FailureMode IS NOT NULL
+            GROUP BY FailureMode
+            ORDER BY occurrences DESC
+            LIMIT ?
+        `).all(limit);
+
+        const topEquipment = lg.prepare(`
+            SELECT EquipmentTypeID, FailureClass,
+                   COUNT(*) AS occurrences,
+                   COUNT(DISTINCT PlantID) AS plantCount,
+                   GROUP_CONCAT(DISTINCT FailureMode) AS failureModes
+            FROM PlantFailureEvents
+            WHERE EquipmentTypeID IS NOT NULL
+            GROUP BY EquipmentTypeID
+            ORDER BY occurrences DESC
+            LIMIT 15
+        `).all();
+
+        const byPlant = lg.prepare(`
+            SELECT PlantID,
+                   COUNT(*) AS total,
+                   SUM(CASE WHEN Severity = 'Critical' THEN 1 ELSE 0 END) AS critical,
+                   SUM(CASE WHEN Severity = 'High'     THEN 1 ELSE 0 END) AS high
+            FROM PlantFailureEvents
+            GROUP BY PlantID
+            ORDER BY total DESC
+        `).all();
+
+        const classDist = lg.prepare(`
+            SELECT FailureClass, COUNT(*) AS occurrences
+            FROM PlantFailureEvents
+            WHERE FailureClass IS NOT NULL
+            GROUP BY FailureClass
+            ORDER BY occurrences DESC
+        `).all();
+
+        res.json({ topModes, topEquipment, byPlant, classDist });
+    } catch (err) {
+        console.error('[failure-taxonomy]', err.message);
+        res.status(500).json({ error: 'Failed to load failure taxonomy analytics' });
+    }
+});
+
+// ── GET /api/analytics/time-saved/:woId ──────────────────────────────────────
+// Returns time-saved estimate for a single finalized work order.
+// Requires: Resolved=1 outcome + cross-plant baseline with >= 5 samples.
+// Returns sentinel {status} when data is absent — never invents savings.
+router.get('/time-saved/:woId', (req, res) => {
+    const woId = parseInt(req.params.woId, 10);
+    if (!Number.isInteger(woId) || woId <= 0) {
+        return res.status(400).json({ error: 'Invalid work order ID' });
+    }
+
+    const plantId = sanitizePlantId(req.headers['x-plant-id']);
+    if (!plantId) return res.status(400).json({ error: 'Invalid or missing x-plant-id' });
+
+    try {
+        const { getDb }     = require('../database');
+        const { getSavings } = require('../services/timeSaved');
+        const conn = getDb(plantId);
+        res.json(getSavings(woId, conn));
+    } catch (err) {
+        console.error('[time-saved]', err.message);
+        res.status(500).json({ error: 'Failed to compute time savings' });
+    }
+});
+
 module.exports = router;

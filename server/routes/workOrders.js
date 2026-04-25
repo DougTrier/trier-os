@@ -44,6 +44,7 @@ const db = require('../database');
 const { whitelist, validateSort } = require('../validators');
 const { insertOutboxEvent } = require('../services/erp-outbox');
 const { logAudit } = require('../logistics_db');
+const outcomeTracker = require('../services/outcomeTracker');
 
 // ── GET /api/work-orders ─────────────────────────────────────────────────
 // List work orders with pagination, filtering, search
@@ -711,6 +712,23 @@ router.put('/:id', (req, res) => {
             } catch { /* non-blocking — downtime cost calc is advisory only */ }
         }
 
+        // Phase 2: provisional outcome record on WO completion
+        if (completeStatuses.includes(statusId)) {
+            try {
+                const conn = db.getDb();
+                const woRow = conn.prepare(
+                    'SELECT ID, AstID FROM Work WHERE ID = ? OR WorkOrderNumber = ? OR rowid = ? LIMIT 1'
+                ).get(req.params.id, req.params.id, req.params.id);
+                if (woRow?.AstID) {
+                    outcomeTracker.recordOutcome(conn, {
+                        workOrderId: woRow.ID,
+                        assetId:     woRow.AstID,
+                        completedAt: new Date().toISOString(),
+                    });
+                }
+            } catch { /* non-blocking */ }
+        }
+
         // ── SOP Acknowledgment Check ──
         let pendingSopWarning = false;
         if (fields.AssignToID) {
@@ -779,6 +797,114 @@ router.delete('/:id', (req, res) => {
     } catch (err) {
         console.error('DELETE /api/work-orders/:id error:', err);
         res.status(500).json({ error: 'Failed to delete work order' });
+    }
+});
+
+// ── POST /api/work-orders/:id/normalize-failure ───────────────────────────
+// Gemini maps WO notes + existing failure codes → normalized taxonomy entry.
+// Writes NormalizedFailureID back to FailureCodes and publishes a
+// PlantFailureEvents record to trier_logistics.db for cross-plant analytics.
+router.post('/:id/normalize-failure', async (req, res) => {
+    const woId = req.params.id;
+    const https  = require('https');
+    const { db: logisticsDb } = require('../logistics_db');
+    const GEMINI_KEY = process.env.GEMINI_API_KEY ||
+        require('fs').readFileSync(require('path').join(__dirname, '../../.env'), 'utf8')
+            .match(/GEMINI_API_KEY=(.+)/)?.[1]?.trim();
+
+    if (!GEMINI_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY not configured' });
+
+    try {
+        const plant = db();
+        const wo = plant.prepare(`SELECT * FROM WOMaster WHERE ID = ?`).get(woId);
+        if (!wo) return res.status(404).json({ error: 'Work order not found' });
+
+        const fc = plant.prepare(`SELECT * FROM FailureCodes WHERE woId = ?`).get(woId);
+        const failureModes = plant.prepare('SELECT id, code, normalized_mode, failure_class, description, severity FROM failure_modes WHERE normalized_mode IS NOT NULL').all();
+
+        const rawText = [wo.Description, wo.Comment, fc?.failureDesc, fc?.causeDesc].filter(Boolean).join(' | ');
+        const taxonList = failureModes.map(f => `${f.normalized_mode} (${f.failure_class}, ${f.severity})`).join(', ');
+
+        const prompt = `You are an industrial failure analyst. Given this work order text, identify the best matching failure from the taxonomy.
+
+WO text: "${rawText}"
+
+Taxonomy (normalized_mode | class | severity):
+${taxonList}
+
+Reply with ONLY valid JSON, no markdown:
+{"normalized_mode":"...", "failure_class":"...", "severity":"Low|Medium|High|Critical", "confidence":0.0}
+If no match, return {"normalized_mode":null}`;
+
+        const body = JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0, maxOutputTokens: 128 }
+        });
+
+        const geminiResult = await new Promise((resolve, reject) => {
+            const r = https.request({
+                hostname: 'generativelanguage.googleapis.com',
+                path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+            }, resp => {
+                let d = ''; resp.on('data', c => d += c);
+                resp.on('end', () => {
+                    if (resp.statusCode !== 200) { reject(new Error(`Gemini ${resp.statusCode}`)); return; }
+                    try {
+                        const text = JSON.parse(d).candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                        resolve(JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim()));
+                    } catch (e) { reject(e); }
+                });
+            });
+            r.on('error', reject);
+            r.setTimeout(10000, () => { r.destroy(); reject(new Error('timeout')); });
+            r.write(body); r.end();
+        });
+
+        if (!geminiResult.normalized_mode) {
+            return res.json({ normalized: false, reason: 'No matching failure mode found' });
+        }
+
+        // Link back to failure_modes row
+        const fmRow = plant.prepare(
+            `SELECT id FROM failure_modes WHERE normalized_mode = ?`
+        ).get(geminiResult.normalized_mode);
+
+        if (fmRow && fc) {
+            plant.prepare(`UPDATE FailureCodes SET NormalizedFailureID = ? WHERE woId = ?`)
+                .run(fmRow.id, woId);
+        }
+
+        // Write cross-plant event (ignore duplicate — WO may be re-normalized)
+        const plantId = req.headers['x-plant-id'] || 'unknown';
+        logisticsDb().prepare(`
+            INSERT OR REPLACE INTO PlantFailureEvents
+                (PlantID, WoID, AssetID, EquipmentTypeID, FailureMode, FailureClass,
+                 Severity, OccurredAt, GeminiConfidence, RawNotes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            plantId, woId,
+            wo.AstID || null,
+            null,
+            geminiResult.normalized_mode,
+            geminiResult.failure_class || null,
+            geminiResult.severity || null,
+            wo.StartDate || wo.AddDate || new Date().toISOString(),
+            geminiResult.confidence || null,
+            rawText.substring(0, 500)
+        );
+
+        res.json({
+            normalized: true,
+            normalized_mode:  geminiResult.normalized_mode,
+            failure_class:    geminiResult.failure_class,
+            severity:         geminiResult.severity,
+            confidence:       geminiResult.confidence,
+        });
+    } catch (err) {
+        console.error('[WO normalize-failure]', err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

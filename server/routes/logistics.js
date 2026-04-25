@@ -57,6 +57,7 @@ const express = require('express');
 const router = express.Router();
 const { db: logisticsDb, logAudit } = require('../logistics_db');
 const localDb = require('../database'); // Normal plant DB context
+const authMiddleware = require('../middleware/auth');
 
 // ── GET /api/logistics/transfers ──────────────────────────────────────────
 // Fetch transfers involving the current plant (as either requester or fulfiller)
@@ -740,6 +741,77 @@ router.get('/site-standardization', (req, res) => {
     } catch (err) {
         console.error('Standardization score failed:', err.message);
         res.status(500).json({ error: 'Failed to calculate standardization' });
+    }
+});
+
+// ── Peer Twin Shadowing ────────────────────────────────────────────────────
+// Any plant's tech can contribute a digital twin link for an equipment type or
+// part. That link becomes visible to every plant in the enterprise with the
+// same equipment type.
+
+// GET /api/logistics/peer-twins/:refType/:refId
+// Returns all peer-contributed twins for an equipment type or part.
+router.get('/peer-twins/:refType/:refId', authMiddleware, (req, res) => {
+    const { refType, refId } = req.params;
+    if (!['equipment', 'part'].includes(refType)) return res.status(400).json({ error: 'refType must be equipment or part' });
+    try {
+        const twins = logisticsDb().prepare(`
+            SELECT TwinID, ContributorPlantID, TwinURL, TwinFormat, SubmodelType,
+                   ConfScore, PeerVerified, VerifiedByPlants, CreatedAt
+            FROM PeerTwins
+            WHERE RefType = ? AND RefID = ?
+            ORDER BY PeerVerified DESC, ConfScore DESC
+        `).all(refType, refId);
+        res.json(twins);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// POST /api/logistics/peer-twins
+// Contribute a twin link. Body: { refType, refId, twinURL, twinFormat, submodelType }
+router.post('/peer-twins', authMiddleware, (req, res) => {
+    const { refType, refId, twinURL, twinFormat, submodelType } = req.body;
+    if (!refType || !refId || !twinURL) return res.status(400).json({ error: 'refType, refId, twinURL required' });
+    if (!['equipment', 'part'].includes(refType)) return res.status(400).json({ error: 'refType must be equipment or part' });
+    try {
+        const { randomUUID } = require('crypto');
+        const plantId = req.headers['x-plant-id'] || '';
+        const userId  = req.user.Username;
+        const twinId  = randomUUID();
+        logisticsDb().prepare(`
+            INSERT INTO PeerTwins
+                (TwinID, RefType, RefID, ContributorPlantID, ContributorUserID,
+                 TwinURL, TwinFormat, SubmodelType, ConfScore, PeerVerified)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.7, 0)
+        `).run(twinId, refType, refId, plantId, userId, twinURL,
+               twinFormat || 'metadata', submodelType || 'Geometry');
+        res.json({ success: true, twinId });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// POST /api/logistics/peer-twins/:twinId/verify
+// A second plant verifies (upvotes) an existing peer twin. Increases confidence.
+router.post('/peer-twins/:twinId/verify', authMiddleware, (req, res) => {
+    const { twinId } = req.params;
+    const plantId = req.headers['x-plant-id'] || '';
+    try {
+        const twin = logisticsDb().prepare('SELECT * FROM PeerTwins WHERE TwinID = ?').get(twinId);
+        if (!twin) return res.status(404).json({ error: 'Twin not found' });
+        let verifiedBy = [];
+        try { verifiedBy = JSON.parse(twin.VerifiedByPlants || '[]'); } catch {}
+        if (!verifiedBy.includes(plantId)) verifiedBy.push(plantId);
+        const peerVerified = verifiedBy.length >= 2 ? 1 : 0;
+        const newScore = Math.min(0.7 + verifiedBy.length * 0.1, 1.0);
+        logisticsDb().prepare(`
+            UPDATE PeerTwins SET PeerVerified = ?, ConfScore = ?, VerifiedByPlants = ?, UpdatedAt = datetime('now')
+            WHERE TwinID = ?
+        `).run(peerVerified, newScore, JSON.stringify(verifiedBy), twinId);
+        res.json({ success: true, peerVerified, verifiedByCount: verifiedBy.length, newScore });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 

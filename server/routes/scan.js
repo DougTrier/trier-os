@@ -18,11 +18,12 @@
  * in ROADMAP.md (P1 — Scan State Machine) and SCAN_STATE_MACHINE_SCHEMA_DELTA.md.
  *
  * -- ROUTES ----------------------------------------------------
- *   POST /api/scan              Main scan endpoint — evaluate + transition
- *   POST /api/scan/action       Submit user choice after a branch prompt
- *   GET  /api/scan/needs-review List WOs flagged needsReview=1 for Mission Control
- *   POST /api/scan/desk-action  Supervisor resolution (Close/Resume/Dismiss) from Mission Control
- *   POST /api/scan/offline-sync Batch sync queued offline scan events
+ *   POST /api/scan                    Main scan endpoint — evaluate + transition
+ *   POST /api/scan/action             Submit user choice after a branch prompt
+ *   GET  /api/scan/enrichment/:id     SSE stream — pushes semantic enrichment result when ready
+ *   GET  /api/scan/needs-review       List WOs flagged needsReview=1 for Mission Control
+ *   POST /api/scan/desk-action        Supervisor resolution (Close/Resume/Dismiss) from Mission Control
+ *   POST /api/scan/offline-sync       Batch sync queued offline scan events
  *
  * -- SERVER EVALUATION ORDER (deterministic, no implicit branching) ----------
  *   1. Duplicate scanId?          → Reject. No further evaluation.
@@ -47,6 +48,10 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database');
 const dataDir = require('../resolve_data_dir');
+const enrichmentQueue  = require('../services/enrichmentQueue');
+const outcomeTracker   = require('../services/outcomeTracker');
+const explainCache     = require('../services/explainCache');
+const authDb           = require('../auth_db');
 
 // ── Idempotent migration: add scan-workflow columns to Work table ────────────
 // SQLite doesn't support IF NOT EXISTS for ALTER TABLE — use try/catch per col.
@@ -173,6 +178,49 @@ function writeAuditEntry(conn, { scanId, woId = null, assetId, userId,
         offlineCaptured ? 1 : 0, conflictAutoResolved ? 1 : 0, resolvedMode);
 }
 
+// ── Helper: human-readable time-ago string ──────────────────────────────────
+function timeAgo(isoString) {
+    if (!isoString) return '';
+    const diffMin = Math.floor((Date.now() - new Date(isoString).getTime()) / 60000);
+    if (diffMin < 1)  return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const h = Math.floor(diffMin / 60);
+    if (h < 24)       return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
+
+// ── Helper: most-recent WO segment → lastAction shape ───────────────────────
+// Returns null on any failure — never blocks the scan path.
+function getLastAction(conn, woId) {
+    try {
+        const seg = conn.prepare(`
+            SELECT userId, endedByUserId, startTime, endTime
+            FROM WorkSegments
+            WHERE woId = ?
+            ORDER BY rowid DESC
+            LIMIT 1
+        `).get(woId);
+        if (!seg) return null;
+
+        const effectiveUserId = seg.endedByUserId || seg.userId;
+        let userName = effectiveUserId;
+        try {
+            const u = authDb.prepare('SELECT DisplayName, Username FROM Users WHERE Username = ?').get(effectiveUserId);
+            if (u) userName = u.DisplayName || u.Username || effectiveUserId;
+        } catch (_) {}
+
+        const isActive = !seg.endTime;
+        const at       = seg.endTime || seg.startTime;
+        const label    = isActive
+            ? `${userName} is currently working`
+            : `${userName} stopped work ${timeAgo(seg.endTime)}`;
+
+        return { type: isActive ? 'SEGMENT_ACTIVE' : 'SEGMENT_ENDED', userId: effectiveUserId, userName, at, label };
+    } catch (_) {
+        return null;
+    }
+}
+
 // ── Helper: open a new segment ───────────────────────────────────────────────
 function openSegment(conn, { woId, userId, segmentReason = null, origin = 'SCAN', conflictAutoResolved = 0 }) {
     const segmentId = uuidv4();
@@ -278,13 +326,14 @@ router.post('/', (req, res) => {
 
             // Use WorkOrderNumber as canonical woId — ID is TEXT PRIMARY KEY and may be NULL for auto-created WOs
             const activeWoRef = activeWo.WorkOrderNumber || String(activeWo.ID);
+            const activeLastAction = getLastAction(conn, activeWoRef);
             if (mySegment) {
                 // This user is already active — show their action options
                 const multiTech = otherSegments.length > 0;
                 return res.json({
                     branch: 'ROUTE_TO_ACTIVE_WO',
                     context: multiTech ? 'MULTI_TECH' : 'SOLO',
-                    wo: { id: activeWoRef, number: activeWo.WorkOrderNumber, description: activeWo.Description },
+                    wo: { id: activeWoRef, number: activeWo.WorkOrderNumber, description: activeWo.Description, assetId: activeWo.AstID, lastAction: activeLastAction },
                     mySegmentId: mySegment.segmentId,
                     activeUserCount: activeSegments.length,
                     options: multiTech
@@ -296,7 +345,7 @@ router.post('/', (req, res) => {
                 return res.json({
                     branch: 'ROUTE_TO_ACTIVE_WO',
                     context: 'OTHER_USER_ACTIVE',
-                    wo: { id: activeWoRef, number: activeWo.WorkOrderNumber, description: activeWo.Description },
+                    wo: { id: activeWoRef, number: activeWo.WorkOrderNumber, description: activeWo.Description, assetId: activeWo.AstID, lastAction: activeLastAction },
                     activeUsers: otherSegments.map(s => s.userId),
                     options: ['JOIN', 'TAKE_OVER', 'ESCALATE'],
                 });
@@ -306,7 +355,7 @@ router.post('/', (req, res) => {
                 return res.json({
                     branch: 'ROUTE_TO_ACTIVE_WO',
                     context: 'RESUMED_NO_SEGMENT',
-                    wo: { id: activeWoRef, number: activeWo.WorkOrderNumber, description: activeWo.Description },
+                    wo: { id: activeWoRef, number: activeWo.WorkOrderNumber, description: activeWo.Description, assetId: activeWo.AstID, lastAction: activeLastAction },
                     segmentId,
                     options: ['CLOSE_WO', 'WAITING', 'ESCALATE', 'CONTINUE_LATER'],
                 });
@@ -343,6 +392,7 @@ router.post('/', (req, res) => {
                     description: waitingWo.Description,
                     holdReason: waitingWo.holdReason,
                     returnAt: waitingWo.returnAt,
+                    lastAction: getLastAction(conn, waitingWoRef),
                 },
                 options: ['RESUME_WAITING_WO', 'CREATE_NEW_WO', 'VIEW_STATUS'],
             });
@@ -479,7 +529,7 @@ router.post('/', (req, res) => {
         if (!asset) {
             // Maybe the scanned QR is a part barcode — check Part table before returning 404
             const part = conn.prepare(
-                'SELECT ID, Descript, Description, Stock, Location FROM Part WHERE ID = ? LIMIT 1'
+                'SELECT ID, Descript, Description, Stock, Location, UnitCost FROM Part WHERE ID = ? LIMIT 1'
             ).get(assetId);
             if (part) {
                 const activeSegment = conn.prepare(`
@@ -487,6 +537,53 @@ router.post('/', (req, res) => {
                     WHERE ws.userId = ? AND ws.segmentState = 'Active'
                     ORDER BY ws.startTime DESC LIMIT 1
                 `).get(userId);
+
+                // If tech has an active WO: auto-add qty 1 immediately (scan = action, no dialog)
+                if (activeSegment) {
+                    const activeWoRow = conn.prepare(
+                        'SELECT ID, WorkOrderNumber, Description FROM Work WHERE WorkOrderNumber = ? OR CAST(ID AS TEXT) = ? LIMIT 1'
+                    ).get(String(activeSegment.woId), String(activeSegment.woId));
+
+                    if (activeWoRow) {
+                        const existing = conn.prepare(
+                            'SELECT EstQty FROM WorkParts WHERE WoID = ? AND PartID = ? LIMIT 1'
+                        ).get(activeWoRow.ID, part.ID);
+
+                        let movementId = null;
+                        conn.transaction(() => {
+                            if (existing) {
+                                conn.prepare('UPDATE WorkParts SET EstQty = EstQty + 1, issued_by = ? WHERE WoID = ? AND PartID = ?')
+                                    .run(userId || null, activeWoRow.ID, part.ID);
+                            } else {
+                                conn.prepare(`INSERT INTO WorkParts (WoID, PartID, EstQty, UnitCost, UseDate, issued_by) VALUES (?, ?, 1, ?, datetime('now'), ?)`)
+                                    .run(activeWoRow.ID, part.ID, parseFloat(part.UnitCost) || 0, userId || null);
+                            }
+                            conn.prepare('UPDATE Part SET Stock = MAX(0, Stock - 1) WHERE ID = ?').run(part.ID);
+                            try {
+                                const ins = conn.prepare(`INSERT INTO inventory_movements (work_order_id, part_id, movement_type, qty, unit_cost, performed_by) VALUES (?, ?, 'ISSUE_TO_WORK_ORDER', 1, ?, ?)`);
+                                const r = ins.run(activeWoRow.ID, part.ID, parseFloat(part.UnitCost) || 0, userId || 'unknown');
+                                movementId = r.lastInsertRowid;
+                            } catch (_) {}
+                        })();
+
+                        return res.json({
+                            branch: 'AUTO_ADDED_PART',
+                            part: {
+                                id: part.ID,
+                                description: part.Description || part.Descript,
+                                available: Math.max(0, (part.Stock || 0) - 1),
+                                location: part.Location,
+                            },
+                            woId: activeSegment.woId,
+                            woDescription: activeWoRow.Description,
+                            qtyAdded: 1,
+                            totalQty: (existing?.EstQty || 0) + 1,
+                            movementId,
+                        });
+                    }
+                }
+
+                // No active WO — show checkout UI so tech knows to start work first
                 return res.json({
                     branch: 'ROUTE_TO_PART_CHECKOUT',
                     part: {
@@ -495,7 +592,7 @@ router.post('/', (req, res) => {
                         available: part.Stock,
                         location: part.Location,
                     },
-                    activeWo: activeSegment ? { id: activeSegment.woId } : null,
+                    activeWo: null,
                 });
             }
             writeAuditEntry(conn, {
@@ -504,7 +601,80 @@ router.post('/', (req, res) => {
                 decisionBranch: 'AUTO_REJECT_DUPLICATE_SCAN', // reuse closest code — unknown asset
                 deviceTimestamp, offlineCaptured,
             });
-            return res.status(404).json({ error: 'Asset not found', assetId });
+
+            // Check master catalog — give the UI enough info to offer an import
+            let catalogSuggestion = null;
+            let digitalTwin = null;
+            let semanticMatch = null;
+            try {
+                const Database  = require('better-sqlite3');
+                const sqliteVec = require('sqlite-vec');
+                const mfgDb = new Database(path.join(dataDir, 'mfg_master.db'), { readonly: true });
+                sqliteVec.load(mfgDb);
+
+                const eq = mfgDb.prepare(
+                    'SELECT EquipmentTypeID, Description, Category, TypicalMakers, PMIntervalDays, UsefulLifeYears FROM MasterEquipment WHERE EquipmentTypeID = ? LIMIT 1'
+                ).get(assetId);
+                if (eq) {
+                    let makers = [];
+                    try { makers = JSON.parse(eq.TypicalMakers || '[]'); } catch {}
+                    catalogSuggestion = { type: 'equipment', id: eq.EquipmentTypeID, description: eq.Description, category: eq.Category, primaryMaker: makers[0] || null };
+                    const twin = mfgDb.prepare(
+                        'SELECT TwinURL, TwinFormat, Source, ConfScore FROM CatalogTwins WHERE RefType = ? AND RefID = ? ORDER BY Validated DESC, ConfScore DESC LIMIT 1'
+                    ).get('equipment', eq.EquipmentTypeID);
+                    if (twin) digitalTwin = { url: twin.TwinURL, format: twin.TwinFormat, source: twin.Source, confidence: twin.ConfScore };
+                } else {
+                    const mp = mfgDb.prepare(
+                        'SELECT MasterPartID, Description, StandardizedName, Manufacturer, Category FROM MasterParts WHERE MasterPartID = ? LIMIT 1'
+                    ).get(assetId);
+                    if (mp) {
+                        catalogSuggestion = { type: 'part', id: mp.MasterPartID, description: mp.StandardizedName || mp.Description, manufacturer: mp.Manufacturer, category: mp.Category };
+                        const twin = mfgDb.prepare(
+                            'SELECT TwinURL, TwinFormat, Source, ConfScore FROM CatalogTwins WHERE RefType = ? AND RefID = ? ORDER BY Validated DESC, ConfScore DESC LIMIT 1'
+                        ).get('part', mp.MasterPartID);
+                        if (twin) digitalTwin = { url: twin.TwinURL, format: twin.TwinFormat, source: twin.Source, confidence: twin.ConfScore };
+                    }
+                }
+
+                mfgDb.close();
+            } catch (_) {}
+
+            // Also check peer-contributed twins in logistics_db
+            let peerTwin = null;
+            if (catalogSuggestion) {
+                try {
+                    const logisticsDb = require('../logistics_db');
+                    const pt = logisticsDb().prepare(
+                        'SELECT TwinURL, TwinFormat, SubmodelType, ConfScore, ContributorPlantID FROM PeerTwins WHERE RefType = ? AND RefID = ? ORDER BY PeerVerified DESC, ConfScore DESC LIMIT 1'
+                    ).get(catalogSuggestion.type, catalogSuggestion.id);
+                    if (pt) peerTwin = { url: pt.TwinURL, format: pt.TwinFormat, submodelType: pt.SubmodelType, confidence: pt.ConfScore, contributedBy: pt.ContributorPlantID };
+                } catch (_) {}
+            }
+
+            // Last-known-good live state — if asset exists in NATS telemetry but not yet registered
+            let liveState = null;
+            try {
+                const stateRow = conn.prepare(
+                    `SELECT StateJSON, Source, LastUpdated, StaleAfterS FROM AssetLiveState WHERE AssetID = ?`
+                ).get(assetId);
+                if (stateRow) {
+                    const ageS = Math.floor((Date.now() - new Date(stateRow.LastUpdated).getTime()) / 1000);
+                    liveState = {
+                        state:       JSON.parse(stateRow.StateJSON || '{}'),
+                        source:      stateRow.Source,
+                        lastUpdated: stateRow.LastUpdated,
+                        stale:       ageS > stateRow.StaleAfterS,
+                    };
+                }
+            } catch (_) {}
+
+            const enrichmentId = enrichmentQueue.enqueue({
+                assetId,
+                scanId,
+                scanTimestamp: new Date(deviceTimestamp).getTime() || Date.now(),
+            });
+
+            return res.status(404).json({ error: 'Asset not found', assetId, catalogSuggestion, digitalTwin, peerTwin, semanticMatch: null, enrichmentId, liveState });
         }
 
         // Auto-create WO inside a transaction so WO + segment + audit are atomic.
@@ -579,10 +749,28 @@ router.post('/', (req, res) => {
             });
         }
 
+        // Phase 2+3: new WO may reopen pending outcome; always invalidate explain cache
+        try {
+            const newWo = conn.prepare('SELECT ID FROM Work WHERE WorkOrderNumber = ? LIMIT 1').get(result.woId);
+            if (newWo) {
+                outcomeTracker.markReopened(conn, {
+                    assetId,
+                    newWoId:  newWo.ID,
+                    openedAt: deviceTimestamp,
+                });
+            }
+        } catch (_) {}
+        // Trigger 1: new WO created — explain data changes
+        const newWoPlantId = req.headers['x-plant-id'];
+        if (newWoPlantId) {
+            explainCache.invalidate(newWoPlantId, assetId);
+            explainCache.warmAsync(newWoPlantId, assetId);
+        }
+
         return res.json({
             branch: 'AUTO_CREATE_WO',
             message: 'Work Started',
-            wo: { id: result.woId, number: result.woNumber, description: result.desc },
+            wo: { id: result.woId, number: result.woNumber, description: result.desc, assetId, lastAction: getLastAction(conn, result.woId) },
             segmentId: result.segmentId,
         });
 
@@ -794,6 +982,21 @@ router.post('/action', (req, res) => {
                     return { ok: false, error: `Unknown action: ${action}` };
             }
         })();
+
+        // Phase 2+3: provisional outcome + explain cache invalidation on WO close
+        if (tx.ok && tx.nextStatus === STATUS.COMPLETED) {
+            outcomeTracker.recordOutcome(conn, {
+                workOrderId: wo.ID,
+                assetId:     wo.AstID,
+                completedAt: new Date().toISOString(),
+            });
+            // Trigger 2: WO closed — explain data changes
+            const closePlantId = req.headers['x-plant-id'];
+            if (closePlantId) {
+                explainCache.invalidate(closePlantId, wo.AstID);
+                explainCache.warmAsync(closePlantId, wo.AstID);
+            }
+        }
 
         if (!tx.ok) return res.status(400).json({ error: tx.error });
         return res.json(tx);
@@ -1229,6 +1432,20 @@ router.post('/desk-action', (req, res) => {
             decisionBranch: branch, deviceTimestamp: serverTs,
         });
 
+        // Phase 2+3: provisional outcome + explain cache invalidation on desk-close
+        if (branch === 'DESK_CLOSE') {
+            outcomeTracker.recordOutcome(conn, {
+                workOrderId: wo.ID,
+                assetId:     wo.AstID,
+                completedAt: serverTs,
+            });
+            const deskPlantId = req.headers['x-plant-id'];
+            if (deskPlantId) {
+                explainCache.invalidate(deskPlantId, wo.AstID);
+                explainCache.warmAsync(deskPlantId, wo.AstID);
+            }
+        }
+
         res.json({ ok: true, branch, nextStatus });
     } catch (err) {
         console.error('[scan] POST /api/scan/desk-action error:', err);
@@ -1264,9 +1481,8 @@ router.get('/parts-search', (req, res) => {
 });
 
 // ── GET /api/scan/wo-parts ────────────────────────────────────────────────────
-// Returns all parts already linked to a work order (from WorkParts).
-// Used to pre-populate the parts checklist in the scan parts screen.
-// Query: woId (WorkOrderNumber string or integer Work.ID)
+// Returns all parts on a work order with full lifecycle state.
+// qty_returnable = EstQty - COALESCE(ActQty,0) - COALESCE(qty_returned,0)
 router.get('/wo-parts', (req, res) => {
     try {
         const { woId } = req.query;
@@ -1277,17 +1493,214 @@ router.get('/wo-parts', (req, res) => {
         ).get(String(woId), String(woId));
         if (!wo) return res.json({ parts: [] });
         const parts = conn.prepare(`
-            SELECT wp.PartID, wp.EstQty, wp.ActQty, wp.UnitCost, wp.Location,
+            SELECT wp.PartID,
                    COALESCE(p.Description, p.Descript) AS description,
-                   p.Stock AS available, p.UOM
+                   wp.EstQty                                                        AS qty_issued,
+                   COALESCE(wp.ActQty, 0)                                          AS qty_used,
+                   COALESCE(wp.qty_returned, 0)                                    AS qty_returned,
+                   wp.EstQty - COALESCE(wp.ActQty,0) - COALESCE(wp.qty_returned,0) AS qty_returnable,
+                   COALESCE(wp.status, 'issued')                                   AS status,
+                   wp.UnitCost, wp.Location,
+                   p.Stock AS stock_available, p.UOM
             FROM WorkParts wp
             JOIN Part p ON wp.PartID = p.ID
             WHERE wp.WoID = ?
             ORDER BY COALESCE(p.Description, p.Descript)
         `).all(wo.ID);
-        res.json({ parts });
+        res.json({ woId: wo.ID, parts });
     } catch (err) {
         console.error('[scan] GET /api/scan/wo-parts error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/scan/return-part ────────────────────────────────────────────────
+// Return qty of a part from a work order back to stock.
+// Body: { woId, partId, qty }
+// Rules: qty <= qty_returnable; decrements WorkParts.qty_returned; increments Part.Stock.
+router.post('/return-part', (req, res) => {
+    try {
+        const { woId, partId, qty: rawQty } = req.body;
+        const userId = req.user?.Username || req.user?.UserID || 'unknown';
+        if (!woId || !partId || !rawQty) return res.status(400).json({ error: 'woId, partId, qty required' });
+        const qty = Number(rawQty);
+        if (!Number.isFinite(qty) || qty <= 0) return res.status(400).json({ error: 'qty must be a positive number' });
+
+        const conn = db.getDb();
+        const wo = conn.prepare(
+            'SELECT ID FROM Work WHERE WorkOrderNumber = ? OR CAST(ID AS TEXT) = ? LIMIT 1'
+        ).get(String(woId), String(woId));
+        if (!wo) return res.status(404).json({ error: 'Work order not found' });
+
+        const wp = conn.prepare(`
+            SELECT wp.EstQty, COALESCE(wp.ActQty,0) AS qty_used,
+                   COALESCE(wp.qty_returned,0)       AS qty_returned,
+                   wp.UnitCost, wp.Location
+            FROM WorkParts wp
+            WHERE wp.WoID = ? AND wp.PartID = ? LIMIT 1
+        `).get(wo.ID, String(partId));
+        if (!wp) return res.status(404).json({ error: 'Part not on this work order' });
+
+        const returnable = wp.EstQty - wp.qty_used - wp.qty_returned;
+        if (qty > returnable + 0.001) {
+            return res.status(400).json({ error: `Cannot return ${qty} — only ${returnable} returnable` });
+        }
+
+        const newReturned = wp.qty_returned + qty;
+        const newStatus   = newReturned >= wp.EstQty - wp.qty_used - 0.001 ? 'fully_returned'
+                          : newReturned > 0 ? 'partial_return' : 'issued';
+
+        conn.transaction(() => {
+            conn.prepare(`
+                UPDATE WorkParts SET qty_returned = ?, status = ?, returned_by = ?, returned_at = datetime('now')
+                WHERE WoID = ? AND PartID = ?
+            `).run(newReturned, newStatus, userId, wo.ID, String(partId));
+
+            conn.prepare(`UPDATE Part SET Stock = Stock + ? WHERE ID = ?`).run(qty, String(partId));
+
+            try {
+                conn.prepare(`
+                    INSERT INTO inventory_movements
+                        (work_order_id, part_id, movement_type, qty, unit_cost, location, performed_by, performed_at)
+                    VALUES (?, ?, 'RETURN_TO_STOCK', ?, ?, ?, ?, datetime('now'))
+                `).run(wo.ID, String(partId), qty, parseFloat(wp.UnitCost) || 0, wp.Location || null, userId);
+            } catch (_) { /* older DBs without inventory_movements — non-fatal */ }
+        })();
+
+        res.json({ ok: true, partId, returned: qty, newStatus });
+    } catch (err) {
+        console.error('[scan] POST /return-part error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/scan/undo-part-add ──────────────────────────────────────────────
+// Reverse an AUTO_ADDED_PART scan. Restores stock, decrements WorkParts qty.
+// Body: { woId, partId, movementId, qty }
+router.post('/undo-part-add', (req, res) => {
+    try {
+        const { woId, partId, movementId, qty: rawQty = 1 } = req.body;
+        if (!woId || !partId || !movementId) return res.status(400).json({ error: 'woId, partId, movementId required' });
+        const qty = Number(rawQty);
+        const conn = db.getDb();
+        const wo = conn.prepare('SELECT ID FROM Work WHERE WorkOrderNumber = ? OR CAST(ID AS TEXT) = ? LIMIT 1')
+            .get(String(woId), String(woId));
+        if (!wo) return res.status(404).json({ error: 'Work order not found' });
+
+        conn.transaction(() => {
+            conn.prepare('UPDATE Part SET Stock = Stock + ? WHERE ID = ?').run(qty, String(partId));
+            const wp = conn.prepare('SELECT EstQty FROM WorkParts WHERE WoID = ? AND PartID = ? LIMIT 1').get(wo.ID, String(partId));
+            if (wp) {
+                const newQty = (wp.EstQty || 0) - qty;
+                if (newQty <= 0) {
+                    conn.prepare('DELETE FROM WorkParts WHERE WoID = ? AND PartID = ?').run(wo.ID, String(partId));
+                } else {
+                    conn.prepare('UPDATE WorkParts SET EstQty = ? WHERE WoID = ? AND PartID = ?').run(newQty, wo.ID, String(partId));
+                }
+            }
+            try { conn.prepare('DELETE FROM inventory_movements WHERE id = ?').run(Number(movementId)); } catch (_) {}
+        })();
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('[scan] POST /undo-part-add error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/scan/suggested-parts ─────────────────────────────────────────────
+// Returns parts for an asset in priority order:
+//   issued   → parts already on this WO (WorkParts)
+//   suggested → BOM parts for this asset (AssetParts) + recent history parts
+// Query params: assetId (required), woId (optional)
+router.get('/suggested-parts', (req, res) => {
+    try {
+        const { assetId, woId } = req.query;
+        if (!assetId) return res.status(400).json({ error: 'assetId required' });
+        const conn = db.getDb();
+
+        // Layer 1: Parts already on this WO
+        let issuedParts = [];
+        const issuedIds = new Set();
+        if (woId) {
+            const wo = conn.prepare('SELECT ID FROM Work WHERE WorkOrderNumber = ? OR CAST(ID AS TEXT) = ? LIMIT 1')
+                .get(String(woId), String(woId));
+            if (wo) {
+                issuedParts = conn.prepare(`
+                    SELECT wp.PartID,
+                           COALESCE(p.Description, p.Descript) AS description,
+                           wp.EstQty                                                        AS qty_issued,
+                           COALESCE(wp.ActQty, 0)                                          AS qty_used,
+                           COALESCE(wp.qty_returned, 0)                                    AS qty_returned,
+                           wp.EstQty - COALESCE(wp.ActQty,0) - COALESCE(wp.qty_returned,0) AS qty_returnable,
+                           COALESCE(wp.status, 'issued')                                   AS status,
+                           wp.Location, p.Stock AS stock_available, p.UOM
+                    FROM WorkParts wp
+                    JOIN Part p ON wp.PartID = p.ID
+                    WHERE wp.WoID = ?
+                    ORDER BY COALESCE(p.Description, p.Descript)
+                `).all(wo.ID);
+                issuedParts.forEach(p => issuedIds.add(p.PartID));
+            }
+        }
+
+        // Layer 2: BOM parts for this asset (AssetParts table)
+        const bomParts = conn.prepare(`
+            SELECT ap.PartID, COALESCE(p.Description, p.Descript) AS description,
+                   p.Stock AS stock_available, p.UOM,
+                   CAST(COALESCE(ap.Quantity, 1) AS INTEGER) AS suggested_qty,
+                   'bom' AS source, 1.0 AS confidence
+            FROM AssetParts ap
+            JOIN Part p ON ap.PartID = p.ID
+            WHERE ap.AstID = ?
+            ORDER BY COALESCE(p.Description, p.Descript)
+        `).all(String(assetId)).filter(p => !issuedIds.has(p.PartID));
+
+        // Layer 3: Recent work history for this asset (parts not in BOM or WO)
+        const knownIds = new Set([...issuedIds, ...bomParts.map(p => p.PartID)]);
+        let historyParts = [];
+        try {
+            historyParts = conn.prepare(`
+                SELECT wp.PartID, COALESCE(p.Description, p.Descript) AS description,
+                       p.Stock AS stock_available, p.UOM,
+                       CAST(AVG(wp.EstQty) AS INTEGER) AS suggested_qty,
+                       'history' AS source, 0.7 AS confidence
+                FROM WorkParts wp
+                JOIN Part p ON wp.PartID = p.ID
+                JOIN Work w ON wp.WoID = w.ID
+                WHERE w.AstID = ? AND wp.PartID IS NOT NULL AND wp.WoID IS NOT NULL
+                GROUP BY wp.PartID
+                ORDER BY MAX(w.AddDate) DESC
+                LIMIT 10
+            `).all(String(assetId)).filter(p => !knownIds.has(p.PartID));
+        } catch (_) {}
+
+        res.json({
+            assetId,
+            issued: issuedParts,
+            suggested: [...bomParts, ...historyParts],
+        });
+    } catch (err) {
+        console.error('[scan] GET /suggested-parts error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/scan/save-asset-part ────────────────────────────────────────────
+// Save a part as common for an asset (adds to AssetParts BOM).
+// Body: { assetId, partId, quantity }
+router.post('/save-asset-part', (req, res) => {
+    try {
+        const { assetId, partId, quantity = 1 } = req.body;
+        if (!assetId || !partId) return res.status(400).json({ error: 'assetId and partId required' });
+        const conn = db.getDb();
+        conn.prepare(`
+            INSERT OR IGNORE INTO AssetParts (AstID, PartID, Quantity, Comment)
+            VALUES (?, ?, ?, 'tech_confirmed')
+        `).run(String(assetId), String(partId), Number(quantity) || 1);
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('[scan] POST /save-asset-part error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -1317,16 +1730,30 @@ router.post('/parts-checkout', (req, res) => {
         ).get(String(partId));
         if (!part) return res.status(404).json({ error: 'Part not found' });
 
-        const existing = conn.prepare(
-            'SELECT id, EstQty FROM WorkParts WHERE WoID = ? AND PartID = ? LIMIT 1'
-        ).get(wo.ID, part.ID);
-        if (existing) {
-            conn.prepare('UPDATE WorkParts SET EstQty = EstQty + ? WHERE id = ?').run(qty, existing.id);
-        } else {
-            conn.prepare(
-                "INSERT INTO WorkParts (WoID, PartID, EstQty, UnitCost, UseDate) VALUES (?, ?, ?, ?, datetime('now'))"
-            ).run(wo.ID, part.ID, qty, part.UnitCost || 0);
-        }
+        const unitCost = parseFloat(part.UnitCost) || 0;
+        conn.transaction(() => {
+            const existing = conn.prepare(
+                'SELECT EstQty FROM WorkParts WHERE WoID = ? AND PartID = ? LIMIT 1'
+            ).get(wo.ID, part.ID);
+            if (existing) {
+                conn.prepare(
+                    'UPDATE WorkParts SET EstQty = EstQty + ?, issued_by = ? WHERE WoID = ? AND PartID = ?'
+                ).run(qty, userId || null, wo.ID, part.ID);
+            } else {
+                conn.prepare(
+                    `INSERT INTO WorkParts (WoID, PartID, EstQty, UnitCost, UseDate, issued_by)
+                     VALUES (?, ?, ?, ?, datetime('now'), ?)`
+                ).run(wo.ID, part.ID, qty, unitCost, userId || null);
+            }
+            // Record inventory movement (idempotent via INSERT OR IGNORE on the unique index)
+            try {
+                conn.prepare(`
+                    INSERT OR IGNORE INTO inventory_movements
+                        (work_order_id, part_id, movement_type, qty, unit_cost, performed_by, performed_at)
+                    VALUES (?, ?, 'ISSUE_TO_WORK_ORDER', ?, ?, ?, datetime('now'))
+                `).run(wo.ID, part.ID, qty, unitCost, userId || 'unknown');
+            } catch (_) { /* inventory_movements may not exist yet on older DBs */ }
+        })();
         res.json({ ok: true, partAdded: { id: part.ID, description: part.description, quantity: qty } });
     } catch (err) {
         console.error('[scan] POST /parts-checkout error:', err);
@@ -1374,6 +1801,23 @@ router.post('/add-child-asset', (req, res) => {
         console.error('[scan] POST /add-child-asset error:', err);
         res.status(500).json({ error: err.message });
     }
+});
+
+// ── GET /api/scan/enrichment/:id ─────────────────────────────────────────────
+// SSE stream — client connects here after receiving enrichmentId from a 404 scan.
+// Sends exactly one event: { type:'enrichment', enrichmentId, semanticMatch:{...}|null }
+// Stream closes immediately after the event, or after 12s if enrichment never completes.
+// No auth required — enrichmentId is a scan-scoped UUID with a 60s TTL.
+router.get('/enrichment/:id', (req, res) => {
+    const { id } = req.params;
+    if (!id || !/^[a-zA-Z0-9_-]{8,64}$/.test(id)) {
+        return res.status(400).json({ error: 'Invalid enrichmentId' });
+    }
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    enrichmentQueue.registerSSEListener(id, res);
 });
 
 module.exports = router;

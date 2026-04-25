@@ -227,6 +227,17 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_global_vendors_name ON GlobalVendors(Name);
     CREATE INDEX IF NOT EXISTS idx_global_assets_desc ON GlobalAssets(Description);
     CREATE INDEX IF NOT EXISTS idx_global_sops_desc ON GlobalSOPs(Description);
+
+    -- Phase 4: Time-saved baseline — cross-plant aggregated resolution benchmarks.
+    -- Segmented by equipment_type_id + failure_mode (normalized). MIN_SAMPLE = 5.
+    CREATE TABLE IF NOT EXISTS equipment_failure_baseline (
+        equipment_type_id TEXT NOT NULL,
+        failure_mode      TEXT NOT NULL,
+        avg_sec           INTEGER NOT NULL,
+        sample_size       INTEGER NOT NULL,
+        computed_at       TEXT    NOT NULL,
+        PRIMARY KEY (equipment_type_id, failure_mode)
+    );
 `);
 
 // Audit 47 / H-7: request-scoped "already audited" flag. The auditTrail

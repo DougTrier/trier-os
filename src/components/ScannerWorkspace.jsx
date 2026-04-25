@@ -21,7 +21,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Scan, Home } from 'lucide-react';
+import { Scan, Home, CheckCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ScanCapture from './ScanCapture';
 import ScanActionPrompt from './ScanActionPrompt';
@@ -42,6 +42,7 @@ export default function ScannerWorkspace({ plantId }) {
     const [step, setStep] = useState('capture');
     const [scanResult, setScanResult]   = useState(null);
     const [error, setError]             = useState('');
+    const [doneScreen, setDoneScreen]   = useState(null); // { savings } | null — brief post-close flash
     // pendingAssetId is stored in state so it can be explicitly cleared after first use,
     // preventing ScanCapture from re-auto-submitting when it remounts after an action.
     const [pendingAssetId, setPendingAssetId] = useState(location.state?.pendingAssetId || null);
@@ -82,17 +83,40 @@ export default function ScannerWorkspace({ plantId }) {
     }, []);
 
     // ScanActionPrompt fires this when the chosen action completes.
-    // 1. Clear pendingAssetId in the same React batch as setStep so ScanCapture
-    //    mounts with initialAssetId=null — prevents in-session auto-submit loop.
-    // 2. Replace the history entry (no state) so a pull-to-refresh reload doesn't
-    //    restore pendingAssetId and fire a new scan on mount.
-    const handleActionComplete = useCallback(() => {
+    // After a WO close (nextStatus===40) fetch time-saved and show a 2.5s done card
+    // before resetting. All other actions reset immediately.
+    const handleActionComplete = useCallback(async (actionData) => {
+        const woId = scanResult?.wo?.id;
+        const wasClose = actionData?.nextStatus === 40; // STATUS.COMPLETED
+
+        if (wasClose && woId) {
+            try {
+                const res = await fetch(`/api/analytics/time-saved/${encodeURIComponent(woId)}`, {
+                    headers: { 'x-plant-id': effectivePlantId },
+                });
+                if (res.ok) {
+                    const savings = await res.json();
+                    if (savings.status === 'ok' && savings.savedSec > 0) {
+                        setScanResult(null);
+                        setPendingAssetId(null);
+                        setDoneScreen({ savings });
+                        setTimeout(() => {
+                            setDoneScreen(null);
+                            setStep('capture');
+                            navigate('/scanner', { replace: true });
+                        }, 2500);
+                        return;
+                    }
+                }
+            } catch (_) { /* best-effort — never block the reset */ }
+        }
+
         setScanResult(null);
         setError('');
         setPendingAssetId(null);
         setStep('capture');
         navigate('/scanner', { replace: true });
-    }, [navigate]);
+    }, [navigate, scanResult, effectivePlantId]);
 
     const handleError = useCallback((msg) => {
         setError(msg);
@@ -182,10 +206,33 @@ export default function ScannerWorkspace({ plantId }) {
                 </div>
             )}
 
+            {/* ── Post-close done card — shows time saved when credible ──── */}
+            {doneScreen && (
+                <div style={{ maxWidth: 440, margin: '0 auto', textAlign: 'center', padding: '32px 24px' }}>
+                    <CheckCircle size={48} color="#10b981" style={{ marginBottom: 14 }} />
+                    <div style={{ color: '#10b981', fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
+                        Work Order Closed
+                    </div>
+                    {doneScreen.savings && (
+                        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '16px 20px' }}>
+                            <div style={{ color: '#f1f5f9', fontSize: 16 }}>
+                                Completed in <strong>{doneScreen.savings.formatted.actual}</strong>
+                            </div>
+                            <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
+                                Typical: {doneScreen.savings.formatted.baseline} · based on {doneScreen.savings.sampleSize} jobs
+                            </div>
+                            <div style={{ color: '#10b981', fontSize: 16, fontWeight: 700, marginTop: 8 }}>
+                                Saved ~{doneScreen.savings.formatted.saved}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* ── Main content area ─────────────────────────────────────── */}
             <div style={{ maxWidth: 440, margin: '0 auto' }}>
 
-                {step === 'capture' && (
+                {step === 'capture' && !doneScreen && (
                     <ScanCapture
                         plantId={effectivePlantId}
                         userId={userId}
@@ -195,7 +242,7 @@ export default function ScannerWorkspace({ plantId }) {
                     />
                 )}
 
-                {step === 'prompt' && scanResult && (
+                {step === 'prompt' && scanResult && !doneScreen && (
                     <ScanActionPrompt
                         plantId={effectivePlantId}
                         userId={userId}
