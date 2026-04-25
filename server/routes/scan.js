@@ -451,7 +451,7 @@ router.post('/', (req, res) => {
                       AND p.ID NOT IN (
                           SELECT ProcedureID FROM SOPAcknowledgments WHERE TechID = ?
                       )
-                `).all(assetId, userId);
+                `).all(assetId, req.user.Username);
             } catch (err) {
                 console.error('[SCAN] Step 3.7 Error:', err);
                 // ProcObj or SOPAcknowledgments absent — gate passes, WO creation proceeds
@@ -809,7 +809,7 @@ router.post('/action', (req, res) => {
 // Used by the PWA to predict multi-tech branch decisions without a server round-trip.
 router.get('/active-segments', (req, res) => {
     try {
-        const conn = req.db;
+        const conn = db.getDb();
         const segments = conn.prepare(`
             SELECT segmentId, woId, userId, startTime, segmentState, origin
             FROM WorkSegments
@@ -830,7 +830,7 @@ router.get('/asset-status/:assetId', (req, res) => {
     try {
         const { assetId } = req.params;
         if (!assetId) return res.status(400).json({ error: 'assetId required' });
-        const conn = req.db;
+        const conn = db.getDb();
         ensureScanColumns(conn);
 
         const activeWo = conn.prepare(`
@@ -838,7 +838,6 @@ router.get('/asset-status/:assetId', (req, res) => {
             FROM Work w
             WHERE w.AstID = ?
               AND w.StatusID != ${STATUS.COMPLETED}
-              AND (w.IsDeleted IS NULL OR w.IsDeleted = 0)
             ORDER BY w.ID DESC
             LIMIT 1
         `).get(assetId);
@@ -847,22 +846,24 @@ router.get('/asset-status/:assetId', (req, res) => {
             const lastWork = conn.prepare(`
                 SELECT MAX(ws.endTime) as lastWorked
                 FROM WorkSegments ws
-                JOIN Work w ON CAST(ws.woId AS TEXT) = CAST(w.ID AS TEXT)
+                JOIN Work w ON (ws.woId = w.WorkOrderNumber OR CAST(ws.woId AS TEXT) = CAST(w.ID AS TEXT))
                 WHERE w.AstID = ?
             `).get(assetId);
             return res.json({ activeWo: null, activeTechs: [], lastWorked: lastWork?.lastWorked || null });
         }
 
+        const woKey = activeWo.WorkOrderNumber || String(activeWo.ID);
         const activeSegments = conn.prepare(`
             SELECT userId, startTime
             FROM WorkSegments
-            WHERE woId = ? AND segmentState = 'Active'
+            WHERE (woId = ? OR CAST(woId AS TEXT) = CAST(? AS TEXT)) AND segmentState = 'Active'
             ORDER BY startTime ASC
-        `).all(String(activeWo.ID));
+        `).all(woKey, String(activeWo.ID));
 
         const lastWork = conn.prepare(`
-            SELECT MAX(endTime) as lastWorked FROM WorkSegments WHERE woId = ?
-        `).get(String(activeWo.ID));
+            SELECT MAX(endTime) as lastWorked FROM WorkSegments
+            WHERE woId = ? OR CAST(woId AS TEXT) = CAST(? AS TEXT)
+        `).get(woKey, String(activeWo.ID));
 
         res.json({
             activeWo: {
@@ -878,6 +879,48 @@ router.get('/asset-status/:assetId', (req, res) => {
         });
     } catch (err) {
         console.error('[scan] GET /api/scan/asset-status error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/scan/asset-status-batch ────────────────────────────────────────
+// Returns active WO status for a list of asset IDs in one query.
+// Body: { assetIds: string[] }
+// Response: { [assetId]: { statusId, woNumber, startedAt } | null }
+router.post('/asset-status-batch', (req, res) => {
+    try {
+        const { assetIds } = req.body;
+        if (!Array.isArray(assetIds) || assetIds.length === 0) return res.json({});
+        const conn = db.getDb();
+        ensureScanColumns(conn);
+
+        const placeholders = assetIds.map(() => '?').join(',');
+        const rows = conn.prepare(`
+            SELECT w.AstID, w.StatusID, w.WorkOrderNumber,
+                   MIN(ws.startTime) as startedAt
+            FROM Work w
+            LEFT JOIN WorkSegments ws ON (ws.woId = w.WorkOrderNumber OR CAST(ws.woId AS TEXT) = CAST(w.ID AS TEXT))
+                                      AND ws.segmentState = 'Active'
+            WHERE w.AstID IN (${placeholders})
+              AND w.StatusID != ${STATUS.COMPLETED}
+            GROUP BY w.AstID, w.ID
+            ORDER BY w.ID DESC
+        `).all(...assetIds);
+
+        // Keep only the most recent WO per asset
+        const result = {};
+        for (const row of rows) {
+            if (!result[row.AstID]) {
+                result[row.AstID] = {
+                    statusId: row.StatusID,
+                    woNumber: row.WorkOrderNumber,
+                    startedAt: row.startedAt || null,
+                };
+            }
+        }
+        res.json(result);
+    } catch (err) {
+        console.error('[scan] POST /api/scan/asset-status-batch error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -1210,12 +1253,41 @@ router.get('/parts-search', (req, res) => {
                    UnitCost
             FROM Part
             WHERE (COALESCE(Description, Descript) LIKE ? OR ID LIKE ?)
-              AND (IsDeleted IS NULL OR IsDeleted = 0)
             ORDER BY COALESCE(Description, Descript)
             LIMIT 20
         `).all(term, term);
         res.json({ parts });
     } catch (err) {
+        console.error('[scan] GET /api/scan/parts-search error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/scan/wo-parts ────────────────────────────────────────────────────
+// Returns all parts already linked to a work order (from WorkParts).
+// Used to pre-populate the parts checklist in the scan parts screen.
+// Query: woId (WorkOrderNumber string or integer Work.ID)
+router.get('/wo-parts', (req, res) => {
+    try {
+        const { woId } = req.query;
+        if (!woId) return res.status(400).json({ error: 'woId required' });
+        const conn = db.getDb();
+        const wo = conn.prepare(
+            'SELECT ID FROM Work WHERE WorkOrderNumber = ? OR CAST(ID AS TEXT) = ? LIMIT 1'
+        ).get(String(woId), String(woId));
+        if (!wo) return res.json({ parts: [] });
+        const parts = conn.prepare(`
+            SELECT wp.PartID, wp.EstQty, wp.ActQty, wp.UnitCost, wp.Location,
+                   COALESCE(p.Description, p.Descript) AS description,
+                   p.Stock AS available, p.UOM
+            FROM WorkParts wp
+            JOIN Part p ON wp.PartID = p.ID
+            WHERE wp.WoID = ?
+            ORDER BY COALESCE(p.Description, p.Descript)
+        `).all(wo.ID);
+        res.json({ parts });
+    } catch (err) {
+        console.error('[scan] GET /api/scan/wo-parts error:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -6,8 +6,8 @@ const { db: logisticsDb } = require('../../logistics_db');
 function checkUnderReview(intent) {
     try {
         const row = logisticsDb.prepare(`
-            SELECT Status 
-            FROM ManagementOfChange 
+            SELECT Status
+            FROM ManagementOfChange
             WHERE ID = ?
         `).get(intent.targetId);
 
@@ -16,7 +16,7 @@ function checkUnderReview(intent) {
                 certified: false,
                 passed: [],
                 failed: ['MOC_IN_REVIEW_STATE'],
-                causalExplanation: \`MOC #\${intent.targetId} not found.\`
+                causalExplanation: `MOC #${intent.targetId} not found.`
             };
         }
 
@@ -25,7 +25,7 @@ function checkUnderReview(intent) {
                 certified: false,
                 passed: [],
                 failed: ['MOC_IN_REVIEW_STATE'],
-                causalExplanation: \`MOC #\${intent.targetId} is in '\${row.Status}' state. Only UNDER_REVIEW records can be approved.\`
+                causalExplanation: `MOC #${intent.targetId} is in '${row.Status}' state. Only UNDER_REVIEW records can be approved.`
             };
         }
 
@@ -49,8 +49,8 @@ function checkUnderReview(intent) {
 function checkCloseable(intent) {
     try {
         const row = logisticsDb.prepare(`
-            SELECT Status 
-            FROM ManagementOfChange 
+            SELECT Status
+            FROM ManagementOfChange
             WHERE ID = ?
         `).get(intent.targetId);
 
@@ -59,7 +59,7 @@ function checkCloseable(intent) {
                 certified: false,
                 passed: [],
                 failed: ['MOC_IN_CLOSEABLE_STATE'],
-                causalExplanation: \`MOC #\${intent.targetId} not found.\`
+                causalExplanation: `MOC #${intent.targetId} not found.`
             };
         }
 
@@ -69,7 +69,7 @@ function checkCloseable(intent) {
                 certified: false,
                 passed: [],
                 failed: ['MOC_IN_CLOSEABLE_STATE'],
-                causalExplanation: \`MOC #\${intent.targetId} is in '\${row.Status}' state. Only APPROVED or IMPLEMENTING records can be closed.\`
+                causalExplanation: `MOC #${intent.targetId} is in '${row.Status}' state. Only APPROVED or IMPLEMENTING records can be closed.`
             };
         }
 

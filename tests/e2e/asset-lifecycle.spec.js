@@ -45,23 +45,31 @@ test.describe('Asset Lifecycle & Capital Planning', () => {
 
     // 2. UI Test for Asset Detail view card presence
     test('Asset detail view renders the lifecycle card', async ({ page }) => {
-        // Navigate to the Engineering / Assets & BOMs tile directly
-        await page.goto('/#/?workspace=assets');
-        
-        // Wait for assets to load
-        await page.waitForSelector('.grid-row', { state: 'visible', timeout: 15000 });
-        
-        // Click the first asset in the list
-        const firstAssetRow = page.locator('.grid-row').first();
-        await firstAssetRow.click();
-        
-        // Wait for the asset modal/detail panel to open
-        const modal = page.locator('.modal-content, .drawer-content, .asset-detail-panel');
+        // Navigate home first so the app fully initializes with the auth storage state
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+        // Set Plant_1 so AssetLifecycleCard API calls hit a real writable DB
+        await page.evaluate(() => localStorage.setItem('selectedPlantId', 'Plant_1'));
+        // Navigate directly to the assets route
+        await page.goto('/assets');
+
+        // Wait for the asset table to load — AssetsView list mode renders a data-table with View buttons
+        // Mobile Chrome (360px) renders the same table but may take longer to hydrate
+        await page.waitForSelector('table.data-table tbody tr', { state: 'visible', timeout: 40000 });
+
+        // Click the View button on the first asset row to open the detail panel
+        const firstViewBtn = page.locator('table.data-table tbody tr .btn-view-standard').first();
+        await firstViewBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await firstViewBtn.click();
+
+        // Wait for the asset detail modal to open (AssetsView uses .modal-content-standard)
+        const modal = page.locator('.modal-content-standard').first();
         await expect(modal).toBeVisible({ timeout: 10000 });
-        
+
         // Check for the lifecycle card presence.
         // The card renders "Asset Lifecycle is Healthy" or "Repair / Replace Ratio"
-        // Let's use a text matcher that covers the possible renders or look for the bounding container.
-        await expect(page.locator('text=Asset Lifecycle is Healthy').or(page.locator('text=Repair / Replace Ratio'))).toBeVisible({ timeout: 10000 });
+        await expect(
+            page.locator('text=Asset Lifecycle is Healthy').or(page.locator('text=Repair / Replace Ratio'))
+        ).toBeVisible({ timeout: 15000 });
     });
 });

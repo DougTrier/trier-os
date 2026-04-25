@@ -105,6 +105,7 @@ export default function ScanActionPrompt({
 }) {
     const { t } = useTranslation();
     const [submitting, setSubmitting] = useState(false);
+    const [sopSuccess, setSopSuccess] = useState(false); // WO created after SOP ack — show confirmation before transition
     const [error, setError] = useState('');
     const [screen, setScreen] = useState('main'); // main | hold_reason | return_window | team_close_confirm | parts_search | parts_quantity | add_child
     const [selectedHoldReason, setSelectedHoldReason] = useState(null);
@@ -118,6 +119,9 @@ export default function ScanActionPrompt({
     const [selectedPart, setSelectedPart] = useState(null);
     const [partQty, setPartQty] = useState(1);
     const [partsAdded, setPartsAdded] = useState([]);
+    const [woParts, setWoParts] = useState([]);          // parts already linked to this WO
+    const [woPartsChecked, setWoPartsChecked] = useState(new Set()); // checked partIDs
+    const [woPartsLoading, setWoPartsLoading] = useState(false);
     // Add sub-component state
     const [addChildName, setAddChildName] = useState('');
     const [addChildPhoto, setAddChildPhoto] = useState(null);
@@ -150,7 +154,17 @@ export default function ScanActionPrompt({
         setPartSearchQuery('');
         setPartSearchResults([]);
         setPartsAdded([]);
+        setWoParts([]);
+        setWoPartsChecked(new Set());
+        setWoPartsLoading(true);
         setScreen('parts_search');
+        fetch(`/api/scan/wo-parts?woId=${encodeURIComponent(woId)}`, {
+            headers: { 'x-plant-id': plantId },
+        })
+            .then(r => r.ok ? r.json() : { parts: [] })
+            .then(data => setWoParts(data.parts || []))
+            .catch(() => setWoParts([]))
+            .finally(() => setWoPartsLoading(false));
     };
 
     // ── Commit parts checkout ─────────────────────────────────────────────────
@@ -326,22 +340,66 @@ export default function ScanActionPrompt({
 
     // ── Parts search screen ───────────────────────────────────────────────────
     if (screen === 'parts_search') {
+        const toggleWoPart = (partId) => {
+            setWoPartsChecked(prev => {
+                const next = new Set(prev);
+                if (next.has(partId)) next.delete(partId); else next.add(partId);
+                return next;
+            });
+        };
+        const checkedCount = woPartsChecked.size + partsAdded.length;
+
         return (
             <div style={{ padding: '4px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                     <button onClick={() => setScreen('main')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
                         <ArrowLeft size={20} />
                     </button>
-                    <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>Add Parts to WO</span>
+                    <span style={{ color: '#94a3b8', fontSize: 15, fontWeight: 600 }}>Parts</span>
                 </div>
 
-                {partsAdded.length > 0 && (
-                    <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
-                        {partsAdded.map((p, i) => (
-                            <div key={i} style={{ color: '#86efac', fontSize: 13 }}>✓ {p.description} × {p.qty}</div>
-                        ))}
+                {/* WO-linked parts checklist */}
+                {(woPartsLoading || woParts.length > 0) && (
+                    <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
+                            Parts on this Work Order
+                        </div>
+                        {woPartsLoading && <div style={{ color: '#64748b', fontSize: 13, padding: '8px 0' }}>Loading…</div>}
+                        {woParts.map(p => {
+                            const checked = woPartsChecked.has(p.PartID);
+                            return (
+                                <button key={p.PartID} onClick={() => toggleWoPart(p.PartID)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                                        padding: '10px 12px', marginBottom: 6, borderRadius: 8, cursor: 'pointer',
+                                        background: checked ? 'rgba(16,185,129,0.12)' : 'rgba(30,41,59,0.6)',
+                                        border: `1px solid ${checked ? 'rgba(16,185,129,0.4)' : '#334155'}`,
+                                        textAlign: 'left',
+                                    }}>
+                                    <div style={{
+                                        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+                                        background: checked ? '#10b981' : 'transparent',
+                                        border: `2px solid ${checked ? '#10b981' : '#475569'}`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                        {checked && <span style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</span>}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600, fontSize: 14, color: checked ? '#86efac' : '#f1f5f9' }}>{p.description}</div>
+                                        <div style={{ fontSize: 12, color: '#64748b' }}>
+                                            {p.PartID}{p.Location ? ` · ${p.Location}` : ''} · Est qty: {p.EstQty ?? 1} · {p.available ?? '?'} in stock
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
+
+                {/* Divider + search heading */}
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
+                    {woParts.length > 0 ? 'Add More Parts' : 'Search Parts Catalog'}
+                </div>
 
                 <div style={{ position: 'relative', marginBottom: 12 }}>
                     <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
@@ -377,9 +435,18 @@ export default function ScanActionPrompt({
                     <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>No parts found</div>
                 )}
 
+                {/* Newly added parts confirmation */}
                 {partsAdded.length > 0 && (
+                    <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                        {partsAdded.map((p, i) => (
+                            <div key={i} style={{ color: '#86efac', fontSize: 13 }}>✓ {p.description} × {p.qty}</div>
+                        ))}
+                    </div>
+                )}
+
+                {checkedCount > 0 && (
                     <button onClick={() => setScreen('main')} style={{ marginTop: 12, width: '100%', padding: '12px', borderRadius: 8, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: '#86efac', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
-                        Done — {partsAdded.length} part{partsAdded.length > 1 ? 's' : ''} added
+                        Done — {checkedCount} part{checkedCount > 1 ? 's' : ''} selected
                     </button>
                 )}
                 {error && <ErrorBanner msg={error} />}
@@ -722,24 +789,39 @@ export default function ScanActionPrompt({
         const handleContinue = async () => {
             // Re-scan with a fresh scanId — will now pass Step 3.7 and create the WO
             setSubmitting(true);
+            setError('');
             const newScanId = crypto.randomUUID
                 ? crypto.randomUUID()
                 : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
             const newTimestamp = new Date().toISOString();
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
             try {
                 const res = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
                     body: JSON.stringify({ scanId: newScanId, assetId, userId, deviceTimestamp: newTimestamp }),
+                    signal: controller.signal,
                 });
+                clearTimeout(timeout);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-                // Reset before transitioning so the next screen's buttons are active.
-                // Thread scanId + timestamp so POST /api/scan/action can reference this scan.
                 setSubmitting(false);
-                onActionComplete({ ...data, scanId: newScanId, deviceTimestamp: newTimestamp });
+                if (data.branch !== 'REQUIRE_SOP_ACK') {
+                    // WO was created — flash confirmation before transitioning
+                    setSopSuccess(true);
+                    setTimeout(() => {
+                        setSopSuccess(false);
+                        onActionComplete({ ...data, scanId: newScanId, deviceTimestamp: newTimestamp });
+                    }, 1200);
+                } else {
+                    // Ack didn't register server-side — transition immediately, show error
+                    setError('Acknowledgment not recorded — please try again.');
+                    onActionComplete({ ...data, scanId: newScanId, deviceTimestamp: newTimestamp });
+                }
             } catch (err) {
-                setError(err.message);
+                clearTimeout(timeout);
+                setError(err.name === 'AbortError' ? 'Request timed out — check your connection and try again.' : err.message);
                 setSubmitting(false);
             }
         };
@@ -787,7 +869,21 @@ export default function ScanActionPrompt({
                     );
                 })}
 
-                {allDone && (
+                {sopSuccess && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '14px 16px', borderRadius: 10, marginTop: 8,
+                        background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.4)',
+                    }}>
+                        <CheckCircle size={20} color="#10b981" />
+                        <div>
+                            <div style={{ color: '#10b981', fontWeight: 700, fontSize: 14 }}>Work Order Created</div>
+                            <div style={{ color: '#6ee7b7', fontSize: 12, marginTop: 2 }}>Loading work options…</div>
+                        </div>
+                    </div>
+                )}
+
+                {!sopSuccess && allDone && (
                     <TapBtn
                         number={pendingSops.length + 1}
                         variant="success"
@@ -795,18 +891,20 @@ export default function ScanActionPrompt({
                         disabled={submitting}
                         style={{ marginTop: 8 }}
                     >
-                        {submitting ? 'Starting work…' : 'Continue — Start Work'}
+                        {submitting ? 'Starting work…' : 'Continue — Start Work Order'}
                     </TapBtn>
                 )}
-                {error && <ErrorBanner msg={error} />}
+                {!sopSuccess && error && <ErrorBanner msg={error} />}
 
-                <button onClick={onCancel} style={{
-                    marginTop: 12, width: '100%', padding: '10px',
-                    borderRadius: 8, background: 'none', border: '1px solid #1e293b',
-                    color: '#475569', cursor: 'pointer', fontSize: 13,
-                }}>
-                    Cancel
-                </button>
+                {!sopSuccess && (
+                    <button onClick={onCancel} style={{
+                        marginTop: 12, width: '100%', padding: '10px',
+                        borderRadius: 8, background: 'none', border: '1px solid #1e293b',
+                        color: '#475569', cursor: 'pointer', fontSize: 13,
+                    }}>
+                        Cancel
+                    </button>
+                )}
             </div>
         );
     }

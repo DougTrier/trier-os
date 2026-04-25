@@ -138,14 +138,21 @@ router.get('/parts', (req, res) => {
     let db;
     try {
         db = getMasterDb();
-        const { q, sort, order, limit, offset } = req.query;
+        const { q, sort, order, limit, offset, vertical } = req.query;
         let sql = 'SELECT * FROM MasterParts';
         const params = [];
+        const verticalPrefix = VERTICAL_PREFIXES[vertical] ?? null;
+        const conditions = [];
+        if (verticalPrefix) {
+            conditions.push('MasterPartID LIKE ?');
+            params.push(`${verticalPrefix}%`);
+        }
         if (q) {
-            sql += ' WHERE (MasterPartID LIKE ? OR Description LIKE ? OR StandardizedName LIKE ? OR Manufacturer LIKE ? OR Category LIKE ?)';
+            conditions.push('(MasterPartID LIKE ? OR Description LIKE ? OR StandardizedName LIKE ? OR Manufacturer LIKE ? OR Category LIKE ?)');
             const like = `%${q}%`;
             params.push(like, like, like, like, like);
         }
+        if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ');
         const validCols = ['MasterPartID','Description','Manufacturer','Category','SubCategory','TypicalPriceMin'];
         if (sort && validCols.includes(sort)) {
             sql += ` ORDER BY ${sort} ${order === 'desc' ? 'DESC' : 'ASC'}`;

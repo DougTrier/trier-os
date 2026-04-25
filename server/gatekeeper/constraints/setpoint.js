@@ -5,9 +5,9 @@ const { db: logisticsDb } = require('../../logistics_db');
 function checkNotLocked(intent) {
     try {
         const row = logisticsDb.prepare(`
-            SELECT PermitNumber 
-            FROM LotoPermits 
-            WHERE AssetID = ? AND PlantID = ? AND Status = 'ACTIVE' 
+            SELECT PermitNumber
+            FROM LotoPermits
+            WHERE AssetID = ? AND PlantID = ? AND Status = 'ACTIVE'
             LIMIT 1
         `).get(intent.targetId, intent.plantId);
 
@@ -16,7 +16,7 @@ function checkNotLocked(intent) {
                 certified: false,
                 passed: [],
                 failed: ['TARGET_NOT_LOTO_LOCKED'],
-                causalExplanation: \`Cannot write to asset \${intent.targetId} — active LOTO lockout is in effect (permit #\${row.PermitNumber}). De-energize and void the LOTO permit before changing operating parameters.\`
+                causalExplanation: `Cannot write to asset ${intent.targetId} — active LOTO lockout is in effect (permit #${row.PermitNumber}). De-energize and void the LOTO permit before changing operating parameters.`
             };
         }
 

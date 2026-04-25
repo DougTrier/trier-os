@@ -33,7 +33,7 @@
  *   GET /api/catalog/warranties   — Warranty terms
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Database, Wrench, Package, Building2, Shield, ChevronLeft, ChevronRight, Download, Printer, X } from 'lucide-react';
+import { Search, Database, Wrench, Package, Building2, Shield, ChevronLeft, ChevronRight, Download, Printer, X, ArrowLeftRight } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useTranslation } from '../i18n/index.jsx';
 
@@ -42,6 +42,7 @@ const TABS = [
     { key: 'parts', label: 'parts', icon: Package, endpoint: '/api/catalog/parts' },
     { key: 'vendors', label: 'vendors', icon: Building2, endpoint: '/api/catalog/vendors' },
     { key: 'warranties', label: 'warranties', icon: Shield, endpoint: '/api/catalog/warranties' },
+    { key: 'crossref', label: 'crossRef', icon: ArrowLeftRight, endpoint: '/api/catalog/crossref' },
 ];
 
 const COLUMNS = {
@@ -81,6 +82,14 @@ const COLUMNS = {
         { key: 'CoverageDescription', label: 'coverage', width: '28%' },
         { key: 'Exclusions', label: 'exclusions', width: '18%' },
         { key: 'ClaimProcess', label: 'claimProcess', width: '14%' },
+    ],
+    crossref: [
+        { key: 'OEMPartNumber', label: 'OEM Part #', width: '18%' },
+        { key: 'OEMVendor', label: 'OEM Vendor', width: '18%' },
+        { key: 'AftermarketPartNumber', label: 'Aftermarket Part #', width: '18%' },
+        { key: 'AftermarketVendor', label: 'Aftermarket Vendor', width: '18%' },
+        { key: 'CompatibilityNotes', label: 'Notes', width: '22%' },
+        { key: 'Verified', label: 'Verified', width: '6%', render: v => v ? '✓' : '—' },
     ],
 };
 
@@ -152,7 +161,7 @@ export default function CatalogViewer() {
         }
         
         let endpoint = tab.endpoint;
-        if (tab.key === 'equipment' && verticalFilter) {
+        if (verticalFilter) {
             params.set('vertical', verticalFilter);
         }
 
@@ -222,6 +231,7 @@ export default function CatalogViewer() {
         parts: '#10b981',
         vendors: '#f59e0b',
         warranties: '#3b82f6',
+        crossref: '#a855f7',
     };
 
     const accentColor = tabColors[activeTab] || '#6366f1';
@@ -251,7 +261,29 @@ export default function CatalogViewer() {
                         </p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                {/* Global search — fills the header empty space */}
+                <div style={{ flex: 1, maxWidth: 480, margin: '0 24px', position: 'relative' }}>
+                    <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none' }} />
+                    <input
+                        type="text"
+                        placeholder={t('catalog.searchAll', 'Search catalog…')}
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%', boxSizing: 'border-box',
+                            padding: '9px 12px 9px 36px', borderRadius: 8,
+                            background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(255,255,255,0.1)',
+                            color: '#f1f5f9', fontSize: 14, outline: 'none',
+                        }}
+                    />
+                    {searchQuery && (
+                        <button onClick={() => setSearchQuery('')}
+                            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 2 }}>
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                     <button onClick={exportCSV} className="btn-secondary btn-sm" title={t('catalog.exportCsvTip')}>
                         <Download size={14} /> {t('catalog.exportCsv', 'Export CSV')}
                     </button>
@@ -294,7 +326,7 @@ export default function CatalogViewer() {
                     })}
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    {activeTab === 'equipment' && (
+                    {activeTab !== 'crossref' && (
                         <select
                             value={verticalFilter}
                             onChange={e => setVerticalFilter(e.target.value)}

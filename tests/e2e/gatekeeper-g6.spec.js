@@ -14,16 +14,18 @@ test.describe('Gatekeeper Engine Pipeline (G6)', () => {
             env: { ...process.env, GATEKEEPER_PORT: '4001' },
             stdio: 'pipe'
         });
-        // Wait for Gatekeeper to be ready
+        // Wait for Gatekeeper to be ready (stdout or stderr — Node may buffer differently)
         await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Gatekeeper startup timeout')), 10000);
-            gatekeeperProcess.stdout.on('data', (data) => {
+            const timeout = setTimeout(() => reject(new Error('Gatekeeper startup timeout')), 20000);
+            const onData = (data) => {
                 if (data.toString().includes('listening')) {
                     clearTimeout(timeout);
                     resolve();
                 }
-            });
-            gatekeeperProcess.on('error', reject);
+            };
+            gatekeeperProcess.stdout.on('data', onData);
+            gatekeeperProcess.stderr.on('data', onData);
+            gatekeeperProcess.on('error', (err) => { clearTimeout(timeout); reject(err); });
         });
     });
 

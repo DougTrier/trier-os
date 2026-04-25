@@ -7,6 +7,9 @@ const STORAGE_STATE = 'tests/e2e/.auth/ghost_admin.json';
 test.describe('Cross-Catalog Reference Engine API', () => {
     test.use({ storageState: STORAGE_STATE });
 
+    // Unique per-run OEM part number so tests 4+5 work idempotently across multiple runs
+    const oemPartNumber = `TEST-OEM-${Date.now()}`;
+
     test('1. GET /api/catalog/search?q=bearing returns parts and equipment', async ({ request }) => {
         const response = await request.get('/api/catalog/search?q=bearing');
         expect(response.ok()).toBeTruthy();
@@ -38,7 +41,7 @@ test.describe('Cross-Catalog Reference Engine API', () => {
                 type: 'OEM',
                 masterPartId: 'MFG-BRG-WRIST-100',
                 oemManufacturer: 'FANUC',
-                oemPartNumber: 'TEST-OEM-001'
+                oemPartNumber
             }
         });
         expect(response.status()).toBe(201);
@@ -52,7 +55,7 @@ test.describe('Cross-Catalog Reference Engine API', () => {
                 type: 'OEM',
                 masterPartId: 'MFG-BRG-WRIST-100',
                 oemManufacturer: 'FANUC',
-                oemPartNumber: 'TEST-OEM-001'
+                oemPartNumber
             }
         });
         expect(response.status()).toBe(409);

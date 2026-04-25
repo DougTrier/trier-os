@@ -14,6 +14,7 @@
  *   POST /api/assets/:id/photos/ocr    — Hardware Camera OCR text extraction
  *   GET  /api/assets/:id/photos        — Fetch attachments and diagrams
  *   GET  /api/assets/:id/meter/history — Fetch run hours/counts
+ *   POST /api/scan/asset-status-batch  — Active WO status for the visible asset list
  *
  * -- KEY STATE -------------------------------------------------
  *   assets         — Paginated array of assets
@@ -31,7 +32,7 @@ import BomPanel from './BomPanel';
 import AssetLifecycleCard from './AssetLifecycleCard';
 import DigitalTwinView from './DigitalTwinView';
 import ScanEntryPoint from './ScanEntryPoint';
-import { Search, RefreshCw, Plus, ChevronLeft, ChevronRight, X, PenTool, Printer, AlertTriangle, Eye, Network, ChevronDown, Info, CheckCircle, Activity, TrendingDown, TrendingUp, Trash2, Gauge, Camera, QrCode, Cpu, Cog, Scale } from 'lucide-react';
+import { Search, RefreshCw, Plus, ChevronLeft, ChevronRight, X, PenTool, Printer, AlertTriangle, Eye, Network, ChevronDown, Info, CheckCircle, Activity, TrendingDown, TrendingUp, Trash2, Gauge, Camera, QrCode, Cpu, Cog, Scale, Clock } from 'lucide-react';
 import SearchBar from './SearchBar';
 import ActionBar from './ActionBar';
 import { useTranslation } from '../i18n/index.jsx';
@@ -157,6 +158,9 @@ export default function AssetsView({ plantId, plantLabel }) {
     // Hierarchy Roll-Up State (Feature 3)
     const [rollupData, setRollupData] = useState(null);
 
+    // Active work order indicators for asset list rows
+    const [activeWoMap, setActiveWoMap] = useState({}); // { [assetId]: { statusId, woNumber, startedAt } }
+
 
     const isForeignPlant = !hasFullAdminAccess &&
         localStorage.getItem('nativePlantId') &&
@@ -219,8 +223,22 @@ export default function AssetsView({ plantId, plantLabel }) {
             });
             const data = await res.json();
 
-            setAssets(data.data || []);
+            const assetList = data.data || [];
+            setAssets(assetList);
             setMeta(data.pagination || data.meta || { page: 1, limit: 50, total: 0, totalPages: 1 });
+
+            // Fetch active WO status for all visible assets in one batch
+            if (assetList.length > 0) {
+                const activePlantForBatch = localStorage.getItem('selectedPlantId') || plantId || 'Demo_Plant_1';
+                fetch('/api/scan/asset-status-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-plant-id': activePlantForBatch },
+                    body: JSON.stringify({ assetIds: assetList.map(a => a.ID) }),
+                })
+                    .then(r => r.ok ? r.json() : {})
+                    .then(map => setActiveWoMap(map))
+                    .catch(() => {});
+            }
         } catch (err) {
             console.error('Failed to query assets:', err);
         } finally {
@@ -1043,16 +1061,49 @@ export default function AssetsView({ plantId, plantLabel }) {
                                 <td>{a.LocationID}</td>
                                 <td>{a.Model || '--'}</td>
                                 <td>
-                                    <span style={{
-                                        padding: '4px 10px',
-                                        borderRadius: '12px',
-                                        fontSize: '0.7rem',
-                                        fontWeight: 700,
-                                        background: a.OperationalStatus === 'Spare' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                                        color: a.OperationalStatus === 'Spare' ? '#f59e0b' : '#10b981'
-                                    }}>
-                                        {a.OperationalStatus || t('assets.inProduction')}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                        <span style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '12px',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 700,
+                                            background: a.OperationalStatus === 'Spare' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                            color: a.OperationalStatus === 'Spare' ? '#f59e0b' : '#10b981'
+                                        }}>
+                                            {a.OperationalStatus || t('assets.inProduction')}
+                                        </span>
+                                        {activeWoMap[a.ID] && (() => {
+                                            const wo = activeWoMap[a.ID];
+                                            const startedAt = wo.startedAt ? new Date(wo.startedAt.replace(' ', 'T') + 'Z') : null;
+                                            const mins = startedAt ? Math.floor((Date.now() - startedAt.getTime()) / 60000) : null;
+                                            const elapsed = mins === null ? '' : mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+                                            const sid = wo.statusId;
+                                            const isActive   = sid === 30;
+                                            const isHold     = sid === 31 || sid === 32 || sid === 33 || sid === 35;
+                                            const label = sid === 30 ? 'In Progress'
+                                                        : sid === 31 ? 'Waiting — Parts'
+                                                        : sid === 32 ? 'Waiting — Vendor'
+                                                        : sid === 33 ? 'Escalated'
+                                                        : sid === 35 ? 'On Hold'
+                                                        : 'WO Open';
+                                            const bg    = isHold ? 'rgba(239,68,68,0.15)'   : isActive ? 'rgba(249,115,22,0.15)'  : 'rgba(245,158,11,0.15)';
+                                            const color = isHold ? '#ef4444'                 : isActive ? '#f97316'                : '#f59e0b';
+                                            const bdr   = isHold ? 'rgba(239,68,68,0.4)'    : isActive ? 'rgba(249,115,22,0.35)' : 'rgba(245,158,11,0.35)';
+                                            return (
+                                                <span
+                                                    title={`WO ${wo.woNumber || ''} — ${label}${elapsed ? ` · ${elapsed} ago` : ''}`}
+                                                    style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                        padding: '3px 8px', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 700,
+                                                        background: bg, color, border: `1px solid ${bdr}`,
+                                                    }}
+                                                >
+                                                    <Clock size={11} />
+                                                    {label}{elapsed ? ` · ${elapsed}` : ''}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
                                 </td>
                                 <td title={a.CriticalityClass === 'A' ? 'Critical — Production-Stopping' : a.CriticalityClass === 'B' ? 'Standard — Significant Impact' : 'Low Impact — Non-Critical'}>
                                     <span style={{

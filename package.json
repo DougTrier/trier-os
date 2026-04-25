@@ -58,6 +58,7 @@
   },
   "type": "commonjs",
   "dependencies": {
+    "@google/genai": "^1.50.1",
     "@monaco-editor/react": "^4.7.0",
     "@zxing/library": "^0.21.3",
     "bcryptjs": "^3.0.2",

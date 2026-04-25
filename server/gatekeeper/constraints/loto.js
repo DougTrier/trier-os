@@ -6,9 +6,9 @@ const { db: logisticsDb } = require('../../logistics_db');
 function checkActivate(intent) {
     try {
         const row = logisticsDb.prepare(`
-            SELECT PermitNumber 
-            FROM LotoPermits 
-            WHERE AssetID = ? AND PlantID = ? AND Status = 'ACTIVE' 
+            SELECT PermitNumber
+            FROM LotoPermits
+            WHERE AssetID = ? AND PlantID = ? AND Status = 'ACTIVE'
             LIMIT 1
         `).get(intent.targetId, intent.plantId);
 
@@ -17,7 +17,7 @@ function checkActivate(intent) {
                 certified: false,
                 passed: [],
                 failed: ['NO_EXISTING_LOTO'],
-                causalExplanation: \`Asset \${intent.targetId} already has active LOTO permit #\${row.PermitNumber}. Void the existing permit before issuing a new one.\`
+                causalExplanation: `Asset ${intent.targetId} already has active LOTO permit #${row.PermitNumber}. Void the existing permit before issuing a new one.`
             };
         }
 
@@ -41,9 +41,9 @@ function checkActivate(intent) {
 function checkVoid(intent) {
     try {
         const row = logisticsDb.prepare(`
-            SELECT PermitNumber, Status 
-            FROM LotoPermits 
-            WHERE PermitNumber = ? 
+            SELECT PermitNumber, Status
+            FROM LotoPermits
+            WHERE PermitNumber = ?
             LIMIT 1
         `).get(intent.targetId);
 
@@ -52,7 +52,7 @@ function checkVoid(intent) {
                 certified: false,
                 passed: [],
                 failed: ['PERMIT_EXISTS_ACTIVE'],
-                causalExplanation: \`LOTO permit \${intent.targetId} not found.\`
+                causalExplanation: `LOTO permit ${intent.targetId} not found.`
             };
         }
 
@@ -61,7 +61,7 @@ function checkVoid(intent) {
                 certified: false,
                 passed: [],
                 failed: ['PERMIT_EXISTS_ACTIVE'],
-                causalExplanation: \`LOTO permit \${intent.targetId} is not active (current status: \${row.Status}). Cannot void a non-active permit.\`
+                causalExplanation: `LOTO permit ${intent.targetId} is not active (current status: ${row.Status}). Cannot void a non-active permit.`
             };
         }
 

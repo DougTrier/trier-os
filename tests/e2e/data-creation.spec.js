@@ -87,13 +87,17 @@ test.describe('Trier OS V4.0.0 Form & Workflow Gauntlet', () => {
     await newDvirBtn.waitFor({ state: 'visible', timeout: 10000 });
     await newDvirBtn.click();
 
-    const modal = page.locator('.modal-content-standard, .modal-overlay').first();
+    // FleetView Modal component renders .modal-overlay > .glass-card (no modal-content-standard)
+    const modal = page.locator('.modal-overlay .glass-card').first();
     await expect(modal).toBeVisible({ timeout: 10000 });
 
-    // Select vehicle
+    // Wait for vehicle select to populate (vehicles load async — index 0 is placeholder)
     const vehicleSelect = modal.locator('select').first();
     await vehicleSelect.waitFor({ state: 'visible', timeout: 15000 });
-    await page.waitForTimeout(500);
+    await expect.poll(
+        () => vehicleSelect.evaluate(el => el.options.length),
+        { timeout: 10000, message: 'Vehicle options did not load' }
+    ).toBeGreaterThan(1);
     await vehicleSelect.selectOption({ index: 1 });
 
     // Fill driver name
@@ -105,11 +109,11 @@ test.describe('Trier OS V4.0.0 Form & Workflow Gauntlet', () => {
       await odoInput.fill('130000');
     }
 
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
 
-    // Save — scope to modal, use first to avoid Cancel
-    await modal.locator('button').filter({ hasText: /Create DVIR|Save|Submit/i }).first().click({ force: true });
-    await expect(modal).not.toBeVisible({ timeout: 15000 });
+    // Save — scope to inner modal content to avoid accidentally clicking Cancel
+    await modal.locator('button').filter({ hasText: /Create DVIR|Save|Submit/i }).first().click();
+    await expect(page.locator('.modal-overlay')).not.toBeVisible({ timeout: 15000 });
   });
 
   // ==========================================

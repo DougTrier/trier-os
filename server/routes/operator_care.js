@@ -197,11 +197,14 @@ router.post('/results', (req, res) => {
                 try {
                     const db = require('../database');
                     const conn = db.getDb(plantId);
+                    // The el_work_insert trigger writes NEW.ID to EventLog.AggregateID (NOT NULL),
+                    // so we must supply an explicit ID — cannot rely on implicit rowid auto-assign.
+                    const { nextId } = conn.prepare('SELECT COALESCE(MAX(ID), 0) + 1 AS nextId FROM Work').get();
                     const desc = `Auto-WO from Operator Care inspection fail: ${step.stepLabel || 'Step ' + step.stepId}`;
                     const wo = conn.prepare(`
-                        INSERT INTO Work (Description, AstID, StatusID, AddDate, WOSource)
-                        VALUES (?, ?, 20, date('now'), 'UNPLANNED')
-                    `).run(desc, step.assetId);
+                        INSERT INTO Work (ID, Description, AstID, StatusID, AddDate, WOSource)
+                        VALUES (?, ?, ?, 20, date('now'), 'UNPLANNED')
+                    `).run(nextId, desc, step.assetId);
                     autoWOID = String(wo.lastInsertRowid);
                     autoWOs++;
                     createdWOs.push({ stepId: step.stepId, woId: autoWOID });

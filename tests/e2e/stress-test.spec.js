@@ -223,8 +223,9 @@ test.describe('00 · Demo Account RBAC Gauntlet', () => {
       await seeText(page, 'SOPs');
     });
 
-    test('Operator sees Work Request Portal tile', async ({ page }) => {
-      await seeText(page, 'Work Request Portal');
+    test('Operator sees Work Request Portal (inside Operations group tile)', async ({ page }) => {
+      // operator-trust + work-request-portal both in Operations group → collapses to "Operations"
+      await seeText(page, 'Operations');
     });
 
     test('Operator sees Facilities tile (floor-plans + maps group)', async ({ page }) => {
