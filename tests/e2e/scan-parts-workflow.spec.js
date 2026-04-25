@@ -403,6 +403,50 @@ test.describe('Scan-to-Parts Workflow', () => {
         expect(closeCall).toBeTruthy();
     });
 
+    // 12 ── State leakage: cancel batch then re-scan gets a clean action prompt
+    test('12. Scan → WO → batch → cancel → re-scan shows fresh state (no batch leakage)', async ({ page }) => {
+        await mockScanApi(page, BASE_AUTO_CREATE_RESPONSE);
+        await mockActionApi(page);
+        await mockSuggestedParts(page);
+        await mockPartsSearch(page, [MOCK_PART]);
+        await goToScanner(page);
+
+        // First scan → action prompt
+        await submitAssetScan(page, 'PUMP-12');
+        await expect(page.getByRole('button', { name: /Add Parts/i }).first()).toBeVisible({ timeout: 5000 });
+
+        // Enter batch, scan a part so items are non-empty
+        await page.getByRole('button', { name: /Add Parts/i }).first().click();
+        await expect(page.getByText(/Batch Add Parts/i)).toBeVisible({ timeout: 3000 });
+        const batchInput = page.locator('input[placeholder*="barcode" i], input[placeholder*="scan" i]').first();
+        await batchInput.fill(MOCK_PART.ID);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(500);
+        await expect(page.getByText(MOCK_PART.description)).toBeVisible({ timeout: 3000 });
+
+        // Cancel batch → action prompt
+        await page.getByRole('button', { name: /Cancel/i }).first().click();
+        await expect(page.getByRole('button', { name: /Add Parts/i }).first()).toBeVisible({ timeout: 3000 });
+
+        // Cancel action prompt → back to capture
+        await page.getByRole('button', { name: /Cancel/i }).first().click();
+        await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible({ timeout: 3000 });
+
+        // Re-scan — ScanActionPrompt remounts fresh
+        await submitAssetScan(page, 'PUMP-12');
+        await expect(page.getByRole('button', { name: /Add Parts/i }).first()).toBeVisible({ timeout: 5000 });
+
+        // Enter batch again
+        await page.getByRole('button', { name: /Add Parts/i }).first().click();
+        await expect(page.getByText(/Batch Add Parts/i)).toBeVisible({ timeout: 3000 });
+
+        // No parts from previous session should be present
+        await expect(page.getByText(MOCK_PART.description)).not.toBeVisible();
+
+        // Commit button disabled — zero items carried over
+        await expect(page.getByRole('button', { name: /All Parts Added/i }).first()).toBeDisabled();
+    });
+
 });
 
 // ── Mobile / Zebra viewport path ─────────────────────────────────────────────
