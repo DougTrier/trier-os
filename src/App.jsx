@@ -149,6 +149,7 @@ import TrainingView from './components/TrainingView';
 import AssetLifecycleView from './components/AssetLifecycleView';
 import PlantSetupView from './components/PlantSetupView';
 import ScannerWorkspace from './components/ScannerWorkspace';
+import OfflineReceivingView from './components/OfflineReceivingView';
 import useHardwareScanner from './hooks/useHardwareScanner';
 /**
  * PlantOnboardingRoute — thin route wrapper for the Enterprise Onboarding Wizard.
@@ -1196,6 +1197,7 @@ function App() {
                         <Route path="/training" element={<TrainingView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/asset-lifecycle" element={<AssetLifecycleView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/scanner" element={<ScannerWorkspace plantId={scanPlantId} />} />
+                        <Route path="/offline-receiving" element={<OfflineReceivingView plantId={selectedPlant} />} />
                         <Route path="/work-request-portal" element={<WorkRequestPortal />} />
                         <Route path="/plant-setup" element={<PlantSetupView plantId={selectedPlant} plantLabel={currentPlantLabel} />} />
                         <Route path="/plant-onboarding" element={<PlantOnboardingRoute plantId={selectedPlant} plantLabel={currentPlantLabel} />} />

@@ -1003,6 +1003,7 @@ app.use('/api/erp-connectors', require('./routes/erp_connectors')); // P6 ERP Co
 app.use('/api/baseline',       require('./routes/baseline_engine')); // P7 Plant Behavioral Baseline Engine — drift detection, MTBF, failure freq baselines
 app.use('/api/causality',      require('./routes/causality'));        // P7 Explainable Operations Engine + Cross-System Causality Graph
 app.use('/api/containment',    require('./routes/containment'));      // P7 Failure Containment Scoring — live blast-radius meter (ISOLATED/PARTIAL/CASCADING)
+app.use('/api/offline',        require('./routes/offline_receiving')); // Offline Receiving — Zebra event-sourced receiving sync
 
 
 
