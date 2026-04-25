@@ -442,7 +442,7 @@ export default function ScanActionPrompt({
                         placeholder="Scan part barcode or type part ID…"
                         value={batchInput}
                         onChange={e => setBatchInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleBatchScan(batchInput); }}
+                        onKeyDown={e => { if (e.key === 'Enter') handleBatchScan(e.target.value); }}
                         style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px 11px 34px', borderRadius: 8, background: '#1e293b', border: '1px solid #3b82f6', color: '#f1f5f9', fontSize: 14, outline: 'none' }}
                     />
                 </div>

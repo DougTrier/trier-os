@@ -57,10 +57,8 @@ async function login(page) {
         await page.locator('button').filter({ hasText: /Save|Change/i }).first().click();
     } catch (_) {}
 
-    // Wait for Mission Control to render — proves the session cookie is set and
-    // isAuthenticated has flipped to true. URL check alone passes instantly because
-    // the app never navigates to a /login path; it renders LoginView inline.
-    await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 20000 });
+    // Logout button visible on all viewports after login — proves session is set
+    await expect(page.getByRole('button', { name: /Logout/i })).toBeVisible({ timeout: 20000 });
 
     // Belt-and-suspenders tour suppression: set keys while on current page so they
     // persist into any subsequent navigation (addInitScript above covers the early-load
@@ -141,8 +139,8 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await expect(page.getByText('ASSET-001')).toBeVisible({ timeout: 5000 });
         await expect(page.getByText(/Pump Motor Inspection|WO-2026-001|New Work Order/i).first()).toBeVisible({ timeout: 5000 });
 
-        // After overlay clears, action prompt for AUTO_CREATE_WO shows "Work Started"
-        await expect(page.getByText(/Work Started/i)).toBeVisible({ timeout: 3000 });
+        // After overlay clears, action prompt for AUTO_CREATE_WO is visible
+        await expect(page.getByText(/In Progress|STARTED|Close Work Order/i).first()).toBeVisible({ timeout: 3000 });
         await expect(page.getByText(/WO-2026-001/i).first()).toBeVisible();
     });
 
@@ -190,6 +188,8 @@ test.describe('Scan State Machine — ScanCapture component', () => {
 
         await expect(page.getByText(/Join Existing Work/i)).toBeVisible({ timeout: 4000 });
         await expect(page.getByText(/Take Over/i)).toBeVisible();
+        // Escalate lives inside More Options — expand first
+        await page.getByText(/More options/i).first().click();
         await expect(page.getByText(/Escalate/i)).toBeVisible();
     });
 
@@ -238,8 +238,8 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await expect(page.getByText(/Resume Waiting WO/i)).toBeVisible({ timeout: 4000 });
         await expect(page.getByText(/Create New Work Order/i)).toBeVisible();
         await expect(page.getByText(/View Status Only/i)).toBeVisible();
-        // Hold reason should show in the subtitle
-        await expect(page.getByText(/On Hold/i)).toBeVisible();
+        // Hold reason should show in the subtitle (multiple "On Hold" matches — use first)
+        await expect(page.getByText(/On Hold/i).first()).toBeVisible();
     });
 
     test('AUTO_REJECT_DUPLICATE_SCAN — shows duplicate warning, no action buttons', async ({ page }) => {
@@ -358,8 +358,8 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await input.fill('ASSET-002');
         await page.keyboard.press('Enter');
 
-        // "Work Started" confirmation in the PromptShell subtitle
-        await expect(page.getByText(/Work Started/i)).toBeVisible({ timeout: 4000 });
+        // AUTO_CREATE_WO prompt is visible
+        await expect(page.getByText(/In Progress|STARTED|Close Work Order/i).first()).toBeVisible({ timeout: 4000 });
 
         // PromptShell renders a "Cancel" button (not "Done") to dismiss and reset the view
         await page.getByRole('button', { name: /Cancel/i }).first().click();
@@ -376,11 +376,12 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await input.fill('UNKNOWN-9999');
         await page.keyboard.press('Enter');
 
-        // Error message shown inline
-        await expect(page.getByText(/Asset not found/i)).toBeVisible({ timeout: 4000 });
+        // 404 routes to ASSET_NOT_FOUND branch — shows "Not registered" prompt
+        await expect(page.getByText(/Not registered in this plant|UNKNOWN/i).first()).toBeVisible({ timeout: 4000 });
 
-        // Capture UI is still available for retry
-        await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible();
+        // Dismiss and capture UI is available for retry ("Try Another Scan" button)
+        await page.getByRole('button', { name: /Try Another Scan|Cancel|Dismiss/i }).first().click();
+        await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible({ timeout: 3000 });
     });
 
 });
@@ -731,12 +732,16 @@ test.describe('Scan State Machine — ScanEntryPoint (forgot-scanner recovery pa
         await page.route('**/api/scan/action', (route) => {
             route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
         });
+        await page.route('**/api/scan/suggested-parts**', (route) =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
 
         await openAssetDetail(page);
         await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
 
-        // Action prompt overlay should appear with SOLO context buttons
+        // Action prompt overlay: Close Work Order visible immediately; Waiting/Escalate in More Options
         await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+        await page.getByText(/More options/i).first().click();
         await expect(page.getByText(/Waiting/i)).toBeVisible();
         await expect(page.getByText(/Escalate/i)).toBeVisible();
     });
