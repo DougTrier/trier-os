@@ -1078,7 +1078,7 @@ test.describe('17 · API Health Checks', () => {
 
   test('Unauthenticated request to /api/dashboard returns 401', async ({ playwright }) => {
     // Use a fresh API context with no cookies — page.request inherits the browser's httpOnly cookie
-    const freshCtx = await playwright.request.newContext({ baseURL: 'https://localhost:5173', ignoreHTTPSErrors: true });
+    const freshCtx = await playwright.request.newContext({ baseURL: 'https://localhost:1938', ignoreHTTPSErrors: true });
     const res = await freshCtx.get('/api/dashboard', {
       headers: { 'x-plant-id': 'all_sites' },
     });

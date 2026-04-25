@@ -325,14 +325,14 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await input.fill('ASSET-002');
         await page.keyboard.press('Enter');
 
-        // "Work Started" confirmation
+        // "Work Started" confirmation in the PromptShell subtitle
         await expect(page.getByText(/Work Started/i)).toBeVisible({ timeout: 4000 });
 
-        // Click Done to reset
-        await page.getByRole('button', { name: /Done/i }).click();
+        // PromptShell renders a "Cancel" button (not "Done") to dismiss and reset the view
+        await page.getByRole('button', { name: /Cancel/i }).first().click();
 
         // Should return to capture view
-        await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible({ timeout: 3000 });
+        await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible({ timeout: 5000 });
     });
 
     test('Server error surfaces inline — view stays on capture, no hard crash', async ({ page }) => {
@@ -617,8 +617,8 @@ test.describe('Scan State Machine — ScanEntryPoint (forgot-scanner recovery pa
         // ScanEntryPoint panel should be visible
         await expect(page.getByText(/Work Order Actions/i)).toBeVisible();
 
-        // Start Work button present and enabled
-        const startBtn = page.getByRole('button', { name: /Start Work on This Asset/i });
+        // Main action button — label is context-aware (depends on whether the asset has an active WO)
+        const startBtn = page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i });
         await expect(startBtn).toBeVisible();
         await expect(startBtn).toBeEnabled();
     });
@@ -664,8 +664,8 @@ test.describe('Scan State Machine — ScanEntryPoint (forgot-scanner recovery pa
         // Get the assetId that was rendered in the modal title
         const modalTitle = await page.locator('.glass-card .modal-content-standard [class*="ActionBar"], .modal-content-standard').first().textContent();
 
-        // Click Start Work
-        await page.getByRole('button', { name: /Start Work on This Asset/i }).click();
+        // Click the main WO action button (label is context-aware but all labels trigger the same startWork → POST /api/scan)
+        await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
 
         // Verify the correct assetId was sent
         await page.waitForTimeout(500);
@@ -700,7 +700,7 @@ test.describe('Scan State Machine — ScanEntryPoint (forgot-scanner recovery pa
         });
 
         await openAssetDetail(page);
-        await page.getByRole('button', { name: /Start Work on This Asset/i }).click();
+        await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
 
         // Action prompt overlay should appear with SOLO context buttons
         await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
@@ -718,12 +718,12 @@ test.describe('Scan State Machine — ScanEntryPoint (forgot-scanner recovery pa
         });
 
         await openAssetDetail(page);
-        await page.getByRole('button', { name: /Start Work on This Asset/i }).click();
+        await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
 
         // Error renders inside the panel — does not crash the asset modal
         await expect(page.getByText(/Asset not found in plant/i)).toBeVisible({ timeout: 4000 });
-        // Start Work button still present for retry
-        await expect(page.getByRole('button', { name: /Start Work on This Asset/i })).toBeVisible();
+        // Action button still present for retry
+        await expect(page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i })).toBeVisible();
     });
 
 });

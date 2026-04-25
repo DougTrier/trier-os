@@ -16,7 +16,7 @@ const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-const BASE_URL = 'https://localhost:5173';
+const BASE_URL = 'https://localhost:1938';
 
 const GHOST_ACCOUNTS = [
   { username: 'ghost_tech',  password: 'Trier3292!', file: 'ghost_tech.json'  },

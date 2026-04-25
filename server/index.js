@@ -298,9 +298,15 @@ app.use((req, res, next) => {
 
 // â”€â”€ Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SEC-005 Mitigation: Explicit exact-match origin binding rather than loose regex
+// localhost:1938 / 1937 are included so that the production server's own origin
+// passes CORS — Chrome sends Origin even for same-origin <script type="module" crossorigin> loads.
 let defaultOrigins = [
-    'http://localhost:5173', 
-    'https://localhost:5173', 
+    'http://localhost:1937',
+    'https://localhost:1938',
+    'http://localhost:5173',
+    'https://localhost:5173',
+    'http://127.0.0.1:1937',
+    'https://127.0.0.1:1938',
     'http://127.0.0.1:5173',
     'https://127.0.0.1:5173',
     'http://localhost:3000',

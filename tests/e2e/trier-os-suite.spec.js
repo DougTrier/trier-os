@@ -1832,7 +1832,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
     test('Asset detail modal contains Work Order Actions panel with Start Work button', async ({ page }) => {
       await openAssetDetail(page);
       await expect(page.getByText(/Work Order Actions/i)).toBeVisible();
-      const startBtn = page.getByRole('button', { name: /Start Work on This Asset/i });
+      const startBtn = page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i });
       await expect(startBtn).toBeVisible();
       await expect(startBtn).toBeEnabled();
     });
@@ -1864,7 +1864,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
         }
       });
       await openAssetDetail(page);
-      await page.getByRole('button', { name: /Start Work on This Asset/i }).click();
+      await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
       await page.waitForTimeout(500);
       expect(capturedBody).not.toBeNull();
       expect(capturedBody.assetId).toBeTruthy();
@@ -1892,7 +1892,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
       });
       await openAssetDetail(page);
-      await page.getByRole('button', { name: /Start Work on This Asset/i }).click();
+      await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
       await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
       await expect(page.getByText(/Waiting/i)).toBeVisible();
       await expect(page.getByText(/Escalate/i)).toBeVisible();
@@ -1907,9 +1907,9 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
         }
       });
       await openAssetDetail(page);
-      await page.getByRole('button', { name: /Start Work on This Asset/i }).click();
+      await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
       await expect(page.getByText(/Asset not found in plant/i)).toBeVisible({ timeout: 4000 });
-      await expect(page.getByRole('button', { name: /Start Work on This Asset/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i })).toBeVisible();
     });
 
   });

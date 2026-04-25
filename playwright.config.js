@@ -24,7 +24,7 @@ export default defineConfig({
       ['list'],
   ],
   use: {
-    baseURL: 'https://localhost:5173',
+    baseURL: 'https://localhost:1938',
     ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
     video: 'retain-on-failure',
