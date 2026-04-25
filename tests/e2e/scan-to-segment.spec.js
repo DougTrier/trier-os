@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
 const STORAGE_STATE = 'tests/e2e/.auth/ghost_admin.json';
 const PARENT_ASSET = 'M-1250'; // Assuming an asset with a schematic
 const CHILD_ASSET = 'M-1250-V1'; // Child asset id linked in pin
-const PLANT_ID = 'Jefferson_City';
+const PLANT_ID = 'Demo_Plant_2';
 
 test.describe('Scan-to-Segment (Digital Twin)', () => {
     test.use({ storageState: STORAGE_STATE });
