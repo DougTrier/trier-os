@@ -75,6 +75,7 @@ eng.traineddata
 
 # Playwright runtime artifacts (auto-generated, not source code)
 playwright-report/
+playwright-reports/
 test-results/
 
 # Video recordings (marketing assets, not source code)
