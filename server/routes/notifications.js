@@ -238,6 +238,50 @@ router.get('/', (req, res) => {
             // Warranty scan is best-effort
         }
 
+        // ── PM Due notifications for this user ───────────────────────────────
+        try {
+            const username = req.user?.Username;
+            if (username && plantId !== 'all_sites') {
+                const plantDb = db(); // resolves to the plant DB via AsyncLocalStorage context
+                const hasPmNotif = plantDb.prepare(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='pm_notifications'"
+                ).get();
+
+                if (hasPmNotif) {
+                    const pmNotifs = plantDb.prepare(`
+                        SELECT pn.pm_id, pn.work_order_id, pn.notified_at,
+                               s.Description AS pm_description,
+                               s.AstID       AS asset_id,
+                               a.Description AS asset_description,
+                               pa.acknowledged_by,
+                               w.WorkOrderNumber
+                        FROM pm_notifications pn
+                        JOIN Schedule s ON s.ID = pn.pm_id
+                        LEFT JOIN Asset a  ON a.ID = s.AstID
+                        LEFT JOIN pm_acknowledgements pa ON pa.pm_id = pn.pm_id
+                        LEFT JOIN Work   w  ON w.ID = pn.work_order_id
+                        WHERE pn.notified_user = ?
+                        AND   pn.status = 'pending'
+                        ORDER BY pn.notified_at DESC LIMIT 10
+                    `).all(username);
+
+                    pmNotifs.forEach(n => {
+                        const claimed = n.acknowledged_by && n.acknowledged_by !== username;
+                        notifications.push({
+                            type: 'PM_DUE',
+                            title: `PM Due: ${n.pm_description}`,
+                            message: claimed
+                                ? `Acknowledged by ${n.acknowledged_by}. Tap to view WO.`
+                                : `${n.asset_description || n.asset_id || 'Asset'} — tap to acknowledge`,
+                            date: n.notified_at,
+                            severity: claimed ? 'INFO' : 'WARNING',
+                            link: n.asset_id ? `/scanner?asset=${encodeURIComponent(n.asset_id)}` : '/jobs',
+                        });
+                    });
+                }
+            }
+        } catch (_) { /* non-blocking */ }
+
         // Sort by date descending
         notifications.sort((a, b) => new Date(b.date) - new Date(a.date));
 

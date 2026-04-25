@@ -95,6 +95,32 @@ function processPlantPMs(dbPath, plantName) {
                     db.prepare('UPDATE Schedule SET LastSch = CURRENT_TIMESTAMP WHERE ID = ?').run(pm.ID);
                     injectedCount++;
 
+                    // ── Notify eligible users at this plant ──────────────────
+                    try {
+                        const authDb = require('./auth_db');
+                        const woRow = db.prepare('SELECT last_insert_rowid() AS id').get();
+                        const woId = woRow?.id;
+
+                        const eligibleUsers = authDb.prepare(`
+                            SELECT DISTINCT u.Username
+                            FROM Users u
+                            JOIN UserPlantRoles r ON u.UserID = r.UserID
+                            WHERE r.PlantID IN (?, 'all_sites')
+                            AND r.RoleLevel IN ('technician','maintenance_manager','plant_manager')
+                        `).all(plantName);
+
+                        const insertNotif = db.prepare(`
+                            INSERT INTO pm_notifications (pm_id, work_order_id, plant_id, notified_user)
+                            VALUES (?, ?, ?, ?)
+                        `);
+                        for (const u of eligibleUsers) {
+                            try { insertNotif.run(pm.ID, woId, plantName, u.Username); } catch (_) {}
+                        }
+
+                        db.prepare("UPDATE Schedule SET pm_status = 'PM_NOTIFIED', last_notified_at = datetime('now') WHERE ID = ?")
+                          .run(pm.ID);
+                    } catch (_) { /* non-blocking — table may not exist on older DBs */ }
+
                     // ── Webhook: Notify PM auto-generation ──
                     try {
                         dispatchEvent('PM_DUE_TODAY', {

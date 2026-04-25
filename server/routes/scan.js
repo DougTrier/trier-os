@@ -677,6 +677,54 @@ router.post('/', (req, res) => {
             return res.status(404).json({ error: 'Asset not found', assetId, catalogSuggestion, digitalTwin, peerTwin, semanticMatch: null, enrichmentId, liveState });
         }
 
+        // ── PM WO check: before creating a new WO, look for an open PM WO ─────
+        // If a PM-generated WO is waiting at StatusID=10 (Requested), route to
+        // the PM acknowledgement card instead of creating a duplicate WO.
+        try {
+            const pmWo = conn.prepare(`
+                SELECT w.ID, w.WorkOrderNumber, w.Description,
+                       pa.acknowledged_by, pa.acknowledged_at
+                FROM Work w
+                LEFT JOIN pm_acknowledgements pa ON pa.work_order_id = w.ID
+                WHERE w.AstID = ? AND w.StatusID = 10
+                AND (w.WorkOrderNumber LIKE 'PM-%'
+                     OR w.Description LIKE '[PM-AUTO]%'
+                     OR w.Description LIKE '[PM-METER]%')
+                ORDER BY w.AddDate DESC LIMIT 1
+            `).get(assetId);
+
+            if (pmWo) {
+                const pmIdMatch = (pmWo.WorkOrderNumber || '').match(/PM-\d+-(\d+)$/);
+                const pmId = pmIdMatch ? parseInt(pmIdMatch[1], 10) : null;
+
+                let notifiedCount = 0;
+                let pmStatus = 'PM_NOTIFIED';
+                if (pmId) {
+                    try {
+                        const nc = conn.prepare(
+                            "SELECT COUNT(*) AS n FROM pm_notifications WHERE pm_id = ? AND status IN ('pending','acknowledged')"
+                        ).get(pmId);
+                        notifiedCount = nc?.n || 0;
+                        const sched = conn.prepare('SELECT pm_status FROM Schedule WHERE ID = ?').get(pmId);
+                        pmStatus = sched?.pm_status || 'PM_NOTIFIED';
+                    } catch (_) {}
+                }
+
+                return res.json({
+                    branch: 'ROUTE_TO_PM_ACKNOWLEDGE',
+                    wo: { id: pmWo.ID, number: pmWo.WorkOrderNumber, description: pmWo.Description, assetId },
+                    pmInfo: {
+                        pmId,
+                        woId: pmWo.ID,
+                        pmStatus,
+                        notifiedCount,
+                        acknowledgedBy:  pmWo.acknowledged_by  || null,
+                        acknowledgedAt:  pmWo.acknowledged_at  || null,
+                    },
+                });
+            }
+        } catch (_) { /* pm tables may not exist on older plant DBs */ }
+
         // Auto-create WO inside a transaction so WO + segment + audit are atomic.
         // R-1: .immediate() acquires a write lock upfront so two cluster workers that
         // both passed the pre-check SELECT above are serialized here. The inner re-check

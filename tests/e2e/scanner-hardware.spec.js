@@ -146,21 +146,29 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await expect(page.getByText(/WO-2026-001/i).first()).toBeVisible();
     });
 
-    test('ROUTE_TO_ACTIVE_WO — solo context shows Close, Waiting, Escalate, Continue Later', async ({ page }) => {
+    test('ROUTE_TO_ACTIVE_WO — solo context shows Close, Add Parts, and Waiting in More Options', async ({ page }) => {
         await mockScanApi(page, {
             ...BASE_SCAN_RESPONSE,
             branch: 'ROUTE_TO_ACTIVE_WO',
             context: 'SOLO',
         });
         await mockActionApi(page);
+        await page.route('**/api/scan/suggested-parts**', route =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
         await goToScanner(page);
 
         const input = page.getByPlaceholder(/Enter asset number/i);
         await input.fill('PUMP-42');
         await page.keyboard.press('Enter');
 
-        // Wait for action prompt
+        // Primary buttons visible immediately
         await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+        await expect(page.getByRole('button', { name: /Add Parts/i }).first()).toBeVisible();
+
+        // Waiting/Escalate/Continue Later are behind More Options
+        await expect(page.getByRole('button', { name: /Waiting/i })).not.toBeVisible();
+        await page.getByText(/More options/i).first().click();
         await expect(page.getByText(/Waiting/i)).toBeVisible();
         await expect(page.getByText(/Escalate/i)).toBeVisible();
         await expect(page.getByText(/Continue Later/i)).toBeVisible();
@@ -185,7 +193,7 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await expect(page.getByText(/Escalate/i)).toBeVisible();
     });
 
-    test('ROUTE_TO_ACTIVE_WO — MULTI_TECH context shows Leave Work, Close for Team, Waiting, Escalate', async ({ page }) => {
+    test('ROUTE_TO_ACTIVE_WO — MULTI_TECH context shows Close for Team, Add Parts, and others in More Options', async ({ page }) => {
         await mockScanApi(page, {
             ...BASE_SCAN_RESPONSE,
             branch: 'ROUTE_TO_ACTIVE_WO',
@@ -193,15 +201,24 @@ test.describe('Scan State Machine — ScanCapture component', () => {
             activeUsers: [{ userId: 'tech_b', name: 'Tech B' }],
         });
         await mockActionApi(page);
+        await page.route('**/api/scan/suggested-parts**', route =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
         await goToScanner(page);
 
         const input = page.getByPlaceholder(/Enter asset number/i);
         await input.fill('PUMP-42');
         await page.keyboard.press('Enter');
 
-        await expect(page.getByText(/Leave Work/i)).toBeVisible({ timeout: 4000 });
-        await expect(page.getByText(/Close for Team/i)).toBeVisible();
+        // Primary buttons (position 1 and 2) visible immediately
+        await expect(page.getByText(/Close for Team/i)).toBeVisible({ timeout: 4000 });
+        await expect(page.getByRole('button', { name: /Add Parts/i }).first()).toBeVisible();
+
+        // Leave Work, Waiting, Escalate are in More Options
+        await expect(page.getByRole('button', { name: /Waiting/i })).not.toBeVisible();
+        await page.getByText(/More options/i).first().click();
         await expect(page.getByText(/Waiting/i)).toBeVisible();
+        await expect(page.getByText(/Leave Work/i)).toBeVisible();
         await expect(page.getByText(/Escalate/i)).toBeVisible();
     });
 
@@ -242,20 +259,25 @@ test.describe('Scan State Machine — ScanCapture component', () => {
         await expect(page.getByText(/Close Work Order/i)).not.toBeVisible();
     });
 
-    test('Hold reason picker appears when Waiting… is tapped', async ({ page }) => {
+    test('Hold reason picker appears when Waiting… is tapped (via More Options)', async ({ page }) => {
         await mockScanApi(page, {
             ...BASE_SCAN_RESPONSE,
             branch: 'ROUTE_TO_ACTIVE_WO',
             context: 'SOLO',
         });
         await mockActionApi(page);
+        await page.route('**/api/scan/suggested-parts**', route =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
         await goToScanner(page);
 
         const input = page.getByPlaceholder(/Enter asset number/i);
         await input.fill('PUMP-42');
         await page.keyboard.press('Enter');
 
-        // Tap Waiting… to enter hold reason picker
+        // Waiting… is behind More Options — expand first
+        await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+        await page.getByText(/More options/i).first().click();
         await page.getByText(/Waiting…/i).first().click();
 
         // Hold reason picker should show all tech-selectable codes
@@ -274,13 +296,18 @@ test.describe('Scan State Machine — ScanCapture component', () => {
             context: 'SOLO',
         });
         await mockActionApi(page);
+        await page.route('**/api/scan/suggested-parts**', route =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
         await goToScanner(page);
 
         const input = page.getByPlaceholder(/Enter asset number/i);
         await input.fill('PUMP-42');
         await page.keyboard.press('Enter');
 
-        // Open hold reason picker
+        // Open hold reason picker — Waiting… is behind More Options
+        await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+        await page.getByText(/More options/i).first().click();
         await page.getByText(/Waiting…/i).first().click();
         await expect(page.getByText(/Why are you pausing/i)).toBeVisible({ timeout: 3000 });
 
@@ -302,6 +329,9 @@ test.describe('Scan State Machine — ScanCapture component', () => {
             activeUsers: [{ userId: 'tech_b', name: 'Tech B' }],
         });
         await mockActionApi(page);
+        await page.route('**/api/scan/suggested-parts**', route =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
         await goToScanner(page);
 
         const input = page.getByPlaceholder(/Enter asset number/i);
@@ -319,6 +349,9 @@ test.describe('Scan State Machine — ScanCapture component', () => {
 
     test('Action completion resets view back to ScanCapture', async ({ page }) => {
         await mockScanApi(page, { ...BASE_SCAN_RESPONSE, branch: 'AUTO_CREATE_WO' });
+        await page.route('**/api/scan/suggested-parts**', route =>
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ issued: [], suggested: [] }) })
+        );
         await goToScanner(page);
 
         const input = page.getByPlaceholder(/Enter asset number/i);

@@ -1210,6 +1210,93 @@ export default function ScanActionPrompt({
         );
     }
 
+    // Branch: ROUTE_TO_PM_ACKNOWLEDGE — a PM-generated WO awaits at StatusID=10
+    // First eligible tech to acknowledge claims the work order.
+    if (branch === 'ROUTE_TO_PM_ACKNOWLEDGE') {
+        const pm = branchResponse?.pmInfo || {};
+        const alreadyClaimed = !!pm.acknowledgedBy;
+        const timeAgo = pm.acknowledgedAt
+            ? (() => {
+                const mins = Math.round((Date.now() - new Date(pm.acknowledgedAt).getTime()) / 60000);
+                return mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.round(mins/60)}h ago`;
+              })()
+            : null;
+
+        return (
+            <PromptShell
+                wo={wo}
+                subtitle={alreadyClaimed ? `Acknowledged by ${pm.acknowledgedBy}` : 'PM Due — Awaiting Acknowledgement'}
+                statePill={<StatePill label="PM DUE" variant={alreadyClaimed ? 'active' : 'hold'} />}
+                onCancel={onCancel}
+            >
+                {/* PM status card */}
+                <div style={{
+                    margin: '4px 0 16px', padding: '14px 16px', borderRadius: 10,
+                    background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)',
+                }}>
+                    <div style={{ fontSize: 11, color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                        PM Due
+                    </div>
+                    <div style={{ fontSize: 15, color: '#f1f5f9', fontWeight: 600, marginBottom: 10 }}>
+                        {wo?.description?.replace(/^\[PM-(AUTO|METER)\]\s*/i, '') || 'Preventive Maintenance'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 24, fontSize: 12 }}>
+                        <div>
+                            <div style={{ color: '#64748b', marginBottom: 2 }}>NOTIFIED</div>
+                            <div style={{ color: '#94a3b8', fontWeight: 600 }}>
+                                {pm.notifiedCount > 0 ? `${pm.notifiedCount} tech${pm.notifiedCount !== 1 ? 's' : ''}` : 'Maintenance / Engineering'}
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ color: '#64748b', marginBottom: 2 }}>STATUS</div>
+                            <div style={{ color: alreadyClaimed ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
+                                {alreadyClaimed
+                                    ? `${pm.acknowledgedBy} · ${timeAgo}`
+                                    : 'Not yet acknowledged'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {alreadyClaimed ? (
+                    <TapBtn number={1} variant="success"
+                        onClick={() => submitAction({ action: 'RESUME_WAITING_WO', woId: wo?.id })}
+                        disabled={submitting}>
+                        <CheckCircle size={18} /> Start PM Work Order
+                    </TapBtn>
+                ) : (
+                    <TapBtn number={1} variant="success"
+                        onClick={async () => {
+                            setSubmitting(true);
+                            setError('');
+                            try {
+                                const res = await fetch('/api/pm/acknowledge', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'x-plant-id': plantId },
+                                    body: JSON.stringify({ pmId: pm.pmId, woId: wo?.id, ackMethod: 'scan' }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error || 'Acknowledge failed');
+                                // Re-scan to pick up the new active WO state
+                                onCancel();
+                            } catch (e) {
+                                setError(e.message);
+                            }
+                            setSubmitting(false);
+                        }}
+                        disabled={submitting}>
+                        <CheckCircle size={18} /> Acknowledge & Start PM
+                    </TapBtn>
+                )}
+
+                <TapBtn number={2} variant="neutral" onClick={onCancel} disabled={submitting}>
+                    <Eye size={18} /> View Status Only
+                </TapBtn>
+                {error && <ErrorBanner msg={error} />}
+            </PromptShell>
+        );
+    }
+
     // Branch: ROUTE_TO_WAITING_WO — waiting WO exists, offer Resume or New
     if (branch === 'ROUTE_TO_WAITING_WO') {
         return (
