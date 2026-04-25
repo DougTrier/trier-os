@@ -684,40 +684,41 @@ router.post('/reset-plant', (req, res) => {
         console.log(`🛡️ Pre-Reset Snapshot created: ${snapshotName}`);
 
         // ── EXECUTE RESET ──
-        // Tables to PRESERVE (lookup/reference data — no user data)
-        const preserveTables = [
-            'schema_version',        // Migration history
-            'WorkType',              // PM, FSP, Corrective, Emergency, etc.
-            'WorkStatuses',          // Open, In Progress, Complete, etc.
-            'TaskTypes',             // Task type definitions
-            'PurchaseStatuses',      // PO status definitions
-            'AssetTypes',            // Asset category definitions
-            'PartClasses',           // Part classification definitions
-            'CostCenters',           // Cost center definitions
-            'Shifts',                // Shift definitions
-            'WorkObj', 'ProcObj', 'PartObj', 'ObjType', 'Object', // System object defs
-            'zAddOn', 'zAddrCst', 'zAllComp', 'zAppInfo',         // PMC system tables
+        // Preserve list: lookup/reference tables that are schema-seeded, not user data.
+        // Everything NOT in this set is wiped. This is intentionally inverted so new
+        // tables added by future migrations are automatically wiped without code changes.
+        const preserveSet = new Set([
+            'schema_version',
+            // Work lookup tables
+            'WorkType', 'WorkStatuses', 'TaskTypes', 'WorkCode',
+            // Parts & procurement lookup tables
+            'PurchaseStatuses', 'PartClasses', 'AdjustmentTypes',
+            // Asset lookup tables
+            'AssetTypes',
+            // People & org lookup tables
+            'CostCenters', 'Shifts', 'Craft', 'LaborGrd',
+            // Failure / reason codes (reference library — not operational records)
+            'Reason', 'FailureCodeLibrary',
+            // System object model tables (PMC schema infrastructure)
+            'WorkObj', 'ProcObj', 'PartObj', 'ObjType', 'Object',
+            // PMC z-prefixed system tables
+            'zAddOn', 'zAddrCst', 'zAllComp', 'zAppInfo',
             'zCompanyVer', 'zDatabaseObjectTypePermissions',
             'zDatabaseObjectTypes', 'zDatabaseObjects',
             'zDatabaseObjectsGroups', 'zEntity', 'zErrLog',
             'zForm', 'zGroups', 'zMessage', 'zPPP', 'zPartCst',
             'zPermissionTypes', 'zPrjStat', 'zReport', 'zReqNotify',
             'zReqStatus', 'zRptcls', 'zSchType', 'zUpHist',
-            'zUserCo', 'zUserGroups', 'zUserPOStat', 'zUserWOStat'
-        ];
+            'zUserCo', 'zUserGroups', 'zUserPOStat', 'zUserWOStat',
+            // SQLite internals (never touch these)
+            'sqlite_sequence', 'sqlite_stat1', 'sqlite_stat4',
+        ]);
 
-        // Tables to WIPE (all user/operational data)
-        const wipeTables = [
-            'Work', 'Asset', 'Part', 'Schedule', 'Vendors', 'Procedures',
-            'Task', 'TaskStep',
-            'WorkParts', 'WorkLabor', 'WorkNote', 'WorkMisc', 'WorkTask',
-            'WorkRels', 'WorkObj',
-            'PartAdjustments', 'PartVendors', 'PartLocations', 'PartOrderRules',
-            'ProcedureParts', 'ProcedureTasks',
-            'Locations', 'Departments', 'SiteLeadership',
-            'Users', 'SystemUsers',
-            'Calendar', 'Company', 'MsgCfgShare', 'MsgStd', 'Project'
-        ];
+        // Dynamically build wipe list from actual tables in the DB.
+        // Any table not in preserveSet is operational data and gets wiped.
+        const wipeTables = connection.prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        ).all().map(r => r.name).filter(t => !preserveSet.has(t));
 
         let tablesWiped = 0;
         let totalRowsDeleted = 0;
@@ -725,21 +726,12 @@ router.post('/reset-plant', (req, res) => {
         const resetTransaction = connection.transaction(() => {
             for (const table of wipeTables) {
                 try {
-                    // Check if table exists before trying to delete
-                    const exists = connection.prepare(
-                        "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
-                    ).get(table);
-                    
-                    if (exists) {
-                        const countBefore = connection.prepare(`SELECT COUNT(*) as c FROM "${table}"`).get().c;
- /* dynamic col/table - sanitize inputs */
-                        if (countBefore > 0) {
-                            connection.prepare(`DELETE FROM "${table}"`).run();
- /* dynamic col/table - sanitize inputs */
-                            totalRowsDeleted += countBefore;
-                            tablesWiped++;
-                            console.log(`  🗑️ Wiped ${table}: ${countBefore} rows deleted`);
-                        }
+                    const countBefore = connection.prepare(`SELECT COUNT(*) as c FROM "${table}"`).get().c;
+                    if (countBefore > 0) {
+                        connection.prepare(`DELETE FROM "${table}"`).run();
+                        totalRowsDeleted += countBefore;
+                        tablesWiped++;
+                        console.log(`  🗑️ Wiped ${table}: ${countBefore} rows deleted`);
                     }
                 } catch (tableErr) {
                     console.warn(`  ⚠️ Could not wipe ${table}: ${tableErr.message}`);

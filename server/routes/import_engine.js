@@ -1092,12 +1092,10 @@ router.post('/browse-sql-table', async (req, res) => {
  *   deferredTables: string[] (tables skipped for later)
  * }
  */
-router.post('/execute', (req, res) => {
+router.post('/execute', async (req, res) => {
     try {
-        const { filePath, connectorId, selectedTables, deferredTables = [] } = req.body;
+        const { filePath, sqlConnection, connectorId, selectedTables, deferredTables = [] } = req.body;
 
-        const pathError = validateImportFilePath(filePath);
-        if (pathError) return res.status(400).json({ error: pathError });
         if (!selectedTables || selectedTables.length === 0) {
             return res.status(400).json({ error: 'No tables selected for import' });
         }
@@ -1113,58 +1111,99 @@ router.post('/execute', (req, res) => {
             }
         }
 
-        // Open the Access database (Step 1: mdb-reader, Step 2: OLEDB fallback)
+        // ── Source reader: SQL Server, OLEDB, or mdb-reader ──
         let mdb = null;
         let useOledb = false;
+        let useSql = false;
         let oledbPassword = req.body.oledbPassword || null;
-        let oledbTableData = {};  // Pre-read OLEDB data cache
+        let oledbTableData = {};
+        let sqlTableCache = {};  // { sourceTableName: { columns: string[], rows: object[] } }
 
-        if (MDBReader) {
-            const buf = fs.readFileSync(filePath);
+        if (sqlConnection) {
+            // ── SQL Server path ──
+            if (!sql) return res.status(500).json({ error: 'SQL Server driver not available. Install mssql package.' });
+            const { server, database, user, password, port = 1433, encrypt = true } = sqlConnection;
+            if (!server || !database) return res.status(400).json({ error: 'sqlConnection requires server and database' });
+
+            useSql = true;
+            let pool;
             try {
-                mdb = new MDBReader(buf);
-            } catch (err) {
-                const knownPasswords = getKnownPasswords();
-                for (const pwd of knownPasswords) {
-                    try { mdb = new MDBReader(buf, { password: pwd }); break; } catch (e) { /* next */ }
+                pool = await sql.connect({
+                    user: user || undefined, password: password || undefined,
+                    server, database,
+                    port: parseInt(port) || 1433,
+                    options: { encrypt: encrypt !== false, trustServerCertificate: true, connectTimeout: 15000, requestTimeout: 30000 }
+                });
+
+                for (const prairieTable of selectedTables) {
+                    const sourceTable = (profile?.tables[prairieTable]?.sourceTable) || prairieTable;
+                    // Validate table name before interpolating into query
+                    if (!/^[\w\s]+$/.test(sourceTable)) {
+                        sqlTableCache[sourceTable] = { columns: [], rows: [], error: 'Invalid table name' };
+                        continue;
+                    }
+                    try {
+                        const colResult = await pool.request()
+                            .input('tn', sql.NVarChar(128), sourceTable)
+                            .query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tn AND TABLE_SCHEMA = 'dbo' ORDER BY ORDINAL_POSITION`);
+                        const columns = colResult.recordset.map(c => c.COLUMN_NAME);
+                        const dataResult = await pool.request().query(`SELECT * FROM [${sourceTable}]`);
+                        sqlTableCache[sourceTable] = { columns, rows: dataResult.recordset };
+                        console.log(`  📦 SQL Server: read ${dataResult.recordset.length} rows from ${sourceTable}`);
+                    } catch (tblErr) {
+                        sqlTableCache[sourceTable] = { columns: [], rows: [], error: tblErr.message };
+                        console.warn(`  ⚠️ SQL Server: could not read ${sourceTable}: ${tblErr.message}`);
+                    }
+                }
+                await pool.close();
+            } catch (connErr) {
+                if (pool) try { await pool.close(); } catch (e) { /* ignore */ }
+                return res.status(500).json({ error: 'SQL Server connection failed: ' + connErr.message });
+            }
+        } else {
+            // ── Access file path (mdb-reader or OLEDB) ──
+            const pathError = validateImportFilePath(filePath);
+            if (pathError) return res.status(400).json({ error: pathError });
+
+            if (MDBReader) {
+                const buf = fs.readFileSync(filePath);
+                try {
+                    mdb = new MDBReader(buf);
+                } catch (err) {
+                    const knownPasswords = getKnownPasswords();
+                    for (const pwd of knownPasswords) {
+                        try { mdb = new MDBReader(buf, { password: pwd }); break; } catch (e) { /* next */ }
+                    }
                 }
             }
-        }
 
-        if (!mdb && oledbReader) {
-            useOledb = true;
-            console.log(`⚡ Using OLEDB reader for import: ${path.basename(filePath)}`);
-            
-            // Determine which source tables we need to read
-            const sourceTableNames = selectedTables.map(pt => {
-                if (profile && profile.tables[pt]) return profile.tables[pt].sourceTable;
-                return pt;
-            });
-
-            // Read all needed source tables in one batch call
-            if (!oledbPassword) {
-                const knownPasswords = getKnownPasswords();
-                // Quick probe to find the right password
-                const probe = oledbReader.listTables(filePath, knownPasswords);
-                if (probe.success) oledbPassword = probe.usedPassword || '';
-                else return res.status(403).json({ error: 'Could not open source database via OLEDB' });
-            }
-
-            try {
-                const batchResult = oledbReader.readMultipleTables(filePath, sourceTableNames, oledbPassword);
-                if (batchResult.success) {
-                    oledbTableData = batchResult.tables || {};
-                    console.log(`  📦 Pre-read ${Object.keys(oledbTableData).length} source tables via OLEDB`);
-                } else {
-                    return res.status(500).json({ error: 'Failed to read source tables: ' + (batchResult.error || 'Unknown') });
+            if (!mdb && oledbReader) {
+                useOledb = true;
+                console.log(`⚡ Using OLEDB reader for import: ${path.basename(filePath)}`);
+                const sourceTableNames = selectedTables.map(pt =>
+                    (profile?.tables[pt]?.sourceTable) || pt
+                );
+                if (!oledbPassword) {
+                    const probe = oledbReader.listTables(filePath, getKnownPasswords());
+                    if (probe.success) oledbPassword = probe.usedPassword || '';
+                    else return res.status(403).json({ error: 'Could not open source database via OLEDB' });
                 }
-            } catch (e) {
-                return res.status(500).json({ error: 'OLEDB batch read failed: ' + e.message });
+                try {
+                    const batchResult = oledbReader.readMultipleTables(filePath, sourceTableNames, oledbPassword);
+                    if (batchResult.success) {
+                        oledbTableData = batchResult.tables || {};
+                        console.log(`  📦 Pre-read ${Object.keys(oledbTableData).length} source tables via OLEDB`);
+                    } else {
+                        return res.status(500).json({ error: 'Failed to read source tables: ' + (batchResult.error || 'Unknown') });
+                    }
+                } catch (e) {
+                    return res.status(500).json({ error: 'OLEDB batch read failed: ' + e.message });
+                }
             }
-        }
 
-        if (!mdb && !useOledb) {
-            return res.status(500).json({ error: 'No database reader available for this file format' });
+            if (!mdb && !useOledb) {
+                return res.status(500).json({ error: 'No database reader available for this file format' });
+            }
         }
 
         const plantId = db.asyncLocalStorage.getStore() || 'Demo_Plant_1';
@@ -1187,8 +1226,8 @@ router.post('/execute', (req, res) => {
 
         // ── Create import session ──
         const importId = createImportSession(
-            connectorId || 'access',
-            filePath,
+            connectorId || (useSql ? 'sql' : 'access'),
+            useSql ? `${sqlConnection.server}/${sqlConnection.database}` : filePath,
             plantId,
             req.user?.Username || 'SYSTEM',
             selectedTables,
@@ -1219,7 +1258,19 @@ router.post('/execute', (req, res) => {
                 // Check if source table exists and read data
                 let sourceColumns, sourceRows;
 
-                if (useOledb) {
+                if (useSql) {
+                    // SQL Server path — use pre-cached data
+                    const cached = sqlTableCache[sourceTable];
+                    if (!cached || cached.error || cached.rows.length === 0) {
+                        const msg = cached?.error || 'Source table not found or empty';
+                        tableResult.errors.push(`Source table "${sourceTable}": ${msg}`);
+                        logImportFailure(importId, sourceTable, null, msg);
+                        tableResults[prairieTable] = tableResult;
+                        continue;
+                    }
+                    sourceColumns = cached.columns;
+                    sourceRows = cached.rows;
+                } else if (useOledb) {
                     // OLEDB path — use pre-cached data
                     const oledbData = oledbTableData[sourceTable];
                     if (!oledbData || !oledbData.success) {

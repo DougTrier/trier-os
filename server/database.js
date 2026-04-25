@@ -517,22 +517,37 @@ function getDb(requestedPlantId = null) {
             }
         }
 
-        // Clear operational data for new plant DBs so they start as a "blank slate"
+        // Clear operational data for new plant DBs so they start as a "blank slate".
+        // Inverted approach: preserve only schema-seeded lookup tables; wipe everything
+        // else dynamically so future migrations are automatically covered.
         if (isNew) {
             try {
-                const tablesToClear = [
-                    'Work', 'WorkLabor', 'WorkParts', 'WorkMisc', 'WorkNote', 'WorkCost', 'WorkUsr',
-                    'Asset', 'AssetNote',
-                    'Part', 'PartAdj', 'PartBin', 'PartVend', 'PartLoc',
-                    'Procedures', 'ProcedureTasks', 'ProcedureParts', 'ProcUsr', 'ProcTool', 'ProcObj',
-                    'Schedule', 'Task', 'TaskStep',
-                    'AuditLog', 'zErrLog', 'Users'
-                ];
+                const blankSlatePreserve = new Set([
+                    'schema_version',
+                    'WorkType', 'WorkStatuses', 'TaskTypes', 'WorkCode',
+                    'PurchaseStatuses', 'PartClasses', 'AdjustmentTypes',
+                    'AssetTypes',
+                    'CostCenters', 'Shifts', 'Craft', 'LaborGrd',
+                    'Reason', 'FailureCodeLibrary',
+                    'WorkObj', 'ProcObj', 'PartObj', 'ObjType', 'Object',
+                    'zAddOn', 'zAddrCst', 'zAllComp', 'zAppInfo',
+                    'zCompanyVer', 'zDatabaseObjectTypePermissions',
+                    'zDatabaseObjectTypes', 'zDatabaseObjects',
+                    'zDatabaseObjectsGroups', 'zEntity', 'zErrLog',
+                    'zForm', 'zGroups', 'zMessage', 'zPPP', 'zPartCst',
+                    'zPermissionTypes', 'zPrjStat', 'zReport', 'zReqNotify',
+                    'zReqStatus', 'zRptcls', 'zSchType', 'zUpHist',
+                    'zUserCo', 'zUserGroups', 'zUserPOStat', 'zUserWOStat',
+                    'sqlite_sequence', 'sqlite_stat1', 'sqlite_stat4',
+                ]);
+                const tablesToClear = db.prepare(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                ).all().map(r => r.name).filter(t => !blankSlatePreserve.has(t));
+
                 const clearTx = db.transaction(() => {
                     for (const table of tablesToClear) {
                         try {
                             db.prepare(`DELETE FROM "${table}"`).run();
- /* dynamic col/table - sanitize inputs */
                         } catch (e) { /* ignore if table missing */ }
                     }
                 });

@@ -1,0 +1,138 @@
+{
+    "id": "express",
+    "name": "Express Maintenance (Dematic / Intellitrack)",
+    "description": "Express Maintenance CMMS databases. Typically unencrypted .mdb format.",
+    "sourceType": "access",
+    "version": "1.0",
+    "passwordProtected": false,
+    "notes": "Express Maintenance uses straightforward table/column names. Column names vary slightly across versions — fallback fields cover common variants.",
+    "tables": {
+        "Asset": {
+            "sourceTable": "EQUIPMENT",
+            "notes": "Equipment master records.",
+            "columns": {
+                "ID":              { "source": "EQUIP_ID",       "fallback": "EQUIPMENT_ID",  "type": "text",    "confidence": "confirmed" },
+                "Description":     { "source": "DESCRIPTION",    "fallback": "EQUIP_DESC",    "type": "text",    "confidence": "confirmed" },
+                "AssetType":       { "source": "EQUIP_TYPE",     "fallback": "TYPE_ID",       "type": "text",    "confidence": "confirmed" },
+                "LocationID":      { "source": "LOCATION_ID",    "fallback": "LOCATION",      "type": "text",    "confidence": "confirmed" },
+                "DeptID":          { "source": "DEPT_ID",        "fallback": "DEPARTMENT",    "type": "text",    "confidence": "confirmed" },
+                "Manufacturer":    { "source": "MANUFACTURER",                                "type": "text",    "confidence": "confirmed" },
+                "Model":           { "source": "MODEL_NO",       "fallback": "MODEL",         "type": "text",    "confidence": "confirmed" },
+                "Serial":          { "source": "SERIAL_NO",      "fallback": "SERIAL_NUM",    "type": "text",    "confidence": "confirmed" },
+                "AssetTag":        { "source": "ASSET_TAG",      "fallback": "ASSET_NUM",     "type": "text",    "confidence": "confirmed" },
+                "InstallDate":     { "source": "INSTALL_DATE",   "fallback": "STARTUP_DATE",  "type": "date",    "confidence": "confirmed" },
+                "PurchaseDate":    { "source": "PURCHASE_DATE",  "fallback": "PURCH_DATE",    "type": "date",    "confidence": "confirmed" },
+                "InstallCost":     { "source": "PURCHASE_PRICE", "fallback": "ORIGINAL_COST", "type": "real",    "confidence": "confirmed" },
+                "ReplacementCost": { "source": "REPLACE_COST",   "fallback": "REPLACE_VALUE", "type": "real",    "confidence": "confirmed" },
+                "Priority":        { "source": "PRIORITY",                                    "type": "integer", "confidence": "confirmed" },
+                "Active":          { "source": "ACTIVE",         "fallback": "IN_SERVICE",    "type": "integer", "confidence": "confirmed" },
+                "Comment":         { "source": "COMMENTS",       "fallback": "NOTES",         "type": "text",    "confidence": "confirmed" }
+            }
+        },
+        "Work": {
+            "sourceTable": "WORKORDERS",
+            "notes": "Work order records.",
+            "columns": {
+                "ID":           { "source": "WO_NO",        "fallback": "WO_NUM",         "type": "text",    "confidence": "confirmed" },
+                "Descript":     { "source": "DESCRIPTION",  "fallback": "WO_DESC",        "type": "text",    "confidence": "confirmed" },
+                "AstID":        { "source": "EQUIP_ID",     "fallback": "EQUIPMENT_ID",   "type": "text",    "confidence": "confirmed" },
+                "StatusID":     { "source": "STATUS",       "fallback": "WO_STATUS",      "type": "text",    "confidence": "confirmed" },
+                "TypeID":       { "source": "TYPE",         "fallback": "WO_TYPE",        "type": "text",    "confidence": "confirmed" },
+                "Priority":     { "source": "PRIORITY",                                   "type": "integer", "confidence": "confirmed" },
+                "AssignToID":   { "source": "ASSIGNED_TO",  "fallback": "TECHNICIAN_ID",  "type": "text",    "confidence": "confirmed" },
+                "RequestBy":    { "source": "REQUEST_BY",   "fallback": "REQUESTED_BY",   "type": "text",    "confidence": "confirmed" },
+                "AddDate":      { "source": "REQUEST_DATE", "fallback": "CREATE_DATE",    "type": "date",    "confidence": "confirmed" },
+                "SchDate":      { "source": "SCHED_DATE",   "fallback": "SCHEDULED_DATE", "type": "date",    "confidence": "confirmed" },
+                "CompDate":     { "source": "COMP_DATE",    "fallback": "COMPLETE_DATE",  "type": "date",    "confidence": "confirmed" },
+                "LocationID":   { "source": "LOCATION_ID",  "fallback": "LOCATION",       "type": "text",    "confidence": "confirmed" },
+                "Comment":      { "source": "COMMENTS",     "fallback": "NOTES",          "type": "text",    "confidence": "confirmed" }
+            }
+        },
+        "Part": {
+            "sourceTable": "INVENTORY",
+            "notes": "Inventory / spare parts.",
+            "columns": {
+                "ID":           { "source": "ITEM_NO",      "fallback": "ITEM_NUM",       "type": "text",    "confidence": "confirmed" },
+                "Descript":     { "source": "DESCRIPTION",  "fallback": "ITEM_DESC",      "type": "text",    "confidence": "confirmed" },
+                "ClassID":      { "source": "CLASS_ID",     "fallback": "ITEM_CLASS",     "type": "text",    "confidence": "confirmed" },
+                "UOM":          { "source": "UNIT",         "fallback": "UOM",            "type": "text",    "confidence": "confirmed" },
+                "UnitCost":     { "source": "UNIT_COST",                                  "type": "real",    "confidence": "confirmed" },
+                "Stock":        { "source": "QTY_ON_HAND",  "fallback": "ON_HAND",        "type": "integer", "confidence": "confirmed" },
+                "Reorder":      { "source": "REORDER_PT",   "fallback": "REORDER_POINT",  "type": "integer", "confidence": "confirmed" },
+                "VendorID":     { "source": "VENDOR_ID",    "fallback": "SUPPLIER_ID",    "type": "text",    "confidence": "confirmed" },
+                "Manufacturer": { "source": "MANUFACTURER",                               "type": "text",    "confidence": "confirmed" },
+                "Model":        { "source": "MODEL_NO",     "fallback": "MODEL",          "type": "text",    "confidence": "confirmed" },
+                "Comment":      { "source": "COMMENTS",     "fallback": "NOTES",          "type": "text",    "confidence": "confirmed" }
+            }
+        },
+        "Vendors": {
+            "sourceTable": "SUPPLIERS",
+            "notes": "Supplier / vendor records.",
+            "columns": {
+                "ID":          { "source": "VENDOR_ID",    "fallback": "SUPPLIER_ID",   "type": "text",    "confidence": "confirmed" },
+                "Description": { "source": "COMPANY_NAME", "fallback": "VENDOR_NAME",   "type": "text",    "confidence": "confirmed" },
+                "Address":     { "source": "ADDRESS",      "fallback": "ADDR1",         "type": "text",    "confidence": "confirmed" },
+                "City":        { "source": "CITY",                                       "type": "text",    "confidence": "confirmed" },
+                "State":       { "source": "STATE",                                      "type": "text",    "confidence": "confirmed" },
+                "Zip":         { "source": "ZIP",          "fallback": "ZIP_CODE",      "type": "text",    "confidence": "confirmed" },
+                "Phone":       { "source": "PHONE",        "fallback": "PHONE_NO",      "type": "text",    "confidence": "confirmed" },
+                "Scontact":    { "source": "CONTACT",      "fallback": "CONTACT_NAME",  "type": "text",    "confidence": "confirmed" },
+                "Email":       { "source": "EMAIL",        "fallback": "EMAIL_ADDR",    "type": "text",    "confidence": "confirmed" },
+                "Comment":     { "source": "COMMENTS",     "fallback": "NOTES",         "type": "text",    "confidence": "confirmed" },
+                "Vendor":      { "source": null,           "default": true,             "type": "boolean", "confidence": "confirmed" }
+            }
+        },
+        "Procedures": {
+            "sourceTable": "PREVENTIVE",
+            "notes": "Preventive maintenance task masters.",
+            "columns": {
+                "ID":       { "source": "PM_ID",       "fallback": "TASK_ID",    "type": "text",    "confidence": "confirmed" },
+                "Descript": { "source": "DESCRIPTION", "fallback": "PM_DESC",   "type": "text",    "confidence": "confirmed" },
+                "AstID":    { "source": "EQUIP_ID",    "fallback": "EQUIPMENT_ID", "type": "text", "confidence": "confirmed" },
+                "Priority": { "source": "PRIORITY",                              "type": "integer", "confidence": "confirmed" },
+                "Comment":  { "source": "COMMENTS",    "fallback": "NOTES",     "type": "text",    "confidence": "confirmed" }
+            }
+        },
+        "WorkParts": {
+            "sourceTable": "WORKORDERPARTS",
+            "notes": "Parts used on work orders.",
+            "columns": {
+                "WorkID":   { "source": "WO_NO",      "fallback": "WO_NUM",    "type": "text", "confidence": "confirmed" },
+                "PartID":   { "source": "ITEM_NO",    "fallback": "ITEM_NUM",  "type": "text", "confidence": "confirmed" },
+                "Quantity": { "source": "QTY_USED",   "fallback": "QUANTITY",  "type": "real", "confidence": "confirmed" },
+                "UnitCost": { "source": "UNIT_COST",                           "type": "real", "confidence": "confirmed" },
+                "Comment":  { "source": "COMMENTS",   "fallback": "NOTES",    "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "WorkLabor": {
+            "sourceTable": "WORKORDERLABOR",
+            "notes": "Labor entries on work orders.",
+            "columns": {
+                "WorkID":  { "source": "WO_NO",        "fallback": "WO_NUM",      "type": "text", "confidence": "confirmed" },
+                "AddrID":  { "source": "EMPLOYEE_ID",  "fallback": "TECH_ID",     "type": "text", "confidence": "confirmed" },
+                "DateRef": { "source": "WORK_DATE",    "fallback": "LABOR_DATE",  "type": "date", "confidence": "confirmed" },
+                "RegHrs":  { "source": "REG_HOURS",    "fallback": "REGULAR_HRS", "type": "real", "confidence": "confirmed" },
+                "OTHrs":   { "source": "OT_HOURS",     "fallback": "OVERTIME_HRS","type": "real", "confidence": "confirmed" },
+                "Comment": { "source": "COMMENTS",     "fallback": "NOTES",       "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Locations": {
+            "sourceTable": "LOCATIONS",
+            "columns": {
+                "ID":          { "source": "LOCATION_ID",   "fallback": "LOCATION",   "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION",   "fallback": "LOCATION_NAME", "type": "text", "confidence": "confirmed" },
+                "Building":    { "source": "BUILDING",      "fallback": "BLDG",       "type": "text", "confidence": "confirmed" },
+                "Comment":     { "source": "COMMENTS",      "fallback": "NOTES",      "type": "text", "confidence": "confirmed" }
+            }
+        },
+        "Departments": {
+            "sourceTable": "DEPARTMENTS",
+            "columns": {
+                "ID":          { "source": "DEPT_ID",       "fallback": "DEPARTMENT_ID",   "type": "text", "confidence": "confirmed" },
+                "Description": { "source": "DESCRIPTION",   "fallback": "DEPT_NAME",       "type": "text", "confidence": "confirmed" },
+                "Comment":     { "source": "COMMENTS",      "fallback": "NOTES",           "type": "text", "confidence": "confirmed" }
+            }
+        }
+    },
+    "fingerprint": ["EQUIPMENT", "WORKORDERS", "INVENTORY", "SUPPLIERS", "EMPLOYEES", "PREVENTIVE"]
+}

@@ -290,11 +290,13 @@ export default function DataBridge({ currentPlant, userRole, onComplete }) {
         setError(null);
 
         try {
+            const isSqlSource = activeSource === 'sql' && sqlConnected;
             const res = await fetch('/api/import/execute', {
                 method: 'POST',
                 headers: AUTH_HEADER(),
                 body: JSON.stringify({
-                    filePath: selectedFile,
+                    filePath: isSqlSource ? null : selectedFile,
+                    sqlConnection: isSqlSource ? sqlConfig : null,
                     connectorId: connectorProfile?.id || null,
                     selectedTables: tablesToImport,
                     deferredTables: tablesToDefer,
