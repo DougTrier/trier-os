@@ -79,7 +79,9 @@ test.describe('Phase 1 — Async Scan Path', () => {
     });
 
     test('SSE endpoint rejects malformed enrichmentId with 400', async ({ request }) => {
-        const res = await request.get('/api/scan/enrichment/../../etc/passwd', {
+        // Use URL-encoded traversal so it reaches the route handler as the :id param
+        // (raw ../../ gets path-normalized by Express before routing → 404 not 400)
+        const res = await request.get('/api/scan/enrichment/..%2F..%2Fetc%2Fpasswd', {
             headers: { 'x-plant-id': PLANT_ID },
         });
         expect(res.status()).toBe(400);

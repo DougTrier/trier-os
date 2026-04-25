@@ -595,13 +595,6 @@ router.post('/', (req, res) => {
                     activeWo: null,
                 });
             }
-            writeAuditEntry(conn, {
-                scanId, assetId, userId,
-                previousState: null, nextState: null,
-                decisionBranch: 'AUTO_REJECT_DUPLICATE_SCAN', // reuse closest code — unknown asset
-                deviceTimestamp, offlineCaptured,
-            });
-
             // Check master catalog — give the UI enough info to offer an import
             let catalogSuggestion = null;
             let digitalTwin = null;

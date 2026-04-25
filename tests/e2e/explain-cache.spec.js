@@ -50,8 +50,8 @@ test.describe('Phase 3 — Explain Cache', () => {
 
     // ── 2. Cache hit — structural identity + cacheStatus marker ──────────
     test('cache hit: second call returns "hit" and identical generatedAt', async ({ request }) => {
-        // First call — warms the cache (miss)
-        const r1 = await request.get(`/api/assets/${KNOWN_ASSET}/explain`, {
+        // First call — warms the cache (miss). ?debug=true exposes cacheStatus in the response.
+        const r1 = await request.get(`/api/assets/${KNOWN_ASSET}/explain?debug=true`, {
             headers: { 'x-plant-id': PLANT_ID },
         });
         const b1 = await r1.json();
@@ -59,7 +59,7 @@ test.describe('Phase 3 — Explain Cache', () => {
         expect(['miss', 'hit']).toContain(b1.cacheStatus);
 
         // Second call within TTL — must be a cache hit
-        const r2 = await request.get(`/api/assets/${KNOWN_ASSET}/explain`, {
+        const r2 = await request.get(`/api/assets/${KNOWN_ASSET}/explain?debug=true`, {
             headers: { 'x-plant-id': PLANT_ID },
         });
         const b2 = await r2.json();
