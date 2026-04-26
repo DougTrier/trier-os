@@ -131,11 +131,22 @@ Accepts PLY (ASCII) and OBJ mesh files from 3D laser scanners. Stores source pat
 ## ERP Connectors
 
 ### SAP ERP / S/4HANA, Oracle EBS / Fusion, Microsoft Dynamics 365, Infor CloudSuite
-**Status:** Framework — `server/routes/erp_connectors.js`
+**Status:** Active — `server/routes/erp_connectors.js` + `server/services/erp-outbox.js`
 
-Connector registry with field mapping storage and health check (HTTP HEAD reachability). Outbound write-back queued via `server/integrations-outbox.js` with retry. No active client libraries for RFC/BAPI calls — these connectors are designed to be extended with your organization's middleware or integration platform (MuleSoft, Azure Integration Services, etc.).
+Full transactional outbox integration. Trier OS fires structured events when work orders close, parts are consumed, or labor is posted. These are queued in `ERPOutbox` (idempotency-keyed, deduped at DB layer) and drained every 60 seconds via HTTP POST to the configured ERP endpoint.
 
-The framework handles: connector config storage, field mapping, health status, outbound queue, and retry. You provide: the API client for your specific ERP instance.
+**What ships:**
+- Connector registry with per-ERP field mapping (SAP PM, Oracle EAM, Dynamics 365 Field Service, Infor EAM)
+- Outbox drain worker with exponential back-off (5 attempts, 2^n minute delays)
+- Idempotency key derived per event type and forwarded as `X-Idempotency-Key` to ERP
+- Auth: API key, Bearer token, Basic auth
+- Admin routes: outbox status, manual retry, cleanup — `server/routes/integrations-outbox.js`
+- Health check (HTTP reachability test) per connector
+
+**What you configure:**
+The ERP endpoint URL and credentials. The endpoint can be SAP S/4HANA OData REST APIs, Oracle Fusion REST, Dynamics 365 Dataverse API, an integration middleware layer (MuleSoft, Azure Integration Services, BizTalk), or a custom receiver.
+
+**Design note:** This uses the outbox pattern rather than direct RFC/BAPI calls. That is intentional — RFC/BAPI is a legacy protocol most SAP shops are moving away from. The outbox pattern decouples Trier OS from ERP API specifics and survives ERP downtime without data loss.
 
 ---
 
@@ -190,7 +201,6 @@ To be explicit about what requires external tooling:
 | Capability | Status | Path Forward |
 |---|---|---|
 | MQTT broker client | Not included | Use Node-RED or Mosquitto bridge → `POST /api/sensors/ingest` |
-| SAP RFC/BAPI direct calls | Framework only | Add `node-rfc` or use middleware layer |
-| Oracle/Dynamics API clients | Framework only | Add vendor SDK to `erp_connectors.js` |
-| SSO / SAML / OIDC | Not included | LDAP covers AD; OAuth2 pattern available for extension |
-| Native iOS/Android app | Not included | PWA runs on all mobile browsers; Zebra devices use mobile web |
+| SAP RFC/BAPI direct calls | Not included (by design) | The outbox pattern targets SAP S/4HANA OData REST, which supersedes RFC/BAPI for new integrations |
+| SSO / SAML / OIDC | Not included | LDAP covers Active Directory; OAuth2 client credentials available for M2M; SAML is a roadmap item |
+| Native iOS/Android app | Not included | PWA runs on all mobile browsers including iOS Safari; Zebra devices use mobile web |
