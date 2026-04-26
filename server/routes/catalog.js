@@ -1236,6 +1236,8 @@ router.post('/artifacts/fetch-url', authMiddleware, async (req, res) => {
 
 // GET /api/catalog/artifacts/for/:entityId
 // Returns all artifacts (local-first) for a given equipment type ID.
+// I-13: each artifact carries a normalized source field so consumers never
+// need to interpret raw is_local / Source DB values to determine availability.
 router.get('/artifacts/for/:entityId', authMiddleware, (req, res) => {
     const entityId = req.params.entityId;
     let db;
@@ -1249,7 +1251,11 @@ router.get('/artifacts/for/:entityId', authMiddleware, (req, res) => {
             WHERE EntityID = ? AND IsActive != 0
             ORDER BY is_local DESC, Confidence DESC
         `).all(entityId);
-        res.json(rows);
+        res.json(rows.map(r => ({
+            ...r,
+            source:           r.is_local ? 'local' : 'external',
+            requiresInternet: !r.is_local,
+        })));
     } catch (e) {
         res.status(500).json({ error: e.message });
     } finally {
