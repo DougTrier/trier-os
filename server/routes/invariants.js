@@ -46,8 +46,9 @@ const SYSTEM_DBS = new Set([
 //                 if the table doesn't exist the invariant cannot be violated yet.
 const INVARIANTS = [
     {
-        id:   'I-01',
-        name: 'Return quantity never exceeds issued quantity',
+        id:       'I-01',
+        name:     'Return quantity never exceeds issued quantity',
+        severity: 'critical',
         assertionDb:    'plant',
         assertionTable: 'WorkParts',
         assertionQuery: `
@@ -57,15 +58,19 @@ const INVARIANTS = [
         `,
     },
     {
-        id:   'I-03',
-        name: 'Offline events replay in device-timestamp order',
-        assertionDb:    null, // behavioral guarantee — no DB constraint
+        id:       'I-03',
+        name:     'Offline events replay in device-timestamp order',
+        severity: 'high',
+        assertionDb:    null,
         assertionTable: null,
         assertionQuery: null,
+        assertionType:   'nonQueryable',
+        assertionReason: 'Enforced by sort in offline-sync service layer; no per-row DB constraint',
     },
     {
-        id:   'I-04',
-        name: 'Each scan ID is processed exactly once',
+        id:       'I-04',
+        name:     'Each scan ID is processed exactly once',
+        severity: 'critical',
         assertionDb:    'plant',
         assertionTable: 'ScanAuditLog',
         assertionQuery: `
@@ -74,15 +79,19 @@ const INVARIANTS = [
         `,
     },
     {
-        id:   'I-09',
-        name: 'Offline receiving events resolved exactly once',
-        assertionDb:    null, // PRIMARY KEY on OfflineReceivingEvents.eventId is the structural guarantee
+        id:       'I-09',
+        name:     'Offline receiving events resolved exactly once',
+        severity: 'high',
+        assertionDb:    null,
         assertionTable: null,
         assertionQuery: null,
+        assertionType:   'structural',
+        assertionReason: 'PRIMARY KEY on OfflineReceivingEvents.eventId prevents duplicate inserts at DB layer',
     },
     {
-        id:   'I-10',
-        name: 'PM acknowledged by exactly one technician',
+        id:       'I-10',
+        name:     'PM acknowledged by exactly one technician',
+        severity: 'critical',
         assertionDb:    'plant',
         assertionTable: 'pm_acknowledgements',
         assertionQuery: `
@@ -91,18 +100,24 @@ const INVARIANTS = [
         `,
     },
     {
-        id:   'I-11',
-        name: 'Work orders cannot be silently closed with unresolved issued parts',
-        assertionDb:    null, // server-side enforcement deferred until I-11-B
+        id:       'I-11',
+        name:     'Work orders cannot be silently closed with unresolved issued parts',
+        severity: 'high',
+        assertionDb:    null,
         assertionTable: null,
         assertionQuery: null,
+        assertionType:   'nonQueryable',
+        assertionReason: 'Server-side enforcement deferred (I-11-B); currently enforced in UI layer only',
     },
     {
-        id:   'I-13',
-        name: 'Artifact availability source is explicitly labeled',
-        assertionDb:    null, // API shape guarantee — no DB-layer constraint
+        id:       'I-13',
+        name:     'Artifact availability source is explicitly labeled',
+        severity: 'medium',
+        assertionDb:    null,
         assertionTable: null,
         assertionQuery: null,
+        assertionType:   'nonQueryable',
+        assertionReason: 'API shape guarantee — enforced at serialization boundary in catalog.js, no per-row DB constraint',
     },
 ];
 
@@ -156,16 +171,17 @@ function runPlantAssertion(inv, plantId) {
 function runEvidence(invariantId) {
     try {
         const row = ldb.prepare(`
-            SELECT COUNT(*) AS prevented, MAX(ts) AS last_occurrence
+            SELECT COUNT(*) AS prevented, MAX(ts) AS last_occurrence, MIN(ts) AS first_occurrence
             FROM invariant_log
             WHERE invariant_id = ?
         `).get(invariantId);
         return {
-            preventedCount:  row?.prevented        ?? 0,
-            lastOccurrence:  row?.last_occurrence  ?? null,
+            preventedCount:   row?.prevented         ?? 0,
+            firstOccurrence:  row?.first_occurrence  ?? null,
+            lastOccurrence:   row?.last_occurrence   ?? null,
         };
     } catch {
-        return { preventedCount: 0, lastOccurrence: null };
+        return { preventedCount: 0, firstOccurrence: null, lastOccurrence: null };
     }
 }
 
@@ -174,11 +190,19 @@ function buildInvariantResult(inv, plantIds) {
     const evidence = runEvidence(inv.id);
 
     if (!inv.assertionQuery) {
+        // Non-queryable invariants are not "unchecked" — they are enforced by a different
+        // mechanism. The type and reason make this explicit so a reader cannot mistake
+        // assertion: null for "we haven't implemented the check yet."
         return {
             id:        inv.id,
             name:      inv.name,
+            severity:  inv.severity,
             status:    'PASS',
-            assertion: null,
+            assertion: {
+                type:    inv.assertionType  ?? 'nonQueryable',
+                checked: false,
+                reason:  inv.assertionReason ?? null,
+            },
             evidence,
         };
     }
@@ -196,11 +220,14 @@ function buildInvariantResult(inv, plantIds) {
     // 'logistics' assertions would query ldb directly — none defined yet.
 
     return {
-        id:     inv.id,
-        name:   inv.name,
-        status: totalViolations > 0 ? 'FAIL' : 'PASS',
+        id:       inv.id,
+        name:     inv.name,
+        severity: inv.severity,
+        status:   totalViolations > 0 ? 'FAIL' : 'PASS',
         assertion: {
-            violations:   totalViolations,
+            type:          'queryable',
+            checked:       true,
+            violations:    totalViolations,
             plantsChecked: checkedCount,
         },
         evidence,
