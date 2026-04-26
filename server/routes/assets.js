@@ -1190,7 +1190,7 @@ router.get('/:id/explain', (req, res) => {
     const assetId = req.params.id;
     const plantId = (req.headers['x-plant-id'] || 'Demo_Plant_1').trim();
 
-    const debug = process.env.NODE_ENV !== 'production';
+    const debug = process.env.NODE_ENV !== 'production' || req.query.debug === 'true';
 
     // Cache hit — no DB queries
     const cached = explainCache.get(plantId, assetId);
