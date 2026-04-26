@@ -1284,6 +1284,18 @@ router.post('/offline-sync', (req, res) => {
         // offline-sync requests (no live POST / scans) has no dedup index, and
         // concurrent offline-sync calls for the same scanId can create duplicate WOs.
         ensureScanColumns(conn);
+
+        // I-03: Replay in capture order regardless of network arrival order.
+        // A WO close arriving before its part-issue events would push the state
+        // machine to a terminal state with incomplete history. Sort ascending by
+        // deviceTimestamp so the WO lifecycle is always monotonic.
+        // Events missing deviceTimestamp sort last and are rejected per-event below.
+        events.sort((a, b) => {
+            const ta = a.deviceTimestamp ? new Date(a.deviceTimestamp).getTime() : Infinity;
+            const tb = b.deviceTimestamp ? new Date(b.deviceTimestamp).getTime() : Infinity;
+            return ta - tb;
+        });
+
         const results = [];
 
         for (const event of events) {
