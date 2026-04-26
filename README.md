@@ -19,8 +19,10 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [Features](#-the-advanced-engines) •
   [Installation](#-installation--quick-start) •
   [Architecture](#-zero-obfuscation-architecture) •
-  [Security](#-security--funding) •
+  [Security](./docs/SECURITY_CONTROLS.md) •
   [Integrations](./docs/INTEGRATIONS.md) •
+  [ERP Guide](./docs/ERP_INTEGRATION_GUIDE.md) •
+  [Why Trier OS](./docs/WHY_TRIER_OS.md) •
   [Pilot Guide](./docs/PILOT_GUIDE.md) •
   [5-Min Demo](./docs/DEMO_SCRIPT.md) •
   [Threat Model](./docs/THREAT_MODEL.md) •

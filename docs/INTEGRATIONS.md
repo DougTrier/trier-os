@@ -128,25 +128,30 @@ Accepts PLY (ASCII) and OBJ mesh files from 3D laser scanners. Stores source pat
 
 ---
 
-## ERP Connectors
+## Outbound Event Stream (ERP-Compatible)
 
-### SAP ERP / S/4HANA, Oracle EBS / Fusion, Microsoft Dynamics 365, Infor CloudSuite
-**Status:** Active — `server/routes/erp_connectors.js` + `server/services/erp-outbox.js`
+Trier OS does not integrate *into* ERP systems. It produces verified operational data that ERP systems consume.
 
-Full transactional outbox integration. Trier OS fires structured events when work orders close, parts are consumed, or labor is posted. These are queued in `ERPOutbox` (idempotency-keyed, deduped at DB layer) and drained every 60 seconds via HTTP POST to the configured ERP endpoint.
+> **ERP records what happened. Trier OS ensures what happened is correct before ERP ever sees it.**
 
-**What ships:**
-- Connector registry with per-ERP field mapping (SAP PM, Oracle EAM, Dynamics 365 Field Service, Infor EAM)
-- Outbox drain worker with exponential back-off (5 attempts, 2^n minute delays)
-- Idempotency key derived per event type and forwarded as `X-Idempotency-Key` to ERP
-- Auth: API key, Bearer token, Basic auth
-- Admin routes: outbox status, manual retry, cleanup — `server/routes/integrations-outbox.js`
-- Health check (HTTP reachability test) per connector
+When a work order closes, parts are consumed, or labor is posted, Trier OS emits a validated, structured event. That event is queued, deduplicated, and delivered reliably to any configured downstream system — including ERP.
 
-**What you configure:**
-The ERP endpoint URL and credentials. The endpoint can be SAP S/4HANA OData REST APIs, Oracle Fusion REST, Dynamics 365 Dataverse API, an integration middleware layer (MuleSoft, Azure Integration Services, BizTalk), or a custom receiver.
+### Event Delivery — Transactional Outbox
+**Status:** Active — `server/services/erp-outbox.js` + `server/routes/integrations-outbox.js`
 
-**Design note:** This uses the outbox pattern rather than direct RFC/BAPI calls. That is intentional — RFC/BAPI is a legacy protocol most SAP shops are moving away from. The outbox pattern decouples Trier OS from ERP API specifics and survives ERP downtime without data loss.
+- Events queued in `ERPOutbox` with idempotency keys at DB layer (INSERT OR IGNORE)
+- `X-Idempotency-Key` forwarded to receiving endpoint for downstream dedup
+- Drain worker every 60 seconds; exponential back-off on failure (5 attempts, 2^n minute delays)
+- Auth: API key, Bearer token, Basic auth per connector
+- Admin routes: outbox status, manual retry of failed events, cleanup
+- Survives ERP downtime — events queue locally and drain when the endpoint recovers
+
+### Connector Registry
+**Status:** Active — `server/routes/erp_connectors.js`
+
+Per-connector config (host, auth, sync direction), field mapping per event type, health check (HTTP reachability). Supported target types: SAP S/4HANA (OData REST), Oracle EBS/Fusion (REST), Microsoft Dynamics 365 (Dataverse), Infor CloudSuite EAM (ION REST), and custom HTTP endpoints.
+
+**What you configure:** The endpoint URL and credentials. The endpoint can be a direct ERP REST API, middleware (MuleSoft, Azure Integration Services, BizTalk), or a custom receiver. Trier OS does not call SAP RFC/BAPI — that is intentional. SAP S/4HANA OData REST supersedes RFC/BAPI for new integrations and is the recommended path.
 
 ---
 
