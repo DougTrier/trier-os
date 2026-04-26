@@ -27,7 +27,7 @@
 
 const express      = require('express');
 const router       = express.Router();
-const { db: ldb }  = require('../logistics_db');
+const { db: ldb, logInvariant } = require('../logistics_db');
 const database     = require('../database');
 
 const SAFE_PLANT_ID   = /^[a-zA-Z0-9_-]{1,64}$/;
@@ -300,7 +300,16 @@ router.post('/receiving-events/:eventId/resolve', (req, res) => {
                 resolvedBy, resolvedAt, quantity: event.quantity, _apply: true };
     }).immediate()();
 
-    if (txResult.idempotent) return res.json(txResult);
+    if (txResult.idempotent) {
+        logInvariant('I-09', 'I-09:RECEIVING_DOUBLE_RESOLVE_PREVENTED', {
+            plantId:    event.plantId,
+            entityType: 'receivingEvent',
+            entityId:   String(eventId),
+            actor:      resolvedBy,
+            metadata:   { resolvedPartId },
+        });
+        return res.json(txResult);
+    }
 
     // Apply stock update outside the logistics transaction (separate DB connection).
     // The event is already marked accepted; a failure here is non-fatal — a

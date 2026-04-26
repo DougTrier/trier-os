@@ -22,7 +22,7 @@
 
 const express = require('express');
 const { getDb } = require('../database');
-const { logAudit } = require('../logistics_db');
+const { logAudit, logInvariant } = require('../logistics_db');
 
 // Roles that are eligible to perform and acknowledge PMs
 const PM_ELIGIBLE_ROLES = ['technician', 'maintenance_manager', 'plant_manager'];
@@ -112,6 +112,13 @@ module.exports = function pmAcknowledgeRoutes(authMiddleware) {
                 const claimed = db.prepare(
                     'SELECT acknowledged_by, acknowledged_at, work_order_id FROM pm_acknowledgements WHERE pm_id = ?'
                 ).get(pmId);
+                logInvariant('I-10', 'I-10:PM_DOUBLE_ACK_PREVENTED', {
+                    plantId,
+                    entityType: 'pm',
+                    entityId:   String(pmId),
+                    actor:      username,
+                    metadata:   { woId, claimedBy: claimed?.acknowledged_by },
+                });
                 return res.json({
                     ok: true,
                     alreadyClaimed: true,

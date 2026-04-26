@@ -52,6 +52,7 @@ const enrichmentQueue  = require('../services/enrichmentQueue');
 const outcomeTracker   = require('../services/outcomeTracker');
 const explainCache     = require('../services/explainCache');
 const authDb           = require('../auth_db');
+const { logInvariant } = require('../logistics_db');
 
 // ── Idempotent migration: add scan-workflow columns to Work table ────────────
 // SQLite doesn't support IF NOT EXISTS for ALTER TABLE — use try/catch per col.
@@ -821,6 +822,13 @@ router.post('/', (req, res) => {
         // guard fired correctly. No business state was mutated (writeAuditEntry was
         // the failing statement). Return a clean idempotency response, not a 500.
         if (err.message?.includes('UNIQUE constraint failed: ScanAuditLog.scanId')) {
+            logInvariant('I-04', 'I-04:DUPLICATE_SCAN_PREVENTED', {
+                plantId:    req.headers['x-plant-id'],
+                entityType: 'scan',
+                entityId:   req.body?.scanId,
+                actor:      req.user?.Username || req.user?.UserID,
+                metadata:   { assetId: req.body?.assetId },
+            });
             return res.json({ ok: true, idempotent: true, branch: 'DUPLICATE_SCAN', message: 'Scan already processed' });
         }
         console.error('[scan] POST /api/scan error:', err);
@@ -1297,11 +1305,25 @@ router.post('/offline-sync', (req, res) => {
         // machine to a terminal state with incomplete history. Sort ascending by
         // deviceTimestamp so the WO lifecycle is always monotonic.
         // Events missing deviceTimestamp sort last and are rejected per-event below.
+        const needsReorder = events.some((e, i) =>
+            i > 0 &&
+            events[i - 1].deviceTimestamp &&
+            e.deviceTimestamp &&
+            new Date(events[i - 1].deviceTimestamp).getTime() > new Date(e.deviceTimestamp).getTime()
+        );
         events.sort((a, b) => {
             const ta = a.deviceTimestamp ? new Date(a.deviceTimestamp).getTime() : Infinity;
             const tb = b.deviceTimestamp ? new Date(b.deviceTimestamp).getTime() : Infinity;
             return ta - tb;
         });
+        if (needsReorder) {
+            logInvariant('I-03', 'I-03:OFFLINE_REPLAY_REORDERED', {
+                plantId:    req.headers['x-plant-id'],
+                entityType: 'scan',
+                actor:      req.user?.Username || req.user?.UserID,
+                metadata:   { eventCount: events.length, scanIds: events.map(e => e.scanId) },
+            });
+        }
 
         const results = [];
 
@@ -1614,6 +1636,13 @@ router.post('/return-part', (req, res) => {
 
             const returnable = fresh.EstQty - fresh.qty_used - fresh.qty_returned;
             if (qty > returnable + 0.001) {
+                logInvariant('I-01', 'I-01:OVER_RETURN_PREVENTED', {
+                    plantId:    req.headers['x-plant-id'],
+                    entityType: 'workOrder',
+                    entityId:   String(woId),
+                    actor:      userId,
+                    metadata:   { partId, attempted: qty, returnable },
+                });
                 txResult = { err: `Cannot return ${qty} — only ${returnable} returnable`, status: 400 };
                 return; // no writes; transaction commits as a no-op
             }

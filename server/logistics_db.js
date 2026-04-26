@@ -238,6 +238,24 @@ db.exec(`
         computed_at       TEXT    NOT NULL,
         PRIMARY KEY (equipment_type_id, failure_mode)
     );
+
+    -- Phase 2 (Observe): Append-only record of every invariant enforcement event.
+    -- Each row is evidence that the system protected correctness under pressure.
+    -- DB constraint = proof the invariant cannot be violated.
+    -- This table = proof the invariant was challenged and held.
+    CREATE TABLE IF NOT EXISTS invariant_log (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        invariant_id  TEXT    NOT NULL,
+        event         TEXT    NOT NULL,
+        plant_id      TEXT,
+        entity_type   TEXT,
+        entity_id     TEXT,
+        actor         TEXT,
+        metadata_json TEXT,
+        ts            TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_invlog_invariant ON invariant_log(invariant_id);
+    CREATE INDEX IF NOT EXISTS idx_invlog_ts        ON invariant_log(ts);
 `);
 
 // Audit 47 / H-7: request-scoped "already audited" flag. The auditTrail
@@ -339,6 +357,40 @@ function logAudit(userId, action, plantId = null, details = null, severity = 'IN
         _emitAuditFailure(severity, entry, err);
     }
 }
+/**
+ * Append an invariant enforcement event to the cross-plant invariant_log.
+ * Silent on failure — invariant enforcement already happened; logging is evidence,
+ * not the guard itself.
+ *
+ * @param {string} invariantId  - e.g. 'I-10'
+ * @param {string} event        - e.g. 'I-10:PM_DOUBLE_ACK_PREVENTED'
+ * @param {object} [ctx]
+ * @param {string} [ctx.plantId]
+ * @param {string} [ctx.entityType]  - e.g. 'pm', 'scan', 'workOrder', 'receivingEvent'
+ * @param {string} [ctx.entityId]
+ * @param {string} [ctx.actor]       - Username of the rejected requestor
+ * @param {object} [ctx.metadata]    - Any additional structured data
+ */
+function logInvariant(invariantId, event, ctx = {}) {
+    try {
+        db.prepare(`
+            INSERT INTO invariant_log (invariant_id, event, plant_id, entity_type, entity_id, actor, metadata_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            invariantId,
+            event,
+            ctx.plantId   ?? null,
+            ctx.entityType ?? null,
+            ctx.entityId  != null ? String(ctx.entityId) : null,
+            ctx.actor     ?? null,
+            ctx.metadata  ? JSON.stringify(ctx.metadata) : null
+        );
+    } catch (err) {
+        // Non-fatal: the invariant itself was already enforced.
+        console.error('[invariant_log] write failed:', err.message);
+    }
+}
+
 function syncGlobalAsset(data, plantId) {
     try {
         const stmt = db.prepare(`
@@ -495,6 +547,7 @@ function getImportFailures(importId) {
 module.exports = {
     db,
     logAudit,
+    logInvariant,
     auditContext, // exported for auditTrail middleware
     getAuditHealth, // exported for /api/health subsystem view
     isBackupAllowed,
