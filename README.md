@@ -20,6 +20,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [Installation](#-installation--quick-start) •
   [Architecture](#-zero-obfuscation-architecture) •
   [Security](#-security--funding) •
+  [Integrations](./docs/INTEGRATIONS.md) •
   [Pilot Guide](./docs/PILOT_GUIDE.md) •
   [5-Min Demo](./docs/DEMO_SCRIPT.md) •
   [Threat Model](./docs/THREAT_MODEL.md) •
