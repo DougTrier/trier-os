@@ -229,6 +229,25 @@ Real-device screenshots from an iPhone running Trier OS v3.6.1 over a plant LAN:
 
 ---
 
+## 🤔 Is Trier OS for You?
+
+**Strong fit:**
+
+- **Poor or unreliable Wi-Fi on the plant floor** — technicians keep working; scans queue locally and sync when connectivity returns
+- **Technicians on the floor, not at desks** — zero-keystroke scan-to-action; no menus, no navigation, no typing required
+- **Multi-plant operations** — each plant gets its own isolated database; corporate analytics layer aggregates across all of them
+- **Air-gapped or OT-network environments** — runs entirely disconnected from the internet; no cloud dependency, EDR-safe
+- **Existing ERP you want better data flowing into** — Trier OS emits verified, idempotent operational events to any ERP endpoint
+- **Teams that want the source code** — fully open source, MIT license, self-hostable in under 10 minutes
+
+**Not the right fit (yet):**
+
+- You need SOC2 Type II or ISO certification on the CMMS itself — controls are equivalent but no formal audit has been performed
+- You need real-time bidirectional ERP financial sync — Trier OS is outbound-only by design
+- You need a large partner ecosystem for implementation support — this is open source, not a managed service
+
+---
+
 ## ✨ The Advanced Engines
 
 - 🛠️ **The Live Studio Sandbox:** An embedded Monaco-based IDE allowing authorized "Creators" to write, sandbox, and hot-reload source code directly inside the production app. No external servers required.
@@ -345,6 +364,14 @@ This is not a casual project. Code runs against live plant-floor systems.
 - Every file must carry the Trier OS Architecture Header
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for full standards.
+
+**New to this codebase? Start here — in this order:**
+
+1. [`docs/SYSTEM_TOPOLOGY.md`](./docs/SYSTEM_TOPOLOGY.md) — full system map and three concrete request traces
+2. [`CLAUDE.md`](./CLAUDE.md) — development standards; overrides all other defaults
+3. [`server/routes/scan.js`](./server/routes/scan.js) — the core scan state machine; most critical file in the system
+4. [`docs/ARCHITECTURE_INVARIANTS.md`](./docs/ARCHITECTURE_INVARIANTS.md) — what correctness means here and how it's enforced
+5. [`docs/CONTRIBUTOR_MAP.md`](./docs/CONTRIBUTOR_MAP.md) — governance lifecycle: how changes move from idea to production
 
 ---
 
