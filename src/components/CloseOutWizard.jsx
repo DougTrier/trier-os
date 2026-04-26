@@ -52,6 +52,12 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
 
+    // I-11: Unresolved-parts guard — checked on first close attempt
+    const [unresolvedParts, setUnresolvedParts]     = useState([]);
+    const [unresolvedChecked, setUnresolvedChecked] = useState(false);
+    const [overrideReason, setOverrideReason]       = useState('');
+    const [showOverrideInput, setShowOverrideInput] = useState(false);
+
     // Form State
     const [labor, setLabor] = useState([]);
     const [parts, setParts] = useState([]);
@@ -92,6 +98,10 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
             setStep(1);
             setSuccess(false);
             setError('');
+            setUnresolvedParts([]);
+            setUnresolvedChecked(false);
+            setOverrideReason('');
+            setShowOverrideInput(false);
             
             // Check for existing drafts first
             const draft = DraftManager.get(draftKey, plantId);
@@ -271,17 +281,63 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
         setParts(parts.filter((_, i) => i !== idx));
     };
 
+    // I-11: "Mark All Used" — fold returnable qty into the wizard's parts list so
+    // the close records them as consumed rather than silently leaving stock wrong.
+    const handleMarkAllUsed = () => {
+        const next = [...parts];
+        for (const up of unresolvedParts) {
+            if (!next.some(p => p.PartID === up.partId)) {
+                next.push({ PartID: up.partId, Description: up.description,
+                    ActQty: up.qtyReturnable, UnitCost: 0, Stock: null });
+            }
+        }
+        setParts(next);
+        setUnresolvedParts([]);
+        setUnresolvedChecked(false); // re-check on next submit to confirm clean
+    };
+
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
+
+        // I-11: First attempt — fetch unresolved parts and surface a warning if any exist.
+        // The check is skipped once resolved (unresolvedChecked stays true after a clean run).
+        if (!unresolvedChecked) {
+            try {
+                const checkRes = await fetch(`/api/work-orders/${woId}/unresolved-parts`, {
+                    headers: { 'x-plant-id': plantId },
+                });
+                const checkData = await checkRes.json();
+                setUnresolvedChecked(true);
+                if (checkData.hasUnresolvedParts) {
+                    setUnresolvedParts(checkData.parts || []);
+                    setLoading(false);
+                    return; // Surface the warning panel — user must act before close
+                }
+            } catch (err) {
+                console.warn('[CloseOutWizard] unresolved-parts check failed:', err);
+                setUnresolvedChecked(true); // non-fatal: allow close if endpoint is unreachable
+            }
+        }
+
+        // If unresolved parts remain and no override reason has been supplied, block.
+        if (unresolvedParts.length > 0 && !overrideReason.trim()) {
+            setShowOverrideInput(true);
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch(`/api/v2/work-orders/${woId}/close`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1'
+                    'x-plant-id': plantId,
                 },
-                body: JSON.stringify({ labor, parts, misc })
+                body: JSON.stringify({
+                    labor, parts, misc,
+                    ...(overrideReason.trim() ? { partsOverrideReason: overrideReason.trim() } : {}),
+                }),
             });
             const data = await res.json();
             if (data.success) {
@@ -560,7 +616,78 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                             {step === 3 && (
                                 <div>
                                     <h3 style={{ margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}><DollarSign size={18} /> {t('close.out.finalReview')}</h3>
-                                    
+
+                                    {/* I-11: Unresolved-parts warning — blocks silent close */}
+                                    {unresolvedParts.length > 0 && (
+                                        <div style={{ marginBottom: 20, border: '1px solid #f59e0b', borderRadius: 10, overflow: 'hidden' }}>
+                                            <div style={{ background: 'rgba(245,158,11,0.15)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <AlertCircle size={18} color="#f59e0b" />
+                                                <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 14 }}>
+                                                    {unresolvedParts.length} issued part{unresolvedParts.length > 1 ? 's have' : ' has'} returnable quantity — resolve before closing
+                                                </span>
+                                            </div>
+                                            <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.2)' }}>
+                                                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                                                    <thead>
+                                                        <tr style={{ color: 'var(--text-muted)', textAlign: 'left' }}>
+                                                            <th style={{ paddingBottom: 6 }}>Part</th>
+                                                            <th style={{ paddingBottom: 6, textAlign: 'right' }}>Issued</th>
+                                                            <th style={{ paddingBottom: 6, textAlign: 'right' }}>Used</th>
+                                                            <th style={{ paddingBottom: 6, textAlign: 'right' }}>Returned</th>
+                                                            <th style={{ paddingBottom: 6, textAlign: 'right' }}>Returnable</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {unresolvedParts.map(p => (
+                                                            <tr key={p.partId} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                                                <td style={{ padding: '5px 0' }}>{p.description || p.partNumber}</td>
+                                                                <td style={{ textAlign: 'right', padding: '5px 0' }}>{p.qtyIssued}</td>
+                                                                <td style={{ textAlign: 'right', padding: '5px 0' }}>{p.qtyUsed}</td>
+                                                                <td style={{ textAlign: 'right', padding: '5px 0' }}>{p.qtyReturned}</td>
+                                                                <td style={{ textAlign: 'right', padding: '5px 0', color: '#f59e0b', fontWeight: 600 }}>{p.qtyReturnable}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.15)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                                <button
+                                                    onClick={onClose}
+                                                    style={{ padding: '8px 14px', borderRadius: 7, background: 'rgba(59,130,246,0.15)', border: '1px solid #3b82f6', color: '#93c5fd', fontSize: 13, cursor: 'pointer' }}
+                                                    title="Close wizard and return unused parts before closing the work order"
+                                                >
+                                                    Return Parts First
+                                                </button>
+                                                <button
+                                                    onClick={handleMarkAllUsed}
+                                                    style={{ padding: '8px 14px', borderRadius: 7, background: 'rgba(16,185,129,0.15)', border: '1px solid #10b981', color: '#6ee7b7', fontSize: 13, cursor: 'pointer' }}
+                                                    title="Record returnable qty as consumed in this work order"
+                                                >
+                                                    Mark All Used
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowOverrideInput(v => !v)}
+                                                    style={{ padding: '8px 14px', borderRadius: 7, background: 'rgba(239,68,68,0.12)', border: '1px solid #ef4444', color: '#fca5a5', fontSize: 13, cursor: 'pointer' }}
+                                                    title="Close with supervisor override — a reason is required and will be audited"
+                                                >
+                                                    Supervisor Override
+                                                </button>
+                                            </div>
+                                            {showOverrideInput && (
+                                                <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.05)', borderTop: '1px solid rgba(239,68,68,0.2)' }}>
+                                                    <label style={{ fontSize: 12, color: '#fca5a5', display: 'block', marginBottom: 6, fontWeight: 600 }}>Override reason (required)</label>
+                                                    <textarea
+                                                        value={overrideReason}
+                                                        onChange={e => setOverrideReason(e.target.value)}
+                                                        placeholder="Explain why the WO is being closed with unresolved parts…"
+                                                        rows={3}
+                                                        style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(239,68,68,0.4)', color: '#f1f5f9', fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="glass-card" style={{ padding: '20px', marginBottom: '20px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px solid var(--glass-border)' }}>
                                             <span style={{ fontWeight: 600 }}>{t('close.out.summary')}</span>
@@ -637,13 +764,15 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                                 {t('close.out.next')} <ChevronRight size={16} />
                             </button>
                         ) : (
-                            <button 
-                                className="btn-save" 
+                            <button
+                                className="btn-save"
                                 onClick={handleSubmit}
-                                disabled={loading}
+                                disabled={loading || (unresolvedParts.length > 0 && showOverrideInput && !overrideReason.trim())}
                                 title={t('closeOutWizard.submitAllLaborAndPartsTip')}
                             >
-                                {loading ? <Loader2 className="spinning" size={18} /> : 'Confirm & Close Out'}
+                                {loading ? <Loader2 className="spinning" size={18} /> :
+                                 (unresolvedParts.length > 0 && overrideReason.trim()) ? 'Close with Override' :
+                                 'Confirm & Close Out'}
                             </button>
                         )}
                     </div>

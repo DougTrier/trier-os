@@ -15,8 +15,9 @@
  *   GET    /              List WOs with pagination, filtering, and search
  *   GET    /stats         Dashboard statistics (status counts, recent WOs)
  *   GET    /workforce-analytics  Expected vs Actual hours, tech benchmarks
- *   GET    /next-id       Auto-increment next WO ID
- *   GET    /:id           Single WO with parts, labor, tasks, and misc costs
+ *   GET    /next-id                  Auto-increment next WO ID
+ *   GET    /:id                      Single WO with parts, labor, tasks, and misc costs
+ *   GET    /:id/unresolved-parts     Parts with qty_returnable > 0 — I-11 close guard
  *   POST   /              Create a new WO (triggers webhook for Critical/Emergency)
  *   PUT    /:id           Update WO (maps GPS lat/lng to Start or Complete columns)
  *   DELETE /:id           Delete WO (blocked for completed WOs -- they are metrics)
@@ -495,6 +496,51 @@ router.get('/next-id', (req, res) => {
     } catch (err) {
         console.error('GET /api/work-orders/next-id error:', err);
         res.status(500).json({ error: 'Failed to fetch next ID' });
+    }
+});
+
+// ── GET /api/work-orders/:id/unresolved-parts ────────────────────────────
+// Returns WorkParts rows where qty_returnable > 0. Used by CloseOutWizard to
+// block a silent WO close when issued parts have not been returned or recorded
+// as consumed. An empty parts array means the WO is clean to close.
+//
+// I-11: The close path must always call this before committing the final close.
+// A WO close that arrives while qty_returnable > 0 is a silent inventory loss.
+router.get('/:id/unresolved-parts', (req, res) => {
+    try {
+        const { id } = req.params;
+        const conn = db.getDb();
+
+        let wo = conn.prepare('SELECT rowid as ID_INTERNAL, ID, WorkOrderNumber FROM Work WHERE ID = ? LIMIT 1').get(id);
+        if (!wo) wo = conn.prepare('SELECT rowid as ID_INTERNAL, ID, WorkOrderNumber FROM Work WHERE rowid = ? LIMIT 1').get(id);
+        if (!wo) return res.status(404).json({ error: 'Work order not found' });
+
+        const parts = conn.prepare(`
+            SELECT
+                wp.rowid                                                                AS workPartId,
+                wp.PartID                                                               AS partId,
+                wp.PartID                                                               AS partNumber,
+                COALESCE(p.Description, p.Descript, wp.PartID)                         AS description,
+                wp.EstQty                                                               AS qtyIssued,
+                COALESCE(wp.ActQty, 0)                                                  AS qtyUsed,
+                COALESCE(wp.qty_returned, 0)                                            AS qtyReturned,
+                wp.EstQty - COALESCE(wp.ActQty, 0) - COALESCE(wp.qty_returned, 0)      AS qtyReturnable
+            FROM WorkParts wp
+            LEFT JOIN Part p ON p.ID = wp.PartID
+            WHERE wp.WoID = ?
+              AND wp.EstQty - COALESCE(wp.ActQty, 0) - COALESCE(wp.qty_returned, 0) > 0
+            ORDER BY wp.rowid
+        `).all(wo.ID_INTERNAL);
+
+        return res.json({
+            workOrderId:         wo.ID_INTERNAL,
+            workOrderNumber:     wo.WorkOrderNumber || wo.ID,
+            hasUnresolvedParts:  parts.length > 0,
+            parts,
+        });
+    } catch (err) {
+        console.error('[work-orders] GET /:id/unresolved-parts error:', err);
+        res.status(500).json({ error: 'Failed to check unresolved parts' });
     }
 });
 

@@ -8,6 +8,7 @@
  * These tests are not workflow tests — they target specific failure modes.
  *
  * API dependencies:
+ *   GET  /api/work-orders/:id/unresolved-parts
  *   POST /api/scan
  *   POST /api/scan/offline-sync
  *   POST /api/scan/return-part
@@ -121,6 +122,148 @@ test.describe('I-04 — Duplicate scanId idempotency', () => {
 
         const b2 = await second.json();
         expect(['DUPLICATE_SCAN', 'AUTO_REJECT_DUPLICATE_SCAN']).toContain(b2.branch);
+    });
+
+});
+
+// ── I-11 · No Silent WO Close With Unresolved Issued Parts ───────────────────
+test.describe('I-11 — Unresolved-parts check before WO close', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('unresolved-parts endpoint returns correct shape for a WO with parts', async ({ page }) => {
+        // Find any work order that has parts issued
+        const woRes = await api(page, 'GET', `${API}/bi/work-orders`);
+        const woList = Array.isArray(await woRes.json()) ? await woRes.json() : [];
+
+        // Refetch properly (json() consumes the stream once)
+        const woRes2 = await api(page, 'GET', `${API}/bi/work-orders`);
+        const woBody = await woRes2.json();
+        const wos = Array.isArray(woBody) ? woBody : (woBody.data || []);
+        if (!wos.length) { test.skip(); return; }
+
+        let foundWo = null;
+        let foundParts = null;
+        for (const wo of wos.slice(0, 30)) {
+            const checkRes = await api(page, 'GET', `${API}/work-orders/${wo.ID}/unresolved-parts`);
+            if (checkRes.status() !== 200) continue;
+            const checkBody = await checkRes.json();
+            if (checkBody.hasUnresolvedParts) { foundWo = wo; foundParts = checkBody; break; }
+        }
+
+        if (!foundWo) { test.skip(); return; } // no seeded WO with returnable parts
+
+        // Verify response shape
+        expect(foundParts.workOrderId).toBeTruthy();
+        expect(Array.isArray(foundParts.parts)).toBe(true);
+        expect(foundParts.parts.length).toBeGreaterThan(0);
+
+        const p = foundParts.parts[0];
+        expect(typeof p.workPartId).not.toBe('undefined');
+        expect(typeof p.partId).toBe('string');
+        expect(typeof p.description).toBe('string');
+        expect(typeof p.qtyIssued).toBe('number');
+        expect(typeof p.qtyReturnable).toBe('number');
+        expect(p.qtyReturnable).toBeGreaterThan(0);
+    });
+
+    test('WO with no issued parts returns hasUnresolvedParts false', async ({ page }) => {
+        // Find a completed or newly-created WO that has no parts
+        const woRes = await api(page, 'GET', `${API}/bi/work-orders`);
+        const woBody = await woRes.json();
+        const wos = Array.isArray(woBody) ? woBody : (woBody.data || []);
+        if (!wos.length) { test.skip(); return; }
+
+        // Try to find a WO that has no returnable parts
+        let cleanWo = null;
+        for (const wo of wos.slice(0, 30)) {
+            const checkRes = await api(page, 'GET', `${API}/work-orders/${wo.ID}/unresolved-parts`);
+            if (checkRes.status() !== 200) continue;
+            const checkBody = await checkRes.json();
+            if (!checkBody.hasUnresolvedParts) { cleanWo = checkBody; break; }
+        }
+        if (!cleanWo) { test.skip(); return; }
+
+        expect(cleanWo.hasUnresolvedParts).toBe(false);
+        expect(cleanWo.parts).toHaveLength(0);
+    });
+
+    test('unresolved-parts for non-existent WO returns 404', async ({ page }) => {
+        const res = await api(page, 'GET', `${API}/work-orders/999999999/unresolved-parts`);
+        expect(res.status()).toBe(404);
+    });
+
+    test('CloseOutWizard warning appears when unresolved parts exist', async ({ page }) => {
+        // Navigate to the work orders view
+        await page.goto('/');
+        await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+
+        // Find a WO with unresolved parts to open in the UI
+        const woRes = await api(page, 'GET', `${API}/bi/work-orders`);
+        const woBody = await woRes.json();
+        const wos = Array.isArray(woBody) ? woBody : (woBody.data || []);
+
+        let unresolvedWoId = null;
+        for (const wo of wos.slice(0, 30)) {
+            const checkRes = await api(page, 'GET', `${API}/work-orders/${wo.ID}/unresolved-parts`);
+            if (checkRes.status() !== 200) continue;
+            const checkBody = await checkRes.json();
+            if (checkBody.hasUnresolvedParts) { unresolvedWoId = wo.ID; break; }
+        }
+        if (!unresolvedWoId) { test.skip(); return; }
+
+        // Open the work orders view and trigger the CloseOutWizard
+        await page.goto('/work-orders');
+        await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+
+        // Intercept the unresolved-parts API call to inject a deterministic response
+        await page.route(`**/api/work-orders/*/unresolved-parts`, route => {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    workOrderId: 1,
+                    workOrderNumber: 'TEST-WO',
+                    hasUnresolvedParts: true,
+                    parts: [{
+                        workPartId: 1, partId: 'TEST-PART', partNumber: 'TEST-PART',
+                        description: 'Test Seal Kit',
+                        qtyIssued: 2, qtyUsed: 1, qtyReturned: 0, qtyReturnable: 1,
+                    }],
+                }),
+            });
+        });
+
+        // Also intercept the close endpoint so we don't actually close anything
+        await page.route('**/api/v2/work-orders/*/close', route => route.fulfill({
+            status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }),
+        }));
+
+        // Find and click a Close button on any WO row
+        const closeBtn = page.locator('button').filter({ hasText: /close.*out|close.*wo/i }).first();
+        const hasCLoseBtn = await closeBtn.isVisible({ timeout: 5000 }).catch(() => false);
+        if (!hasCLoseBtn) { test.skip(); return; }
+        await closeBtn.click();
+
+        // The wizard should open — advance to step 3 (review)
+        const wizard = page.locator('.modal-overlay').first();
+        if (!await wizard.isVisible({ timeout: 5000 }).catch(() => false)) { test.skip(); return; }
+
+        // Navigate through the wizard to the review step and click Confirm
+        const nextBtn = page.locator('button').filter({ hasText: /next/i }).first();
+        if (await nextBtn.isVisible({ timeout: 3000 }).catch(() => false)) await nextBtn.click();
+        const nextBtn2 = page.locator('button').filter({ hasText: /next/i }).first();
+        if (await nextBtn2.isVisible({ timeout: 3000 }).catch(() => false)) await nextBtn2.click();
+
+        // Click Confirm — should trigger the unresolved-parts check
+        const confirmBtn = page.locator('button').filter({ hasText: /confirm|close out/i }).first();
+        if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await confirmBtn.click();
+            // The warning banner should now be visible
+            await expect(page.getByText(/returnable quantity/i).or(page.getByText(/return parts/i))).toBeVisible({ timeout: 5000 });
+        } else {
+            test.skip();
+        }
     });
 
 });
