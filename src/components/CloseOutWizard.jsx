@@ -315,8 +315,11 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                     return; // Surface the warning panel — user must act before close
                 }
             } catch (err) {
+                // I-11-B (deliberate tradeoff): check failure allows close to keep offline techs
+                // unblocked. Hardened path: only allow if navigator.onLine === false, write
+                // close_unresolved_check_unavailable audit flag, queue post-sync reconciliation.
                 console.warn('[CloseOutWizard] unresolved-parts check failed:', err);
-                setUnresolvedChecked(true); // non-fatal: allow close if endpoint is unreachable
+                setUnresolvedChecked(true);
             }
         }
 

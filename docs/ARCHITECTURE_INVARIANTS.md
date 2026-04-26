@@ -283,14 +283,26 @@ INVARIANT: WO close records the disposition of every issued part
 
 | Layer | Enforcement | Status |
 |-------|------------|--------|
-| DB constraint | `WorkParts.status` column exists (`issued \| partial_return \| fully_returned`) | ✅ (data exists) |
-| Service — WO close | No pre-close check for `qty_returnable > 0` (`v2_integration.js:588`) | ❌ Missing |
-| Service — costLedger | Stock guard prevents negative stock but does not enforce return completeness | ⚠️ |
-| UI — CloseOutWizard | No unresolved parts warning shown before close | ❌ Missing |
+| DB constraint | `WorkParts.status` column exists (`issued \| partial_return \| fully_returned`) | ✅ |
+| Service — WO close | `GET /api/work-orders/:id/unresolved-parts` — `workOrders.js` | ✅ Fixed |
+| UI — CloseOutWizard | Warning panel + three resolution paths before final close | ✅ Fixed |
 
-**Enforcement gap:** Add `GET /api/work-orders/:id/unresolved-parts` endpoint. Call it in `CloseOutWizard` before rendering the close step. Warn if any `qty_returnable > 0`. Offer: return unused parts, or supervisor override with reason (creates `RETURN_TO_STOCK` records with `supervisor_override` status).
+**Resolution paths (implemented):**
+- Return Parts First — dismisses wizard so tech handles returns
+- Mark All Used — folds returnable qty into close-out parts list; re-checks before commit
+- Supervisor Override — requires reason text; passes `partsOverrideReason` to close endpoint for audit
 
-**Test that proves it:** Issue parts to a WO, close without returning; verify a warning is surfaced and a clean close requires either a return or a supervisor override reason.
+**Tests:** `tests/e2e/invariants.spec.js` — I-11 describe block (4 tests)
+
+**Known tradeoff — network-failure behavior:**
+When the `unresolved-parts` check fails (endpoint unreachable), the current implementation marks the check done and allows close. This is a deliberate availability tradeoff for offline/LAN-only scenarios.
+
+*This weakens the invariant.* The correct hardened behavior is:
+1. Allow close only if offline mode is explicitly active (detectable via `navigator.onLine === false` or LAN-hub fallback flag)
+2. Write audit flag: `close_unresolved_check_unavailable = true` in the WO close payload
+3. Queue post-sync reconciliation: a background job re-runs the check after connectivity returns and flags any WOs that closed with a missed check
+
+Tracking as `I-11-B` — implement before any production deployment to a site where parts audit is a compliance requirement.
 
 **Reference:** `High Risk Edge Cases.md` — Case 14.
 
@@ -352,9 +364,9 @@ INVARIANT: every artifact response includes a source field:
 | I-06 WO transitions monotonic | ❌ | ✅ | ✅ | PARTIAL |
 | I-07 Outcome uses event timestamp | — | ✅ | ✅ | COVERED |
 | I-08 Plant query scoping | ✅ | ✅ | ✅ | COVERED |
-| I-09 Barcode resolution idempotent | ❌ | ❌ | ❌ | GAP |
+| I-09 Barcode resolution idempotent | ✅ | ✅ | — | FIXED |
 | I-10 PM acknowledged once | ❌ | ⚠️ | ✅ | PARTIAL |
-| I-11 WO close accounts for parts | ❌ | ❌ | ❌ | GAP |
+| I-11 WO close accounts for parts | — | ✅ | ✅ | FIXED (I-11-B open) |
 | I-12 Cache plant-scoped | — | ✅ | — | COVERED |
 | I-13 Artifact source labeled | ✅ | ⚠️ | ⚠️ | PARTIAL |
 
