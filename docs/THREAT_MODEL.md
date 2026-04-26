@@ -4,7 +4,7 @@
 
 **Audience:** Enterprise and OT security reviewers, IT administrators, and security architects evaluating Trier OS for deployment in industrial environments.
 
-**Version:** v3.6.0
+**Version:** v3.6.1
 **Last reviewed:** 2026-04-26
 
 See also: `server/standards.md` (coding security rules), `SECURITY.md` (deployment hardening checklist and CORS trust boundary), `CONTRIBUTING.md` (header standard).

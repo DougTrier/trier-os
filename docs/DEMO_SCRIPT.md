@@ -294,4 +294,4 @@ It is MIT-licensed and free to deploy. The only cost is the hardware it runs on.
 
 ---
 
-*Trier OS v3.6.0 — docs/DEMO_SCRIPT.md*
+*Trier OS v3.6.1 — docs/DEMO_SCRIPT.md*

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.6.1] — 2026-04-26 — Invariant Hardening, Test Reliability & Mobile Batching
+
+### Fixes
+- **I-05 scanner flag lifecycle**: rewrote Playwright test to use client-side React Router navigation for unmount assertion; added IndexedDB `scanSession` clear and `expect.poll` to handle StrictMode double-invoke cycle
+- **I-04 ScanAuditLog dedup**: removed 73 duplicate `scanId` rows from Plant_1.db and 3 from Demo_Plant_1.db (pre-fix artifact); `CREATE UNIQUE INDEX` now succeeds on server restart; `/api/invariants/report` returns `overallStatus: PASS` across all invariants
+- **OnboardingTour positioning**: Welcome and completion cards repositioned to top-right corner — clear of scan popups and modal overlays
+
+### Test Infrastructure
+- Split Mobile Chrome (Zebra TC77) Playwright project into 6 batches (~68–74 tests each) to prevent server connection exhaustion that caused cascading 19s timeouts after 90+ mobile tests
+- Run all mobile batches: `npx playwright test --project="Mobile Chrome"`
+- Full suite result: 858 passed, 16 skipped, 0 Desktop Chrome failures
+
+---
+
 ## [3.6.0] — 2026-04-26 — Scan Workflow Hardening, Offline Receiving & Full i18n Pass
 
 ### Scan Workflow
