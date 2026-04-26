@@ -59,6 +59,8 @@ const INVARIANTS = [
             FROM WorkParts
             WHERE qty_returned > EstQty - COALESCE(ActQty, 0) + 0.001
         `,
+        codeRefs: ['server/routes/scan.js'],
+        tests:    ['tests/e2e/invariants.spec.js#I-01/I-02 — Return-part over-return guard'],
     },
     {
         id:       'I-03',
@@ -69,6 +71,8 @@ const INVARIANTS = [
         assertionQuery: null,
         assertionType:   'nonQueryable',
         assertionReason: 'Enforced by sort in offline-sync service layer; no per-row DB constraint',
+        codeRefs: ['server/routes/scan.js'],
+        tests:    ['tests/e2e/invariants.spec.js#I-03 — Offline replay ordering'],
     },
     {
         id:       'I-04',
@@ -80,6 +84,8 @@ const INVARIANTS = [
             SELECT COUNT(*) AS violations
             FROM (SELECT scanId FROM ScanAuditLog GROUP BY scanId HAVING COUNT(*) > 1)
         `,
+        codeRefs: ['server/routes/scan.js'],
+        tests:    ['tests/e2e/invariants.spec.js#I-04 — Duplicate scanId idempotency'],
     },
     {
         id:       'I-09',
@@ -90,6 +96,8 @@ const INVARIANTS = [
         assertionQuery: null,
         assertionType:   'structural',
         assertionReason: 'PRIMARY KEY on OfflineReceivingEvents.eventId prevents duplicate inserts at DB layer',
+        codeRefs: ['server/routes/offline_receiving.js'],
+        tests:    ['tests/e2e/invariants.spec.js#I-09/I-10 — Offline receiving event resolve idempotency'],
     },
     {
         id:       'I-10',
@@ -101,6 +109,8 @@ const INVARIANTS = [
             SELECT COUNT(*) AS violations
             FROM (SELECT pm_id FROM pm_acknowledgements GROUP BY pm_id HAVING COUNT(*) > 1)
         `,
+        codeRefs: ['server/routes/pmAcknowledge.js', 'server/migrations/060_pm_acknowledgement_unique.js'],
+        tests:    ['tests/e2e/invariants.spec.js#I-10 — PM acknowledged exactly once'],
     },
     {
         id:       'I-11',
@@ -111,6 +121,8 @@ const INVARIANTS = [
         assertionQuery: null,
         assertionType:   'nonQueryable',
         assertionReason: 'Server-side enforcement deferred (I-11-B); currently enforced in UI layer only',
+        codeRefs: ['server/routes/workOrders.js', 'src/components/CloseOutWizard.jsx'],
+        tests:    ['tests/e2e/invariants.spec.js#I-11 — Unresolved-parts check before WO close'],
     },
     {
         id:       'I-13',
@@ -121,6 +133,8 @@ const INVARIANTS = [
         assertionQuery: null,
         assertionType:   'nonQueryable',
         assertionReason: 'API shape guarantee — enforced at serialization boundary in catalog.js, no per-row DB constraint',
+        codeRefs: ['server/routes/catalog.js'],
+        tests:    ['tests/e2e/invariants.spec.js#I-13 — Artifact source field labeled'],
     },
 ];
 
@@ -170,7 +184,11 @@ function runPlantAssertion(inv, plantId) {
     }
 }
 
+const EVIDENCE_STALE_DAYS = 30;
+
 // Run evidence query for one invariant against invariant_log.
+// stale=true means the invariant was previously challenged but has gone quiet —
+// possible dead code path. stale=false if never challenged (guard just not needed yet).
 function runEvidence(invariantId) {
     try {
         const row = ldb.prepare(`
@@ -178,13 +196,15 @@ function runEvidence(invariantId) {
             FROM invariant_log
             WHERE invariant_id = ?
         `).get(invariantId);
-        return {
-            preventedCount:   row?.prevented         ?? 0,
-            firstOccurrence:  row?.first_occurrence  ?? null,
-            lastOccurrence:   row?.last_occurrence   ?? null,
-        };
+        const prevented       = row?.prevented        ?? 0;
+        const lastOccurrence  = row?.last_occurrence  ?? null;
+        const firstOccurrence = row?.first_occurrence ?? null;
+        const staleMs         = EVIDENCE_STALE_DAYS * 24 * 60 * 60 * 1000;
+        const stale = prevented > 0 && lastOccurrence !== null &&
+                      (Date.now() - new Date(lastOccurrence).getTime()) > staleMs;
+        return { preventedCount: prevented, firstOccurrence, lastOccurrence, stale };
     } catch {
-        return { preventedCount: 0, firstOccurrence: null, lastOccurrence: null };
+        return { preventedCount: 0, firstOccurrence: null, lastOccurrence: null, stale: false };
     }
 }
 
@@ -207,6 +227,8 @@ function buildInvariantResult(inv, plantIds) {
                 reason:  inv.assertionReason ?? null,
             },
             evidence,
+            codeRefs:  inv.codeRefs ?? [],
+            tests:     inv.tests    ?? [],
         };
     }
 
@@ -234,6 +256,8 @@ function buildInvariantResult(inv, plantIds) {
             plantsChecked: checkedCount,
         },
         evidence,
+        codeRefs:  inv.codeRefs ?? [],
+        tests:     inv.tests    ?? [],
     };
 }
 

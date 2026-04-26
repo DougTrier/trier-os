@@ -6,6 +6,9 @@
 #
 # Lifecycle: identified → deferred → trigger met → completed
 # Status values: deferred | in_progress | completed
+#
+# decisionLog: append-only history of why this item moved.
+# Never edit an existing log entry — only append new ones.
 
 - id: I-11-B
   title: Enforce unresolved-parts check under compliance mode
@@ -21,9 +24,20 @@
     - offline close logs audit flag and queues reconciliation entry in invariant_log
     - nightly reconciliation job surfaces all flagged closes in invariant report
     - I-11:UNRESOLVED_PARTS_CLOSE_BLOCKED wired in server/routes/workOrders.js (POST close)
+  codeRefs:
+    - server/routes/workOrders.js
+    - src/components/CloseOutWizard.jsx
   owner: core
   status: deferred
   lastReviewedAt: "2026-04-26"
+  decisionLog:
+    - at: "2026-04-26"
+      change: deferred
+      reason: >
+        Availability over blocking on plant floor. Current UI-layer warning
+        (CloseOutWizard) keeps techs moving while making the risk visible.
+        Server-side hard block requires offline-mode detection and reconciliation
+        infrastructure that should land together, not piecemeal.
   notes: >
     Current I-11 enforcement is UI-layer only (CloseOutWizard warning).
     Compliance mode is the trigger for server-side enforcement.
@@ -39,14 +53,26 @@
     - cron job calls GET /api/invariants/report?plantId=all
     - alert if overallStatus == FAIL
     - alert if any deferred item's triggerEnvVar is set and status != completed
+    - alert if any invariant evidence.stale == true (possible dead code path)
   acceptance:
     - alert fires within 1h of any invariant FAIL in production
     - alert fires if COMPLIANCE_MODE is set while I-11-B is still deferred
+    - alert fires if any previously-active invariant goes 30 days without prevention events
     - alert channel configurable (Slack webhook or email)
+  codeRefs:
+    - scripts/check_followups.js
+    - server/routes/invariants.js
   owner: core
   status: deferred
   lastReviewedAt: "2026-04-26"
+  decisionLog:
+    - at: "2026-04-26"
+      change: deferred
+      reason: >
+        Wire after first production deployment. No value in alerting against
+        dev/staging data. The report endpoint and CI guard cover pre-production;
+        the nightly job covers production drift.
   notes: >
     One cron job, no UI needed. Wire after first production deployment.
-    Alert on DEFERRED trigger-active condition prevents accidental rollout
-    of compliance mode without I-11-B enforcement in place.
+    Pass report JSON to check_followups.js --evidence-report for evidence
+    staleness checks in CI/CD post-deployment hooks.
