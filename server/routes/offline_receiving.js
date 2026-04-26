@@ -61,17 +61,14 @@ let stmts;
 function getStmts() {
     if (stmts) return stmts;
     stmts = {
-        findByEventId: ldb.prepare('SELECT eventId FROM OfflineReceivingEvents WHERE eventId = ?'),
+        // INSERT OR IGNORE is the S-11 DB-layer idempotency guard.
+        // If eventId already exists (PRIMARY KEY), .changes === 0 → treat as duplicate.
+        // The app-layer pre-check is intentionally removed; the DB is the single source of truth.
         insert: ldb.prepare(`
-            INSERT INTO OfflineReceivingEvents
+            INSERT OR IGNORE INTO OfflineReceivingEvents
                 (eventId, plantId, deviceId, userId, barcode, poNumber, quantity,
                  binLocation, capturedAt, syncedAt, syncStatus, resolvedPartId, reviewNote)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-        `),
-        update: ldb.prepare(`
-            UPDATE OfflineReceivingEvents
-            SET syncedAt=?, syncStatus=?, resolvedPartId=?, reviewNote=?
-            WHERE eventId=?
         `),
     };
     return stmts;
@@ -90,25 +87,38 @@ router.post('/receiving-sync', async (req, res) => {
         return res.status(400).json({ error: `Batch too large — max ${MAX_BATCH_SIZE} events per call` });
     }
 
-    const userId     = req.user.Username;
-    const syncedAt   = new Date().toISOString();
-    const { findByEventId, insert, update } = getStmts();
+    const userId   = req.user.Username;
+    const syncedAt = new Date().toISOString();
+    const { insert } = getStmts();
 
     const results = [];
     let accepted = 0, needsReview = 0, rejected = 0;
 
-    const processSync = ldb.transaction(() => {
+    // processEventTx wraps one event in a nested transaction (better-sqlite3 uses a
+    // SAVEPOINT for nested calls), so a single bad event never rolls back the batch.
+    const processEventTx = ldb.transaction(processEvent);
+
+    const processBatch = ldb.transaction(() => {
         for (const ev of events) {
-            const result = processEvent(ev, userId, syncedAt, { findByEventId, insert, update });
+            let result;
+            try {
+                result = processEventTx(ev, userId, syncedAt, insert);
+            } catch (err) {
+                result = {
+                    eventId: ev.eventId || null,
+                    status: 'rejected',
+                    reason: `Server error: ${err.message}`,
+                };
+            }
             results.push(result);
-            if (result.status === 'accepted')    accepted++;
+            if (result.status === 'accepted')         accepted++;
             else if (result.status === 'needsReview') needsReview++;
-            else                                  rejected++;
+            else if (result.status !== 'duplicate')   rejected++;
         }
     });
 
     try {
-        processSync();
+        processBatch();
     } catch (err) {
         console.error('[offline-receiving] sync transaction failed:', err.message);
         return res.status(500).json({ error: 'Sync failed — please retry' });
@@ -129,10 +139,10 @@ router.post('/receiving-sync', async (req, res) => {
     return res.json({ accepted, needsReview, rejected, results });
 });
 
-function processEvent(ev, userId, syncedAt, { findByEventId, insert, update }) {
+function processEvent(ev, userId, syncedAt, insert) {
     const { eventId, plantId, deviceId, barcode, poNumber, quantity, binLocation, capturedAt } = ev;
 
-    // Reject malformed events outright
+    // Reject structurally invalid events — these can never succeed on retry
     if (!eventId || !SAFE_EVENT_ID.test(String(eventId))) {
         return { eventId: eventId || null, status: 'rejected', reason: 'Invalid or missing eventId' };
     }
@@ -148,12 +158,6 @@ function processEvent(ev, userId, syncedAt, { findByEventId, insert, update }) {
     }
     if (!capturedAt) {
         return { eventId, status: 'rejected', reason: 'Missing capturedAt timestamp' };
-    }
-
-    // Idempotency: if this eventId was already processed, return the stored status
-    const existing = findByEventId.get(String(eventId));
-    if (existing) {
-        return { eventId, status: 'duplicate', reason: 'Already processed' };
     }
 
     // Resolve barcode → part in the plant DB
@@ -177,7 +181,10 @@ function processEvent(ev, userId, syncedAt, { findByEventId, insert, update }) {
         reviewNote = `Plant DB lookup failed: ${err.message}`;
     }
 
-    insert.run(
+    // INSERT OR IGNORE is the S-11 DB-layer idempotency guard.
+    // If eventId is a duplicate (PRIMARY KEY conflict), .changes === 0.
+    // The DB enforces uniqueness even under concurrent requests — no app-layer race.
+    const { changes } = insert.run(
         String(eventId),
         String(plantId),
         deviceId ? String(deviceId) : null,
@@ -192,6 +199,10 @@ function processEvent(ev, userId, syncedAt, { findByEventId, insert, update }) {
         resolvedPartId,
         reviewNote,
     );
+
+    if (changes === 0) {
+        return { eventId, status: 'duplicate', reason: 'Already processed' };
+    }
 
     return { eventId, status: syncStatus, resolvedPartId, reviewNote, plantId, barcode, quantity: qty };
 }

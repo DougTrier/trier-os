@@ -153,7 +153,7 @@ export default function OfflineReceivingView({ plantId }) {
         await saveEvent(event);
 
         setLastConfirmed({ barcode: code, quantity: qty, part: resolvedPart });
-        setTimeout(() => setLastConfirmed(null), 3000);
+        setTimeout(() => setLastConfirmed(null), 4000);
 
         // Reset scan fields; keep PO + bin selected for rapid multi-scan
         setBarcode('');
@@ -215,17 +215,21 @@ export default function OfflineReceivingView({ plantId }) {
                 </div>
             )}
 
-            {/* Confirmation flash */}
+            {/* Confirmation flash — explicit: saved locally, NOT yet in inventory */}
             {lastConfirmed && (
-                <div className="bg-green-900/50 border border-green-600 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-green-300 animate-pulse">
-                    <CheckCircle size={16} />
-                    <span>
-                        <strong>{lastConfirmed.quantity} ×</strong>{' '}
-                        {lastConfirmed.part
-                            ? (lastConfirmed.part.Descript || lastConfirmed.part.Description || lastConfirmed.barcode)
-                            : lastConfirmed.barcode}{' '}
-                        saved
-                    </span>
+                <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 mb-4 space-y-0.5">
+                    <div className="flex items-center gap-2 text-sm text-white">
+                        <CheckCircle size={16} className="text-green-400 shrink-0" />
+                        <span>
+                            <strong>{lastConfirmed.quantity} ×</strong>{' '}
+                            {lastConfirmed.part
+                                ? (lastConfirmed.part.Descript || lastConfirmed.part.Description || lastConfirmed.barcode)
+                                : lastConfirmed.barcode}
+                        </span>
+                    </div>
+                    <p className="text-xs text-yellow-400 pl-6">
+                        Saved offline — inventory updates when synced
+                    </p>
                 </div>
             )}
 
@@ -336,6 +340,14 @@ export default function OfflineReceivingView({ plantId }) {
                 )}
             </div>
 
+            {/* Status legend */}
+            <div className="bg-gray-900/60 rounded-xl px-4 py-3 mb-4 space-y-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Status key</p>
+                <LegendRow color="text-yellow-400" label="Saved offline" note="On this device — not yet in inventory" />
+                <LegendRow color="text-green-400"  label="In inventory"  note="Synced — stock has been updated" />
+                <LegendRow color="text-orange-400" label="Needs review"  note="Captured but barcode unrecognized — not in inventory yet" />
+            </div>
+
             {/* Recent events table */}
             {events.length > 0 && (
                 <div className="bg-gray-900 rounded-xl p-5">
@@ -347,6 +359,15 @@ export default function OfflineReceivingView({ plantId }) {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function LegendRow({ color, label, note }) {
+    return (
+        <div className="flex items-baseline gap-2 text-xs">
+            <span className={`font-semibold shrink-0 ${color}`}>{label}</span>
+            <span className="text-gray-500">{note}</span>
         </div>
     );
 }
@@ -374,28 +395,53 @@ function SyncResultBanner({ result, onDismiss }) {
         );
     }
     return (
-        <div className="flex items-start gap-2 text-sm text-green-300 bg-green-900/30 border border-green-800 rounded-lg p-3">
-            <CheckCircle size={14} className="mt-0.5 shrink-0" />
-            <span>
-                Synced — {result.accepted} accepted
-                {result.needsReview > 0 ? `, ${result.needsReview} need review` : ''}
-                {result.rejected   > 0 ? `, ${result.rejected} rejected` : ''}
-            </span>
-            <button onClick={onDismiss} className="ml-auto text-gray-400 hover:text-white"><X size={14} /></button>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-1">
+            <div className="flex items-center gap-2 text-sm text-white">
+                <CheckCircle size={14} className="text-green-400 shrink-0" />
+                <span className="font-medium">Sync complete</span>
+                <button onClick={onDismiss} className="ml-auto text-gray-400 hover:text-white"><X size={14} /></button>
+            </div>
+            {result.accepted > 0 && (
+                <p className="text-xs text-green-400 pl-5">
+                    {result.accepted} added to inventory
+                </p>
+            )}
+            {result.needsReview > 0 && (
+                <p className="text-xs text-orange-400 pl-5">
+                    {result.needsReview} need review — captured but not yet in inventory
+                </p>
+            )}
+            {result.rejected > 0 && (
+                <p className="text-xs text-red-400 pl-5">
+                    {result.rejected} rejected (invalid data)
+                </p>
+            )}
         </div>
     );
 }
 
-const STATUS_COLORS = {
-    pending:    'text-yellow-400',
-    accepted:   'text-green-400',
+// Human-readable status labels — these words appear on screen.
+// The distinction matters: "Saved offline" ≠ "In inventory".
+const STATUS_LABEL = {
+    pending:     'Saved offline',
+    accepted:    'In inventory',
+    synced:      'In inventory',
+    needsReview: 'Needs review',
+    rejected:    'Rejected',
+    duplicate:   'Already synced',
+};
+const STATUS_COLOR = {
+    pending:     'text-yellow-400',
+    accepted:    'text-green-400',
+    synced:      'text-green-400',
     needsReview: 'text-orange-400',
-    rejected:   'text-red-400',
-    synced:     'text-green-400',
+    rejected:    'text-red-400',
+    duplicate:   'text-gray-500',
 };
 
 function EventRow({ ev }) {
-    const color = STATUS_COLORS[ev.syncStatus] || 'text-gray-400';
+    const label = STATUS_LABEL[ev.syncStatus] || ev.syncStatus;
+    const color = STATUS_COLOR[ev.syncStatus] || 'text-gray-400';
     const time  = new Date(ev.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return (
         <div className="flex items-center justify-between text-xs py-1.5 border-b border-gray-800 last:border-0">
@@ -406,7 +452,7 @@ function EventRow({ ev }) {
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-2">
                 <span className="flex items-center gap-1 text-gray-500"><Clock size={10} />{time}</span>
-                <span className={`font-medium ${color}`}>{ev.syncStatus}</span>
+                <span className={`font-medium ${color}`}>{label}</span>
             </div>
         </div>
     );
