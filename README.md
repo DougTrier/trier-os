@@ -14,7 +14,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [![Node.js](https://img.shields.io/badge/Node.js-Express-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
   [![SQLite](https://img.shields.io/badge/SQLite-EDR%20Safe-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
   [![Cesium](https://img.shields.io/badge/Cesium-GIS%20Analytics-60A5FA?style=for-the-badge&logo=cesium&logoColor=white)](https://cesium.com/)
-  [![Playwright](https://img.shields.io/badge/Playwright-1463%20Tests%20%7C%200%20Failures-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
+  [![Playwright](https://img.shields.io/badge/Playwright-Verified%20PASS-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
 
   [Features](#-the-advanced-engines) •
   [Installation](#-installation--quick-start) •
