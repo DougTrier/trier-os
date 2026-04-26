@@ -4,8 +4,10 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   <img src="./public/assets/TrierOS_Logo.png" alt="Trier OS Banner" width="200">
 
   # Trier OS
-  
-  **Scan a machine. Know its state. Execute the next action. Keep working offline. Prove what happened.**
+
+  **Scan a machine → know what's happening → do the work → prove it.**
+
+  Trier OS is an offline-first industrial operations platform built for real plant floors.
 
   [![Version](https://img.shields.io/badge/Version-3.6.0-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.6.0)
   [![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
@@ -14,10 +16,10 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [![Cesium](https://img.shields.io/badge/Cesium-GIS%20Analytics-60A5FA?style=for-the-badge&logo=cesium&logoColor=white)](https://cesium.com/)
   [![Playwright](https://img.shields.io/badge/Playwright-458%20Tests%20%7C%2014%20Spec%20Files-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
 
-  [Features](#sparkles-the-advanced-engines) •
-  [Installation](#gear-installation--quick-start) •
-  [Architecture](#triangular_ruler-zero-obfuscation-architecture) •
-  [Security](#shield-security--funding) •
+  [Features](#-the-advanced-engines) •
+  [Installation](#-installation--quick-start) •
+  [Architecture](#-zero-obfuscation-architecture) •
+  [Security](#-security--funding) •
   [Pilot Guide](./docs/PILOT_GUIDE.md) •
   [5-Min Demo](./docs/DEMO_SCRIPT.md) •
   [Threat Model](./docs/THREAT_MODEL.md) •
@@ -30,13 +32,100 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
 ---
 
-## How it works on the plant floor
+## 👋 Start Here
 
-Trier OS is an offline-first plant operations platform where scanning an asset executes the next work action — not just opens a record.
+> **New to Trier OS? Pick your path:**
+>
+> 1. **Run a plant or manage a maintenance team?** → [Read the Pilot Guide](./docs/PILOT_GUIDE.md) — plain language, no jargon
+> 2. **Want to see it in action in 5 minutes?** → [Run the Demo Script](./docs/DEMO_SCRIPT.md)
+> 3. **IT, OT, or security reviewer?** → [Read the Threat Model](./docs/THREAT_MODEL.md)
+> 4. **Ready to install?** → [Download v3.6.0 from Releases](https://github.com/DougTrier/trier-os/releases/latest) — includes step-by-step PDF
+
+---
+
+## ⚡ What Makes Trier OS Different
+
+Most systems work like this:
+
+```
+Scan → open record → navigate menus → decide what to do → act
+```
+
+Trier OS works like this:
+
+```
+Scan → system understands state → shows next action → one tap → tracked and auditable
+```
+
+No searching. No navigation. No guessing. No wasted motion.
+
+| | Most CMMS / EAM tools | Trier OS |
+|---|---|---|
+| Scan result | Opens a record | Executes the next action |
+| Network dependency | Required to operate | Optional — works fully offline |
+| Typing required | Yes | Zero keystrokes on the floor |
+| Missed close-outs | Silent ghost records | Auto-flagged for supervisor review |
+| Data location | Cloud or shared server | Per-plant SQLite, fully on-premise |
+| Testing philosophy | Tested for success | Tested for failure |
+
+---
+
+## 🏭 Built for the Real World
+
+Plant floors are not perfect environments:
+
+- Wi-Fi drops mid-shift
+- Technicians can't stop to type
+- Scans misfire or come in fast
+- Work happens faster than records
+
+Trier OS is designed for that reality:
+
+- **Offline-first** — IndexedDB queue captures every scan; drains automatically on reconnect
+- **Idempotent operations** — duplicate scans never create duplicate records
+- **Failure-safe workflows** — nothing is lost, everything is tracked and auditable
+- **Per-plant local databases** — one SQLite file per plant, zero cloud dependency
+- **Zero-keystroke floor execution** — tap-only actions, no keyboard on the plant floor
+
+---
+
+## 🔁 Core Workflow
+
+```
+Scan asset → Start work → Add parts → Return unused parts → Close → Outcome recorded
+```
+
+- Start or continue work instantly from any scan
+- Batch scan parts with no confirmation per scan
+- Return unused parts directly back to stock
+- Close work with full audit trail
+- Time saved and downtime cost calculated automatically
+
+---
+
+## 📦 Offline Receiving (Zebra / Mobile)
+
+Scan incoming parts with no Wi-Fi:
+
+```
+Scan → saved to device → synced when back online → unresolved items flagged for admin review
+```
+
+Clear states at all times:
+
+| State | Meaning |
+|---|---|
+| Saved offline | Captured on device, not yet synced |
+| In inventory | Synced and accepted |
+| Needs review | Captured but not applied — awaiting admin |
+
+---
+
+## How it works on the plant floor
 
 A technician walks up to a machine and scans it. The system identifies the asset, finds any open work order, and surfaces tap-only action buttons — no typing, no navigation. They start work, complete it, and close it out. The next scan on the same asset shows the correct state to every device in the plant instantly.
 
-**If the server goes down or the network drops, nothing stops.** Every scan queues locally on the device. When connectivity returns, the queue drains automatically and the record is complete. Supervisors see which devices are live on the plant LAN and which scans are waiting to sync. Work orders that were left open by a missed close-out scan are flagged automatically for supervisor review rather than left as ghost records.
+**If the server goes down or the network drops, nothing stops.** Every scan queues locally on the device. When connectivity returns, the queue drains automatically and the record is complete. Supervisors see which devices are live on the plant LAN and which scans are waiting to sync. Work orders left open by a missed close-out scan are flagged automatically for supervisor review — not silently left as ghost records.
 
 This is what the system does on day one, before anyone configures an algorithm or reads a dashboard.
 
@@ -88,8 +177,6 @@ Real-device screenshots from an iPhone running Trier OS v3.6.0 over a plant LAN:
 
 ## 📖 Overview
 
-**Trier OS** is an enterprise-grade, full-stack Plant Operations platform built to run heavy industrial facilities. It is not a lightweight SaaS widget — it is a complete, local-first operating system for the plant floor, designed to keep working when the network doesn't.
-
 **For plant managers and supervisors:** Every work order, asset scan, safety permit, and inventory movement is tracked in real time. Supervisors see live operational state across all devices on the plant LAN. The system self-corrects missed actions and surfaces them for review rather than silently accumulating bad data.
 
 **For IT and engineering teams:** Trier OS runs entirely on-premises — one SQLite database per plant, zero cloud dependency, full offline capability, and an embedded Monaco-based IDE for authorized in-app code modification. The architecture is documented to a 10% minimum contextual density standard across every logic file.
@@ -98,7 +185,7 @@ Real-device screenshots from an iPhone running Trier OS v3.6.0 over a plant LAN:
 
 ---
 
-## :sparkles: The Advanced Engines
+## ✨ The Advanced Engines
 
 - 🛠️ **The Live Studio Sandbox:** An embedded Monaco-based IDE allowing authorized "Creators" to write, sandbox, and hot-reload source code directly inside the production app. No external servers required.
 - 🌌 **The Parallel Universe Engine:** Forget AI hallucinations. This deterministic simulation engine replays historical plant event logs against your sandboxed code changes, providing mathematical proof that a code change won't crash the factory floor.
@@ -112,39 +199,37 @@ Real-device screenshots from an iPhone running Trier OS v3.6.0 over a plant LAN:
 
 ---
 
-## :gear: Installation & Quick Start
+## ⚙️ Installation & Quick Start
 
-Because Trier OS requires its architectural source to power the Live Studio, you must clone the raw repository.
+**Quickest path:** Download the [Windows installer and step-by-step PDF guide](https://github.com/DougTrier/trier-os/releases/latest) from the Releases page.
 
-### 1. Requirements
-*   Node.js (v22+)
-*   Git
+**From source** (developers, Mac/Linux, contributors):
 
-### 2. Clone & Build
+### Requirements
+- Node.js v22+
+- Git
+
+### Clone & Build
 ```bash
 git clone https://github.com/DougTrier/trier-os.git
 cd trier-os
 npm install
+cp .env.example .env   # Windows: copy .env.example .env
+npm run seed           # creates databases with demo data
+npm run dev:full       # starts API + UI
 ```
 
-### 3. Start the Environment
-Boot up the API and UI in the concurrent development environment.
-```bash
-npm run dev:full
-```
-The application will automatically ignite at `http://localhost:5173`.
+Open `http://localhost:5173` and log in with `ghost_admin` / `Trier3652!`
 
 ### Keeping Trier OS Updated
 ```bash
-git pull origin main
+git pull origin main && npm install
 ```
 
 ---
 
 ### 🐧 Linux
 
-The web application runs natively on Linux — no special configuration required:
-
 ```bash
 git clone https://github.com/DougTrier/trier-os.git
 cd trier-os
@@ -152,43 +237,80 @@ npm install
 npm run dev:full
 ```
 
-Open `http://localhost:5173`. Log in with the `System Creator` account — credentials are printed to the terminal on first run.
+Open `http://localhost:5173`.
 
-**Desktop installer (Electron):** The pre-built `.exe` / `.msi` installers in [Releases](https://github.com/DougTrier/trier-os/releases) are Windows-only. To compile a native Linux desktop app yourself:
+**Desktop installer (Electron):** The pre-built `.exe` / `.msi` installers in [Releases](https://github.com/DougTrier/trier-os/releases) are Windows-only. To compile a native Linux desktop app:
 
 ```bash
-# Install required system dependencies (Ubuntu/Debian/Mint)
 sudo apt-get install -y libopenjp2-tools rpm fakeroot
-
 npm run electron:build
-# Output: electron-dist/TrierOS-Setup-*.AppImage (or .deb/.rpm depending on your config)
 ```
 
-> **Note:** electron-builder requires matching native modules for your distro. If the build fails, running the web app via `npm run dev:full` is the recommended Linux path and is fully functional.
+> **Note:** electron-builder requires matching native modules for your distro. Running via `npm run dev:full` is the recommended Linux path and is fully functional.
 
 ---
 
-## :triangular_ruler: Zero Obfuscation Architecture
+## 🧪 Tested for Reality
 
-Trier OS is built on extreme contextual transparency. We enforce a hard **10% minimum Contextual Density Ratio** across 199,000+ lines of core application logic.
+Before every release, Trier OS is tested across:
 
-Every logic file contains the mandatory **Trier OS Architecture Header Pattern**, meaning over 19,900 lines of context documentation exist purely to bridge the gap between engineering scripts and physical Plant Floor Operations.
+- Full workflow traversal on desktop and Zebra mobile
+- Offline / online transitions and queue replay
+- Failure paths, edge cases, and race conditions
+- RBAC boundaries and API surface hardening
+- High-speed scan input and dedup window enforcement
 
-**Notice to Contributors:** Any pull request that drops the core contextual coverage below 100% will be rejected automatically. See `CONTRIBUTING.md` for our strict header templates.
+**Most systems are tested for success. Trier OS is tested for failure.**
+
+Current suite: **1463 / 1482 passing — 0 failures** (v3.6.0, verified 2026-04-26)
+19 skipped: hardware-dependent tests (run on target device), optional external services (Edge Mesh, Gatekeeper audit), and data-conditional tests that skip gracefully when prerequisite records don't exist.
 
 ---
 
-## :shield: Security & Funding
+## 🔐 Security & Funding
 
-### Security Protocols
-Because this software operates physical manufacturing assets, we handle vulnerabilities with extreme caution. **Do not** report exploits in the public GitHub issues. Please read `SECURITY.md` for our responsible disclosure email protocols.
+### Security
+
+Because this software operates physical manufacturing assets, vulnerabilities are handled with extreme caution. **Do not** report exploits in public GitHub issues.
+
+- httpOnly cookie authentication with separate hub token secret
+- Parameterized queries only — no SQL interpolation
+- plantId validated at every route boundary before DB access
+- Production hardening via environment variables
+- Live Studio disabled in production via `DISABLE_LIVE_STUDIO`
+- Full threat model: [docs/THREAT_MODEL.md](./docs/THREAT_MODEL.md)
+
+Please read [`SECURITY.md`](./SECURITY.md) for responsible disclosure protocols.
 
 ### Support the Project
-Trier OS is completely free and open-source. If this software runs your warehouse or manufacturing facility, consider supporting our ongoing development!
 
-Click the **Sponsor** button at the top of the repository to view our Funding Gateway (GitHub Sponsors, Open Collective for corporate B2B tax receipts, and Ko-Fi).
+Trier OS is completely free and open-source, always. If this software runs your facility, consider supporting ongoing development via the **Sponsor** button at the top of the repository.
+
+---
+
+## 🤝 Contributing
+
+This is not a casual project. Code runs against live plant-floor systems.
+
+- All tests run against a live instance — no database mocking
+- UI changes require screenshots in the PR
+- No unhandled errors or silent failures
+- Minimum 10% contextual documentation density enforced
+- Every file must carry the Trier OS Architecture Header
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for full standards.
+
+---
+
+## 🧭 Philosophy
+
+> *Software should match how work actually happens — not force people to adapt to it.*
+
+Most systems help you track work.  
+**Trier OS helps you do the work faster — and prove it.**
 
 ---
 
 ## 📜 Legal & License
-Released openly under the **MIT License**. You are free to use, modify, and distribute this platform within your corporation.
+
+Released under the **MIT License**. Free to use, modify, and deploy within your organization.
