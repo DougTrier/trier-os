@@ -30,6 +30,14 @@ const API     = '/api';
 const EXPRESS = 'http://localhost:3000';
 
 async function login(page, account = ADMIN) {
+    // Suppress onboarding/contextual tours — 1.5s auto-show overlays scanner UI
+    // and can intercept pointer events mid-test. Same pattern as scanner-hardware.spec.js.
+    await page.addInitScript(() => {
+        for (const s of ['default', 'ghost_admin', 'ghost_tech', 'ghost_exec']) {
+            localStorage.setItem(`pf_onboarding_complete_${s}`, 'true');
+            localStorage.setItem(`pf_onboarding_dismissed_${s}`, 'true');
+        }
+    });
     await page.context().clearCookies();
     await page.goto('/');
     await page.locator('input[type="text"], input[name="username"]').first().fill(account.username);
@@ -45,6 +53,13 @@ async function login(page, account = ADMIN) {
     } catch { /* no prompt — continue */ }
     await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
     await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+    // Belt-and-suspenders: set keys again after mount in case addInitScript ran early
+    await page.evaluate(() => {
+        for (const s of ['default', 'ghost_admin', 'ghost_tech', 'ghost_exec']) {
+            localStorage.setItem(`pf_onboarding_complete_${s}`, 'true');
+            localStorage.setItem(`pf_onboarding_dismissed_${s}`, 'true');
+        }
+    });
     await page.evaluate((plantId) => localStorage.setItem('selectedPlantId', plantId), PLANT);
 }
 
@@ -431,20 +446,38 @@ test.describe('I-05 — Scanner ownership flag lifecycle', () => {
     test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
 
     test('flag is true while ScanCapture is mounted, false after unmount', async ({ page }) => {
-        // Navigate to the scanner workspace — ScanCapture mounts here
+        // beforeEach lands us at '/' — clear stale scan session from IndexedDB without
+        // an extra page.goto('/') (redundant navigation was causing timing issues).
+        await page.evaluate(() => new Promise((resolve) => {
+            const req = indexedDB.open('TrierCMMS_Offline');
+            req.onsuccess = e => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('meta')) { db.close(); resolve(); return; }
+                const tx = db.transaction('meta', 'readwrite');
+                tx.objectStore('meta').delete('scanSession');
+                tx.oncomplete = () => { db.close(); resolve(); };
+                tx.onerror   = () => { db.close(); resolve(); };
+            };
+            req.onerror = () => resolve();
+        }));
+
         await page.goto('/scanner');
-        await expect(page.getByRole('button', { name: /Scan QR Code/i })).toBeVisible({ timeout: 12000 });
 
-        // I-05: flag must be set while the component is live
-        const flagWhileMounted = await page.evaluate(() => window.trierActiveScannerInterceptor);
-        expect(flagWhileMounted).toBe(true);
+        // Wait for ScanCapture to be in the DOM before polling the flag.
+        // React StrictMode double-invokes effects on dev builds, so the flag briefly
+        // goes true→false→true. expect.poll tolerates that window better than
+        // a single evaluate check.
+        await page.locator('.scan-capture').waitFor({ state: 'attached', timeout: 10000 });
+        await expect.poll(
+            () => page.evaluate(() => window.trierActiveScannerInterceptor),
+            { timeout: 5000, intervals: [100, 200, 500, 1000] }
+        ).toBe(true);
 
-        // Navigate away — ScanCapture unmounts and must release the flag
-        await page.goto('/');
+        // Navigate away via client-side routing (clicking Mission Control), NOT page.goto
+        // which would do a full page reload and destroy window before cleanup can run.
+        await page.getByRole('button', { name: /Mission Control/i }).first().click();
         await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
-
-        const flagAfterUnmount = await page.evaluate(() => window.trierActiveScannerInterceptor);
-        expect(flagAfterUnmount).toBe(false);
+        expect(await page.evaluate(() => window.trierActiveScannerInterceptor)).toBe(false);
     });
 
 });

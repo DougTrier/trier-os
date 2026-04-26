@@ -249,10 +249,10 @@ export default function OnboardingTour({ forceShow = false, onComplete }) {
         const vh = window.innerHeight;
 
         if (!targetRect || step?.position === 'center') {
-            // Center on screen
+            // Top-right corner — out of the way of main content
             setTooltipPos({
-                top: Math.max(padding, (vh - tooltipHeight) / 2),
-                left: Math.max(padding, (vw - tooltipWidth) / 2)
+                top: padding,
+                left: vw - tooltipWidth - padding
             });
             return;
         }
