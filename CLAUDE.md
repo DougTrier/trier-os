@@ -262,7 +262,8 @@ The `Install Instructions.pdf` lives untracked in the repo root — never commit
    `tests/e2e/qa-scan.spec.js`, all 11 `src/i18n/*.json` files
 3. Run full Playwright suite — must be 0 failures before building
 4. Confirm `/api/invariants/report` returns `overallStatus: PASS`
-5. Commit + push, then create GitHub release tag `v{VER}`
+5. Update **Current Verified State** block in `README.md` — version, Playwright counts, Last Verified date
+6. Commit + push, then create GitHub release tag `v{VER}`
 6. Run build steps 1–4 above, then upload artifacts to the release
 
 ---

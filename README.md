@@ -42,7 +42,34 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 | **Playwright (Mobile — Zebra TC77)** | Batched runs, all batches PASS |
 | **Last Verified** | 2026-04-26 |
 
-> Verified via `/api/invariants/report` and full Playwright suite. 16 skipped tests are intentional: hardware-dependent, external-service, or data-conditional.
+> Verified via `GET /api/invariants/report` (requires auth) and full Playwright suite. 16 skipped tests are intentional: hardware-dependent, external-service, or data-conditional.
+
+<details>
+<summary>Sample invariant report output</summary>
+
+```json
+{
+  "overallStatus": "PASS",
+  "invariants": [
+    {
+      "id": "I-04",
+      "name": "Scan ID processed exactly once",
+      "status": "PASS",
+      "assertion": { "type": "structural", "violations": 0 },
+      "enforcement": "UNIQUE INDEX on ScanAuditLog.scanId — duplicate caught at DB layer, returns structured 200"
+    },
+    {
+      "id": "I-05",
+      "name": "One active scanner per session",
+      "status": "PASS",
+      "assertion": { "type": "structural", "violations": 0 },
+      "enforcement": "window.trierActiveScannerInterceptor flag set on mount, cleared on unmount"
+    }
+  ]
+}
+```
+
+</details>
 
 ---
 
