@@ -202,15 +202,19 @@ function runEvidence(invariantId) {
         const staleMs         = EVIDENCE_STALE_DAYS * 24 * 60 * 60 * 1000;
         const stale = prevented > 0 && lastOccurrence !== null &&
                       (Date.now() - new Date(lastOccurrence).getTime()) > staleMs;
-        return { preventedCount: prevented, firstOccurrence, lastOccurrence, stale };
+        return { preventedCount: prevented, firstOccurrence, lastOccurrence,
+                 staleAfterDays: EVIDENCE_STALE_DAYS, stale };
     } catch {
-        return { preventedCount: 0, firstOccurrence: null, lastOccurrence: null, stale: false };
+        return { preventedCount: 0, firstOccurrence: null, lastOccurrence: null,
+                 staleAfterDays: EVIDENCE_STALE_DAYS, stale: false };
     }
 }
 
 // Build one invariant result entry for a given set of plant IDs.
 function buildInvariantResult(inv, plantIds) {
     const evidence = runEvidence(inv.id);
+    // Suppress stale flag for medium/low severity — only high+critical warrant investigation
+    if (inv.severity === 'medium' && evidence.stale) evidence.stale = false;
 
     if (!inv.assertionQuery) {
         // Non-queryable invariants are not "unchecked" — they are enforced by a different
