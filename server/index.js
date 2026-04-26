@@ -902,6 +902,7 @@ app.use('/api/leadership', require('./routes/leadership'));
 app.use('/api/work-orders', require('./routes/workOrders'));
 app.use('/api/scan',        require('./routes/scan'));         // Scan State Machine (P1)
 app.use('/api/pm',          require('./routes/pmAcknowledge')(require('./middleware/auth')));  // PM acknowledge
+app.use('/api/invariants',  require('./routes/invariants')(require('./middleware/auth')));   // Phase 3: invariant report (assertion + evidence per invariant)
 app.use('/api/config',      require('./routes/config'));       // PWA config cache (status IDs)
 app.use('/api/assets', require('./routes/assets'));
 app.use('/api/asset-lifecycle', require('./routes/asset-lifecycle')(db));
