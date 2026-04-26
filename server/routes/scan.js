@@ -816,6 +816,13 @@ router.post('/', (req, res) => {
         });
 
     } catch (err) {
+        // I-04: UNIQUE constraint on ScanAuditLog.scanId means a concurrent request
+        // with the same scanId already committed the audit entry — the DB-layer dedup
+        // guard fired correctly. No business state was mutated (writeAuditEntry was
+        // the failing statement). Return a clean idempotency response, not a 500.
+        if (err.message?.includes('UNIQUE constraint failed: ScanAuditLog.scanId')) {
+            return res.json({ ok: true, idempotent: true, branch: 'DUPLICATE_SCAN', message: 'Scan already processed' });
+        }
         console.error('[scan] POST /api/scan error:', err);
         res.status(500).json({ error: 'Scan processing failed', detail: err.message });
     }

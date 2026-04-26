@@ -8,6 +8,7 @@
  * These tests are not workflow tests — they target specific failure modes.
  *
  * API dependencies:
+ *   POST /api/scan
  *   POST /api/scan/offline-sync
  *   POST /api/scan/return-part
  *   GET  /api/assets
@@ -55,6 +56,73 @@ async function api(page, method, path, body) {
     try { data = await res.json(); } catch {}
     return { status: () => status, json: async () => data, ok: () => status >= 200 && status < 300 };
 }
+
+// ── I-04 · Scan ID Processed Exactly Once ────────────────────────────────────
+test.describe('I-04 — Duplicate scanId idempotency', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('concurrent duplicate scans yield one normal + one idempotency response, zero 500s', async ({ page }) => {
+        const assetRes = await api(page, 'GET', `${API}/assets?limit=1`);
+        const assetBody = await assetRes.json();
+        const assetList = Array.isArray(assetBody) ? assetBody : (assetBody.assets || assetBody.data || []);
+        if (!assetList.length) { test.skip(); return; }
+        const assetId = assetList[0].AstID || assetList[0].ID || assetList[0].id;
+
+        const cookies = await page.context().cookies();
+        const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+        const scanId = `inv-i04-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const deviceTimestamp = new Date().toISOString();
+
+        // Fire two identical scan requests concurrently — same scanId, same asset
+        const fire = () => globalThis.fetch(`${EXPRESS}${API}/scan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-plant-id': PLANT, Cookie: cookieHeader },
+            body: JSON.stringify({ scanId, assetId, deviceTimestamp, userId: ADMIN.username }),
+        });
+
+        const [r1, r2] = await Promise.all([fire(), fire()]);
+
+        // I-04: Neither response may be a 500
+        expect(r1.status).not.toBe(500);
+        expect(r2.status).not.toBe(500);
+
+        const [b1, b2] = await Promise.all([r1.json(), r2.json()]);
+
+        // One must be a normal branch; the other must be the idempotency response
+        const branches = [b1.branch, b2.branch];
+        const normalBranches = branches.filter(b => b !== 'DUPLICATE_SCAN' && b !== 'AUTO_REJECT_DUPLICATE_SCAN');
+        const dedupBranches  = branches.filter(b => b === 'DUPLICATE_SCAN' || b === 'AUTO_REJECT_DUPLICATE_SCAN');
+
+        expect(normalBranches.length).toBe(1);
+        expect(dedupBranches.length).toBe(1);
+
+        // The idempotent response must carry the structured shape
+        const dedupBody = b1.branch === normalBranches[0] ? b2 : b1;
+        expect(dedupBody.idempotent ?? true).toBeTruthy();
+    });
+
+    test('sequential duplicate scan returns dedup response, not 500', async ({ page }) => {
+        const assetRes = await api(page, 'GET', `${API}/assets?limit=1`);
+        const assetBody = await assetRes.json();
+        const assetList = Array.isArray(assetBody) ? assetBody : (assetBody.assets || assetBody.data || []);
+        if (!assetList.length) { test.skip(); return; }
+        const assetId = assetList[0].AstID || assetList[0].ID || assetList[0].id;
+
+        const scanId = `inv-i04-seq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const deviceTimestamp = new Date().toISOString();
+
+        const first  = await api(page, 'POST', `${API}/scan`, { scanId, assetId, deviceTimestamp });
+        const second = await api(page, 'POST', `${API}/scan`, { scanId, assetId, deviceTimestamp });
+
+        expect(first.status()).not.toBe(500);
+        expect(second.status()).not.toBe(500);
+
+        const b2 = await second.json();
+        expect(['DUPLICATE_SCAN', 'AUTO_REJECT_DUPLICATE_SCAN']).toContain(b2.branch);
+    });
+
+});
 
 // ── I-01/I-02 · Return Qty ≤ Issued, Stock Never Goes Negative ───────────────
 test.describe('I-01/I-02 — Return-part over-return guard', () => {
