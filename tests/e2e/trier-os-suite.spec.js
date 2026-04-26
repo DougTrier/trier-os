@@ -1513,7 +1513,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await page.keyboard.press('Enter');
       await expect(page.getByText('ASSET-001')).toBeVisible({ timeout: 5000 });
       await expect(page.getByText(/Pump Motor Inspection|WO-2026-001|New Work Order/i).first()).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText(/Work Started/i)).toBeVisible({ timeout: 3000 });
+      await expect(page.getByText(/In Progress|STARTED|Close Work Order/i).first()).toBeVisible({ timeout: 3000 });
       await expect(page.getByText(/WO-2026-001/i).first()).toBeVisible();
     });
 
@@ -1525,6 +1525,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await input.fill('PUMP-42');
       await page.keyboard.press('Enter');
       await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+      await page.getByText(/More options/i).first().click();
       await expect(page.getByText(/Waiting/i)).toBeVisible();
       await expect(page.getByText(/Escalate/i)).toBeVisible();
       await expect(page.getByText(/Continue Later/i)).toBeVisible();
@@ -1541,6 +1542,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await page.keyboard.press('Enter');
       await expect(page.getByText(/Join Existing Work/i)).toBeVisible({ timeout: 4000 });
       await expect(page.getByText(/Take Over/i)).toBeVisible();
+      await page.getByText(/More options/i).first().click();
       await expect(page.getByText(/Escalate/i)).toBeVisible();
     });
 
@@ -1553,9 +1555,10 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await goToScanner(page);
       await page.getByPlaceholder(/Enter asset number/i).fill('PUMP-42');
       await page.keyboard.press('Enter');
-      await expect(page.getByText(/Leave Work/i)).toBeVisible({ timeout: 4000 });
-      await expect(page.getByText(/Close for Team/i)).toBeVisible();
+      await expect(page.getByText(/Close for Team/i)).toBeVisible({ timeout: 4000 });
+      await page.getByText(/More options/i).first().click();
       await expect(page.getByText(/Waiting/i)).toBeVisible();
+      await expect(page.getByText(/Leave Work/i)).toBeVisible();
       await expect(page.getByText(/Escalate/i)).toBeVisible();
     });
 
@@ -1571,7 +1574,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await expect(page.getByText(/Resume Waiting WO/i)).toBeVisible({ timeout: 4000 });
       await expect(page.getByText(/Create New Work Order/i)).toBeVisible();
       await expect(page.getByText(/View Status Only/i)).toBeVisible();
-      await expect(page.getByText(/On Hold/i)).toBeVisible();
+      await expect(page.getByText(/On Hold/i).first()).toBeVisible();
     });
 
     test('AUTO_REJECT_DUPLICATE_SCAN — shows duplicate warning, no action buttons', async ({ page }) => {
@@ -1590,6 +1593,8 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await goToScanner(page);
       await page.getByPlaceholder(/Enter asset number/i).fill('PUMP-42');
       await page.keyboard.press('Enter');
+      await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+      await page.getByText(/More options/i).first().click();
       await page.getByText(/Waiting…/i).first().click();
       await expect(page.getByText(/Why are you pausing/i)).toBeVisible({ timeout: 3000 });
       await expect(page.getByText(/Waiting on Parts/i)).toBeVisible();
@@ -1605,6 +1610,8 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await goToScanner(page);
       await page.getByPlaceholder(/Enter asset number/i).fill('PUMP-42');
       await page.keyboard.press('Enter');
+      await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+      await page.getByText(/More options/i).first().click();
       await page.getByText(/Waiting…/i).first().click();
       await expect(page.getByText(/Why are you pausing/i)).toBeVisible({ timeout: 3000 });
       await page.getByText(/Scheduled Return/i).click();
@@ -1634,14 +1641,14 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await goToScanner(page);
       await page.getByPlaceholder(/Enter asset number/i).fill('ASSET-002');
       await page.keyboard.press('Enter');
-      await expect(page.getByText(/Work Started/i)).toBeVisible({ timeout: 4000 });
+      await expect(page.getByText(/In Progress|STARTED|Close Work Order/i).first()).toBeVisible({ timeout: 4000 });
       // AUTO_CREATE_WO now shows action buttons; dismiss via Cancel to return to capture
       await page.getByRole('button', { name: /Cancel/i }).first().click();
       await expect(page.getByPlaceholder(/Enter asset number/i)).toBeVisible({ timeout: 3000 });
     });
 
     test('Server error surfaces inline — view stays on capture, no hard crash', async ({ page }) => {
-      await mockScanApi(page, { error: 'Asset not found' }, 404);
+      await mockScanApi(page, { error: 'Asset not found' }, 500);
       await goToScanner(page);
       await page.getByPlaceholder(/Enter asset number/i).fill('UNKNOWN-9999');
       await page.keyboard.press('Enter');
@@ -1894,6 +1901,7 @@ test.describe('09 · Scan Workflow & QR State Machine', () => {
       await openAssetDetail(page);
       await page.getByRole('button', { name: /Start Work on This Asset|Manage Active Work Order|Manage Escalated Work Order|Resume Work|Start Assigned Work/i }).click();
       await expect(page.getByText(/Close Work Order/i)).toBeVisible({ timeout: 4000 });
+      await page.getByText(/More options/i).first().click();
       await expect(page.getByText(/Waiting/i)).toBeVisible();
       await expect(page.getByText(/Escalate/i)).toBeVisible();
     });

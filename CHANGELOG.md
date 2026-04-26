@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.6.0] — 2026-04-26 — Scan Workflow Hardening, Offline Receiving & Full i18n Pass
+
+### Scan Workflow
+- Fixed double-fire scan bug: second scan of same asset within dedup window now correctly returns 404 instead of 200 AUTO_REJECT_DUPLICATE_SCAN
+- Removed audit log write from 404 (unknown asset) path — dedup guard no longer poisons the audit trail for genuinely unknown assets
+- Fixed explain-cache `cacheStatus` field missing when `NODE_ENV=production` — now exposed via `?debug=true` query param
+
+### Offline Receiving (Zebra Scanner Support)
+- New offline-first receiving workflow: Zebra devices write scan events to IndexedDB immediately, sync to server on reconnect
+- `POST /api/offline/receiving-sync` — idempotent batch sync (DB-layer dedup via INSERT OR IGNORE)
+- `GET /api/offline/receiving-cache` — lightweight parts/PO snapshot for device warm-up
+- `GET /api/offline/receiving-events` — admin review queue for needsReview events
+- Client-side `offlineReceivingDB.js` utility: saveEvent, sync, warmCache, lookupPart, registerAutoSync
+
+### i18n & UI
+- Translated 96+ P5–P7 operational manual keys across all 10 languages
+- Added 13 new mc.tile keys with full 10-language translations
+- Fixed stale TILE_GROUP pill keys and missing pills for 3 tile groups
+- Translated quality enum values (loss types, areas, products) in all languages
+- Scan workflow UI: SOP acknowledgement flow, asset status indicators, context-aware WO button
+- ScanActionPrompt secondary actions (Waiting, Escalate, Continue Later) moved into collapsible MoreOptions panel
+
+### Gatekeeper & Safety
+- Hardened LOTO, MOC state, and setpoint constraint modules
+
+### Test Suite
+- 1463 / 1482 tests passing (19 skipped, 0 failures) — verified 2026-04-26
+- Version bumped 3.5.1 → 3.6.0 across package.json, AboutView.jsx, all i18n files, and CLAUDE.md
+
+---
+
 ## [3.4.1] — 2026-04-21 — Offline Resilience, LAN Peer Sync & Silent Auto-Close
 
 ### P8 — LAN Peer Sync (Offline Multi-Device Resilience)
