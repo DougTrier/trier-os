@@ -218,6 +218,55 @@ result succeeded.
 
 ---
 
+## Release Build Process
+
+Run these steps in order for every new version. All three artifacts (exe, msi, zip) plus
+the PDF go into the GitHub release.
+
+### Step 1 — Portable build (no Admin needed)
+```powershell
+powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_portable.ps1" "G:\TrierOS-v{VER}"
+```
+Produces a self-contained folder: bundled `node.exe`, full databases, `Trier OS.bat`.
+
+### Step 2 — Zip the portable folder
+```powershell
+Compress-Archive -Path "G:\TrierOS-v{VER}\*" -DestinationPath "G:\TrierOS-Setup-{VER}.zip" -CompressionLevel Optimal
+```
+Produces `TrierOS-Setup-{VER}.zip` (~700–800 MB compressed).
+
+### Step 3 — Electron installer build (**must run as Administrator**)
+```powershell
+# In an elevated PowerShell:
+powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_installer.ps1"
+```
+Reads the version from `package.json`. Produces in `G:\Trier OS\electron-dist\`:
+- `TrierOS-Setup-{VER}.exe` (NSIS, ~230 MB)
+- `TrierOS-Setup-{VER}.msi` (~220 MB)
+- `TrierOS-Setup-{VER}.zip` (electron zip — use the portable zip for GitHub releases instead)
+
+### Step 4 — Upload to GitHub release
+```bash
+gh release upload v{VER} \
+  "G:/Trier OS/electron-dist/TrierOS-Setup-{VER}.exe" \
+  "G:/Trier OS/electron-dist/TrierOS-Setup-{VER}.msi" \
+  "G:/TrierOS-Setup-{VER}.zip" \
+  "G:/Trier OS/Install Instructions.pdf"
+```
+The `Install Instructions.pdf` lives untracked in the repo root — never commit it, just upload.
+
+### Pre-release checklist
+1. `npm version patch --no-git-tag-version` — bumps package.json + package-lock.json
+2. Update version string in: `src/components/AboutView.jsx`, `CLAUDE.md`, `CHANGELOG.md`,
+   `README.md`, `docs/DEMO_SCRIPT.md`, `docs/INSTALL_GUIDE.html`, `docs/THREAT_MODEL.md`,
+   `tests/e2e/qa-scan.spec.js`, all 11 `src/i18n/*.json` files
+3. Run full Playwright suite — must be 0 failures before building
+4. Confirm `/api/invariants/report` returns `overallStatus: PASS`
+5. Commit + push, then create GitHub release tag `v{VER}`
+6. Run build steps 1–4 above, then upload artifacts to the release
+
+---
+
 ## Current Version
 
 v3.6.1 — See CHANGELOG.md and ROADMAP.md for history.
