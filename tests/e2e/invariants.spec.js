@@ -15,6 +15,10 @@
  *   GET  /api/assets
  *   GET  /api/bi/work-orders
  *   GET  /api/scan/wo-parts
+ *   GET  /api/catalog/equipment
+ *   GET  /api/catalog/artifacts/for/:entityId
+ *   GET  /api/pm/pending
+ *   POST /api/pm/acknowledge
  */
 
 import { test, expect }   from '@playwright/test';
@@ -441,6 +445,125 @@ test.describe('I-05 — Scanner ownership flag lifecycle', () => {
 
         const flagAfterUnmount = await page.evaluate(() => window.trierActiveScannerInterceptor);
         expect(flagAfterUnmount).toBe(false);
+    });
+
+});
+
+// ── I-13 · Artifact Source Field Labeled ─────────────────────────────────────
+test.describe('I-13 — Artifact source field labeled', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('artifacts/for/:entityId returns source and requiresInternet on every row', async ({ page }) => {
+        // GET some equipment entity IDs from the master catalog
+        const eqRes = await api(page, 'GET', `${API}/catalog/equipment?limit=20`);
+        expect(eqRes.status()).toBe(200);
+        const eqBody = await eqRes.json();
+        const eqList = Array.isArray(eqBody) ? eqBody : (eqBody.equipment || eqBody.data || []);
+
+        // Try each entity until we find one that has artifacts
+        let foundRows = null;
+        for (const eq of eqList.slice(0, 20)) {
+            const entityId = eq.EquipmentTypeID || eq.ID || eq.id;
+            if (!entityId) continue;
+            const artRes = await api(page, 'GET', `${API}/catalog/artifacts/for/${entityId}`);
+            if (artRes.status() !== 200) continue;
+            const rows = await artRes.json();
+            if (Array.isArray(rows) && rows.length > 0) { foundRows = rows; break; }
+        }
+
+        if (!foundRows) { test.skip(); return; } // no artifacts seeded — shape check is vacuous
+
+        // I-13: every row must carry the normalized fields
+        for (const row of foundRows) {
+            expect(['local', 'external']).toContain(row.source);
+            expect(typeof row.requiresInternet).toBe('boolean');
+            // Consistency: local ↔ !requiresInternet
+            if (row.source === 'local')    expect(row.requiresInternet).toBe(false);
+            if (row.source === 'external') expect(row.requiresInternet).toBe(true);
+        }
+    });
+
+    test('empty artifact list returns an array, not a 500', async ({ page }) => {
+        // Use a known-absent entity ID — must return [] not 500
+        const res = await api(page, 'GET', `${API}/catalog/artifacts/for/INV-I13-ENTITY-ABSENT`);
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        expect(Array.isArray(body)).toBe(true);
+    });
+
+});
+
+// ── I-10 · PM Acknowledged Exactly Once ──────────────────────────────────────
+test.describe('I-10 — PM acknowledged exactly once', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('concurrent acknowledge calls yield one owner + one alreadyClaimed, zero 500s', async ({ page }) => {
+        // Find a pending PM — we need an unacknowledged pm_id and its work_order_id
+        const pendingRes = await api(page, 'GET', `${API}/pm/pending`);
+        if (pendingRes.status() !== 200) { test.skip(); return; }
+        const pendingBody = await pendingRes.json();
+        const notifications = pendingBody.notifications || [];
+        const unclaimedNotif = notifications.find(n => !n.acknowledged_by && n.status === 'pending');
+        if (!unclaimedNotif) { test.skip(); return; } // no unclaimed PMs available
+
+        const pmId      = unclaimedNotif.pm_id;
+        const woId      = unclaimedNotif.work_order_id;
+
+        const cookies    = await page.context().cookies();
+        const cookieHdr  = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+
+        const fire = () => globalThis.fetch(`${EXPRESS}${API}/pm/acknowledge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-plant-id': PLANT, Cookie: cookieHdr },
+            body: JSON.stringify({ pmId, woId }),
+        });
+
+        const [r1, r2] = await Promise.all([fire(), fire()]);
+
+        // I-10: neither call may return 500
+        expect(r1.status).not.toBe(500);
+        expect(r2.status).not.toBe(500);
+
+        const [b1, b2] = await Promise.all([r1.json(), r2.json()]);
+
+        // Exactly one caller claims ownership; the other receives alreadyClaimed
+        const claimedValues = [b1.alreadyClaimed, b2.alreadyClaimed];
+        expect(claimedValues).toContain(false); // one winner
+        expect(claimedValues).toContain(true);  // one dedup
+
+        // The alreadyClaimed response must carry who owns it
+        const dedupBody = b1.alreadyClaimed ? b1 : b2;
+        expect(dedupBody.ok).toBe(true);
+        expect(dedupBody.acknowledgedBy).toBeTruthy();
+        expect(dedupBody.acknowledgedAt).toBeTruthy();
+    });
+
+    test('second sequential acknowledge returns alreadyClaimed: true, not 500', async ({ page }) => {
+        // Find any PM — already acknowledged or not
+        const pendingRes = await api(page, 'GET', `${API}/pm/pending`);
+        if (pendingRes.status() !== 200) { test.skip(); return; }
+        const pendingBody = await pendingRes.json();
+        const notifications = pendingBody.notifications || [];
+        if (!notifications.length) { test.skip(); return; }
+
+        // Pick the first notification regardless of status
+        const notif = notifications[0];
+        const pmId  = notif.pm_id;
+        const woId  = notif.work_order_id;
+
+        // First call — may be the owner or may find it already claimed
+        const r1 = await api(page, 'POST', `${API}/pm/acknowledge`, { pmId, woId });
+        expect(r1.status()).not.toBe(500);
+
+        // Second call for the same PM — must always be alreadyClaimed
+        const r2 = await api(page, 'POST', `${API}/pm/acknowledge`, { pmId, woId });
+        expect(r2.status()).not.toBe(500);
+        const b2 = await r2.json();
+        expect(b2.ok).toBe(true);
+        expect(b2.alreadyClaimed).toBe(true);
+        expect(b2.acknowledgedBy).toBeTruthy();
     });
 
 });

@@ -365,10 +365,10 @@ INVARIANT: every artifact response includes a source field:
 | I-07 Outcome uses event timestamp | — | ✅ | ✅ | COVERED |
 | I-08 Plant query scoping | ✅ | ✅ | ✅ | COVERED |
 | I-09 Barcode resolution idempotent | ✅ | ✅ | — | FIXED |
-| I-10 PM acknowledged once | ❌ | ⚠️ | ✅ | PARTIAL |
+| I-10 PM acknowledged once | ✅ | ✅ | ✅ | FIXED |
 | I-11 WO close accounts for parts | — | ✅ | ✅ | FIXED (I-11-B open) |
 | I-12 Cache plant-scoped | — | ✅ | — | COVERED |
-| I-13 Artifact source labeled | ✅ | ⚠️ | ⚠️ | PARTIAL |
+| I-13 Artifact source labeled | ✅ | ✅ | ✅ | FIXED |
 
 ---
 

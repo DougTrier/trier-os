@@ -76,34 +76,53 @@ module.exports = function pmAcknowledgeRoutes(authMiddleware) {
             });
         }
 
-        db.transaction(() => {
-            // Record acknowledgement
-            db.prepare(`
-                INSERT INTO pm_acknowledgements (pm_id, work_order_id, plant_id, acknowledged_by, ack_method)
-                VALUES (?, ?, ?, ?, ?)
-            `).run(pmId, woId, plantId, username, ackMethod);
+        try {
+            db.transaction(() => {
+                // Record acknowledgement — UNIQUE(pm_id) enforces exactly-once at DB layer
+                db.prepare(`
+                    INSERT INTO pm_acknowledgements (pm_id, work_order_id, plant_id, acknowledged_by, ack_method)
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(pmId, woId, plantId, username, ackMethod);
 
-            // Supersede all pending notifications for this PM
-            db.prepare(`
-                UPDATE pm_notifications
-                SET status = CASE WHEN notified_user = ? THEN 'acknowledged' ELSE 'superseded' END
-                WHERE pm_id = ?
-            `).run(username, pmId);
+                // Supersede all pending notifications for this PM
+                db.prepare(`
+                    UPDATE pm_notifications
+                    SET status = CASE WHEN notified_user = ? THEN 'acknowledged' ELSE 'superseded' END
+                    WHERE pm_id = ?
+                `).run(username, pmId);
 
-            // Activate the WO
-            db.prepare(`
-                UPDATE Work SET StatusID = 30, AssignedTo = ? WHERE ID = ? AND StatusID < 30
-            `).run(username, woId);
+                // Activate the WO
+                db.prepare(`
+                    UPDATE Work SET StatusID = 30, AssignedTo = ? WHERE ID = ? AND StatusID < 30
+                `).run(username, woId);
 
-            // Open a WorkSegment so time tracking starts
-            db.prepare(`
-                INSERT INTO WorkSegments (woId, userId, segmentState, startTime)
-                VALUES (?, ?, 'Active', datetime('now'))
-            `).run(woId, username);
+                // Open a WorkSegment so time tracking starts
+                db.prepare(`
+                    INSERT INTO WorkSegments (woId, userId, segmentState, startTime)
+                    VALUES (?, ?, 'Active', datetime('now'))
+                `).run(woId, username);
 
-            // Update PM status
-            db.prepare("UPDATE Schedule SET pm_status = 'PM_ACKNOWLEDGED' WHERE ID = ?").run(pmId);
-        })();
+                // Update PM status
+                db.prepare("UPDATE Schedule SET pm_status = 'PM_ACKNOWLEDGED' WHERE ID = ?").run(pmId);
+            }).immediate()();
+        } catch (err) {
+            // S-11: UNIQUE constraint is the authoritative idempotency guard — a concurrent
+            // caller already claimed this PM between our pre-check and the INSERT.
+            if (err.message?.includes('UNIQUE constraint failed: pm_acknowledgements.pm_id')) {
+                const claimed = db.prepare(
+                    'SELECT acknowledged_by, acknowledged_at, work_order_id FROM pm_acknowledgements WHERE pm_id = ?'
+                ).get(pmId);
+                return res.json({
+                    ok: true,
+                    alreadyClaimed: true,
+                    acknowledgedBy: claimed?.acknowledged_by ?? null,
+                    acknowledgedAt: claimed?.acknowledged_at ?? null,
+                    woId: claimed?.work_order_id ?? woId,
+                });
+            }
+            console.error('[pmAcknowledge] POST /acknowledge error:', err);
+            return res.status(500).json({ error: 'Acknowledgement failed', detail: err.message });
+        }
 
         logAudit(username, 'PM_ACKNOWLEDGED', plantId, { pmId, woId, ackMethod });
 
