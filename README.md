@@ -7,12 +7,12 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   
   **Industrial Operations Platform — Built for the Plant Floor**
 
-  [![Version](https://img.shields.io/badge/Version-3.5.1-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.5.1)
+  [![Version](https://img.shields.io/badge/Version-3.6.0-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.6.0)
   [![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
   [![Node.js](https://img.shields.io/badge/Node.js-Express-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
   [![SQLite](https://img.shields.io/badge/SQLite-EDR%20Safe-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
   [![Cesium](https://img.shields.io/badge/Cesium-GIS%20Analytics-60A5FA?style=for-the-badge&logo=cesium&logoColor=white)](https://cesium.com/)
-  [![Playwright](https://img.shields.io/badge/Playwright-559%20Mobile%20%7C%20700%20Desktop-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
+  [![Playwright](https://img.shields.io/badge/Playwright-741%20Mobile%20%7C%20741%20Desktop-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
 
   [Features](#sparkles-the-advanced-engines) •
   [Installation](#gear-installation--quick-start) •
@@ -63,7 +63,7 @@ This is what the system does on day one, before anyone configures an algorithm o
 
 ### 📱 Mobile (iPhone / iOS)
 
-Real-device screenshots from an iPhone running Trier OS v3.5.1 over a plant LAN:
+Real-device screenshots from an iPhone running Trier OS v3.6.0 over a plant LAN:
 
 <div align="center">
 
@@ -165,7 +165,7 @@ npm run electron:build
 
 ## :triangular_ruler: Zero Obfuscation Architecture
 
-Trier OS is built on extreme contextual transparency. We enforce a hard **10% minimum Contextual Density Ratio** across 158,000+ lines of core application logic.
+Trier OS is built on extreme contextual transparency. We enforce a hard **10% minimum Contextual Density Ratio** across 178,900+ lines of core application logic.
 
 Every logic file contains the mandatory **Trier OS Architecture Header Pattern**, meaning over 15,800 lines of context documentation exist purely to bridge the gap between engineering scripts and physical Plant Floor Operations.
 
