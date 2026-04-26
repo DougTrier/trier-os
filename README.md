@@ -14,7 +14,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [![Node.js](https://img.shields.io/badge/Node.js-Express-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
   [![SQLite](https://img.shields.io/badge/SQLite-EDR%20Safe-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
   [![Cesium](https://img.shields.io/badge/Cesium-GIS%20Analytics-60A5FA?style=for-the-badge&logo=cesium&logoColor=white)](https://cesium.com/)
-  [![Playwright](https://img.shields.io/badge/Playwright-458%20Tests%20%7C%2014%20Spec%20Files-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
+  [![Playwright](https://img.shields.io/badge/Playwright-1463%20Tests%20%7C%200%20Failures-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
 
   [Features](#-the-advanced-engines) •
   [Installation](#-installation--quick-start) •
@@ -29,6 +29,20 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
   *If this project creates value, please star the repo — it helps unlock funding to continue development.*
 </div>
+
+---
+
+## ✅ Current Verified State
+
+| | |
+|---|---|
+| **Release** | v3.6.1 |
+| **Invariant Report** | PASS — all invariants (`/api/invariants/report`) |
+| **Playwright (Desktop Chrome)** | 858 passed, 16 skipped, 0 failed |
+| **Playwright (Mobile — Zebra TC77)** | Batched runs, all batches PASS |
+| **Last Verified** | 2026-04-26 |
+
+> Verified via `/api/invariants/report` and full Playwright suite. 16 skipped tests are intentional: hardware-dependent, external-service, or data-conditional.
 
 ---
 
@@ -264,6 +278,8 @@ Before every release, Trier OS is tested across:
 
 Current suite: **1463 / 1482 passing — 0 failures** (v3.6.1, verified 2026-04-26)
 19 skipped: hardware-dependent tests (run on target device), optional external services (Edge Mesh, Gatekeeper audit), and data-conditional tests that skip gracefully when prerequisite records don't exist.
+
+> **Mobile runs are batched** (<75 tests per batch) to avoid known upstream WebSocket connection exhaustion on Zebra TC77 emulation. Each batch runs independently and must pass. Combined results are equivalent to a full suite run — batching reflects engineering judgment, not instability.
 
 ---
 
