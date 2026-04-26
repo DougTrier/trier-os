@@ -1,0 +1,52 @@
+# Trier OS — Controlled Follow-ups Registry
+#
+# Deferred items that are NOT loose ends — each has a documented trigger,
+# acceptance criteria, and a review date. CI fails if any entry goes
+# unreviewed for more than 90 days (scripts/check_followups.js).
+#
+# Lifecycle: identified → deferred → trigger met → completed
+# Status values: deferred | in_progress | completed
+
+- id: I-11-B
+  title: Enforce unresolved-parts check under compliance mode
+  invariant: I-11
+  trigger: compliance_mode_enabled == true
+  triggerEnvVar: COMPLIANCE_MODE
+  scope:
+    - offline gate — block close when online and unresolved parts exist server-side
+    - audit flag on close payload — record that close proceeded offline with unresolved parts
+    - post-sync reconciliation job — nightly job resolves or flags all audited closes
+  acceptance:
+    - close blocked server-side when unresolved parts and online
+    - offline close logs audit flag and queues reconciliation entry in invariant_log
+    - nightly reconciliation job surfaces all flagged closes in invariant report
+    - I-11:UNRESOLVED_PARTS_CLOSE_BLOCKED wired in server/routes/workOrders.js (POST close)
+  owner: core
+  status: deferred
+  lastReviewedAt: "2026-04-26"
+  notes: >
+    Current I-11 enforcement is UI-layer only (CloseOutWizard warning).
+    Compliance mode is the trigger for server-side enforcement.
+    Deliberately deferred — not temporary, not forgotten.
+    See docs/ARCHITECTURE_INVARIANTS.md I-11-B for full tradeoff documentation.
+
+- id: NIGHTLY-INVARIANT-ALERT
+  title: Nightly cron alert when any invariant FAILS or deferred trigger is active
+  invariant: null
+  trigger: Phase 3 invariant report in production
+  triggerEnvVar: null
+  scope:
+    - cron job calls GET /api/invariants/report?plantId=all
+    - alert if overallStatus == FAIL
+    - alert if any deferred item's triggerEnvVar is set and status != completed
+  acceptance:
+    - alert fires within 1h of any invariant FAIL in production
+    - alert fires if COMPLIANCE_MODE is set while I-11-B is still deferred
+    - alert channel configurable (Slack webhook or email)
+  owner: core
+  status: deferred
+  lastReviewedAt: "2026-04-26"
+  notes: >
+    One cron job, no UI needed. Wire after first production deployment.
+    Alert on DEFERRED trigger-active condition prevents accidental rollout
+    of compliance mode without I-11-B enforcement in place.

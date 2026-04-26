@@ -23,9 +23,12 @@
 const express      = require('express');
 const path         = require('path');
 const fs           = require('fs');
+const yaml         = require('js-yaml');
 const Database     = require('better-sqlite3');
 const { db: ldb }  = require('../logistics_db');
 const dataDir      = require('../resolve_data_dir');
+
+const FOLLOWUPS_PATH = path.join(__dirname, '../../docs/followups.yaml');
 
 const SAFE_PLANT_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 
@@ -234,6 +237,28 @@ function buildInvariantResult(inv, plantIds) {
     };
 }
 
+// Load deferred follow-ups from docs/followups.yaml, adding triggerActive flag.
+// Silent on parse failure — missing file never breaks the report.
+function loadDeferred() {
+    try {
+        const raw = yaml.load(fs.readFileSync(FOLLOWUPS_PATH, 'utf8'));
+        if (!Array.isArray(raw)) return [];
+        return raw
+            .filter(f => f.status !== 'completed')
+            .map(f => ({
+                id:            f.id,
+                title:         f.title,
+                status:        (f.status || 'deferred').toUpperCase(),
+                trigger:       f.trigger    ?? null,
+                triggerActive: f.triggerEnvVar ? !!process.env[f.triggerEnvVar] : false,
+                nextAction:    f.scope?.[0]  ?? null,
+                lastReviewedAt: f.lastReviewedAt ?? null,
+            }));
+    } catch {
+        return [];
+    }
+}
+
 // ── Route ─────────────────────────────────────────────────────────────────────
 
 module.exports = function invariantsRoutes(authMiddleware) {
@@ -256,11 +281,16 @@ module.exports = function invariantsRoutes(authMiddleware) {
         const invariants = INVARIANTS.map(inv => buildInvariantResult(inv, plantIds));
         const overallStatus = invariants.some(i => i.status === 'FAIL') ? 'FAIL' : 'PASS';
 
+        // Surface deferred follow-ups alongside invariants so they're never "out of sight."
+        // Active trigger = triggerEnvVar is set in the current environment.
+        const deferred = loadDeferred();
+
         return res.json({
             generatedAt:   new Date().toISOString(),
             plantIds,
             overallStatus,
             invariants,
+            deferred,
         });
     });
 
