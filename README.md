@@ -5,7 +5,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
   # Trier OS
   
-  **Industrial Operations Platform — Built for the Plant Floor**
+  **Scan a machine. Know its state. Execute the next action. Keep working offline. Prove what happened.**
 
   [![Version](https://img.shields.io/badge/Version-3.6.0-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.6.0)
   [![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
@@ -18,8 +18,9 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [Installation](#gear-installation--quick-start) •
   [Architecture](#triangular_ruler-zero-obfuscation-architecture) •
   [Security](#shield-security--funding) •
-  [Demo Data](./docs/DEMO_DATA.md) •
-  [Quick Facts](./docs/QUICK_FACTS.md) •
+  [Pilot Guide](./docs/PILOT_GUIDE.md) •
+  [5-Min Demo](./docs/DEMO_SCRIPT.md) •
+  [Threat Model](./docs/THREAT_MODEL.md) •
   [Docs](./docs/ARCHITECTURE.md)
 
   ---
@@ -31,11 +32,15 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
 ## How it works on the plant floor
 
+Trier OS is an offline-first plant operations platform where scanning an asset executes the next work action — not just opens a record.
+
 A technician walks up to a machine and scans it. The system identifies the asset, finds any open work order, and surfaces tap-only action buttons — no typing, no navigation. They start work, complete it, and close it out. The next scan on the same asset shows the correct state to every device in the plant instantly.
 
 **If the server goes down or the network drops, nothing stops.** Every scan queues locally on the device. When connectivity returns, the queue drains automatically and the record is complete. Supervisors see which devices are live on the plant LAN and which scans are waiting to sync. Work orders that were left open by a missed close-out scan are flagged automatically for supervisor review rather than left as ghost records.
 
 This is what the system does on day one, before anyone configures an algorithm or reads a dashboard.
+
+> **Not an ERP.** Trier OS handles plant operations, maintenance, safety, parts, assets, and execution intelligence. It does not replace financial general ledger, payroll, or accounting modules. It integrates with ERP systems (SAP, Oracle, and others) but runs independently of them.
 
 ---
 
