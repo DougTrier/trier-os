@@ -16,7 +16,8 @@
  *   GET  /api/scan/wo-parts
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect }   from '@playwright/test';
+import { randomUUID }      from 'crypto';
 
 const ADMIN   = { username: 'ghost_admin', password: 'Trier3652!' };
 const PLANT   = 'Demo_Plant_1';
@@ -120,6 +121,112 @@ test.describe('I-04 — Duplicate scanId idempotency', () => {
 
         const b2 = await second.json();
         expect(['DUPLICATE_SCAN', 'AUTO_REJECT_DUPLICATE_SCAN']).toContain(b2.branch);
+    });
+
+});
+
+// ── I-09/I-10 · Receiving Event Resolved Once, Stock Incremented Once ─────────
+test.describe('I-09/I-10 — Offline receiving event resolve idempotency', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('resolve transitions needsReview → accepted and increments stock exactly once', async ({ page }) => {
+        // 1. Get any valid part and record stock before
+        const cacheRes = await api(page, 'GET', `${API}/offline/receiving-cache`);
+        expect(cacheRes.status()).toBe(200);
+        const cache = await cacheRes.json();
+        if (!cache.parts?.length) { test.skip(); return; }
+        const part = cache.parts[0];
+        const stockBefore = Number(part.Stock ?? 0);
+        const QTY = 7; // distinct quantity to detect double-apply clearly
+
+        // 2. Sync an event whose barcode is unknown → lands in needsReview
+        const eventId = randomUUID();
+        const syncRes = await api(page, 'POST', `${API}/offline/receiving-sync`, {
+            events: [{
+                eventId,
+                plantId: PLANT,
+                barcode: `inv-i09-unknown-${Date.now()}`,
+                quantity: QTY,
+                capturedAt: new Date().toISOString(),
+            }],
+        });
+        expect(syncRes.status()).toBe(200);
+        const syncBody = await syncRes.json();
+        expect(syncBody.needsReview).toBe(1);
+
+        // 3. Resolve to the known part
+        const res1 = await api(page, 'POST',
+            `${API}/offline/receiving-events/${eventId}/resolve`,
+            { resolvedPartId: String(part.ID) });
+        expect(res1.status()).toBe(200);
+        const body1 = await res1.json();
+        expect(body1.ok).toBe(true);
+        expect(body1.idempotent).toBeFalsy();
+        expect(body1.resolvedBy).toBeTruthy();
+
+        // 4. Verify stock incremented by exactly QTY
+        const cache2 = await (await api(page, 'GET', `${API}/offline/receiving-cache`)).json();
+        const afterPart = cache2.parts.find(p => String(p.ID) === String(part.ID));
+        expect(Number(afterPart?.Stock ?? 0)).toBe(stockBefore + QTY);
+
+        // 5. Resolve the same event again — must be idempotent
+        const res2 = await api(page, 'POST',
+            `${API}/offline/receiving-events/${eventId}/resolve`,
+            { resolvedPartId: String(part.ID) });
+        expect(res2.status()).toBe(200);
+        const body2 = await res2.json();
+        expect(body2.idempotent).toBe(true);
+
+        // 6. Stock must be unchanged — no second increment
+        const cache3 = await (await api(page, 'GET', `${API}/offline/receiving-cache`)).json();
+        const finalPart = cache3.parts.find(p => String(p.ID) === String(part.ID));
+        expect(Number(finalPart?.Stock ?? 0)).toBe(stockBefore + QTY);
+    });
+
+    test('resolving non-needsReview event returns 400', async ({ page }) => {
+        // An event that was already accepted from the initial sync (barcode matched a part)
+        const cacheRes = await api(page, 'GET', `${API}/offline/receiving-cache`);
+        const cache = await cacheRes.json();
+        if (!cache.parts?.length) { test.skip(); return; }
+        const part = cache.parts[0];
+
+        const eventId = randomUUID();
+        await api(page, 'POST', `${API}/offline/receiving-sync`, {
+            events: [{
+                eventId,
+                plantId: PLANT,
+                barcode: String(part.ID), // known barcode — will be accepted, not needsReview
+                quantity: 1,
+                capturedAt: new Date().toISOString(),
+            }],
+        });
+
+        const res = await api(page, 'POST',
+            `${API}/offline/receiving-events/${eventId}/resolve`,
+            { resolvedPartId: String(part.ID) });
+        // Already accepted — returns idempotent 200, not 400
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        expect(body.idempotent).toBe(true);
+    });
+
+    test('resolve with unknown resolvedPartId returns 404', async ({ page }) => {
+        const eventId = randomUUID();
+        await api(page, 'POST', `${API}/offline/receiving-sync`, {
+            events: [{
+                eventId,
+                plantId: PLANT,
+                barcode: `inv-i09-nopart-${Date.now()}`,
+                quantity: 1,
+                capturedAt: new Date().toISOString(),
+            }],
+        });
+
+        const res = await api(page, 'POST',
+            `${API}/offline/receiving-events/${eventId}/resolve`,
+            { resolvedPartId: 'PART-DOES-NOT-EXIST-999' });
+        expect(res.status()).toBe(404);
     });
 
 });

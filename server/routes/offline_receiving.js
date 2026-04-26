@@ -17,9 +17,10 @@
  * rather than rejected, so no scan is ever lost.
  *
  * -- ROUTES -------------------------------------------------------
- *   POST /api/offline/receiving-sync      Sync array of queued events
- *   GET  /api/offline/receiving-cache     Snapshot of parts/POs for device warm-up
- *   GET  /api/offline/receiving-events    Query synced events (admin/review queue)
+ *   POST /api/offline/receiving-sync                   Sync array of queued events
+ *   POST /api/offline/receiving-events/:eventId/resolve Resolve needsReview → accepted
+ *   GET  /api/offline/receiving-cache                  Snapshot of parts/POs for device warm-up
+ *   GET  /api/offline/receiving-events                 Query synced events (admin/review queue)
  */
 
 'use strict';
@@ -55,6 +56,10 @@ ldb.exec(`
     CREATE INDEX IF NOT EXISTS idx_offrecv_barcode ON OfflineReceivingEvents(barcode);
     CREATE INDEX IF NOT EXISTS idx_offrecv_po     ON OfflineReceivingEvents(poNumber);
 `);
+
+// I-09: Resolve audit columns — added after initial release; safe to re-run.
+try { ldb.exec(`ALTER TABLE OfflineReceivingEvents ADD COLUMN resolvedBy  TEXT`); } catch {}
+try { ldb.exec(`ALTER TABLE OfflineReceivingEvents ADD COLUMN resolvedAt  TEXT`); } catch {}
 
 // Prepared statements (lazy — don't fail boot if logistics_db isn't ready yet)
 let stmts;
@@ -229,6 +234,92 @@ function applyStockUpdate(ev) {
     })();
 }
 
+// ── POST /api/offline/receiving-events/:eventId/resolve ──────────────────────
+// Resolve a needsReview event: link it to a known part, apply stock once.
+// Body: { resolvedPartId }
+//
+// State machine:
+//   needsReview  →  accepted  (first call — applies stock)
+//   accepted     →  accepted  (idempotent — no second stock increment)
+//   anything else            →  400
+//
+// I-09: The UPDATE predicate WHERE syncStatus = 'needsReview' inside an IMMEDIATE
+// transaction is the authoritative guard. Two concurrent resolves for the same
+// eventId are serialized by the write lock; only the one whose changes === 1
+// triggers the stock update. The outer status check is an early-return shortcut only.
+router.post('/receiving-events/:eventId/resolve', (req, res) => {
+    const { eventId } = req.params;
+    const { resolvedPartId } = req.body;
+    const resolvedBy = req.user?.Username || req.user?.UserID || 'unknown';
+
+    if (!eventId || !SAFE_EVENT_ID.test(String(eventId))) {
+        return res.status(400).json({ error: 'Invalid eventId' });
+    }
+    if (!resolvedPartId) {
+        return res.status(400).json({ error: 'resolvedPartId is required' });
+    }
+
+    // Fast read for 404 and non-needsReview rejection before acquiring the write lock
+    const event = ldb.prepare(
+        `SELECT eventId, plantId, syncStatus, quantity FROM OfflineReceivingEvents WHERE eventId = ? LIMIT 1`
+    ).get(String(eventId));
+
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+    if (event.syncStatus === 'accepted') {
+        return res.json({ ok: true, idempotent: true, eventId, message: 'Already resolved' });
+    }
+    if (event.syncStatus !== 'needsReview') {
+        return res.status(400).json({ error: `Cannot resolve event in syncStatus '${event.syncStatus}'` });
+    }
+
+    // Validate the resolved part exists in the plant DB before touching logistics state
+    try {
+        const conn = database.getDb(String(event.plantId));
+        const part = conn.prepare('SELECT ID FROM Part WHERE ID = ? LIMIT 1').get(String(resolvedPartId));
+        if (!part) {
+            return res.status(404).json({ error: `Part '${resolvedPartId}' not found in ${event.plantId}` });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: `Plant DB lookup failed: ${err.message}` });
+    }
+
+    const resolvedAt = new Date().toISOString();
+    let txResult;
+
+    ldb.transaction(() => {
+        const { changes } = ldb.prepare(`
+            UPDATE OfflineReceivingEvents
+            SET    syncStatus = 'accepted', resolvedPartId = ?, resolvedBy = ?, resolvedAt = ?
+            WHERE  eventId = ? AND syncStatus = 'needsReview'
+        `).run(String(resolvedPartId), resolvedBy, resolvedAt, String(eventId));
+
+        // changes === 0 means a concurrent request won the race and already resolved it
+        txResult = changes === 0
+            ? { ok: true, idempotent: true, eventId, message: 'Already resolved' }
+            : { ok: true, eventId, resolvedPartId: String(resolvedPartId),
+                resolvedBy, resolvedAt, quantity: event.quantity, _apply: true };
+    }).immediate()();
+
+    if (txResult.idempotent) return res.json(txResult);
+
+    // Apply stock update outside the logistics transaction (separate DB connection).
+    // The event is already marked accepted; a failure here is non-fatal — a
+    // reconciliation pass can re-apply using the accepted rows where stock was not yet moved.
+    try {
+        applyStockUpdate({
+            eventId,
+            plantId:       event.plantId,
+            resolvedPartId: String(resolvedPartId),
+            quantity:      event.quantity,
+        });
+    } catch (err) {
+        console.warn(`[offline-receiving] stock update failed for resolve ${eventId}: ${err.message}`);
+    }
+
+    const { _apply, ...body } = txResult;
+    return res.json(body);
+});
+
 // ── GET /api/offline/receiving-cache ─────────────────────────────────────────
 // Returns a lightweight snapshot for IndexedDB warm-up: parts (id+name+stock+location)
 // and open POs for the requested plant. Zebra devices download this on Wi-Fi connection.
@@ -285,7 +376,8 @@ router.get('/receiving-events', (req, res) => {
 
     const sql = `
         SELECT eventId, plantId, deviceId, userId, barcode, poNumber, quantity,
-               binLocation, capturedAt, syncedAt, syncStatus, resolvedPartId, reviewNote
+               binLocation, capturedAt, syncedAt, syncStatus,
+               resolvedPartId, reviewNote, resolvedBy, resolvedAt
         FROM OfflineReceivingEvents
         WHERE ${conditions.join(' AND ')}
         ORDER BY capturedAt DESC
