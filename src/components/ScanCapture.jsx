@@ -80,8 +80,13 @@ export default function ScanCapture({ plantId, userId, onResult, onError, classN
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Cleanup on unmount ────────────────────────────────────────────────────
+    // I-05: Claim scanner ownership on mount so App.jsx's global keydown guard
+    // knows this component is the active interceptor and does not double-handle
+    // wedge input (which would open the nav modal while a scan is in progress).
     useEffect(() => {
+        window.trierActiveScannerInterceptor = true;
         return () => {
+            window.trierActiveScannerInterceptor = false;
             stopCamera();
             clearTimeout(wedgeTimerRef.current);
             clearTimeout(confirmTimerRef.current);

@@ -53,6 +53,30 @@ async function api(page, method, path, body) {
     return { status: () => status, json: async () => data, ok: () => status >= 200 && status < 300 };
 }
 
+// ── I-05 · One Active Scanner Owner at a Time ────────────────────────────────
+test.describe('I-05 — Scanner ownership flag lifecycle', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('flag is true while ScanCapture is mounted, false after unmount', async ({ page }) => {
+        // Navigate to the scanner workspace — ScanCapture mounts here
+        await page.goto('/scanner');
+        await expect(page.getByRole('button', { name: /Scan QR Code/i })).toBeVisible({ timeout: 12000 });
+
+        // I-05: flag must be set while the component is live
+        const flagWhileMounted = await page.evaluate(() => window.trierActiveScannerInterceptor);
+        expect(flagWhileMounted).toBe(true);
+
+        // Navigate away — ScanCapture unmounts and must release the flag
+        await page.goto('/');
+        await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+
+        const flagAfterUnmount = await page.evaluate(() => window.trierActiveScannerInterceptor);
+        expect(flagAfterUnmount).toBe(false);
+    });
+
+});
+
 // ── I-03 · Offline Events Replay in Device-Timestamp Order ───────────────────
 test.describe('I-03 — Offline replay ordering', () => {
 
