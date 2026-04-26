@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trier OS — Installation Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f8f9fb;
+    color: #1a1a2e;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── Cover Page ── */
+  .cover {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f4c75 100%);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+    position: relative;
+  }
+
+  .cover-logo {
+    width: 90px;
+    height: 90px;
+    background: rgba(255,255,255,0.12);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    margin-bottom: 32px;
+  }
+
+  .cover h1 {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #ffffff, #93c5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cover .tagline {
+    font-size: 18px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+
+  .cover-box {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 32px 48px;
+    max-width: 600px;
+    margin-bottom: 48px;
+  }
+
+  .cover-box h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #93c5fd;
+  }
+
+  .cover-box p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.8;
+    margin-bottom: 24px;
+  }
+
+  .install-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .method-pill {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .method-pill .pill-icon { font-size: 18px; margin-right: 8px; }
+  .method-pill .pill-label { font-weight: 700; }
+  .method-pill .pill-desc  { color: rgba(255,255,255,0.55); font-size: 11px; display: block; margin-top: 2px; }
+
+  .cover-meta {
+    display: flex;
+    gap: 48px;
+    margin-top: 4px;
+  }
+
+  .cover-meta-item .val {
+    font-size: 26px;
+    font-weight: 800;
+    color: #93c5fd;
+    display: block;
+  }
+
+  .cover-meta-item .lbl {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.45);
+  }
+
+  /* ── Page Layout ── */
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 60px 52px;
+  }
+
+  @media print {
+    .page { padding: 36px 52px; }
+    .cover { min-height: auto; padding: 80px 60px; page-break-after: always; }
+    .no-break { page-break-inside: avoid; }
+    .page-break { page-break-before: always; padding-top: 48px; }
+  }
+
+  /* ── Section Headers ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #2563eb;
+    margin-bottom: 6px;
+    margin-top: 52px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  h2 {
+    font-size: 30px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 12px;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    margin-top: 28px;
+  }
+
+  p { margin-bottom: 14px; color: #374151; }
+
+  /* ── Method chooser ── */
+  .chooser {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .choice-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px 24px;
+    page-break-inside: avoid;
+    transition: border-color 0.2s;
+  }
+
+  .choice-card.recommended { border-color: #2563eb; }
+
+  .choice-card .ch-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+  .choice-card h4 { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .choice-card .ch-subtitle { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+  .choice-card p { font-size: 13px; color: #6b7280; margin: 0; }
+
+  .rec-badge {
+    display: inline-block;
+    background: #2563eb;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+
+  .goto-badge {
+    display: inline-block;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+
+  /* ── Method header banner ── */
+  .method-banner {
+    border-radius: 14px;
+    padding: 22px 28px;
+    margin: 28px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    page-break-inside: avoid;
+  }
+
+  .method-banner.exe    { background: #eff6ff; border: 2px solid #93c3fd; }
+  .method-banner.msi    { background: #f0fdf4; border: 2px solid #86efac; }
+  .method-banner.zip    { background: #fffbeb; border: 2px solid #fde68a; }
+  .method-banner.source { background: #faf5ff; border: 2px solid #d8b4fe; }
+
+  .method-banner .mb-icon { font-size: 36px; }
+  .method-banner h3 { font-size: 20px; font-weight: 800; margin: 0 0 4px; }
+  .method-banner p  { font-size: 13px; margin: 0; color: #6b7280; }
+
+  .method-banner.exe    h3 { color: #1d4ed8; }
+  .method-banner.msi    h3 { color: #15803d; }
+  .method-banner.zip    h3 { color: #b45309; }
+  .method-banner.source h3 { color: #7c3aed; }
+
+  /* ── Steps ── */
+  .steps { display: flex; flex-direction: column; gap: 18px; margin-top: 20px; }
+
+  .step {
+    display: flex;
+    gap: 18px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px 26px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    page-break-inside: avoid;
+  }
+
+  .step-num {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    background: #0f172a;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 2px;
+  }
+
+  .step-num.blue   { background: #2563eb; }
+  .step-num.green  { background: #16a34a; }
+  .step-num.amber  { background: #d97706; }
+  .step-num.purple { background: #7c3aed; }
+
+  .step-content { flex: 1; }
+  .step-content h4 { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+  .step-content p  { font-size: 13.5px; color: #6b7280; margin-bottom: 10px; }
+  .step-content p:last-child { margin-bottom: 0; }
+
+  /* ── Code blocks ── */
+  .cmd {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 12.5px;
+    padding: 13px 18px;
+    border-radius: 10px;
+    margin: 10px 0;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  .cmd .prompt    { color: #4ade80; }
+  .cmd .comment   { color: #64748b; }
+  .cmd .highlight { color: #fbbf24; }
+  .cmd .url       { color: #93c5fd; }
+
+  .cmd-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+    margin-top: 14px;
+  }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13.5px;
+    page-break-inside: avoid;
+  }
+  .callout-icon { font-size: 18px; line-height: 1.5; min-width: 22px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; margin-bottom: 3px; font-size: 13.5px; }
+  .callout-body p      { margin: 0; font-size: 13px; }
+
+  .callout.info    { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .callout.info    .callout-body strong { color: #1d4ed8; }
+  .callout.info    .callout-body p      { color: #1e40af; }
+
+  .callout.success { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .callout.success .callout-body strong { color: #15803d; }
+  .callout.success .callout-body p      { color: #166534; }
+
+  .callout.warning { background: #fffbeb; border: 1px solid #fde68a; }
+  .callout.warning .callout-body strong { color: #b45309; }
+  .callout.warning .callout-body p      { color: #92400e; }
+
+  .callout.purple  { background: #faf5ff; border: 1px solid #d8b4fe; }
+  .callout.purple  .callout-body strong { color: #7c3aed; }
+  .callout.purple  .callout-body p      { color: #6d28d9; }
+
+  /* ── Requirements grid ── */
+  .req-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .req-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 18px 20px;
+    page-break-inside: avoid;
+  }
+  .req-card .req-icon { font-size: 24px; margin-bottom: 8px; }
+  .req-card h5 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .req-card p  { font-size: 13px; color: #6b7280; margin: 0; }
+  .badge {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+  .badge.free   { background: #f0fdf4; color: #15803d; }
+  .badge.amber  { background: #fffbeb; color: #b45309; }
+  .badge.purple { background: #faf5ff; color: #7c3aed; }
+
+  /* ── Divider ── */
+  hr.divider { border: none; border-top: 2px solid #f1f5f9; margin: 40px 0; }
+
+  /* ── Credentials table ── */
+  .creds {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+  .creds-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.4fr;
+    padding: 11px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid #f3f4f6;
+    align-items: center;
+  }
+  .creds-row:last-child { border-bottom: none; }
+  .creds-row.header {
+    background: #f8fafc;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #9ca3af;
+  }
+  .role-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .role-admin { background: #fef2f2; color: #b91c1c; }
+  .role-tech  { background: #eff6ff; color: #1d4ed8; }
+  .role-exec  { background: #f0fdf4; color: #15803d; }
+
+  /* ── Success banner ── */
+  .success-banner {
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    color: white;
+    border-radius: 16px;
+    padding: 36px 40px;
+    text-align: center;
+    margin-top: 32px;
+    page-break-inside: avoid;
+  }
+  .success-banner h3 { color: #4ade80; font-size: 22px; margin-bottom: 10px; }
+  .success-banner p  { color: rgba(255,255,255,0.75); font-size: 15px; margin: 0; }
+  .success-banner .url-box {
+    display: inline-block;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #93c5fd;
+    margin: 16px 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 2px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  /* ── Print ── */
+  @media print {
+    @page { margin: 0.6in 0.7in; size: letter; }
+    body  { background: white; font-size: 13px; }
+    .cover, .method-banner, .step, .req-card,
+    .callout, .success-banner, .creds, .choice-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cmd { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  code {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════  COVER  ═══════════════════ -->
+<div class="cover">
+  <div class="cover-logo">🏭</div>
+  <h1>Trier OS</h1>
+  <div class="tagline">Industrial Operations Platform — Built for the Plant Floor</div>
+
+  <div class="cover-box">
+    <h2>Installation Guide</h2>
+    <p>All four install methods in one place — desktop installer, enterprise MSI, portable ZIP, and from source. Pick the one that fits your situation and follow the steps.</p>
+    <div class="install-methods">
+      <div class="method-pill">
+        <span class="pill-icon">💾</span>
+        <span class="pill-label">EXE Installer</span>
+        <span class="pill-desc">Recommended for most users</span>
+      </div>
+      <div class="method-pill">
+        <span class="pill-icon">🏢</span>
+        <span class="pill-label">MSI Installer</span>
+        <span class="pill-desc">IT / enterprise deployment</span>
+      </div>
+      <div class="method-pill">
+        <span class="pill-icon">📦</span>
+        <span class="pill-label">ZIP Portable</span>
+        <span class="pill-desc">No install, run anywhere</span>
+      </div>
+      <div class="method-pill">
+        <span class="pill-icon">🛠️</span>
+        <span class="pill-label">From Source</span>
+        <span class="pill-desc">Developers &amp; Linux / Mac</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="color:rgba(255,255,255,0.4); font-size:13px;">
+    Version 3.6.0 &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; github.com/DougTrier/trier-os
+  </div>
+</div>
+
+
+<!-- ═══════════════════  PAGE 1 — WHICH METHOD?  ═══════════════════ -->
+<div class="page">
+
+  <div class="section-label">Start Here</div>
+  <h2>Which Install Method Is Right for You?</h2>
+
+  <p>There are four ways to install Trier OS. Read the descriptions below and pick the one that matches your situation. Then skip straight to that section — you don't need to read all four.</p>
+
+  <div class="chooser">
+    <div class="choice-card recommended">
+      <span class="rec-badge">Most Popular</span>
+      <span class="ch-icon">💾</span>
+      <h4>EXE Installer</h4>
+      <div class="ch-subtitle">TrierOS-Setup-3.6.0.exe</div>
+      <p>Double-click to install. Works exactly like any other Windows program. Creates a Start Menu shortcut. Best for individual users and small teams.</p>
+      <span class="goto-badge">→ Method A (Page 2)</span>
+    </div>
+    <div class="choice-card">
+      <span class="ch-icon">🏢</span>
+      <h4>MSI Installer</h4>
+      <div class="ch-subtitle">TrierOS-Setup-3.6.0.msi</div>
+      <p>For IT departments deploying Trier OS across multiple machines. Supports Group Policy, silent install flags, and enterprise deployment tools like SCCM.</p>
+      <span class="goto-badge">→ Method B (Page 3)</span>
+    </div>
+    <div class="choice-card">
+      <span class="ch-icon">📦</span>
+      <h4>ZIP Portable</h4>
+      <div class="ch-subtitle">TrierOS-Setup-3.6.0.zip</div>
+      <p>No installer needed. Unzip and run. Great for servers, USB drives, air-gapped machines, or anywhere you can't run an installer.</p>
+      <span class="goto-badge">→ Method C (Page 4)</span>
+    </div>
+    <div class="choice-card">
+      <span class="ch-icon">🛠️</span>
+      <h4>From Source</h4>
+      <div class="ch-subtitle">Clone from GitHub</div>
+      <p>For developers, contributors, and Mac/Linux users. Requires Node.js and Git. Gives you the full codebase and the ability to customize everything.</p>
+      <span class="goto-badge">→ Method D (Page 5)</span>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <strong>Not sure? Pick EXE.</strong>
+      <p>The EXE installer is the simplest path for 95% of users. You can always switch to a different method later — your data stays in the <code>data/</code> folder and is portable between all install methods.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── DOWNLOAD SECTION ── -->
+  <div class="section-label">Before Any Install</div>
+  <h2>Download the Installer Files</h2>
+
+  <p>All installer files are on the GitHub Releases page. Here's how to get them:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num blue">1</div>
+      <div class="step-content">
+        <h4>Go to the Releases page</h4>
+        <p>Open your browser and go to:</p>
+        <div class="cmd"><span class="url">https://github.com/DougTrier/trier-os/releases/latest</span></div>
+        <p>This always takes you to the newest version.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">2</div>
+      <div class="step-content">
+        <h4>Scroll down to "Assets" and download your file</h4>
+        <p>Under the release notes you'll see an <strong>Assets</strong> section. Download the file for your method:</p>
+        <div class="creds" style="margin-top:10px;">
+          <div class="creds-row header" style="grid-template-columns: 1fr 1fr;">
+            <span>File Name</span><span>Use For</span>
+          </div>
+          <div class="creds-row" style="grid-template-columns: 1fr 1fr;">
+            <span><code>TrierOS-Setup-3.6.0.exe</code></span><span>EXE Installer (Method A)</span>
+          </div>
+          <div class="creds-row" style="grid-template-columns: 1fr 1fr;">
+            <span><code>TrierOS-Setup-3.6.0.msi</code></span><span>MSI Installer (Method B)</span>
+          </div>
+          <div class="creds-row" style="grid-template-columns: 1fr 1fr;">
+            <span><code>TrierOS-Setup-3.6.0.zip</code></span><span>ZIP Portable (Method C)</span>
+          </div>
+        </div>
+        <div class="callout warning" style="margin-top:12px;">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-body">
+            <strong>Windows SmartScreen may show a warning.</strong>
+            <p>Because Trier OS is free and open-source (not code-signed with a paid certificate), Windows may say "unknown publisher." Click <strong>More info → Run anyway</strong>. This is normal for open-source software.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════  PAGE 2 — METHOD A: EXE  ═══════════════════ -->
+<div class="page page-break">
+
+  <div class="method-banner exe">
+    <div class="mb-icon">💾</div>
+    <div>
+      <h3>Method A — EXE Installer</h3>
+      <p>Recommended for most users &nbsp;·&nbsp; Installs like any Windows program &nbsp;·&nbsp; ~5 minutes</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num blue">1</div>
+      <div class="step-content">
+        <h4>Run the installer</h4>
+        <p>Find the downloaded <code>TrierOS-Setup-3.6.0.exe</code> file (usually in your Downloads folder). Double-click it to start the installer.</p>
+        <p>If Windows shows a SmartScreen warning, click <strong>More info</strong> then <strong>Run anyway</strong>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">2</div>
+      <div class="step-content">
+        <h4>Follow the install wizard</h4>
+        <p>Click through the installer steps:</p>
+        <p>① Accept the license agreement<br>
+           ② Choose your install folder (the default is fine)<br>
+           ③ Click <strong>Install</strong><br>
+           ④ Click <strong>Finish</strong> when complete</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">3</div>
+      <div class="step-content">
+        <h4>Launch Trier OS</h4>
+        <p>Look for the <strong>Trier OS</strong> icon on your Desktop or in the Start Menu. Double-click it to launch.</p>
+        <p>The app will open — on first launch it will set up the databases automatically. This takes about 30 seconds. Wait for the login screen to appear.</p>
+        <div class="callout success">
+          <div class="callout-icon">✅</div>
+          <div class="callout-body">
+            <strong>Done!</strong>
+            <p>Skip to the "First Login" section on Page 6 to log in.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── METHOD B: MSI ── -->
+  <div class="method-banner msi">
+    <div class="mb-icon">🏢</div>
+    <div>
+      <h3>Method B — MSI Installer</h3>
+      <p>For IT departments &nbsp;·&nbsp; Supports Group Policy &amp; silent deployment &nbsp;·&nbsp; ~5 minutes</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num green">1</div>
+      <div class="step-content">
+        <h4>Standard interactive install</h4>
+        <p>Double-click <code>TrierOS-Setup-3.6.0.msi</code> to launch the Windows Installer wizard. Follow the prompts — same as any other MSI package.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num green">2</div>
+      <div class="step-content">
+        <h4>Silent / automated install (IT use)</h4>
+        <p>For scripted deployments, open a Command Prompt as Administrator and run:</p>
+        <div class="cmd"><span class="comment"># Silent install — no UI, installs to default location</span>
+<span class="prompt">></span> msiexec /i TrierOS-Setup-3.6.0.msi /quiet /norestart
+
+<span class="comment"># Silent install to a custom folder</span>
+<span class="prompt">></span> msiexec /i TrierOS-Setup-3.6.0.msi /quiet INSTALLDIR="C:\TrierOS"
+
+<span class="comment"># Uninstall silently</span>
+<span class="prompt">></span> msiexec /x TrierOS-Setup-3.6.0.msi /quiet</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num green">3</div>
+      <div class="step-content">
+        <h4>Launch Trier OS</h4>
+        <p>After install, launch from the Start Menu or run the <code>TrierOS.exe</code> from the install folder. On first launch, databases are set up automatically.</p>
+        <div class="callout success">
+          <div class="callout-icon">✅</div>
+          <div class="callout-body">
+            <strong>Done!</strong>
+            <p>Skip to the "First Login" section on Page 6 to log in.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════  PAGE 3 — METHOD C: ZIP  ═══════════════════ -->
+<div class="page page-break">
+
+  <div class="method-banner zip">
+    <div class="mb-icon">📦</div>
+    <div>
+      <h3>Method C — ZIP Portable</h3>
+      <p>No installer needed &nbsp;·&nbsp; Run from any folder or USB drive &nbsp;·&nbsp; ~5 minutes</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <strong>What "portable" means</strong>
+      <p>Nothing gets installed on your computer. Trier OS runs directly from whatever folder you unzip it into. Move the folder to a USB drive and it runs from there too. Delete the folder to remove it completely — no uninstaller needed.</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num amber">1</div>
+      <div class="step-content">
+        <h4>Unzip the file</h4>
+        <p>Find <code>TrierOS-Setup-3.6.0.zip</code> in your Downloads folder. Right-click it and choose <strong>Extract All</strong>.</p>
+        <p>Choose a destination folder — for example <code>C:\TrierOS\</code> or a folder on a USB drive. Click <strong>Extract</strong>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num amber">2</div>
+      <div class="step-content">
+        <h4>Open the extracted folder</h4>
+        <p>Navigate into the folder that was created. You should see a file called <code>TrierOS.exe</code> (or similar) inside.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num amber">3</div>
+      <div class="step-content">
+        <h4>Launch Trier OS</h4>
+        <p>Double-click <code>TrierOS.exe</code> to launch. On first run, Trier OS will create a <code>data/</code> folder in the same directory and set up the databases. This takes about 30 seconds.</p>
+        <div class="callout warning">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-body">
+            <strong>Don't move individual files out of the folder.</strong>
+            <p>The portable version needs all its files together. You can move the entire folder anywhere, but don't rearrange what's inside it.</p>
+          </div>
+        </div>
+        <div class="callout success">
+          <div class="callout-icon">✅</div>
+          <div class="callout-body">
+            <strong>Done!</strong>
+            <p>Skip to the "First Login" section on Page 6 to log in.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════  PAGE 4 — METHOD D: SOURCE  ═══════════════════ -->
+<div class="page page-break">
+
+  <div class="method-banner source">
+    <div class="mb-icon">🛠️</div>
+    <div>
+      <h3>Method D — From Source</h3>
+      <p>Developers, contributors &amp; Mac/Linux users &nbsp;·&nbsp; Full codebase &nbsp;·&nbsp; ~15 minutes</p>
+    </div>
+  </div>
+
+  <h3>What You'll Need First</h3>
+
+  <div class="req-grid">
+    <div class="req-card">
+      <div class="req-icon">🟢</div>
+      <h5>Node.js v22+</h5>
+      <p>The runtime that powers Trier OS. Download from nodejs.org — get the LTS version.</p>
+      <span class="badge free">Free — nodejs.org</span>
+    </div>
+    <div class="req-card">
+      <div class="req-icon">🐙</div>
+      <h5>Git</h5>
+      <p>Used to download the code from GitHub.</p>
+      <span class="badge free">Free — git-scm.com</span>
+    </div>
+  </div>
+
+  <div class="callout purple">
+    <div class="callout-icon">🔍</div>
+    <div class="callout-body">
+      <strong>Already have Node.js?</strong>
+      <p>Open a terminal and run <code>node --version</code>. If you see v22 or higher, skip the Node.js install below.</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num purple">1</div>
+      <div class="step-content">
+        <h4>Install Node.js (if needed)</h4>
+        <p>Go to <strong>nodejs.org</strong>, click the big green LTS button, and run the installer. Accept all defaults. Make sure "Add to PATH" is checked.</p>
+        <p>Verify it worked:</p>
+        <div class="cmd"><span class="prompt">$</span> node --version   <span class="comment"># Should show v22.x.x or higher</span></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num purple">2</div>
+      <div class="step-content">
+        <h4>Install Git (if needed)</h4>
+        <p>Go to <strong>git-scm.com/downloads</strong>, download for your OS, and run the installer with all defaults.</p>
+        <div class="cmd"><span class="prompt">$</span> git --version    <span class="comment"># Should show git version 2.x.x</span></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num purple">3</div>
+      <div class="step-content">
+        <h4>Download Trier OS</h4>
+        <p>Open a terminal, navigate to where you want to put Trier OS, and run:</p>
+        <div class="cmd"><span class="prompt">$</span> git clone https://github.com/DougTrier/trier-os.git trier-os
+<span class="prompt">$</span> cd trier-os</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num purple">4</div>
+      <div class="step-content">
+        <h4>Install dependencies</h4>
+        <p>This downloads all required packages. Takes 2–5 minutes.</p>
+        <div class="cmd"><span class="prompt">$</span> npm install</div>
+        <p>Yellow warnings are normal. Only red errors need attention.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num purple">5</div>
+      <div class="step-content">
+        <h4>Set up configuration</h4>
+        <p><strong>Windows:</strong></p>
+        <div class="cmd"><span class="prompt">$</span> copy .env.example .env</div>
+        <p><strong>Mac / Linux:</strong></p>
+        <div class="cmd"><span class="prompt">$</span> cp .env.example .env</div>
+        <p>The defaults in <code>.env</code> work out of the box for development. Trier OS auto-generates security keys on first boot.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num purple">6</div>
+      <div class="step-content">
+        <h4>Set up the database with demo data</h4>
+        <div class="cmd"><span class="prompt">$</span> npm run seed</div>
+        <p>Creates all databases and fills them with sample plants, assets, work orders, and user accounts. Takes about 30–60 seconds.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num purple">7</div>
+      <div class="step-content">
+        <h4>Start Trier OS</h4>
+        <div class="cmd"><span class="prompt">$</span> npm run dev:full</div>
+        <p>Wait for both of these lines to appear:</p>
+        <div class="cmd"><span class="highlight">API</span>  | Trier OS server listening on port 3000
+<span class="highlight">UI</span>   | Local: http://localhost:5173/</div>
+        <p>Then open your browser and go to <strong>http://localhost:5173</strong>.</p>
+        <div class="callout info">
+          <div class="callout-icon">💡</div>
+          <div class="callout-body">
+            <strong>Keep the terminal open.</strong>
+            <p>Trier OS runs as long as this terminal is open. Press <strong>Ctrl + C</strong> to stop. Run <code>npm run dev:full</code> again to restart.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════  PAGE 5 — FIRST LOGIN  ═══════════════════ -->
+<div class="page page-break">
+
+  <div class="section-label">All Install Methods — Final Step</div>
+  <h2>First Login</h2>
+
+  <p>Whether you used the EXE, MSI, ZIP, or source install — this step is the same for everyone. You should be looking at the Trier OS login screen.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num blue">1</div>
+      <div class="step-content">
+        <h4>Log in with a demo account</h4>
+        <p>Use one of the pre-built accounts below. <strong>Start with Admin</strong> to see everything the platform can do.</p>
+
+        <div class="creds">
+          <div class="creds-row header">
+            <span>Username</span>
+            <span>Password</span>
+            <span>What You'll See</span>
+          </div>
+          <div class="creds-row">
+            <span><code>ghost_admin</code></span>
+            <span><code>Trier3652!</code></span>
+            <span><span class="role-badge role-admin">Full Access — Everything</span></span>
+          </div>
+          <div class="creds-row">
+            <span><code>ghost_tech</code></span>
+            <span><code>Trier3292!</code></span>
+            <span><span class="role-badge role-tech">Technician View</span></span>
+          </div>
+          <div class="creds-row">
+            <span><code>ghost_exec</code></span>
+            <span><code>Trier7969!</code></span>
+            <span><span class="role-badge role-exec">Executive Analytics</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">2</div>
+      <div class="step-content">
+        <h4>Select a plant</h4>
+        <p>After logging in you'll land on <strong>Mission Control</strong>. If prompted to select a plant, choose <strong>Demo Plant 1</strong>. This is the fully-populated demo environment with sample data.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">3</div>
+      <div class="step-content">
+        <h4>Explore!</h4>
+        <p>You're in. Here are some great places to start:</p>
+        <p>
+          <strong>Work Orders</strong> → See active jobs and maintenance schedules<br>
+          <strong>Assets</strong> → Browse the full equipment hierarchy<br>
+          <strong>Safety</strong> → View permits, LOTO, and MOC records<br>
+          <strong>Quality</strong> → NCRs, defect tracking, and quality dashboards<br>
+          <strong>Analytics</strong> → KPIs, cost tracking, and predictive foresight
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="success-banner">
+    <h3>🎉 Trier OS is Running!</h3>
+    <p>You're now looking at a fully operational industrial platform with real demo data.<br>Everything is connected — work orders, assets, safety, quality, and analytics.</p>
+    <div class="url-box">http://localhost:5173</div>
+    <p style="font-size:13px; margin-top:4px;">Questions? Visit github.com/DougTrier/trier-os</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-label">Reference</div>
+  <h2>Useful Commands (From-Source Only)</h2>
+
+  <div class="cmd-label">Start the app (run this every time)</div>
+  <div class="cmd"><span class="prompt">$</span> npm run dev:full</div>
+
+  <div class="cmd-label">Production mode (hardened security)</div>
+  <div class="cmd"><span class="prompt">$</span> npm run start:prod</div>
+
+  <div class="cmd-label">Get the latest updates</div>
+  <div class="cmd"><span class="prompt">$</span> git pull origin main &amp;&amp; npm install</div>
+
+  <div class="cmd-label">Reset demo data</div>
+  <div class="cmd"><span class="prompt">$</span> npm run seed</div>
+
+  <hr class="divider">
+
+  <div class="section-label">Troubleshooting</div>
+  <h2>Common Issues</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">?</div>
+      <div class="step-content">
+        <h4>Windows SmartScreen blocked the installer</h4>
+        <p>Click <strong>More info</strong> on the SmartScreen dialog, then click <strong>Run anyway</strong>. This appears because Trier OS is free open-source software without a paid code-signing certificate. It is safe.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">?</div>
+      <div class="step-content">
+        <h4>Login fails — "Invalid credentials"</h4>
+        <p>Make sure the app finished its first-run database setup (wait for the login screen to fully appear). Check you're typing the username in all <strong>lowercase</strong> with no spaces. Passwords are case-sensitive.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">?</div>
+      <div class="step-content">
+        <h4>App opens but shows a blank or loading screen</h4>
+        <p>Wait 15–20 seconds on first launch — the database is being initialized. Refresh the page. If it persists, try closing and reopening the app.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">?</div>
+      <div class="step-content">
+        <h4>"Port already in use" error (From Source only)</h4>
+        <p>Another program is using port 3000 or 5173. Either close that program, or edit your <code>.env</code> file and change <code>PORT=3000</code> to <code>PORT=3001</code>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">?</div>
+      <div class="step-content">
+        <h4>npm install fails (From Source only)</h4>
+        <p>Confirm Node.js v22+ is installed: <code>node --version</code>. Delete the <code>node_modules</code> folder and run <code>npm install</code> again. Make sure you have an active internet connection.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Trier OS v3.6.0 — Installation Guide</span>
+    <span>Copyright © 2026 Trier OS. All Rights Reserved.</span>
+    <span>Free &amp; Open Source &nbsp;·&nbsp; github.com/DougTrier/trier-os</span>
+  </div>
+
+</div>
+
+</body>
+</html>
