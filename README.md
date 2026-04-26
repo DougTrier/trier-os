@@ -12,7 +12,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
   [![Node.js](https://img.shields.io/badge/Node.js-Express-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
   [![SQLite](https://img.shields.io/badge/SQLite-EDR%20Safe-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
   [![Cesium](https://img.shields.io/badge/Cesium-GIS%20Analytics-60A5FA?style=for-the-badge&logo=cesium&logoColor=white)](https://cesium.com/)
-  [![Playwright](https://img.shields.io/badge/Playwright-741%20Mobile%20%7C%20741%20Desktop-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
+  [![Playwright](https://img.shields.io/badge/Playwright-458%20Tests%20%7C%2014%20Spec%20Files-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](./playwright-reports/)
 
   [Features](#sparkles-the-advanced-engines) •
   [Installation](#gear-installation--quick-start) •
