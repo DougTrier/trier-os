@@ -1585,25 +1585,36 @@ router.post('/return-part', (req, res) => {
         ).get(String(woId), String(woId));
         if (!wo) return res.status(404).json({ error: 'Work order not found' });
 
-        const wp = conn.prepare(`
-            SELECT wp.EstQty, COALESCE(wp.ActQty,0) AS qty_used,
-                   COALESCE(wp.qty_returned,0)       AS qty_returned,
-                   wp.UnitCost, wp.Location
-            FROM WorkParts wp
-            WHERE wp.WoID = ? AND wp.PartID = ? LIMIT 1
-        `).get(wo.ID, String(partId));
-        if (!wp) return res.status(404).json({ error: 'Part not on this work order' });
+        // Fast 404 check outside the transaction (no qty logic yet)
+        const wpExists = conn.prepare(
+            'SELECT 1 FROM WorkParts WHERE WoID = ? AND PartID = ? LIMIT 1'
+        ).get(wo.ID, String(partId));
+        if (!wpExists) return res.status(404).json({ error: 'Part not on this work order' });
 
-        const returnable = wp.EstQty - wp.qty_used - wp.qty_returned;
-        if (qty > returnable + 0.001) {
-            return res.status(400).json({ error: `Cannot return ${qty} — only ${returnable} returnable` });
-        }
-
-        const newReturned = wp.qty_returned + qty;
-        const newStatus   = newReturned >= wp.EstQty - wp.qty_used - 0.001 ? 'fully_returned'
-                          : newReturned > 0 ? 'partial_return' : 'issued';
-
+        // I-01/I-02: Re-read qty inside an IMMEDIATE transaction so the returnable
+        // check and the UPDATE share the same write lock. A DEFERRED read outside
+        // the transaction leaves a TOCTOU window where a concurrent return can read
+        // the same qty_returned value, both pass the check, and together over-return.
+        let txResult;
         conn.transaction(() => {
+            const fresh = conn.prepare(`
+                SELECT wp.EstQty, COALESCE(wp.ActQty,0) AS qty_used,
+                       COALESCE(wp.qty_returned,0)       AS qty_returned,
+                       wp.UnitCost, wp.Location
+                FROM WorkParts wp
+                WHERE wp.WoID = ? AND wp.PartID = ? LIMIT 1
+            `).get(wo.ID, String(partId));
+
+            const returnable = fresh.EstQty - fresh.qty_used - fresh.qty_returned;
+            if (qty > returnable + 0.001) {
+                txResult = { err: `Cannot return ${qty} — only ${returnable} returnable`, status: 400 };
+                return; // no writes; transaction commits as a no-op
+            }
+
+            const newReturned = fresh.qty_returned + qty;
+            const newStatus   = newReturned >= fresh.EstQty - fresh.qty_used - 0.001 ? 'fully_returned'
+                              : newReturned > 0 ? 'partial_return' : 'issued';
+
             conn.prepare(`
                 UPDATE WorkParts SET qty_returned = ?, status = ?, returned_by = ?, returned_at = datetime('now')
                 WHERE WoID = ? AND PartID = ?
@@ -1616,11 +1627,14 @@ router.post('/return-part', (req, res) => {
                     INSERT INTO inventory_movements
                         (work_order_id, part_id, movement_type, qty, unit_cost, location, performed_by, performed_at)
                     VALUES (?, ?, 'RETURN_TO_STOCK', ?, ?, ?, ?, datetime('now'))
-                `).run(wo.ID, String(partId), qty, parseFloat(wp.UnitCost) || 0, wp.Location || null, userId);
+                `).run(wo.ID, String(partId), qty, parseFloat(fresh.UnitCost) || 0, fresh.Location || null, userId);
             } catch (_) { /* older DBs without inventory_movements — non-fatal */ }
-        })();
 
-        res.json({ ok: true, partId, returned: qty, newStatus });
+            txResult = { ok: true, partId, returned: qty, newStatus };
+        }).immediate()();
+
+        if (txResult?.err) return res.status(txResult.status).json({ error: txResult.err });
+        res.json(txResult);
     } catch (err) {
         console.error('[scan] POST /return-part error:', err);
         res.status(500).json({ error: err.message });

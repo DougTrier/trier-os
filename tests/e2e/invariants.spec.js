@@ -9,7 +9,10 @@
  *
  * API dependencies:
  *   POST /api/scan/offline-sync
+ *   POST /api/scan/return-part
  *   GET  /api/assets
+ *   GET  /api/bi/work-orders
+ *   GET  /api/scan/wo-parts
  */
 
 import { test, expect } from '@playwright/test';
@@ -52,6 +55,53 @@ async function api(page, method, path, body) {
     try { data = await res.json(); } catch {}
     return { status: () => status, json: async () => data, ok: () => status >= 200 && status < 300 };
 }
+
+// ── I-01/I-02 · Return Qty ≤ Issued, Stock Never Goes Negative ───────────────
+test.describe('I-01/I-02 — Return-part over-return guard', () => {
+
+    test.beforeEach(async ({ page }) => { await login(page, ADMIN); });
+
+    test('returning more than returnable qty is rejected with 400', async ({ page }) => {
+        // Find any work order that has parts issued so we can probe the guard
+        const woRes = await api(page, 'GET', `${API}/bi/work-orders`);
+        const woBody = await woRes.json();
+        const woList = Array.isArray(woBody) ? woBody : (woBody.data || []);
+        if (!woList.length) { test.skip(); return; }
+
+        let woWithParts = null;
+        let testPart = null;
+        for (const wo of woList.slice(0, 20)) {
+            const partsRes = await api(page, 'GET', `${API}/scan/wo-parts?woId=${wo.WorkOrderNumber || wo.ID}`);
+            const partsBody = await partsRes.json();
+            const parts = partsBody.parts || [];
+            const issuedPart = parts.find(p => p.qty_returnable > 0);
+            if (issuedPart) { woWithParts = wo; testPart = issuedPart; break; }
+        }
+        if (!woWithParts || !testPart) { test.skip(); return; }
+
+        const woId = woWithParts.WorkOrderNumber || woWithParts.ID;
+        const overQty = testPart.qty_returnable + 999;
+
+        const res = await api(page, 'POST', `${API}/scan/return-part`, {
+            woId,
+            partId: testPart.PartID,
+            qty: overQty,
+        });
+
+        // I-01: over-return must be rejected, not silently accepted
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.error).toMatch(/cannot return|only.*returnable/i);
+    });
+
+    test('return-part with qty zero or negative is rejected', async ({ page }) => {
+        const res = await api(page, 'POST', `${API}/scan/return-part`, {
+            woId: '1', partId: '1', qty: -5,
+        });
+        expect(res.status()).toBe(400);
+    });
+
+});
 
 // ── I-05 · One Active Scanner Owner at a Time ────────────────────────────────
 test.describe('I-05 — Scanner ownership flag lifecycle', () => {
