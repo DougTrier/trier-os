@@ -487,3 +487,185 @@ test.describe('Trier OS V4.0.0 � The Master Operational Gauntlet', () => {
   });
 
 });
+
+// ── Enterprise Form & Workflow Gauntlet (from data-creation.spec.js) ─────────
+test.describe('Enterprise Form & Workflow Gauntlet', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.locator('input[type="text"], input[name="username"]').first().fill(ACCOUNT.username);
+    await page.locator('input[type="password"]').first().fill(ACCOUNT.password);
+    await page.locator('button[type="submit"]').first().click();
+    try {
+      const newPasswordInput = page.locator('input[type="password"]').nth(1);
+      await newPasswordInput.waitFor({ state: 'visible', timeout: 2000 });
+      await page.locator('input[type="password"]').nth(0).fill(ACCOUNT.password);
+      await page.locator('input[type="password"]').nth(1).fill(ACCOUNT.password);
+      await page.locator('input[type="password"]').nth(2).fill(ACCOUNT.password);
+      await page.locator('button').filter({ hasText: /Save|Change|Update/i }).last().click();
+      await page.waitForTimeout(1000);
+    } catch (e) {}
+    await expect(page).not.toHaveURL(/.*login/, { timeout: 15000 });
+  });
+
+  test('Should successfully log a safety incident', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('selectedPlantId', 'Plant_1'));
+    await page.goto('/safety');
+    await expect(page.locator('h1, h2').filter({ hasText: /Safety/i }).first()).toBeVisible({ timeout: 15000 });
+    await page.locator('button').filter({ hasText: 'Incidents' }).first().click();
+    const addBtn = page.locator('button').filter({ hasText: /Report Incident|Log Incident|New Incident/i }).first();
+    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await addBtn.click();
+    const modal = page.locator('.modal-content-standard, .modal-overlay').first();
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    await modal.locator('input[type="text"]').first().fill(`E2E Ghost Safety Test - ${Date.now()}`);
+    const locationInput = modal.locator('input[type="text"]').nth(1);
+    if (await locationInput.isVisible({ timeout: 2000 }).catch(() => false)) await locationInput.fill('E2E Test Location');
+    const dateInput = modal.locator('input[type="date"]').first();
+    if (await dateInput.isVisible({ timeout: 2000 }).catch(() => false)) await dateInput.fill(new Date().toISOString().split('T')[0]);
+    await page.waitForTimeout(500);
+    if (await modal.locator('select').first().isVisible({ timeout: 1000 }).catch(() => false)) await modal.locator('select').first().selectOption({ index: 1 });
+    await modal.locator('button').filter({ hasText: /Save|Submit|Report/i }).first().evaluate(el => el.click());
+    await expect(modal).not.toBeVisible({ timeout: 15000 });
+  });
+
+  test('Should successfully create a DVIR log', async ({ page }) => {
+    await page.goto('/fleet');
+    await expect(page.locator('h1, h2').filter({ hasText: /Fleet/i }).first()).toBeVisible({ timeout: 15000 });
+    await page.locator('button').filter({ hasText: 'DVIR' }).first().click();
+    const newDvirBtn = page.locator('button').filter({ hasText: 'New DVIR' }).first();
+    await newDvirBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await newDvirBtn.click();
+    const modal = page.locator('.modal-overlay .glass-card').first();
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    const vehicleSelect = modal.locator('select').first();
+    await vehicleSelect.waitFor({ state: 'visible', timeout: 15000 });
+    await expect.poll(() => vehicleSelect.evaluate(el => el.options.length), { timeout: 10000 }).toBeGreaterThan(1);
+    await vehicleSelect.selectOption({ index: 1 });
+    await modal.locator('input[type="text"]').first().fill('E2E Driver Ghost');
+    const odoInput = modal.locator('input[type="number"]').first();
+    if (await odoInput.isVisible({ timeout: 1000 }).catch(() => false)) await odoInput.fill('130000');
+    await page.waitForTimeout(300);
+    await modal.locator('button').filter({ hasText: /Create DVIR|Save|Submit/i }).first().click();
+    await expect(page.locator('.modal-overlay')).not.toBeVisible({ timeout: 15000 });
+  });
+
+  test('Should successfully create a supply chain part component', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('selectedPlantId', 'Plant_1'));
+    await page.goto('/parts');
+    await expect(page.locator('h1, h2').filter({ hasText: /Parts|Catalog/i }).first()).toBeVisible({ timeout: 15000 });
+    const addPartBtn = page.locator('button').filter({ hasText: /New Part|Add Part/i }).first();
+    await addPartBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await addPartBtn.click();
+    const modal = page.locator('.modal-content-standard, .modal-overlay').first();
+    await expect(modal).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(500);
+    const partNumber = `PT-E2E-${Date.now()}`;
+    await modal.locator('input').first().fill(partNumber);
+    await modal.locator('input').nth(1).fill('Automated Verification Component').catch(() => {});
+    await page.waitForTimeout(500);
+    const numericInputs = modal.locator('input[type="number"]');
+    if (await numericInputs.count() > 0) await numericInputs.first().fill('50');
+    await modal.locator('button').filter({ hasText: /Save|Submit|Create|Add/i }).first().evaluate(el => el.click());
+    const proceedBtn = page.locator('button').filter({ hasText: /Yes, Proceed/i }).first();
+    if (await proceedBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await proceedBtn.evaluate(el => el.click());
+      await page.waitForTimeout(1000);
+    }
+    await page.keyboard.press('Escape');
+    await expect(modal).not.toBeVisible({ timeout: 15000 });
+  });
+
+  test('Should successfully schedule a task via the Calendar', async ({ page }) => {
+    await page.goto('/jobs');
+    await expect(page.getByText('Work Order', { exact: false }).first()).toBeVisible({ timeout: 15000 });
+    await page.locator('button').filter({ hasText: /Calendar/i }).first().click();
+    const calGrid = page.locator('.cal-grid, .cal-day-headers').first();
+    await calGrid.waitFor({ state: 'visible', timeout: 15000 });
+    const cells = page.locator('.cal-grid > div');
+    const cellCount = await cells.count();
+    if (cellCount > 15) await cells.nth(15).dblclick();
+    else await page.locator('div').filter({ hasText: /^\d{1,2}$/ }).nth(15).dblclick();
+    await expect(page.getByText('Quick Actions', { exact: false }).first()).toBeVisible({ timeout: 15000 });
+    await page.getByText('Add Reminder', { exact: false }).first().click();
+    await page.waitForTimeout(1000);
+    const reminderTextarea = page.locator('textarea').first();
+    if (await reminderTextarea.isVisible({ timeout: 5000 }).catch(() => false)) await reminderTextarea.fill('E2E Calendar Injection — Automated UI Integration Test.');
+    const pinBtn = page.locator('button').filter({ hasText: /Pin Reminder|Save|Confirm/i }).first();
+    if (await pinBtn.isVisible({ timeout: 5000 }).catch(() => false)) await pinBtn.evaluate(el => el.click());
+    await expect(page.getByText('Quick Actions', { exact: false }).first()).not.toBeVisible({ timeout: 10000 });
+  });
+
+});
+
+// ── Application Lifecycle — PO, SOP & Search (from full-application.spec.js) ─
+test.describe('Application Lifecycle — PO, SOP & Search', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.locator('input[type="text"], input[name="username"], input[name="email"]').first().fill(ACCOUNT.username);
+    await page.locator('input[type="password"]').first().fill(ACCOUNT.password);
+    await page.locator('button').filter({ hasText: /Log In|Login|Sign In/i }).first().click();
+    try {
+      const newPasswordInput = page.locator('input[type="password"]').nth(1);
+      await newPasswordInput.waitFor({ state: 'visible', timeout: 2000 });
+      await page.locator('input[type="password"]').nth(0).fill(ACCOUNT.password);
+      await page.locator('input[type="password"]').nth(1).fill(ACCOUNT.password);
+      await page.locator('input[type="password"]').nth(2).fill(ACCOUNT.password);
+      await page.locator('button').filter({ hasText: /Save|Change/i }).first().click();
+    } catch (e) {}
+    await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
+  });
+
+  test('Should successfully generate a new Supply Chain Purchase Order', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('selectedPlantId', 'Plant_1'));
+    await page.goto('/supply-chain');
+    const poTab = page.locator('button').filter({ hasText: /Purchase Orders/i }).first();
+    await expect(poTab).toBeVisible({ timeout: 15000 });
+    await poTab.click();
+    const toggleBtn = page.locator('button.btn-save').filter({ hasText: /Create PO/i }).first();
+    await expect(toggleBtn).toBeVisible({ timeout: 10000 });
+    await toggleBtn.click();
+    await page.waitForTimeout(500);
+    const vendorSelect = page.locator('select').first();
+    if (await vendorSelect.isVisible({ timeout: 5000 }).catch(() => false)) {
+      const optCount = await vendorSelect.locator('option').count();
+      if (optCount > 1) await vendorSelect.selectOption({ index: 1 });
+    }
+    const qtyInput = page.locator('input[placeholder*="Qty"], input[placeholder*="qty"]').first();
+    if (await qtyInput.isVisible({ timeout: 3000 }).catch(() => false)) await qtyInput.fill('5');
+    const submitBtn = page.locator('button.btn-save').filter({ hasText: /Create PO/i }).first();
+    await expect(submitBtn).toBeVisible({ timeout: 5000 });
+    await submitBtn.evaluate(el => el.click());
+    await expect(page.locator('button.btn-save').filter({ hasText: /Create PO/i }).first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('Should successfully author and publish a new Factory SOP', async ({ page }) => {
+    await page.goto('/manual');
+    const createBtn = page.locator('button, a').filter({ hasText: /New SOP|Create|Add Document/i }).first();
+    if (await createBtn.isVisible()) {
+      await createBtn.click();
+      const titleInput = page.getByPlaceholder(/Title|SOP Name/i).first();
+      const contentInput = page.locator('textarea').first();
+      await expect(titleInput).toBeVisible();
+      await titleInput.fill('SOP-GHOST-001: Automated Robotics Calibration');
+      await contentInput.fill('Step 1. Run Playwright. Step 2. Verify Output. Step 3. Profit.');
+      const saveBtn = page.locator('button').filter({ hasText: /Publish|Save|Create/i }).first();
+      await saveBtn.click();
+      await expect(page.getByText(/Automated Robotics Calibration/i)).toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('Should index the newly created Ghost data in the Global Search Engine', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('selectedPlantId', 'Plant_1'));
+    await page.goto('/dashboard');
+    const searchEngine = page.locator('input[type="text"][placeholder*="Search"], input[type="text"][placeholder*="search"]').first();
+    await expect(searchEngine).toBeVisible({ timeout: 10000 });
+    await searchEngine.fill('GHOST TEST');
+    await searchEngine.press('Enter');
+    await page.waitForTimeout(1000);
+    const clearSearchBtn = page.locator('button').filter({ hasText: /Clear Search/i }).first();
+    await expect(clearSearchBtn).toBeVisible({ timeout: 5000 });
+  });
+
+});

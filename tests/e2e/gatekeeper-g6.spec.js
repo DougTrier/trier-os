@@ -102,3 +102,34 @@ test.describe('Gatekeeper Engine Pipeline (G6)', () => {
         expect(body2.denialReason).toBe('DUPLICATE_REQUEST_ID');
     });
 });
+
+// ── Fail-Closed Regression (G4/G5) ───────────────────────────────────────────
+test.describe('Fail-Closed Regression (G4/G5)', () => {
+
+    test('LOTO sign — fail-closed when Gatekeeper unreachable', async ({ request }) => {
+        const lotoRes = await request.get('/api/loto/permits?plantId=Demo_Plant_1&limit=1');
+        const lotoBody = await lotoRes.json();
+        const permitId = lotoBody.permits?.[0]?.ID ?? 1;
+
+        const res = await request.post(`/api/loto/permits/${permitId}/sign`, {
+            data: { signedBy: 'ghost_admin', signatureType: 'WORKER', role: 'Worker' }
+        });
+        expect(res.status()).toBe(403);
+        const body = await res.json();
+        expect(['GATEKEEPER_NOT_CONFIGURED', 'GATEKEEPER_UNREACHABLE']).toContain(body.error);
+    });
+
+    test('MOC approve — fail-closed when Gatekeeper unreachable', async ({ request }) => {
+        const mocRes = await request.get('/api/moc?plantId=Demo_Plant_1');
+        const mocBody = await mocRes.json();
+        const mocId = mocBody[0]?.ID ?? 1;
+
+        const res = await request.post(`/api/moc/${mocId}/approve`, {
+            data: { decision: 'APPROVED', approvedBy: 'ghost_admin', comments: 'G4/G5 regression check' }
+        });
+        expect(res.status()).toBe(403);
+        const body = await res.json();
+        expect(['GATEKEEPER_NOT_CONFIGURED', 'GATEKEEPER_UNREACHABLE']).toContain(body.error);
+    });
+
+});
