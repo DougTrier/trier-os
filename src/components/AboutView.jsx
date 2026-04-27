@@ -1882,7 +1882,7 @@ const AboutView = () => {
                         t('manual.item.901', 'Step 7: Drag an "HTTP Request" node. Set: Method = POST, URL = http://YOUR_PRAIRIE_SERVER:3000/api/sensors/reading.'),
                         t('manual.item.902', 'Step 8: Add an "Inject" node set to repeat every 30 seconds. Wire: Inject → OPC-UA → Function → HTTP Request.'),
                         t('manual.item.903', 'Step 9: Deploy the flow. Check Trier\'s Sensor Dashboard — live readings should appear.'),
-                        'Tip: Add a "Catch" node to log errors. Siemens OPC-UA sometimes requires certificate trust.'
+                        t('manual.item.1870', 'Tip: Add a "Catch" node to log errors. Siemens OPC-UA sometimes requires certificate trust.')
                     ]
                 },
                 {
@@ -1904,7 +1904,7 @@ const AboutView = () => {
                         t('manual.item.917', '       time.sleep(30)  # Poll every 30 seconds'),
                         t('manual.item.918', 'Step 3: Run: python modbus_to_prairie.py.'),
                         t('manual.item.919', 'Step 4: Check the Sensor Dashboard in Trier. Your readings should appear.'),
-                        'Tip: Run as a Windows Service or Linux systemd service for production use.'
+                        t('manual.item.1871', 'Tip: Run as a Windows Service or Linux systemd service for production use.')
                     ]
                 },
                 {
@@ -1919,7 +1919,7 @@ const AboutView = () => {
                         t('manual.item.926', 'Step 6: Click "Test Connection". Trier connects and listens for messages.'),
                         t('manual.item.927', 'Step 7: Publish a test message: mosquitto_pub -h mqtt.example.com -t plant/sensors/boiler -m \'{"value": 185, "unit": "°F"}\'.'),
                         t('manual.item.928', 'Step 8: The reading appears in the Sensor Dashboard within seconds.'),
-                        'Tip: For AWS IoT, use port 8883 with TLS and download the root CA certificate.'
+                        t('manual.item.1872', 'Tip: For AWS IoT, use port 8883 with TLS and download the root CA certificate.')
                     ]
                 }
             ]
@@ -1939,7 +1939,7 @@ const AboutView = () => {
                         t('manual.item.657', 'Each pin links to a real asset in the database \u2014 click it to see work orders, history, and status.'),
                         t('manual.item.658', 'Supports 6 pin layer types: Assets, Fire, Tornado, Flood, Exits, and Utility \u2014 filter layers to see only what matters.'),
                         t('manual.item.659', 'Use floor plans for: walk-through inspections, onboarding new techs, planning shutdowns, emergency evacuation, and visualizing where equipment lives.'),
-                        'Multiple input methods: image upload, clipboard paste (Google Maps screenshots), AutoCAD DXF import, and LiDAR 3D scan import.'
+                        t('manual.item.1873', 'Multiple input methods: image upload, clipboard paste (Google Maps screenshots), AutoCAD DXF import, and LiDAR 3D scan import.')
                     ]
                 },
                 {
@@ -1953,7 +1953,7 @@ const AboutView = () => {
                         t('manual.item.665', '   \u2022 Import CAD File (.dxf) \u2014 Upload an AutoCAD .dxf file. Server auto-converts entities to a high-res PNG.'),
                         t('manual.item.666', '   \u2022 Import LiDAR Scan (.ply/.obj) \u2014 Upload a 3D scan from Polycam or RoomPlan. Server projects to 2D floor plan.'),
                         t('manual.item.667', '4. Enter a Name for the plan (e.g., "Building 1 \u2014 Ground Floor").'),
-                        '5. The floor plan appears \u2014 ready for pins, annotations, and icons.'
+                        t('manual.item.1874', '5. The floor plan appears \u2014 ready for pins, annotations, and icons.')
                     ]
                 },
                 {
@@ -1964,7 +1964,7 @@ const AboutView = () => {
                         t('manual.item.670', 'When you have 2+ plans, a plan type tab bar appears at the top for quick filtering.'),
                         t('manual.item.671', 'Each tab shows a count badge so you can see how many plans exist per type.'),
                         t('manual.item.672', 'Use the plan dropdown selector to switch between plans within the current category.'),
-                        'To add more plans: Click the "+ Add Plan" button in the toolbar.'
+                        t('manual.item.1875', 'To add more plans: Click the "+ Add Plan" button in the toolbar.')
                     ]
                 },
                 {
@@ -1977,7 +1977,7 @@ const AboutView = () => {
                         t('manual.item.677', '4. The server parses all DXF entities (walls, polylines, circles, arcs, text, dimensions), respects AutoCAD layer colors, flips the Y-axis correctly, and renders to high-resolution PNG (up to 4000px wide).'),
                         t('manual.item.678', '5. Import stats are shown: entity count, layers detected, entity types.'),
                         t('manual.item.679', 'Supported entities: LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, ELLIPSE, TEXT, MTEXT, DIMENSION, POINT.'),
-                        'Tip: Export from AutoCAD as DXF R2018 or earlier for best compatibility.'
+                        t('manual.item.1876', 'Tip: Export from AutoCAD as DXF R2018 or earlier for best compatibility.')
                     ]
                 },
                 {
@@ -2009,7 +2009,7 @@ const AboutView = () => {
                         t('manual.item.700', '   \u2022 Scan during the day with lights on for best texture capture.'),
                         t('manual.item.701', '   \u2022 Walk the entire perimeter for a complete outline.'),
                         t('manual.item.702', '   \u2022 For large buildings, scan section by section and upload as separate plans.'),
-                        '   \u2022 Polycam .obj files generally produce the cleanest results.'
+                        t('manual.item.1877', '   \u2022 Polycam .obj files generally produce the cleanest results.')
                     ]
                 },
                 {
@@ -2021,7 +2021,7 @@ const AboutView = () => {
                         t('manual.item.706', '3. Right-click \u2192 "Measure distance" \u2192 click points around the building perimeter.'),
                         t('manual.item.707', '4. Use Snipping Tool (Win+Shift+S) \u2192 drag to select the map area.'),
                         t('manual.item.708', '5. In Trier OS \u2192 click "Paste from Clipboard" \u2192 crop if needed.'),
-                        '6. Use Calibrate + Blueprint to finish setup.'
+                        t('manual.item.1878', '6. Use Calibrate + Blueprint to finish setup.')
                     ]
                 },
                 {
@@ -2030,14 +2030,14 @@ const AboutView = () => {
                         t('manual.item.709', 'Build a composite floor plan from multiple facility photos taken with your phone.'),
                         t('manual.item.710', 'Click the "\uD83D\uDCF8 Photo Build" button in the toolbar to open the Photo Assembly workspace.'),
                         '',
-                        'WORKFLOW:',
+                        t('manual.item.1879', 'WORKFLOW:'),
                         t('manual.item.711', '1. TAKE PHOTOS \u2014 Walk your facility and take photos every 10-15 feet. Hold your phone level at chest height.'),
                         t('manual.item.712', '2. UPLOAD \u2014 Select all photos. GPS coordinates and compass heading are automatically extracted from EXIF data.'),
                         t('manual.item.713', '3. AUTO-ARRANGE \u2014 Photos with GPS are positioned based on real-world coordinates. Photos without GPS go into a grid.'),
                         t('manual.item.714', '4. MANUAL ADJUST \u2014 Drag to reposition, use sliders for width (80\u2013800px), rotation (\u00B1180\u00B0), and opacity (10\u2013100%).'),
                         t('manual.item.715', '5. EXPORT \u2014 All photos are merged into a single composite image and saved as a floor plan.'),
                         '',
-                        'FEATURES:',
+                        t('manual.item.1880', 'FEATURES:'),
                         t('manual.item.716', '   \u2022 EXIF GPS extraction (latitude, longitude) for auto-positioning.'),
                         t('manual.item.717', '   \u2022 Compass heading extraction for auto-rotation alignment.'),
                         t('manual.item.718', '   \u2022 GPS proximity stitching \u2014 overlapping photos auto-arrange by real-world position.'),
@@ -2050,7 +2050,7 @@ const AboutView = () => {
                         t('manual.item.724', '   \u2022 Enable Location Services on your phone camera for GPS tagging.'),
                         t('manual.item.725', '   \u2022 Ensure 20-30% overlap between adjacent photos.'),
                         t('manual.item.726', '   \u2022 Photos with compass heading data will be auto-rotated to align.'),
-                        '   \u2022 Use opacity adjustment to blend overlapping areas smoothly.'
+                        t('manual.item.1881', '   \u2022 Use opacity adjustment to blend overlapping areas smoothly.')
                     ]
                 },
                 {
@@ -2062,7 +2062,7 @@ const AboutView = () => {
                         t('manual.item.730', '4. Click "Place Pin" then click on the floor plan image where the item is located.'),
                         t('manual.item.731', '5. Drag pins to reposition them. Position auto-saves.'),
                         t('manual.item.732', '6. Use the Layer Filter buttons (ALL, ASSETS, FIRE, etc.) to show/hide layers.'),
-                        'Asset pins show health colors: Green = Healthy, Orange = At Risk, Red = Critical, Gray = Unknown.'
+                        t('manual.item.1882', 'Asset pins show health colors: Green = Healthy, Orange = At Risk, Red = Critical, Gray = Unknown.')
                     ]
                 },
                 {
@@ -2073,7 +2073,7 @@ const AboutView = () => {
                         t('manual.item.735', '2. Click the "Icons" button on the left edge \u2014 the icon palette slides open.'),
                         t('manual.item.736', '3. Browse categories: Processing, Packaging, HVAC/Utility, Storage, Logistics, Safety, Electrical.'),
                         t('manual.item.737', '4. Drag any icon and drop it directly onto the floor plan.'),
-                        'Icons include: Separators, Pasteurizers, Homogenizers, CIP Systems, Boilers, Compressors, Fillers, Forklifts, and more.'
+                        t('manual.item.1883', 'Icons include: Separators, Pasteurizers, Homogenizers, CIP Systems, Boilers, Compressors, Fillers, Forklifts, and more.')
                     ]
                 },
                 {
@@ -2095,7 +2095,7 @@ const AboutView = () => {
                         t('manual.item.750', '   \u2022 A dashed cyan line shows the distance between hovered pin and nearest neighbor.'),
                         t('manual.item.751', '   \u2022 Zone areas auto-calculate using the calibrated scale (shown in ft\u00B2, m\u00B2, etc.).'),
                         '',
-                        'Tip: Create a dedicated "Emergency" type floor plan with exit routes for safety compliance.'
+                        t('manual.item.1884', 'Tip: Create a dedicated "Emergency" type floor plan with exit routes for safety compliance.')
                     ]
                 },
                 {
@@ -2105,7 +2105,7 @@ const AboutView = () => {
                         t('manual.item.753', '1. Upload or paste your floor plan.'),
                         t('manual.item.754', '2. Click the "Blueprint" button in the toolbar.'),
                         t('manual.item.755', '3. Toggle between Satellite and Blueprint views using the view mode button.'),
-                        '4. Both views share the same pins and annotations.'
+                        t('manual.item.1885', '4. Both views share the same pins and annotations.')
                     ]
                 },
                 {
@@ -2116,7 +2116,7 @@ const AboutView = () => {
                         t('manual.item.758', '3. Click each pin to see the asset details and any open work orders.'),
                         t('manual.item.759', '4. If you spot an issue, click "Create WO" directly from the pin \u2014 it pre-fills the asset.'),
                         t('manual.item.760', '5. Continue to the next pin. This ensures no equipment is missed.'),
-                        'Use the zoom controls to get detailed views of dense equipment areas.'
+                        t('manual.item.1886', 'Use the zoom controls to get detailed views of dense equipment areas.')
                     ]
                 },
                 {
@@ -2139,10 +2139,10 @@ const AboutView = () => {
                         t('manual.item.772', '   \u2022 The previous version appears on the left, the current version on the right.'),
                         t('manual.item.773', '   \u2022 Click "\u2715 Close Compare" to dismiss.'),
                         '',
-                        'REVERTING:',
+                        t('manual.item.1887', 'REVERTING:'),
                         t('manual.item.774', '   \u2022 Click "\u23EA Revert" on any version to restore that version.'),
                         t('manual.item.775', '   \u2022 Your current state is automatically saved as a snapshot before reverting.'),
-                        '   \u2022 This means you can always undo a revert by reverting again.'
+                        t('manual.item.1888', '   \u2022 This means you can always undo a revert by reverting again.')
                     ]
                 },
                 {
@@ -2167,7 +2167,7 @@ const AboutView = () => {
                         t('manual.item.790', '   \u2022 Hover in edit mode to reveal the \u2715 delete button.'),
                         t('manual.item.791', '   \u2022 Zone counter shows total zones alongside annotation count.'),
                         t('manual.item.792', '   \u2022 Area calculation \u2014 zone area auto-computed using Shoelace formula.'),
-                        '   \u2022 When scale is calibrated, area shows in real-world units\u00B2 (ft\u00B2, m\u00B2). Otherwise shows px\u00B2.'
+                        t('manual.item.1889', '   \u2022 When scale is calibrated, area shows in real-world units\u00B2 (ft\u00B2, m\u00B2). Otherwise shows px\u00B2.')
                     ]
                 },
                 {
@@ -2196,7 +2196,7 @@ const AboutView = () => {
                         t('manual.item.809', 'CROSS-FLOOR TRACKING:'),
                         t('manual.item.810', '   \u2022 Equipment assets appear in the Master Equipment Catalog regardless of which floor they are pinned on.'),
                         t('manual.item.811', '   \u2022 Dashboard search finds assets across all buildings and floors.'),
-                        '   \u2022 Work orders link to the correct floor plan automatically.'
+                        t('manual.item.1890', '   \u2022 Work orders link to the correct floor plan automatically.')
                     ]
                 },
                 {
@@ -2222,7 +2222,7 @@ const AboutView = () => {
                         t('manual.item.826', '   \u2022 Each badge shows: asset name, health status (Healthy/Critical/Has WO), and layer type.'),
                         t('manual.item.827', '   \u2022 Color-coded dots: Green = Healthy, Red = Critical, Orange = Has Work Orders.'),
                         t('manual.item.828', '   \u2022 Point your camera at equipment to see status information overlaid.'),
-                        '   \u2022 Click "\u2715 Close AR" to return to the standard floor plan view.'
+                        t('manual.item.1891', '   \u2022 Click "\u2715 Close AR" to return to the standard floor plan view.')
                     ]
                 },
                 {
@@ -2251,7 +2251,7 @@ const AboutView = () => {
                         t('manual.item.846', '   \u2022 Each sensor has configurable alert thresholds (e.g., alert if temp > 90°F).'),
                         t('manual.item.847', '   \u2022 The sensor status bar shows counts: Normal, Warning, Critical.'),
                         '',
-                        'HEAT MAP:',
+                        t('manual.item.1892', 'HEAT MAP:'),
                         t('manual.item.848', '   \u2022 Click "Heat Map" to toggle the temperature/humidity gradient overlay.'),
                         t('manual.item.849', '   \u2022 Warm areas show red gradients, cool areas show blue gradients.'),
                         t('manual.item.850', '   \u2022 Motion/occupancy zones show purple intensity gradients.'),
@@ -2259,7 +2259,7 @@ const AboutView = () => {
                         t('manual.item.851', 'SCADA/IoT INTEGRATION:'),
                         t('manual.item.852', '   \u2022 Each sensor supports a SCADA Endpoint URL and Tag for live data.'),
                         t('manual.item.853', '   \u2022 When configured, the system polls the endpoint instead of using simulated values.'),
-                        '   \u2022 Compatible with Modbus TCP, OPC-UA, or any REST-based IoT gateway.'
+                        t('manual.item.1893', '   \u2022 Compatible with Modbus TCP, OPC-UA, or any REST-based IoT gateway.')
                     ]
                 },
                 {
@@ -2292,7 +2292,7 @@ const AboutView = () => {
                         t('manual.item.874', '   \u2022 Suitable for posting at assembly points or distributing during drills.'),
                         '',
                         t('manual.item.875', 'DEACTIVATING:'),
-                        '   \u2022 Click "\u2715 Deactivate" in the emergency banner to return to normal mode.'
+                        t('manual.item.1894', '   \u2022 Click "\u2715 Deactivate" in the emergency banner to return to normal mode.')
                     ]
                 },
                 {
@@ -2307,7 +2307,7 @@ const AboutView = () => {
                         t('manual.item.882', '7. Use the Blueprint conversion for a clean, professional look suitable for posting.'),
                         t('manual.item.883', '8. Draw zones to define production areas, hazard zones, and emergency assembly points.'),
                         t('manual.item.884', '9. For multi-story buildings, use "Set Floor" to tag each plan \u2014 enables floor-by-floor navigation.'),
-                        '10. Combine all three filters (Plan Type + Building + Floor) for instant access to any plan in large facilities.'
+                        t('manual.item.1895', '10. Combine all three filters (Plan Type + Building + Floor) for instant access to any plan in large facilities.')
                     ]
                 }
             ]
