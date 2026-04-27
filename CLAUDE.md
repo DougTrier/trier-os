@@ -235,21 +235,19 @@ Compress-Archive -Path "G:\TrierOS-v{VER}\*" -DestinationPath "G:\TrierOS-Setup-
 ```
 Produces `TrierOS-Setup-{VER}.zip` (~700–800 MB compressed).
 
-### Step 3 — Electron installer build (**must run as Administrator**)
+### Step 3 — Electron installer build (no admin required)
 ```powershell
-# In an elevated PowerShell:
 powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_installer.ps1"
 ```
-Reads the version from `package.json`. Produces in `G:\Trier OS\electron-dist\`:
+Reads the version from `package.json`. Produces in `C:\Trier OS\Installers\`:
 - `TrierOS-Setup-{VER}.exe` (NSIS, ~230 MB)
 - `TrierOS-Setup-{VER}.msi` (~220 MB)
-- `TrierOS-Setup-{VER}.zip` (electron zip — use the portable zip for GitHub releases instead)
 
 ### Step 4 — Upload to GitHub release
 ```bash
 gh release upload v{VER} \
-  "G:/Trier OS/electron-dist/TrierOS-Setup-{VER}.exe" \
-  "G:/Trier OS/electron-dist/TrierOS-Setup-{VER}.msi" \
+  "C:/Trier OS/Installers/TrierOS-Setup-{VER}.exe" \
+  "C:/Trier OS/Installers/TrierOS-Setup-{VER}.msi" \
   "G:/TrierOS-Setup-{VER}.zip" \
   "G:/Trier OS/Install Instructions.pdf"
 ```
