@@ -83,7 +83,7 @@ const AboutView = () => {
             navigateTo: '/dashboard',
             filePath: 'src/components/AboutView.jsx',
             icon: <Globe size={22} />,
-            content: t('manual.s0.content', 'How Trier OS compares to the top Enterprise System providers: Fiix, UpKeep, Limble, MaintainX, and eMaint. Legend: [YES] Full Support | [PARTIAL] Partial | [NO] Not Available | [UNIQUE] Industry-First / Unique to Trier'),
+            content: t('manual.s0.content', 'How Trier OS compares across two tiers of the market. CMMS tier: Fiix, UpKeep, Limble, MaintainX, eMaint. Enterprise EAM tier: SAP S/4HANA PM, IBM Maximo. Legend: [YES] Full Support | [PARTIAL] Partial | [NO] Not Available | [UNIQUE] Industry-First / Unique to Trier. For a detailed head-to-head against SAP PM and IBM Maximo, see the Comparison document in the docs/ folder.'),
             subsections: [
                 {
                     title: t('manual.unique.0', '[UNIQUE] Trier-Exclusive Features (No Competitor Offers These)'),
@@ -213,7 +213,9 @@ const AboutView = () => {
                         t('manual.item.1573', 'Voice-to-Text Native Shift Narratives — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
                         t('manual.item.1574', 'Fleet DVIR & Fuel Scan-and-Type — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
                         t('manual.item.1575', 'Utility Meter Direct Scan-and-Read — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
-                        t('manual.item.1576', 'LOTO Scan-to-Lock & Autofill Procedure — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
+                        t('manual.item.1576', 'LOTO Scan-to-Lock & Autofill Procedure — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
+                        t('manual.item.1758', 'Built-In Report Center & Scan Audit Log — Trier [YES][UNIQUE] | Fiix [PARTIAL] | UpKeep [NO] | Limble [PARTIAL] | MaintainX [NO] | eMaint [PARTIAL] | SAP PM [YES] | IBM Maximo [YES]'),
+                        t('manual.item.1759', 'Formal Correctness Invariants (Runtime-Verified, 13 guarantees) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
                     ]
                 }
             ]
@@ -393,7 +395,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s1.title', 'Part I: Logging In & First Look'),
+            section: t('manual.s1.title', 'Part 1: Logging In & First Look'),
             id: 'login',
             navigateTo: '/dashboard',
             filePath: 'src/components/LoginView.jsx',
@@ -455,7 +457,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s2.title', 'Part II: Starting Your Shift'),
+            section: t('manual.s2.title', 'Part 2: Starting Your Shift'),
             id: 'shift-start',
             navigateTo: '/dashboard',
             filePath: 'src/components/ShiftHandoff.jsx',
@@ -533,7 +535,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s3.title', 'Part III: Working a Job'),
+            section: t('manual.s3.title', 'Part 3: Working a Job'),
             id: 'working-job',
             navigateTo: '/jobs',
             filePath: 'src/components/JobsView.jsx',
@@ -691,7 +693,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s4.title', 'Part IV: Closing a Job — The Close-Out Wizard'),
+            section: t('manual.s4.title', 'Part 4: Closing a Job — The Close-Out Wizard'),
             id: 'close-out',
             navigateTo: '/jobs',
             filePath: 'src/components/JobsView.jsx',
@@ -836,7 +838,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s5.title', 'Part V: Finding What You Need'),
+            section: t('manual.s5.title', 'Part 5: Finding What You Need'),
             id: 'finding',
             navigateTo: '/parts',
             filePath: 'src/components/StoreroomView.jsx',
@@ -927,7 +929,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s6.title', 'Part VI: Preventive Maintenance & Scheduling'),
+            section: t('manual.s6.title', 'Part 6: Preventive Maintenance & Scheduling'),
             id: 'pm-scheduling',
             navigateTo: '/jobs',
             filePath: 'server/routes/pmSchedules.js',
@@ -1029,7 +1031,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s7.title', 'Part VII: Communicating Across the Enterprise'),
+            section: t('manual.s7.title', 'Part 7: Communicating Across the Enterprise'),
             id: 'communication',
             navigateTo: '/chat',
             filePath: 'src/components/ChatView.jsx',
@@ -1106,7 +1108,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s8.title', 'Part VIII: Training Scenarios — Real-World Walkthroughs'),
+            section: t('manual.s8.title', 'Part 8: Training Scenarios — Real-World Walkthroughs'),
             id: 'scenarios',
             icon: <Lightbulb size={22} />,
             content: t('manual.s8.content', 'Real-world paths through the application for common maintenance situations.'),
@@ -1189,7 +1191,7 @@ const AboutView = () => {
         },
 
         {
-            section: t('manual.s9.title', 'Part VIII-B: Fleet & Truck Shop'),
+            section: t('manual.s9.title', 'Part 9: Fleet & Truck Shop'),
             id: 'fleet',
             navigateTo: '/fleet',
             filePath: 'src/components/FleetView.jsx',
@@ -1341,7 +1343,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s10.title', 'Part IX: Troubleshooting & Field FAQs'),
+            section: t('manual.s10.title', 'Part 10: Troubleshooting & Field FAQs'),
             id: 'troubleshooting',
             navigateTo: '/settings',
             filePath: 'src/components/SettingsView.jsx',
@@ -1426,7 +1428,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s11.title', 'Part X: Complete Screen & Button Reference'),
+            section: t('manual.s11.title', 'Part 11: Complete Screen & Button Reference'),
             id: 'screen-reference',
             navigateTo: '/dashboard',
             filePath: 'src/components/DashboardView.jsx',
@@ -1506,7 +1508,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s12.title', 'Part XI: Administration & User Management'),
+            section: t('manual.s12.title', 'Part 12: Administration & User Management'),
             id: 'admin',
             navigateTo: '/settings',
             filePath: 'src/components/SettingsView.jsx',
@@ -1593,7 +1595,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s13.title', 'Part XII: Data Bridge & Legacy Import'),
+            section: t('manual.s13.title', 'Part 13: Data Bridge & Legacy Import'),
             id: 'data-bridge',
             navigateTo: '/import',
             filePath: 'src/components/DataBridge.jsx',
@@ -1661,7 +1663,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s14.title', 'Part XIII: Reports & Predictive Analytics'),
+            section: t('manual.s14.title', 'Part 14: Reports & Predictive Analytics'),
             id: 'reports-analytics',
             navigateTo: '/analytics',
             filePath: 'src/components/ReportCenter.jsx',
@@ -1774,7 +1776,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s15.title', 'Part XIV: SCADA/OPC-UA & Equipment Integration'),
+            section: t('manual.s15.title', 'Part 15: SCADA/OPC-UA & Equipment Integration'),
             id: 'scada-opcua',
             navigateTo: '/settings',
             adminOnly: true,
@@ -1841,8 +1843,87 @@ const AboutView = () => {
                 }
             ]
         },
+        {
+            section: t('manual.s17.title', 'Part 16: SCADA Connection Guides — Working Examples'),
+            id: 'scada-guides',
+            navigateTo: '/settings',
+            adminOnly: true,
+            filePath: 'server/routes/sensors.js',
+            icon: <Activity size={22} />,
+            content: t('manual.s17.content', 'Step-by-step setup guides for connecting each supported PLC/SCADA system to Trier OS, with real configuration examples.'),
+            subsections: [
                 {
-            section: t('manual.s16.title', 'Part XV: Floor Plans & Facility Mapping'),
+                    title: t('manual.sub.95', '16.1 Allen-Bradley / Rockwell → Ignition MQTT Bridge'),
+                    items: [
+                        t('manual.item.885', 'What you need: Ignition Gateway (by Inductive Automation) installed on the OT network. Free trial works for testing.'),
+                        t('manual.item.886', 'Step 1: In Ignition, go to Config → OPC → Device Connections → Add Device → Allen-Bradley.'),
+                        t('manual.item.887', 'Step 2: Enter the PLC IP address (e.g., 192.168.1.100) and select the processor type (CompactLogix or ControlLogix).'),
+                        t('manual.item.888', 'Step 3: Browse tags to confirm Ignition can read them (Controller → Tags → Your_Program → YourTag).'),
+                        t('manual.item.889', 'Step 4: Install the MQTT Transmission module in Ignition (Config → Modules → Install).'),
+                        t('manual.item.890', 'Step 5: Create an MQTT connection: Host = your Trier server IP, Port = 1883, Topic prefix = trier/sensors.'),
+                        t('manual.item.891', 'Step 6: Create a Tag Publication: Source = your PLC tags, Destination = the MQTT connection, Publish interval = 30 seconds.'),
+                        t('manual.item.892', 'Step 7: In Trier OS → Settings → Sensor Gateway → Add Connection: Type = MQTT, Topic = trier/sensors/#.'),
+                        t('manual.item.893', 'Step 8: Click "Test Connection". You should see live readings within 60 seconds.'),
+                        'Result: PLC tag values (temperature, pressure, runtime) now appear in the Trier Sensor Dashboard.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.96', '16.2 Siemens S7 → Node-RED OPC-UA Connector'),
+                    items: [
+                        t('manual.item.894', 'What you need: Node-RED installed on a server/PC that can reach both the Siemens PLC and Trier OS.'),
+                        t('manual.item.895', 'Step 1: In TIA Portal on your Siemens PLC, enable OPC-UA Server: PLC Properties → OPC UA → Enable Server.'),
+                        t('manual.item.896', 'Step 2: Note the OPC-UA endpoint URL: opc.tcp://192.168.1.50:4840.'),
+                        t('manual.item.897', 'Step 3: Install Node-RED on a server: npm install -g node-red, then start with: node-red.'),
+                        t('manual.item.898', 'Step 4: In Node-RED, install the OPC-UA palette: Menu → Manage Palette → Install → node-red-contrib-opcua.'),
+                        t('manual.item.899', 'Step 5: Drag an "OpcUa-Client" node onto the flow. Set Endpoint to your PLC\'s OPC-UA URL.'),
+                        t('manual.item.900', 'Step 6: Drag a "Function" node to format the data: msg.payload = { sensorId: "BOILER_TEMP", value: msg.payload, unit: "°F" }.'),
+                        t('manual.item.901', 'Step 7: Drag an "HTTP Request" node. Set: Method = POST, URL = http://YOUR_PRAIRIE_SERVER:3000/api/sensors/reading.'),
+                        t('manual.item.902', 'Step 8: Add an "Inject" node set to repeat every 30 seconds. Wire: Inject → OPC-UA → Function → HTTP Request.'),
+                        t('manual.item.903', 'Step 9: Deploy the flow. Check Trier\'s Sensor Dashboard — live readings should appear.'),
+                        'Tip: Add a "Catch" node to log errors. Siemens OPC-UA sometimes requires certificate trust.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.97', '16.3 Generic Modbus → Python Polling Script'),
+                    items: [
+                        t('manual.item.904', 'What you need: Python 3.x installed. A Modbus-capable device (VFD, meter, sensor) on your network.'),
+                        t('manual.item.905', 'Step 1: Install the library: pip install pymodbus requests.'),
+                        t('manual.item.906', 'Step 2: Create a file called modbus_to_prairie.py with this content:'),
+                        t('manual.item.907', '   from pymodbus.client import ModbusTcpClient'),
+                        t('manual.item.908', '   import requests, time'),
+                        t('manual.item.909', '   client = ModbusTcpClient("192.168.1.200", port=502)'),
+                        t('manual.item.910', '   while True:'),
+                        t('manual.item.911', '       result = client.read_holding_registers(0, 2)  # Register 0-1'),
+                        t('manual.item.912', '       if result.isError(): print("Read error"); time.sleep(30); continue'),
+                        t('manual.item.913', '       temp = result.registers[0] / 10.0  # Scale as needed'),
+                        t('manual.item.914', '       requests.post("http://YOUR_PRAIRIE_SERVER:3000/api/sensors/reading",'),
+                        t('manual.item.915', '           json={"sensorId": "VFD_TEMP", "value": temp, "unit": "°F"},'),
+                        t('manual.item.916', '           headers={"Authorization": "Bearer YOUR_API_KEY"})'),
+                        t('manual.item.917', '       time.sleep(30)  # Poll every 30 seconds'),
+                        t('manual.item.918', 'Step 3: Run: python modbus_to_prairie.py.'),
+                        t('manual.item.919', 'Step 4: Check the Sensor Dashboard in Trier. Your readings should appear.'),
+                        'Tip: Run as a Windows Service or Linux systemd service for production use.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.98', '16.4 MQTT Broker → Subscribe & Forward'),
+                    items: [
+                        t('manual.item.920', 'What you need: An MQTT broker already running (Mosquitto, HiveMQ, AWS IoT).'),
+                        t('manual.item.921', 'Step 1: In Trier → Settings → Sensor Gateway → Add Connection.'),
+                        t('manual.item.922', 'Step 2: Select Type: MQTT Subscriber.'),
+                        t('manual.item.923', 'Step 3: Enter Broker Host (e.g., mqtt.example.com), Port (1883 or 8883 for TLS), Username, Password.'),
+                        t('manual.item.924', 'Step 4: Enter Topic Filter (e.g., plant/sensors/# to catch all subtopics).'),
+                        t('manual.item.925', 'Step 5: Set the JSON Path for the value (e.g., $.temperature or $.value).'),
+                        t('manual.item.926', 'Step 6: Click "Test Connection". Trier connects and listens for messages.'),
+                        t('manual.item.927', 'Step 7: Publish a test message: mosquitto_pub -h mqtt.example.com -t plant/sensors/boiler -m \'{"value": 185, "unit": "°F"}\'.'),
+                        t('manual.item.928', 'Step 8: The reading appears in the Sensor Dashboard within seconds.'),
+                        'Tip: For AWS IoT, use port 8883 with TLS and download the root CA certificate.'
+                    ]
+                }
+            ]
+        },
+                {
+            section: t('manual.s16.title', 'Part 17: Floor Plans & Facility Mapping'),
             id: 'floor-plans',
             navigateTo: '/assets',
             filePath: 'src/components/FloorPlanView.jsx',
@@ -2229,88 +2310,9 @@ const AboutView = () => {
                 }
             ]
         },
-        {
-            section: t('manual.s17.title', 'Part XVI: SCADA Connection Guides — Working Examples'),
-            id: 'scada-guides',
-            navigateTo: '/settings',
-            adminOnly: true,
-            filePath: 'server/routes/sensors.js',
-            icon: <Activity size={22} />,
-            content: t('manual.s17.content', 'Step-by-step setup guides for connecting each supported PLC/SCADA system to Trier OS, with real configuration examples.'),
-            subsections: [
-                {
-                    title: t('manual.sub.95', '16.1 Allen-Bradley / Rockwell → Ignition MQTT Bridge'),
-                    items: [
-                        t('manual.item.885', 'What you need: Ignition Gateway (by Inductive Automation) installed on the OT network. Free trial works for testing.'),
-                        t('manual.item.886', 'Step 1: In Ignition, go to Config → OPC → Device Connections → Add Device → Allen-Bradley.'),
-                        t('manual.item.887', 'Step 2: Enter the PLC IP address (e.g., 192.168.1.100) and select the processor type (CompactLogix or ControlLogix).'),
-                        t('manual.item.888', 'Step 3: Browse tags to confirm Ignition can read them (Controller → Tags → Your_Program → YourTag).'),
-                        t('manual.item.889', 'Step 4: Install the MQTT Transmission module in Ignition (Config → Modules → Install).'),
-                        t('manual.item.890', 'Step 5: Create an MQTT connection: Host = your Trier server IP, Port = 1883, Topic prefix = trier/sensors.'),
-                        t('manual.item.891', 'Step 6: Create a Tag Publication: Source = your PLC tags, Destination = the MQTT connection, Publish interval = 30 seconds.'),
-                        t('manual.item.892', 'Step 7: In Trier OS → Settings → Sensor Gateway → Add Connection: Type = MQTT, Topic = trier/sensors/#.'),
-                        t('manual.item.893', 'Step 8: Click "Test Connection". You should see live readings within 60 seconds.'),
-                        'Result: PLC tag values (temperature, pressure, runtime) now appear in the Trier Sensor Dashboard.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.96', '16.2 Siemens S7 → Node-RED OPC-UA Connector'),
-                    items: [
-                        t('manual.item.894', 'What you need: Node-RED installed on a server/PC that can reach both the Siemens PLC and Trier OS.'),
-                        t('manual.item.895', 'Step 1: In TIA Portal on your Siemens PLC, enable OPC-UA Server: PLC Properties → OPC UA → Enable Server.'),
-                        t('manual.item.896', 'Step 2: Note the OPC-UA endpoint URL: opc.tcp://192.168.1.50:4840.'),
-                        t('manual.item.897', 'Step 3: Install Node-RED on a server: npm install -g node-red, then start with: node-red.'),
-                        t('manual.item.898', 'Step 4: In Node-RED, install the OPC-UA palette: Menu → Manage Palette → Install → node-red-contrib-opcua.'),
-                        t('manual.item.899', 'Step 5: Drag an "OpcUa-Client" node onto the flow. Set Endpoint to your PLC\'s OPC-UA URL.'),
-                        t('manual.item.900', 'Step 6: Drag a "Function" node to format the data: msg.payload = { sensorId: "BOILER_TEMP", value: msg.payload, unit: "°F" }.'),
-                        t('manual.item.901', 'Step 7: Drag an "HTTP Request" node. Set: Method = POST, URL = http://YOUR_PRAIRIE_SERVER:3000/api/sensors/reading.'),
-                        t('manual.item.902', 'Step 8: Add an "Inject" node set to repeat every 30 seconds. Wire: Inject → OPC-UA → Function → HTTP Request.'),
-                        t('manual.item.903', 'Step 9: Deploy the flow. Check Trier\'s Sensor Dashboard — live readings should appear.'),
-                        'Tip: Add a "Catch" node to log errors. Siemens OPC-UA sometimes requires certificate trust.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.97', '16.3 Generic Modbus → Python Polling Script'),
-                    items: [
-                        t('manual.item.904', 'What you need: Python 3.x installed. A Modbus-capable device (VFD, meter, sensor) on your network.'),
-                        t('manual.item.905', 'Step 1: Install the library: pip install pymodbus requests.'),
-                        t('manual.item.906', 'Step 2: Create a file called modbus_to_prairie.py with this content:'),
-                        t('manual.item.907', '   from pymodbus.client import ModbusTcpClient'),
-                        t('manual.item.908', '   import requests, time'),
-                        t('manual.item.909', '   client = ModbusTcpClient("192.168.1.200", port=502)'),
-                        t('manual.item.910', '   while True:'),
-                        t('manual.item.911', '       result = client.read_holding_registers(0, 2)  # Register 0-1'),
-                        t('manual.item.912', '       if result.isError(): print("Read error"); time.sleep(30); continue'),
-                        t('manual.item.913', '       temp = result.registers[0] / 10.0  # Scale as needed'),
-                        t('manual.item.914', '       requests.post("http://YOUR_PRAIRIE_SERVER:3000/api/sensors/reading",'),
-                        t('manual.item.915', '           json={"sensorId": "VFD_TEMP", "value": temp, "unit": "°F"},'),
-                        t('manual.item.916', '           headers={"Authorization": "Bearer YOUR_API_KEY"})'),
-                        t('manual.item.917', '       time.sleep(30)  # Poll every 30 seconds'),
-                        t('manual.item.918', 'Step 3: Run: python modbus_to_prairie.py.'),
-                        t('manual.item.919', 'Step 4: Check the Sensor Dashboard in Trier. Your readings should appear.'),
-                        'Tip: Run as a Windows Service or Linux systemd service for production use.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.98', '16.4 MQTT Broker → Subscribe & Forward'),
-                    items: [
-                        t('manual.item.920', 'What you need: An MQTT broker already running (Mosquitto, HiveMQ, AWS IoT).'),
-                        t('manual.item.921', 'Step 1: In Trier → Settings → Sensor Gateway → Add Connection.'),
-                        t('manual.item.922', 'Step 2: Select Type: MQTT Subscriber.'),
-                        t('manual.item.923', 'Step 3: Enter Broker Host (e.g., mqtt.example.com), Port (1883 or 8883 for TLS), Username, Password.'),
-                        t('manual.item.924', 'Step 4: Enter Topic Filter (e.g., plant/sensors/# to catch all subtopics).'),
-                        t('manual.item.925', 'Step 5: Set the JSON Path for the value (e.g., $.temperature or $.value).'),
-                        t('manual.item.926', 'Step 6: Click "Test Connection". Trier connects and listens for messages.'),
-                        t('manual.item.927', 'Step 7: Publish a test message: mosquitto_pub -h mqtt.example.com -t plant/sensors/boiler -m \'{"value": 185, "unit": "°F"}\'.'),
-                        t('manual.item.928', 'Step 8: The reading appears in the Sensor Dashboard within seconds.'),
-                        'Tip: For AWS IoT, use port 8883 with TLS and download the root CA certificate.'
-                    ]
-                }
-            ]
-        },
 
         {
-            section: t('manual.s18.title', 'Part XVII: Safety & Compliance'),
+            section: t('manual.s18.title', 'Part 18: Safety & Compliance'),
             id: 'safety-compliance',
             navigateTo: '/safety',
             filePath: 'src/components/SafetyView.jsx',
@@ -2468,7 +2470,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s19.title', 'Part XVII-B: Engineering Excellence'),
+            section: t('manual.s19.title', 'Part 19: Engineering Excellence'),
             id: 'engineering-excellence',
             navigateTo: '/engineering',
             filePath: 'src/components/EngineeringView.jsx',
@@ -2546,7 +2548,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s20.title', 'Part XVII-C: Contractors & Vendor Portal'),
+            section: t('manual.s20.title', 'Part 20: Contractors & Vendor Portal'),
             id: 'contractors-vendors',
             navigateTo: '/contractors',
             filePath: 'src/components/ContractorsView.jsx',
@@ -2604,7 +2606,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s21.title', 'Part XVII-D: OEE, Workforce & Advanced Analytics'),
+            section: t('manual.s21.title', 'Part 21: OEE, Workforce & Advanced Analytics'),
             id: 'oee-workforce',
             navigateTo: '/analytics',
             filePath: 'src/components/OeeDashboard.jsx',
@@ -2685,7 +2687,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s22.title', 'Part XVIII: Onboarding, Enrollment & Platform Features'),
+            section: t('manual.s22.title', 'Part 22: Onboarding, Enrollment & Platform Features'),
             id: 'platform-features',
             navigateTo: '/dashboard',
             filePath: 'src/components/MissionControl.jsx',
@@ -2704,7 +2706,9 @@ const AboutView = () => {
                         t('manual.item.1093', '   \u2022 Session uptime timer.'),
                         '',
                         t('manual.item.1094', 'Each tile shows a title, description, and quick-access pills (keywords) for context.'),
-                        'Click any tile to open that workspace.'
+                        'Click any tile to open that workspace.',
+                        '',
+                        t('manual.item.1734', 'AUDIT & HISTORY TILE: Access the Audit & History module from Mission Control. Available to Manager, Plant Manager, Maintenance Manager, IT Admin, and Creator roles. Opens HistoryDashboard with tabs for Work Order History, PM History, Scan Audit Log, and Dynamic Reports.'),
                     ]
                 },
                 {
@@ -2886,7 +2890,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s23.title', 'Part XIX: Email Notifications & SMTP Relay'),
+            section: t('manual.s23.title', 'Part 23: Email Notifications & SMTP Relay'),
             id: 'email-notifications',
             navigateTo: '/settings',
             adminOnly: true,
@@ -2937,7 +2941,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s24.title', 'Part XX: Mobile Offline Mode (PWA)'),
+            section: t('manual.s24.title', 'Part 24: Mobile Offline Mode (PWA)'),
             id: 'mobile-offline',
             navigateTo: '/settings',
             filePath: 'public/manifest.json',
@@ -3005,7 +3009,7 @@ const AboutView = () => {
         },
         {
 
-            section: t('manual.s25.title', 'Part XXII: High Availability & Server Replication'),
+            section: t('manual.s25.title', 'Part 25: High Availability & Server Replication'),
             id: 'high-availability',
             navigateTo: '/settings',
             adminOnly: true,
@@ -3087,7 +3091,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s26.title', 'Part XXIII: Testing Process & Data Validation'),
+            section: t('manual.s26.title', 'Part 26: Testing Process & Data Validation'),
             id: 'testing-validation',
             navigateTo: '/it-department',
             filePath: 'src/components/ITDepartmentView.jsx',
@@ -3148,7 +3152,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s27.title', 'Part XXIV: Security Testing & Results'),
+            section: t('manual.s27.title', 'Part 27: Security Testing & Results'),
             id: 'security-testing',
             navigateTo: '/it-department',
             filePath: 'server/index.js',
@@ -3248,78 +3252,20 @@ const AboutView = () => {
                         '',
                         '6. All security measures are transparent to end users — they work automatically without requiring any user action or training.'
                     ]
-                }
-            ]
-        },
-        {
-            section: t('manual.s28.title', 'Part XXV: Licensing, Support & Renewals'),
-            id: 'licensing-support',
-            navigateTo: '/settings',
-            filePath: 'src/components/SettingsView.jsx',
-            icon: <Key size={22} />,
-            content: t('manual.s28.content', 'Trier OS uses a hardware-locked license system. Each installation is tied to the machine it runs on and may be time-limited or perpetual.'),
-            subsections: [
-                {
-                    title: t('manual.sub.131', '25.1 License Types'),
-                    items: [
-                        t('manual.item.1380', '15-Day Trial — Short evaluation period for initial demonstrations.'),
-                        t('manual.item.1381', '30-Day Trial — Standard evaluation period for pilot programs.'),
-                        t('manual.item.1382', '60-Day Evaluation — Extended evaluation for comprehensive testing.'),
-                        t('manual.item.1383', '1-Year Subscription — Annual license, renewable each year.'),
-                        t('manual.item.1384', '5-Year Enterprise — Multi-year commitment at a discounted rate.'),
-                        'Perpetual License — One-time purchase, no expiration.'
-                    ]
                 },
                 {
-                    title: t('manual.sub.132', '25.2 First-Time Activation'),
+                    title: t('manual.sub.208', '27.8 Additional SOC2-Aligned Controls'),
                     items: [
-                        t('manual.item.1385', '1. Start the Trier OS server on your machine.'),
-                        t('manual.item.1386', '2. Open your browser — you will see the License Activation page.'),
-                        t('manual.item.1387', '3. Your unique Machine ID is displayed on screen (e.g., TRIER-4A7F-B12C-9D3E).'),
-                        t('manual.item.1388', '4. Click the Machine ID to copy it to your clipboard.'),
-                        t('manual.item.1389', '5. Send the Machine ID to your Trier OS administrator (see Support Contact below).'),
-                        t('manual.item.1390', '6. You will receive a License Key — paste it into the activation field and click Activate.'),
-                        '7. The application will unlock and you can proceed to log in.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.133', '25.3 License Renewal'),
-                    items: [
-                        t('manual.item.1391', 'When your license expires, the server will display a License Expired page.'),
-                        t('manual.item.1392', 'Your Machine ID is shown on the expired page — copy it and contact support for a renewal key.'),
-                        t('manual.item.1393', 'Renewal keys are generated instantly — typical turnaround is within 24 hours.'),
-                        t('manual.item.1394', 'Paste the new key on the renewal page to reactivate immediately.'),
-                        t('manual.item.1395', 'All your data, settings, and work orders are preserved — nothing is lost when a license expires.'),
-                        'The application simply pauses access until a new key is entered.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.134', '25.4 Important Notes'),
-                    items: [
-                        t('manual.item.1396', 'License keys are unique to each machine — they cannot be transferred to a different computer.'),
-                        t('manual.item.1397', 'If you replace your server hardware, contact support for a new key at no additional charge.'),
-                        t('manual.item.1398', 'The license file is stored locally and does not require internet connectivity to validate.'),
-                        t('manual.item.1399', 'Do not edit the license.key file manually — the key is cryptographically signed and will be invalidated.'),
-                        'Your license status can be checked at any time via Settings → About.'
-                    ]
-                },
-                {
-                    title: t('manual.sub.135', '25.5 Support Contact'),
-                    items: [
-                        t('manual.item.1400', 'For license activation, renewals, technical support, or sales inquiries:'),
-                        t('manual.item.1401', ' Email: github.com/DougTrier/trier-os/discussions'),
-                        t('manual.item.1402', ' Trier OS — Industrial Maintenance Management Solutions'),
-                        t('manual.item.1403', '⏱️ Typical response time: Within 24 hours on business days.'),
-                        t('manual.item.1404', 'When contacting support, please include:'),
-                        t('manual.item.1405', '  • Your Machine ID (shown on the activation or expired page)'),
-                        t('manual.item.1406', '  • Your plant/facility name'),
-                        '  • A brief description of your issue or request'
+                        t('manual.item.1760', 'SSRF PREVENTION: Outbound HTTP from server-side code is validated against an allowlist. Requests to internal network ranges (169.254.x.x, 10.x.x.x, 127.x.x.x) are blocked at the transport layer.'),
+                        t('manual.item.1761', 'AT-REST ENCRYPTION: Sensitive fields (license keys, API tokens, SMTP passwords) are stored using AES-256-GCM. The key is derived from the machine hardware ID — never stored in plaintext.'),
+                        t('manual.item.1762', 'PLANT DATA ISOLATION: Every query runs through AsyncLocalStorage plant scoping enforced at the query layer. Cross-plant data leakage is structurally impossible.'),
+                        t('manual.item.1763', 'RUNTIME INVARIANT PROOF: GET /api/invariants/report returns machine-readable PASS/FAIL for all 13 correctness invariants. Run automatically before every release.'),
                     ]
                 }
             ]
         },
         {
-            section: t('manual.s29.title', 'Part XXVI: IT Department — Asset & License Management'),
+            section: t('manual.s29.title', 'Part 28: IT Department — Asset & License Management'),
             id: 'it-department',
             icon: <Server size={22} />,
             navigateTo: '/it-department',
@@ -3472,7 +3418,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s30.title', 'Part XXVII: LOTO — Lockout/Tagout Permit System'),
+            section: t('manual.s30.title', 'Part 29: LOTO — Lockout/Tagout Permit System'),
             id: 'loto-permits',
             icon: <ShieldAlert size={22} />,
             navigateTo: '/loto',
@@ -3522,7 +3468,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s31.title', 'Part XXVIII: Compliance & Inspection Management'),
+            section: t('manual.s31.title', 'Part 30: Compliance & Inspection Management'),
             id: 'compliance-inspections',
             icon: <Shield size={22} />,
             navigateTo: '/compliance',
@@ -3564,7 +3510,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s32.title', 'Part XXIX: Multi-Language Support'),
+            section: t('manual.s32.title', 'Part 31: Multi-Language Support'),
             id: 'multi-language',
             icon: <Globe size={22} />,
             navigateTo: '/settings',
@@ -3833,7 +3779,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s33.title', 'Part XXXII: Integration & Enterprise Automation'),
+            section: t('manual.s33.title', 'Part 32: Integration & Enterprise Automation'),
             id: 'integration-enterprise-automation',
             navigateTo: '/settings',
             filePath: 'src/components/DataBridge.jsx',
@@ -3885,7 +3831,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s34.title', 'Part XXXIII: Offline Resilience & Plant LAN Sync'),
+            section: t('manual.s34.title', 'Part 33: Offline Resilience & Plant LAN Sync'),
             id: 'offline-resilience-lan-sync',
             navigateTo: '/scanner',
             filePath: 'src/utils/LanHub.js',
@@ -3946,12 +3892,13 @@ const AboutView = () => {
                         t('manual.item.1620', 'This gives plant managers a clear signal about how fresh the on-screen WO and asset data is, allowing them to judge whether cached information is safe to act on before the server returns.'),
                         t('manual.item.1621', 'The Status Map (WorkStatuses table) is also cached at login and refreshed on every successful server connection. This means predictBranch() uses plant-specific status IDs rather than hardcoded defaults — accurate even for plants that have customized their status taxonomy.'),
                         t('manual.item.1622', 'LAN Hub Keepalive: The hub connection uses a 20-second PING/PONG keepalive. If the hub becomes unreachable mid-shift, the PWA detects the closed WebSocket within seconds and displays the disconnected state, automatically attempting to reconnect every 5–25 seconds (exponential backoff, max 10 attempts).'),
+                        t('manual.item.1764', 'EVENT REPLAY ORDER GUARANTEE: Offline scan events queued on the LAN Hub are sorted by device timestamp before replay to the central server (Invariant I-03). This guarantees work order state transitions are applied in the correct chronological sequence regardless of the order in which devices reconnect. Verified PASS via GET /api/invariants/report.'),
                     ]
                 },
             ]
         },
         {
-            section: t('manual.s35.title', 'Part LIX: Emissions & Carbon Intensity Tracking'),
+            section: t('manual.s35.title', 'Part 34: Emissions & Carbon Intensity Tracking'),
             id: 'emissions-carbon',
             navigateTo: '/emissions',
             filePath: 'src/components/EmissionsView.jsx',
@@ -3978,7 +3925,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s36.title', 'Part LX: Vendor / Supplier Performance Scorecard'),
+            section: t('manual.s36.title', 'Part 35: Vendor / Supplier Performance Scorecard'),
             id: 'vendor-scorecard',
             navigateTo: '/vendor-scorecard',
             filePath: 'src/components/VendorScorecardView.jsx',
@@ -4005,7 +3952,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s37.title', 'Part LXI: Asset Lifecycle & Capital Replacement Planning'),
+            section: t('manual.s37.title', 'Part 36: Asset Lifecycle & Capital Replacement Planning'),
             id: 'asset-lifecycle',
             navigateTo: '/assets',
             filePath: 'src/components/AssetLifecycleView.jsx',
@@ -4032,7 +3979,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s38.title', 'Part LXII: Spare Parts Inventory Optimization'),
+            section: t('manual.s38.title', 'Part 37: Spare Parts Inventory Optimization'),
             id: 'spare-parts-optimization',
             navigateTo: '/storeroom',
             filePath: 'src/components/StoreroomView.jsx',
@@ -4058,7 +4005,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s39.title', 'Part LXIII: Scan-to-Segment Work Order (Digital Twin Pin Entry)'),
+            section: t('manual.s39.title', 'Part 38: Scan-to-Segment Work Order (Digital Twin Pin Entry)'),
             id: 'scan-to-segment',
             navigateTo: '/scan',
             filePath: 'src/components/ScanView.jsx',
@@ -4085,7 +4032,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s40.title', 'Part LXIV: Shift Handover / Digital Turnover Log'),
+            section: t('manual.s40.title', 'Part 39: Shift Handover / Digital Turnover Log'),
             id: 'shift-handover',
             navigateTo: '/shift-handover',
             filePath: 'src/components/ShiftHandoverView.jsx',
@@ -4111,7 +4058,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s41.title', 'Part LXV: SOP Re-Acknowledgment on MOC Change'),
+            section: t('manual.s41.title', 'Part 40: SOP Re-Acknowledgment on MOC Change'),
             id: 'sop-reack',
             navigateTo: '/sop',
             filePath: 'src/components/SOPView.jsx',
@@ -4130,7 +4077,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s42.title', 'Part LXVI: Industry Vertical Catalog Packs'),
+            section: t('manual.s42.title', 'Part 41: Industry Vertical Catalog Packs'),
             id: 'industry-catalogs',
             navigateTo: '/master-catalog',
             filePath: 'src/components/MasterCatalogView.jsx',
@@ -4159,7 +4106,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s43.title', 'Part LXVII: REST API Public Specification (OpenAPI 3.1)'),
+            section: t('manual.s43.title', 'Part 42: REST API Public Specification (OpenAPI 3.1)'),
             id: 'rest-api',
             navigateTo: '/api-docs',
             filePath: 'server/routes/',
@@ -4178,7 +4125,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s44.title', 'Part LXVIII: Digital Twin Platform Integration'),
+            section: t('manual.s44.title', 'Part 43: Digital Twin Platform Integration'),
             id: 'digital-twin-integration',
             navigateTo: '/digital-twin',
             filePath: 'src/components/DigitalTwinView.jsx',
@@ -4198,7 +4145,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s45.title', 'Part LXIX: SaaS & Ecosystem Administration'),
+            section: t('manual.s45.title', 'Part 44: SaaS & Ecosystem Administration'),
             id: 'saas-admin',
             navigateTo: '/saas',
             filePath: 'src/components/SaaSAdminView.jsx',
@@ -4224,7 +4171,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s46.title', 'Part LXX: Operator Trust Layer — Human-in-the-Loop Recommendations'),
+            section: t('manual.s46.title', 'Part 45: Operator Trust Layer — Human-in-the-Loop Recommendations'),
             id: 'operator-trust',
             navigateTo: '/operator-trust',
             filePath: 'src/components/OperatorTrustView.jsx',
@@ -4251,7 +4198,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s47.title', 'Part LXXI: Deterministic Time Machine — Plant State Rollback & Branching Simulation'),
+            section: t('manual.s47.title', 'Part 46: Deterministic Time Machine — Plant State Rollback & Branching Simulation'),
             id: 'time-machine',
             navigateTo: '/time-machine',
             filePath: 'src/components/TimeMachineView.jsx',
@@ -4282,10 +4229,19 @@ const AboutView = () => {
                         t('manual.item.1706', 'Primary use case: Post-incident investigation. After an unplanned failure, navigate to the moment before the failure event, branch from that point, and query the branch to understand what the system state was before the problem occurred.'),
                     ]
                 },
+                {
+                    title: t('manual.sub.207', 'LXXI.4 Parallel Universe Engine — Pre-Deploy Verification'),
+                    items: [
+                        t('manual.item.1754', 'The Parallel Universe Engine extends the Time Machine from post-incident investigation to pre-deployment verification. Before any code change is deployed via Live Studio, the engine replays the last N events through both the current codebase and the proposed change simultaneously, comparing outcomes.'),
+                        t('manual.item.1755', 'Purpose: If the proposed code change would have produced a different result on any historical event, the engine flags the divergence. This prevents regressions invisible to unit tests but visible in real operational data.'),
+                        t('manual.item.1756', 'Difference from Time Machine: Time Machine = post-incident investigation (what happened). Parallel Universe Engine = pre-deploy verification (what would have happened differently). Both share the same event log and snapshot infrastructure.'),
+                        t('manual.item.1757', 'Access: Available in Live Studio (Creator role only). Run from the Deploy tab before confirming a production deployment.'),
+                    ]
+                },
             ]
         },
         {
-            section: t('manual.s48.title', 'Part LXXII: Safe Action Certification Layer — Pre-Execution Proof'),
+            section: t('manual.s48.title', 'Part 47: Safe Action Certification Layer — Pre-Execution Proof'),
             id: 'safe-action-certification',
             navigateTo: '/gatekeeper',
             filePath: 'src/components/GatekeeperView.jsx',
@@ -4304,7 +4260,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: t('manual.s49.title', 'Part LXXIII: Distributed Edge Execution Mesh (Trier Network Mesh)'),
+            section: t('manual.s49.title', 'Part 48: Distributed Edge Execution Mesh (Trier Network Mesh)'),
             id: 'edge-mesh',
             navigateTo: '/edge-mesh',
             filePath: 'src/components/EdgeMeshView.jsx',
@@ -4330,7 +4286,164 @@ const AboutView = () => {
                     ]
                 },
             ]
-        }
+        },
+        {
+            section: t('manual.s28.title', 'Part 51: Licensing, Support & Renewals'),
+            id: 'licensing-support',
+            navigateTo: '/settings',
+            filePath: 'src/components/SettingsView.jsx',
+            icon: <Key size={22} />,
+            content: t('manual.s28.content', 'Trier OS uses a hardware-locked license system. Each installation is tied to the machine it runs on and may be time-limited or perpetual.'),
+            subsections: [
+                {
+                    title: t('manual.sub.131', '25.1 License Types'),
+                    items: [
+                        t('manual.item.1380', '15-Day Trial — Short evaluation period for initial demonstrations.'),
+                        t('manual.item.1381', '30-Day Trial — Standard evaluation period for pilot programs.'),
+                        t('manual.item.1382', '60-Day Evaluation — Extended evaluation for comprehensive testing.'),
+                        t('manual.item.1383', '1-Year Subscription — Annual license, renewable each year.'),
+                        t('manual.item.1384', '5-Year Enterprise — Multi-year commitment at a discounted rate.'),
+                        'Perpetual License — One-time purchase, no expiration.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.132', '25.2 First-Time Activation'),
+                    items: [
+                        t('manual.item.1385', '1. Start the Trier OS server on your machine.'),
+                        t('manual.item.1386', '2. Open your browser — you will see the License Activation page.'),
+                        t('manual.item.1387', '3. Your unique Machine ID is displayed on screen (e.g., TRIER-4A7F-B12C-9D3E).'),
+                        t('manual.item.1388', '4. Click the Machine ID to copy it to your clipboard.'),
+                        t('manual.item.1389', '5. Send the Machine ID to your Trier OS administrator (see Support Contact below).'),
+                        t('manual.item.1390', '6. You will receive a License Key — paste it into the activation field and click Activate.'),
+                        '7. The application will unlock and you can proceed to log in.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.133', '25.3 License Renewal'),
+                    items: [
+                        t('manual.item.1391', 'When your license expires, the server will display a License Expired page.'),
+                        t('manual.item.1392', 'Your Machine ID is shown on the expired page — copy it and contact support for a renewal key.'),
+                        t('manual.item.1393', 'Renewal keys are generated instantly — typical turnaround is within 24 hours.'),
+                        t('manual.item.1394', 'Paste the new key on the renewal page to reactivate immediately.'),
+                        t('manual.item.1395', 'All your data, settings, and work orders are preserved — nothing is lost when a license expires.'),
+                        'The application simply pauses access until a new key is entered.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.134', '25.4 Important Notes'),
+                    items: [
+                        t('manual.item.1396', 'License keys are unique to each machine — they cannot be transferred to a different computer.'),
+                        t('manual.item.1397', 'If you replace your server hardware, contact support for a new key at no additional charge.'),
+                        t('manual.item.1398', 'The license file is stored locally and does not require internet connectivity to validate.'),
+                        t('manual.item.1399', 'Do not edit the license.key file manually — the key is cryptographically signed and will be invalidated.'),
+                        'Your license status can be checked at any time via Settings → About.'
+                    ]
+                },
+                {
+                    title: t('manual.sub.135', '25.5 Support Contact'),
+                    items: [
+                        t('manual.item.1400', 'For license activation, renewals, technical support, or sales inquiries:'),
+                        t('manual.item.1401', ' Email: github.com/DougTrier/trier-os/discussions'),
+                        t('manual.item.1402', ' Trier OS — Industrial Maintenance Management Solutions'),
+                        t('manual.item.1403', '⏱️ Typical response time: Within 24 hours on business days.'),
+                        t('manual.item.1404', 'When contacting support, please include:'),
+                        t('manual.item.1405', '  • Your Machine ID (shown on the activation or expired page)'),
+                        t('manual.item.1406', '  • Your plant/facility name'),
+                        '  • A brief description of your issue or request'
+                    ]
+                }
+            ]
+        },
+        {
+            section: t('manual.s50.title', 'Part 49: Audit & History'),
+            id: 'audit-history',
+            navigateTo: '/history',
+            filePath: 'src/components/HistoryDashboard.jsx',
+            icon: <History size={22} />,
+            content: t('manual.s50.content', 'Unified view of all historical operational data across the platform. Work order history, completed PM records, scan audit trail, asset utilization trends, and a dynamic report builder are all accessible from Mission Control → Audit & History.'),
+            subsections: [
+                {
+                    title: t('manual.sub.200', '50.1 Work Order History'),
+                    items: [
+                        t('manual.item.1719', 'Access: Mission Control → Audit & History tile. Available to Manager, Plant Manager, Maintenance Manager, IT Admin, and Creator roles.'),
+                        t('manual.item.1720', 'Work Order History tab shows all closed and auto-closed work orders across the selected plant. Columns: WO number, asset, job type, technician, opened date, closed date, labor hours, and parts cost.'),
+                        t('manual.item.1721', 'Filter by date range, asset, technician, or job type. Export to CSV for external analysis or compliance records.'),
+                        t('manual.item.1722', 'Click any row to open the full work order detail: steps completed, parts used, technician notes, and the full audit trail of every status change.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.201', '50.2 PM (Preventive Maintenance) History'),
+                    items: [
+                        t('manual.item.1723', 'PM History tab shows all completed PM cycles — the asset, the scheduled interval, the actual completion date, the technician who completed it, and whether it was completed on time or overdue.'),
+                        t('manual.item.1724', 'On-time vs. overdue rate is calculated per asset and per plant. This feeds the PM compliance score shown on the corporate dashboard.'),
+                        t('manual.item.1725', 'PM history is the source of truth for MTBF calculations. Each PM completion resets the failure interval clock for that asset.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.202', '50.3 Scan Audit Log'),
+                    items: [
+                        t('manual.item.1726', 'The Audit Log tab shows every scan event recorded by the system — asset scanned, technician, device, timestamp, and the resulting action (WO opened, WO closed, part issued, PM acknowledged, etc.).'),
+                        t('manual.item.1727', 'Scan events are idempotent — duplicate scans within the dedup window are recorded once with a count. This prevents phantom work orders from multi-scan events.'),
+                        t('manual.item.1728', 'Offline scan events (recorded on the LAN Hub while disconnected) are marked with their device timestamp and the server sync timestamp. Both are visible in the audit log.'),
+                        t('manual.item.1729', 'The audit log is cross-plant — accessible from the corporate dashboard with plant filter. Every entry is write-once; no record can be modified or deleted after creation.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.203', '50.4 Dynamic Report Builder'),
+                    items: [
+                        t('manual.item.1730', 'The Reports tab provides a drag-and-drop report builder. Select data source (Work Orders, PMs, Parts, Assets, or Audit Log), choose columns, apply filters, and set date range.'),
+                        t('manual.item.1731', 'Reports can be saved as named templates and re-run at any time. Saved reports are visible to all users with access to the Audit & History module.'),
+                        t('manual.item.1732', 'Export formats: CSV (for Excel/BI tools), printable PDF (via the PrintEngine), and on-screen pivot table view.'),
+                        t('manual.item.1733', 'Scheduled reports are not currently supported — run reports on demand or export and schedule delivery externally.'),
+                    ]
+                },
+            ]
+        },
+        {
+            section: t('manual.s51.title', 'Part 50: Architectural Correctness & Invariant System'),
+            id: 'invariants',
+            navigateTo: '/api/invariants/report',
+            filePath: 'server/routes/invariants.js',
+            adminOnly: true,
+            icon: <Shield size={22} />,
+            content: t('manual.s51.content', 'Trier OS maintains 13 formally verified architectural invariants — runtime-enforced correctness guarantees that prevent the system from entering an invalid state. Every invariant is monitored continuously and verified via GET /api/invariants/report, which returns a machine-readable proof of system health.'),
+            subsections: [
+                {
+                    title: t('manual.sub.204', '51.1 What Are Invariants?'),
+                    items: [
+                        t('manual.item.1735', 'An invariant is a condition that must always be true. If it is ever violated, the system has entered an incorrect state. Trier OS enforces 13 invariants at the database and application layer — not as assertions that can be bypassed, but as UNIQUE constraints, transactional guards, and idempotency checks built into every write path.'),
+                        t('manual.item.1736', 'Runtime Proof: GET /api/invariants/report returns a JSON document listing all 13 invariants with their current status (PASS or FAIL), the assertion type (database constraint, idempotency guard, state machine enforcement, etc.), and the last evidence timestamp.'),
+                        t('manual.item.1737', 'Current Status: All 13 invariants return overallStatus: PASS as of v3.6.1. This is verified as part of every pre-release checklist.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.205', '51.2 The 13 Invariants'),
+                    items: [
+                        t('manual.item.1738', 'I-01: Parts returned to stock cannot exceed the quantity originally issued on a work order. Enforced inside a DB IMMEDIATE transaction.'),
+                        t('manual.item.1739', 'I-02: A work order cannot be closed while it has unreturned parts with returnable quantity > 0. Blocked at the close endpoint.'),
+                        t('manual.item.1740', 'I-03: Offline scan events replay in device-timestamp order. Sorted before replay to prevent out-of-sequence state transitions.'),
+                        t('manual.item.1741', 'I-04: Duplicate scan events within the dedup window are recorded exactly once. Enforced by UNIQUE INDEX on ScanAuditLog.'),
+                        t('manual.item.1742', 'I-05: A scanner device owns exactly one active scan session at a time. ScanCapture claims ownership flag on mount; released on unmount.'),
+                        t('manual.item.1743', 'I-06: Work order status transitions follow the defined state machine (IDLE → ACTIVE → WAITING → CLOSED/AUTO_CLOSED). No skip transitions permitted.'),
+                        t('manual.item.1744', 'I-07: Every audit log write is atomic with the triggering operation. Partial writes (operation succeeds, audit fails) are impossible.'),
+                        t('manual.item.1745', 'I-08: Plant database access is always scoped to the authenticated user\'s plant via AsyncLocalStorage. Cross-plant data leakage is structurally impossible.'),
+                        t('manual.item.1746', 'I-09: Receiving events are idempotent — replaying the same receiving event does not double-count inventory. Enforced by UNIQUE INDEX.'),
+                        t('manual.item.1747', 'I-10: A PM can be acknowledged by exactly one technician (first-claim ownership). Enforced by UNIQUE constraint on the acknowledgment record.'),
+                        t('manual.item.1748', 'I-11: A work order cannot be silently closed when issued parts have returnable quantity. Generates a needsReview flag instead.'),
+                        t('manual.item.1749', 'I-12: Batch endpoint HTTP 200 is a transport ACK only. Per-item status must be checked. Documented and enforced in all batch consumers.'),
+                        t('manual.item.1750', 'I-13: Artifact source field is always labeled in /artifacts/for/:entityId response. No unlabeled artifact references permitted.'),
+                    ]
+                },
+                {
+                    title: t('manual.sub.206', '51.3 Accessing the Invariant Report'),
+                    items: [
+                        t('manual.item.1751', 'Endpoint: GET /api/invariants/report — requires IT Admin or Creator role. Returns JSON with overallStatus, per-invariant status, assertion type, severity, and last evidence timestamp.'),
+                        t('manual.item.1752', 'The report is also run automatically as part of the pre-release checklist before every version build. A build is not released unless overallStatus: PASS.'),
+                        t('manual.item.1753', 'Invariant violations generate entries in the InvariantLog table, which is accessible via the Governance & Security panel in Mission Control for IT Admin and Creator roles.'),
+                    ]
+                },
+            ]
+        },
     ];
 
 
