@@ -151,6 +151,7 @@ import PlantSetupView from './components/PlantSetupView';
 import ScannerWorkspace from './components/ScannerWorkspace';
 import OfflineReceivingView from './components/OfflineReceivingView';
 import useHardwareScanner from './hooks/useHardwareScanner';
+import GuidedExecution from './components/GuidedExecution';
 /**
  * PlantOnboardingRoute — thin route wrapper for the Enterprise Onboarding Wizard.
  * Renders the OnboardingWizard full-screen (it uses modal-overlay / position:fixed)
@@ -182,6 +183,14 @@ function App() {
     const showDashboard = useMemo(() => isAdminOrCreator || canAccessDashboard || isManagerOrAdmin, [isAdminOrCreator, canAccessDashboard, isManagerOrAdmin]);
 
     const [branding, setBranding] = useState({ dashboardLogo: null, documentLogo: null });
+
+    // ── Guided Execution engine — passive overlay, never alters app state ─────
+    const [activeGuideId, setActiveGuideId] = useState(null);
+    useEffect(() => {
+        // Expose a global so Playwright tests and future AboutView trigger can start a guide
+        window.startTrierGuide = (id) => setActiveGuideId(id);
+        return () => { delete window.startTrierGuide; };
+    }, []);
 
     useEffect(() => {
         const fetchBranding = async () => {
@@ -1309,6 +1318,14 @@ function App() {
 
             {isCreatorConsoleOpen && <CreatorConsole isOpen={isCreatorConsoleOpen} onClose={() => setIsCreatorConsoleOpen(false)} />}
             {isLiveStudioOpen && <LiveStudio isOpen={isLiveStudioOpen} initialFile={studioInitialFile} onClose={() => { setIsLiveStudioOpen(false); setStudioInitialFile(null); }} />}
+
+            {/* Guided Execution engine — renders via portal, never blocks existing UI */}
+            {activeGuideId && (
+                <GuidedExecution
+                    workflowId={activeGuideId}
+                    onExit={() => setActiveGuideId(null)}
+                />
+            )}
 
             {/* Global IT Asset Scan Result (from Zebra wedge scanner on any page) */}
             {hwScanResult && (

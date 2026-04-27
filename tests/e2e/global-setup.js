@@ -50,6 +50,18 @@ async function loginAndSave(browser, account, authDir) {
     await page.waitForURL(url => !url.pathname.includes('login'), { timeout: 15000 });
   } catch { /* already redirected or timed out — save whatever we have */ }
 
+  // Mark onboarding tour as dismissed for ghost accounts so the full-screen
+  // tour backdrop (zIndex 99991, pointer-events: auto) never blocks test interactions.
+  // Real users are unaffected — this key is only written into the ghost auth state files.
+  //
+  // OnboardingTour.getUserKey() uses localStorage.getItem('username') || 'default'.
+  // The app sets 'currentUser' on login, never 'username', so the active key is
+  // always pf_onboarding_dismissed_default.  Set both to be safe.
+  await page.evaluate((loginName) => {
+    localStorage.setItem('pf_onboarding_dismissed_default', 'true');
+    localStorage.setItem(`pf_onboarding_dismissed_${loginName}`, 'true');
+  }, account.username);
+
   const outPath = path.join(authDir, account.file);
   await context.storageState({ path: outPath });
   await context.close();

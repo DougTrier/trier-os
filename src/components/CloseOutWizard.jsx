@@ -131,6 +131,15 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
         }
     }, [labor, parts, misc, step, isOpen, success, draftKey, plantId]);
 
+    // Passive guide context — read-only observability for Guided Execution.
+    // Never conditional on guide being active. Does not alter wizard state or behavior.
+    useEffect(() => {
+        window.__trierGuideContext = window.__trierGuideContext || {};
+        window.__trierGuideContext.activeModal  = isOpen ? 'closeout' : null;
+        window.__trierGuideContext.laborCount   = isOpen ? labor.length : 0;
+        window.__trierGuideContext.partsCount   = isOpen ? parts.length : 0;
+    }, [isOpen, labor.length, parts.length]);
+
     const fetchLookups = async () => {
         try {
             // Fetch technicians from all sources (plant users, work assignments, auth users)
@@ -345,6 +354,8 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
             const data = await res.json();
             if (data.success) {
                 setSuccess(true);
+                window.__trierGuideContext = window.__trierGuideContext || {};
+                window.__trierGuideContext.lastCloseoutResult = 'success';
                 DraftManager.clear(draftKey, plantId);
                 setTimeout(() => {
                     onComplete();
@@ -467,7 +478,7 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
                                                             <div className="field-group">
                                                                 <label>{t('close.out.regHours')}</label>
-                                                                <input type="number" step="0.5" min="0" value={L.HrReg} onChange={e => updateLabor(i, 'HrReg', e.target.value)} title={t('closeOutWizard.regularHoursWorkedByThisTip')} />
+                                                                <input type="number" step="0.5" min="0" value={L.HrReg} onChange={e => updateLabor(i, 'HrReg', e.target.value)} title={t('closeOutWizard.regularHoursWorkedByThisTip')} {...(i === 0 ? { 'data-guide': 'closeout-labor-hours' } : {})} />
                                                             </div>
                                                             <div className="field-group">
                                                                 <label>{t('close.out.otHours')}</label>
@@ -524,9 +535,9 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                                                 <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                                                     <Search size={16} />
                                                 </div>
-                                                <input 
-                                                    type="text" 
-                                                    placeholder={t('close.out.partNameIdOr')} 
+                                                <input
+                                                    type="text"
+                                                    placeholder={t('close.out.partNameIdOr')}
                                                     style={{ paddingLeft: '40px', width: '100%', borderRadius: partResults.length > 0 ? '8px 8px 0 0' : '8px' }}
                                                     value={partSearch}
                                                     onFocus={() => searchParts(partSearch)}
@@ -535,6 +546,7 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                                                         searchParts(e.target.value);
                                                     }}
                                                     title={t('closeOutWizard.searchForPartsByNameTip')}
+                                                    data-guide="closeout-parts-search"
                                                 />
                                                 {searchingParts && <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}><Loader2 className="spinning" size={16} /></div>}
                                                 
@@ -772,6 +784,7 @@ export default function CloseOutWizard({ woId, woNumber, assetId, isOpen, onClos
                                 onClick={handleSubmit}
                                 disabled={loading || (unresolvedParts.length > 0 && showOverrideInput && !overrideReason.trim())}
                                 title={t('closeOutWizard.submitAllLaborAndPartsTip')}
+                                data-guide="closeout-submit-button"
                             >
                                 {loading ? <Loader2 className="spinning" size={18} /> :
                                  (unresolvedParts.length > 0 && overrideReason.trim()) ? 'Close with Override' :

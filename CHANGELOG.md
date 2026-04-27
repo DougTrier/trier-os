@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.7.0] — 2026-04-27 — Guided Execution Mode (Phase 5 Complete)
+
+### Added — Guided Execution Engine
+- `src/components/GuidedExecution.jsx` — floating panel engine; navigates, highlights, and validates steps; portal-rendered so z-index is never blocked by modal stacking
+- `src/data/guidedWorkflows.js` — canonical workflow schema registry; pilot workflow `close-out-work-order` (6 steps)
+- `src/utils/guideValidation.js` — state-based completion validators (I-GE3); step advances on proven state, not click events
+- `src/utils/guideContext.js` — context resolver registry; reads localStorage + `window.__trierGuideContext` for eligibility checks
+- `src/utils/guideRiskGate.js` — role/risk gate; blocks before render; never elevates permissions
+- `src/utils/guideNavigation.js` — route allowlist for engine navigation
+- `src/utils/guideAnchor.js` — `data-guide` anchor resolver and scroll-into-view helper
+- `src/utils/guideLauncher.js` — sole entry point from manual → engine; resolves stable workflowId from `manualSections.js`, never from title or section text (Manual Stability Rule)
+- `src/data/manualSections.js` — stable kebab-case section ID → workflowId registry; manual content is not an execution contract
+
+### Added — Manual Integration (Phase 5)
+- "Start Guided Mode" button in `AboutView.jsx` section header; only renders when `MANUAL_SECTIONS[m.guideId]` is registered
+- `window.startTrierGuide(workflowId)` global entry point exposed in `App.jsx`
+
+### Added — Observability (Phase 9.5)
+- `server/migrations/061_guide_execution_log.js` — `GuideExecutionLog` table in `trier_logistics.db` with per-step attempt counts
+- `server/routes/guide.js` — `POST /api/guide/complete`; writes COMPLETE and ABANDONED outcomes; fire-and-forget, never blocks execution path
+- Per-step `attempts` counter (poll cycles before validation passes); direct ref mutation, no render impact
+
+### Added — Test Coverage
+- `tests/e2e/guided-execution.spec.js` — 28 tests across 11 sections proving all 5 invariants (I-GE1–I-GE5), eligibility gates, telemetry, security, plant-context invariant, console hygiene, manual stability regression gate, and manual integration (happy path, context block, plant-header invariant)
+- `tests/e2e/guided-anchor-visibility.spec.js` — anchor visibility preflight
+- `tests/e2e/guided-schema-completeness.spec.js` — schema registry completeness gate
+- `tests/e2e/global-setup.js` — ghost accounts start post-onboarding (`pf_onboarding_dismissed_default` set in storageState)
+
+### Fixed
+- OnboardingTour overlay no longer blocks Playwright clicks on ghost accounts — dismissed flag set in global-setup before storageState is saved; real first-launch users are unaffected
+
+---
+
 ## [3.6.2] — 2026-04-26 — Project Cleanup, Executive Assessment & PDF Formatting
 
 ### Documentation

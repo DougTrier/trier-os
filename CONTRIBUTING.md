@@ -112,7 +112,41 @@ Every PR is reviewed and tested locally before merge. That's not bureaucracy —
 
 ---
 
-## 4. What We're Looking For
+## 4. Guided Execution Anchor Convention
+
+Trier OS uses `data-guide` attributes to expose UI elements to the Guided Execution
+engine. These are passive data attributes — no event listeners, no CSS targeting, no
+business logic dependency.
+
+### Rules
+
+- **Use `data-guide` only** — never CSS class names, element IDs, or translated text as guide targets
+- **Format:** lowercase kebab-case — `module-element`, e.g. `closeout-button`, `wo-list-row`
+- **Globally unique name** — no two *different* element types share the same anchor string
+- **List rows are the exception** — repeated rows (e.g. `wo-list-row`) may appear multiple times; the engine uses the first match
+- **Never add guide logic to components** — the anchor is inert; the component must work identically with guided mode disabled
+- **Register every new anchor** in the anchor catalog in `docs/GUIDED_EXECUTION_DESIGN.md` Section 5.3
+
+### Current anchor catalog
+
+| Anchor | Element | Component |
+|---|---|---|
+| `wo-list-row` | Work order list row (targets first match) | WorkOrdersView |
+| `closeout-button` | "Complete with Costs" / "Update Costs" button | WorkOrdersView |
+| `closeout-labor-hours` | First labor hours input, wizard step 1 | CloseOutWizard |
+| `closeout-parts-search` | Parts search input, wizard step 2 | CloseOutWizard |
+| `closeout-submit-button` | "Confirm & Close Out" button, wizard step 3 | CloseOutWizard |
+
+### Adding a new anchor
+
+1. Add `data-guide="your-anchor"` to the element — nothing else
+2. Add a row to the table above and to the anchor catalog in `docs/GUIDED_EXECUTION_DESIGN.md`
+3. Register the anchor in the pilot or relevant workflow schema in `src/data/guidedWorkflows.js`
+4. Add a visibility assertion for the new anchor in `tests/e2e/guided-anchor-visibility.spec.js`
+
+---
+
+## 5. What We're Looking For
 
 - Bug fixes with clear reproduction steps
 - Performance improvements with measurable impact

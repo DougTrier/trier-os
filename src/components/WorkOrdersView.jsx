@@ -30,6 +30,22 @@
  *   the list — used by HistoryDashboard (completed WOs) and PM history views.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+
+// Resolves the effective plant ID for a WO detail request.
+// Checks all known plant identity fields on the row object before falling
+// back to the component's own plantId. Never returns 'all_sites' — that
+// value is only valid for the list endpoint, not for single-WO detail fetches.
+function resolveWorkOrderPlantId(order, fallbackPlantId) {
+    const candidate =
+        order?.PlantID   ||
+        order?.plantId   ||
+        order?.PlantCode ||
+        order?.Plant;
+
+    if (candidate && candidate !== 'all_sites') return candidate;
+    if (fallbackPlantId && fallbackPlantId !== 'all_sites') return fallbackPlantId;
+    return null;
+}
 import { createPortal } from 'react-dom';
 import { Search, Filter, RefreshCw, Plus, ChevronLeft, ChevronRight, X, Printer, PenTool, AlertTriangle, ClipboardList, Eye, Network, ChevronDown, Folder, Layers, Info, Package, MapPin } from 'lucide-react';
 import ActionBar from './ActionBar';
@@ -284,7 +300,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
             );
 
             if (found) {
-                handleView(found.ID_INTERNAL || found.ID); // Favor internal stable handle
+                handleView(found.ID_INTERNAL || found.ID, found.plantId); // pass plantId for cross-plant nav
                 localStorage.removeItem('PF_NAV_VIEW');
             }
         }
@@ -328,18 +344,44 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
         return () => { active = false; };
     }, [calendarAction]);
 
-    const handleView = async (id) => {
+    // Passive guide context — read-only observability for Guided Execution.
+    // Never conditional on guide being active. Does not alter component state or behavior.
+    // Guard: only publish a WO that has a stable identifier. API error payloads
+    // (e.g. { error: '...' }) must never be published as selectedWorkOrder — the guide
+    // gate requires a provable work order, and an error object cannot satisfy that.
+    useEffect(() => {
+        window.__trierGuideContext = window.__trierGuideContext || {};
+        const isValidWO = selectedWO != null &&
+            (selectedWO.ID != null || selectedWO.ID_INTERNAL != null);
+        window.__trierGuideContext.selectedWorkOrder = isValidWO ? selectedWO : null;
+    }, [selectedWO]);
+
+    const handleView = async (id, woPlantId) => {
         if (!id) {
             console.warn('Attempted to view Work Order with null/undefined ID');
             return;
         }
+        // woPlantId comes from the row object (wo.plantId), set by the all_sites aggregate
+        // query. resolveWorkOrderPlantId never returns 'all_sites' — the detail endpoint
+        // requires a real plant id. Passing null means the server will reject the request.
+        const effectivePlantId = resolveWorkOrderPlantId({ plantId: woPlantId }, plantId);
+        if (!effectivePlantId) {
+            console.warn('[handleView] Cannot resolve plant for WO', id, '— aborting fetch');
+            return;
+        }
+        const viewHeaders = { 'x-plant-id': effectivePlantId };
+
         setIsEditing(false);
         setIsCreating(false);
         setLockInfo(null);
         setLoadingDetails(true);
         try {
-            const res = await fetch(`/api/work-orders/${id}`);
+            const res = await fetch(`/api/work-orders/${id}`, { headers: viewHeaders });
             const data = await res.json();
+            if (!res.ok || data?.error) {
+                window.trierToast?.error(data?.error || 'Failed to load work order');
+                return;
+            }
             setSelectedWO(data);
             setEditData(data);
             
@@ -836,8 +878,8 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
                             </tr>
                         ) : (
                             orders.map(wo => (
-                                <tr key={`${wo.plantId || 'local'}-${wo.ID_INTERNAL || wo.ID}`} title={`${t('work.orders.taskDetails')}: ${wo.ID_INTERNAL}`}>
-                                    <td style={{ fontWeight: 600, color: 'var(--primary)', cursor: 'pointer' }} onClick={() => handleView(wo.ID_INTERNAL || wo.ID)} title={`${t('work.orders.orderId')}: ${wo.ID || wo.WorkOrderNumber}`}>{wo.ID || wo.WorkOrderNumber || '--'}</td>
+                                <tr key={`${wo.plantId || 'local'}-${wo.ID_INTERNAL || wo.ID}`} title={`${t('work.orders.taskDetails')}: ${wo.ID_INTERNAL}`} data-guide="wo-list-row">
+                                    <td style={{ fontWeight: 600, color: 'var(--primary)', cursor: 'pointer' }} onClick={() => handleView(wo.ID_INTERNAL || wo.ID, wo.plantId)} title={`${t('work.orders.orderId')}: ${wo.ID || wo.WorkOrderNumber}`}>{wo.ID || wo.WorkOrderNumber || '--'}</td>
                                     <td style={{ maxWidth: '300px', wordBreak: 'break-word' }} title={wo.Description}>
                                         {wo.Description}
                                     </td>
@@ -863,7 +905,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
                                     <td style={{ textAlign: 'right' }}>
                                         <button 
                                             className="btn-view-standard"
-                                            onClick={() => handleView(wo.ID_INTERNAL || wo.ID)}
+                                            onClick={() => handleView(wo.ID_INTERNAL || wo.ID, wo.plantId)}
                                             title={`${t('work.orders.openFullDetailsForOrder')} ${wo.ID || wo.WorkOrderNumber}`}
                                         >
                                             <Eye size={18} /> {t('work.orders.view')}
@@ -1404,8 +1446,9 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
                                     }}>{t('work.orders.close')}</button>
                                     <button className="btn-primary" onClick={handleEditClick} title={isForeignPlant ? t('assets.unlockToEdit') : t('assets.modifyRecord')}>{t('work.orders.edit')}</button>
                                     {!isForeignPlant && (
-                                        <button                                             className="btn-primary" 
-                                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)' }} 
+                                        <button                                             className="btn-primary"
+                                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)' }}
+                                            data-guide="closeout-button"
                                             onClick={() => {
                                             // Check warranty status before opening wizard
                                             if (selectedWO?.AstID) {

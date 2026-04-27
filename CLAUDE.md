@@ -266,7 +266,37 @@ The `Install Instructions.pdf` lives untracked in the repo root — never commit
 
 ---
 
+## AI Task Gate (MANDATORY)
+
+Before starting any task, you MUST output:
+
+### Claude.md Acknowledgement
+- Architecture model understood
+- DB routing pattern confirmed (AsyncLocalStorage only)
+- Security rules acknowledged (S-1, S-4, S-11, S-12)
+- Protected files respected
+- Zero-Keystroke Contract acknowledged
+- Guided Execution invariants acknowledged (if applicable)
+
+If this acknowledgement is not present, the task is invalid.
+
+---
+
+Before completing any task, you MUST output:
+
+### Claude.md Compliance Check
+- No direct DB path usage
+- No migration edits
+- No violation of protected files
+- No SQL injection risk introduced
+- No invariant violations
+- No unintended side effects introduced
+
+Status: PASS / FAIL
+
+---
+
 ## Current Version
 
-v3.6.2 — See CHANGELOG.md and ROADMAP.md for history.
+v3.7.0 — See CHANGELOG.md and ROADMAP.md for history.
 Completed roadmaps and task lists archived in References/.

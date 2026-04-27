@@ -17,6 +17,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Info, HelpCircle, FileText, Settings, Database, User, Calendar, MessageCircle, Shield, Globe, HardDrive, Printer, BookOpen, AlertCircle, Search, Lightbulb, Clock, CheckCircle, List, ShieldAlert, HelpCircle as HelpIcon, ArrowRight, Settings2, Download, History, Users, ClipboardList, Activity, Key, Server, Type, Cloud, Github, Star, Scan, Wifi } from 'lucide-react';
 import { useTranslation } from '../i18n/index.jsx';
+import MANUAL_SECTIONS from '../data/manualSections';
+import { startGuidedFromManual } from '../utils/guideLauncher';
 
 const AboutView = () => {
     const { t } = useTranslation();
@@ -48,7 +50,7 @@ const AboutView = () => {
         ],
         bio: `Bridging ${yearsExp} years of industrial grit and enterprise technology. Doug's journey began on the front lines—driving wholesale delivery routes, picking in coolers, loading trucks, and operating production equipment, with decades of operational management experience. This 'boots-on-the-ground' foundation evolved into architecting enterprise digital infrastructure. From racking server foundations to acting as the architect for enterprise mobile infrastructure, this platform is the culmination of three decades of operational knowledge.`,
         badges: ['Industrial Engineering', 'V-Sphere/Cloud', 'Mobile Infra'],
-        version: '3.6.2',
+        version: '3.7.0',
         buildDate: 'April 2026',
         experience: yearsExp
     };
@@ -695,6 +697,7 @@ const AboutView = () => {
         {
             section: t('manual.s4.title', 'Part 4: Closing a Job — The Close-Out Wizard'),
             id: 'close-out',
+            guideId: 'work-order-closeout',
             navigateTo: '/jobs',
             filePath: 'src/components/JobsView.jsx',
             icon: <CheckCircle size={22} />,
@@ -4415,7 +4418,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1735', 'An invariant is a condition that must always be true. If it is ever violated, the system has entered an incorrect state. Trier OS enforces 13 invariants at the database and application layer — not as assertions that can be bypassed, but as UNIQUE constraints, transactional guards, and idempotency checks built into every write path.'),
                         t('manual.item.1736', 'Runtime Proof: GET /api/invariants/report returns a JSON document listing all 13 invariants with their current status (PASS or FAIL), the assertion type (database constraint, idempotency guard, state machine enforcement, etc.), and the last evidence timestamp.'),
-                        t('manual.item.1737', 'Current Status: All 13 invariants return overallStatus: PASS as of v3.6.2. This is verified as part of every pre-release checklist.'),
+                        t('manual.item.1737', 'Current Status: All 13 invariants return overallStatus: PASS as of v3.7.0. This is verified as part of every pre-release checklist.'),
                     ]
                 },
                 {
@@ -4518,7 +4521,7 @@ const AboutView = () => {
                             <img src="/assets/TrierLogo.png" alt="Trier OS" style={{ height: '48px', borderRadius: '8px' }} />
                             <div>
                                 <h1 style={{ fontSize: '1.6rem', margin: 0 }}>{t('about.manualTitle', 'Trier OS — Operational Intelligence Manual')}</h1>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.6.2')}</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.7.0')}</p>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
@@ -4634,6 +4637,23 @@ const AboutView = () => {
                                                 title={`Open ${m.filePath} in Live Studio`}
                                             >
                                                 {'</>'} {t('about.goToCode', 'Go to Code')}
+                                            </button>
+                                        )}
+                                        {m.guideId && MANUAL_SECTIONS[m.guideId] && (
+                                            <button
+                                                data-testid="start-guided-mode"
+                                                onClick={() => startGuidedFromManual(m.guideId)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                    padding: '8px 18px', fontSize: '0.8rem', fontWeight: 600,
+                                                    background: 'rgba(59, 130, 246, 0.12)',
+                                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                    color: '#3b82f6', borderRadius: '10px',
+                                                    whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer'
+                                                }}
+                                                title={t('guide.startGuidedModeTip', 'Start a step-by-step guided workflow for this section')}
+                                            >
+                                                ▶ {t('guide.startGuidedMode', 'Start Guided Mode')}
                                             </button>
                                         )}
                                     </div>
