@@ -1125,7 +1125,7 @@ const AboutView = () => {
                         t('manual.item.347', '4. Post in Chat: "URGENT PART REQUEST: [Motor] for [Your Plant]".'),
                         t('manual.item.348', '5. Once the motor arrives, perform the repair.'),
                         t('manual.item.349', '6. Open the Close-Out Wizard — add labor, parts, downtime, and resolution.'),
-                        '7. Sign and Execute Close-Out.'
+                        t('manual.item.1818', '7. Sign and Execute Close-Out.')
                     ]
                 },
                 {
@@ -1135,7 +1135,7 @@ const AboutView = () => {
                         t('manual.item.350', '1. Go to the "History" tab.'),
                         t('manual.item.351', '2. Filter by Asset: select the boiler.'),
                         t('manual.item.352', '3. Set Date Range to the past 12 months.'),
-                        '4. Click "Print" to generate the audit report.'
+                        t('manual.item.1819', '4. Click "Print" to generate the audit report.')
                     ]
                 },
                 {
@@ -1146,7 +1146,7 @@ const AboutView = () => {
                         t('manual.item.354', '2. Demonstrate View → Edit → change status to "Started".'),
                         t('manual.item.355', '3. Walk through the Close-Out Wizard on a completed job.'),
                         t('manual.item.356', '4. Show them Chat and how to search past solutions.'),
-                        '5. Have them practice scanning an asset tag with the SCAN button.'
+                        t('manual.item.1820', '5. Have them practice scanning an asset tag with the SCAN button.')
                     ]
                 },
                 {
@@ -1157,7 +1157,7 @@ const AboutView = () => {
                         t('manual.item.358', '2. Click "Adjust Stock".'),
                         t('manual.item.359', '3. Enter the correct count: 10.'),
                         t('manual.item.360', '4. Select reason: "Manual Cycle Count".'),
-                        '5. Click "Update" — the system records the adjustment with your name.'
+                        t('manual.item.1821', '5. Click "Update" — the system records the adjustment with your name.')
                     ]
                 },
                 {
@@ -1167,7 +1167,7 @@ const AboutView = () => {
                         t('manual.item.361', '1. Go to Chat and create a topic: "DESIGN ALERT: [Part] Failing Prematurely".'),
                         t('manual.item.362', '2. Attach your recent work order history showing the pattern.'),
                         t('manual.item.363', '3. Tag Corporate Engineering.'),
-                        '4. The Predictive Foresight system may also auto-flag this via MTBF analysis.'
+                        t('manual.item.1822', '4. The Predictive Foresight system may also auto-flag this via MTBF analysis.')
                     ]
                 },
                 {
@@ -1177,7 +1177,7 @@ const AboutView = () => {
                         t('manual.item.364', '1. Go to Assets and find the sorter.'),
                         t('manual.item.365', '2. Open its detail view.'),
                         t('manual.item.366', '3. Click "Change Status" → "Decommissioned".'),
-                        '4. The asset is archived — no new WOs can be created, but all history is preserved.'
+                        t('manual.item.1823', '4. The asset is archived — no new WOs can be created, but all history is preserved.')
                     ]
                 },
                 {
@@ -1186,7 +1186,7 @@ const AboutView = () => {
                     steps: [
                         t('manual.item.367', '1. Go to Chat and respond to the tool request.'),
                         t('manual.item.368', '2. Use the Logistics view to create a Transfer Task.'),
-                        '3. Mark the tool as "Checked Out" in your local registry to track its location.'
+                        t('manual.item.1824', '3. Mark the tool as "Checked Out" in your local registry to track its location.')
                     ]
                 }
             ]
@@ -1213,7 +1213,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.376', 'HOW TO ACCESS:'),
                         t('manual.item.377', '   \u2022 Click the Fleet & Truck Shop tile in the Portal.'),
-                        '   \u2022 Use the search bar to filter across all tabs by unit number, driver, make, or VIN.'
+                        t('manual.item.1825', '   \u2022 Use the search bar to filter across all tabs by unit number, driver, make, or VIN.')
                     ]
                 },
                 {
@@ -1240,7 +1240,7 @@ const AboutView = () => {
                         t('manual.item.391', 'PM TRACKING:'),
                         t('manual.item.392', '   \u2022 Each vehicle tracks PM intervals by mileage.'),
                         t('manual.item.393', '   \u2022 The "PM Due" column shows upcoming or overdue preventive maintenance.'),
-                        '   \u2022 Overdue PMs display in red with a warning icon.'
+                        t('manual.item.1826', '   \u2022 Overdue PMs display in red with a warning icon.')
                     ]
                 },
                 {
@@ -1263,7 +1263,7 @@ const AboutView = () => {
                         t('manual.item.405', 'RESULTS: Pass, Defects Found, or Out of Service.'),
                         t('manual.item.406', 'A supervisor can set "Reviewed By" to sign off on defects.'),
                         '',
-                        'PRINTING: Use the Print button on any DVIR to generate a branded printout.'
+                        t('manual.item.1827', 'PRINTING: Use the Print button on any DVIR to generate a branded printout.')
                     ]
                 },
                 {
@@ -1280,7 +1280,7 @@ const AboutView = () => {
                         t('manual.item.414', '   \u2022 MPG is auto-calculated from odometer readings between fills.'),
                         t('manual.item.415', '   \u2022 Low MPG (< 5) is flagged in red for investigation.'),
                         '',
-                        'EDITING: Click the pencil icon on any fuel entry to correct gallons, cost, or odometer.'
+                        t('manual.item.1828', 'EDITING: Click the pencil icon on any fuel entry to correct gallons, cost, or odometer.')
                     ]
                 },
                 {
@@ -1298,7 +1298,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.424', 'TIRE STATUSES: In Service, Removed, Retread, Scrapped.'),
                         '',
-                        'EDITING: Click pencil to update tread depth readings, change position, or retire a tire.'
+                        t('manual.item.1829', 'EDITING: Click pencil to update tread depth readings, change position, or retire a tire.')
                     ]
                 },
                 {
@@ -1317,7 +1317,7 @@ const AboutView = () => {
                         t('manual.item.433', '   \u2022 Red: Expired \u2014 shows days overdue.'),
                         t('manual.item.434', '   \u2022 Medical card expiry is tracked separately.'),
                         '',
-                        'Always keep driver medical cards current \u2014 expired cards invalidate the CDL.'
+                        t('manual.item.1830', 'Always keep driver medical cards current \u2014 expired cards invalidate the CDL.')
                     ]
                 },
                 {
@@ -1330,7 +1330,7 @@ const AboutView = () => {
                         t('manual.item.439', '4. Set Result: Pass, Fail, Conditional Pass, or Out of Service.'),
                         t('manual.item.440', '5. Enter Violation Count, Decal Number, and Next Annual Due date.'),
                         '',
-                        'TRACKING:',
+                        t('manual.item.1831', 'TRACKING:'),
                         t('manual.item.441', '   \u2022 Each vehicle tracks when the next annual inspection is due.'),
                         t('manual.item.442', '   \u2022 Violations are counted and displayed for audit purposes.'),
                         t('manual.item.443', '   \u2022 All inspections are printable with the Print button.'),
@@ -1339,7 +1339,7 @@ const AboutView = () => {
                         t('manual.item.445', '   \u2022 Vehicle not appearing? \u2014 Add it in the Vehicles tab first.'),
                         t('manual.item.446', '   \u2022 MPG showing "\u2014"? \u2014 Log at least 2 fuel fills with odometer readings.'),
                         t('manual.item.447', '   \u2022 DVIR checklist empty? \u2014 Contact your admin to verify the checklist template.'),
-                        '   \u2022 Print not formatting correctly? \u2014 Use Chrome or Edge for best print quality.'
+                        t('manual.item.1832', '   \u2022 Print not formatting correctly? \u2014 Use Chrome or Edge for best print quality.')
                     ]
                 }
             ]
@@ -1363,7 +1363,7 @@ const AboutView = () => {
                         t('manual.item.453', '- Push-to-talk isn\'t converting speech → Your device needs a microphone and HTTPS (padlock icon). Grant permission when the browser asks.'),
                         t('manual.item.454', '- Dashboard shows zeros after an import → Refresh the page (F5). The dashboard caches data and may need a fresh pull after large imports.'),
                         t('manual.item.455', '- My work order changes didn\'t save → Check for error messages. If your network dropped, look for the "Recover Draft" prompt on your next visit.'),
-                        '- The printer isn\'t producing output → Trier OS uses your browser\'s print function. Press Ctrl+P after clicking the print button. Ensure your printer is on the network.'
+                        t('manual.item.1833', "- The printer isn't producing output → Trier OS uses your browser's print function. Press Ctrl+P after clicking the print button. Ensure your printer is on the network.")
                     ]
                 },
                 {
@@ -1373,7 +1373,7 @@ const AboutView = () => {
                         t('manual.item.457', '- Password won\'t work → Passwords are case-sensitive. Check Caps Lock. If you changed your password recently, make sure you\'re using the new one.'),
                         t('manual.item.458', '- Can log in but can\'t see my plant → Your account may not be assigned to that plant. Contact your IT administrator to verify your plant roles in User Management.'),
                         t('manual.item.459', '- I see "No data available" → Check your plant selector in the top bar. You may be on "All Sites" (corporate-only) or a plant that hasn\'t been seeded with data yet.'),
-                        '- Session keeps timing out → The default idle timeout is set by your administrator. Periodically interact with the screen (scroll, click) to keep the session alive during long inspections.'
+                        t('manual.item.1834', '- Session keeps timing out → The default idle timeout is set by your administrator. Periodically interact with the screen (scroll, click) to keep the session alive during long inspections.')
                     ]
                 },
                 {
@@ -1388,7 +1388,7 @@ const AboutView = () => {
                         t('manual.item.466', 'Q: How do I transfer a part to another plant? — Go to Global Logistics → Part Transfers. Search for the part, select sending/receiving plants, enter quantity, and submit.'),
                         t('manual.item.467', 'Q: Someone else is editing the same work order. What happens? — Trier uses record locking. A WO is locked to the editing user for up to 5 minutes. After 5 minutes of inactivity, the lock releases automatically.'),
                         t('manual.item.468', 'Q: How do I reset my password? — Contact your IT administrator or plant manager. They can reset it through Administration → User Management. Password resets are logged in the audit trail.'),
-                        'Q: What do the colored dots next to sensors mean? — [P4] Green = Normal (within thresholds). [P3] Yellow = Warning (approaching threshold). [P1] Red = Critical alarm (exceeded threshold). [--] Gray = No data (sensor hasn\'t reported or is offline).'
+                        t('manual.item.1835', "Q: What do the colored dots next to sensors mean? — [P4] Green = Normal (within thresholds). [P3] Yellow = Warning (approaching threshold). [P1] Red = Critical alarm (exceeded threshold). [--] Gray = No data (sensor hasn't reported or is offline).")
                     ]
                 },
                 {
@@ -1398,7 +1398,7 @@ const AboutView = () => {
                         t('manual.item.470', '- Sensor reads are delayed → The polling interval is set at the PLC level. Trier receives data — it doesn\'t pull it. Check the PLC program\'s POST interval to /api/sensors/reading.'),
                         t('manual.item.471', '- False alarm on a sensor → You can silence the alarm for that specific reading from the sensor detail view. This does NOT globally disable the sensor — only the individual triggered alarm. The alarm re-engages on the next reading.'),
                         t('manual.item.472', '- "Sensor rate limit exceeded" → The system allows up to 1,000 sensor readings per minute per IP. If your PLC is polling faster, slow down the POST interval.'),
-                        '- Sensor thresholds seem wrong → Thresholds are configured per-sensor in the Sensor Gateway settings. Check that min/max values match equipment specifications.'
+                        t('manual.item.1836', '- Sensor thresholds seem wrong → Thresholds are configured per-sensor in the Sensor Gateway settings. Check that min/max values match equipment specifications.')
                     ]
                 },
                 {
@@ -1408,7 +1408,7 @@ const AboutView = () => {
                         t('manual.item.474', '- Offline mode isn\'t working → You must visit the site at least once while online for the service worker to install. After that, previously visited pages will be available offline.'),
                         t('manual.item.475', '- Photos from inspection aren\'t uploading → Photos queue for upload when offline. Connect to Wi-Fi and open the app — pending uploads should process automatically.'),
                         t('manual.item.476', '- Keyboard covers input fields on tablet → Scroll down or rotate to landscape mode. Some Android tablets have a "floating keyboard" option.'),
-                        '- Voice input not working on Safari (iPhone/iPad) → Safari requires HTTPS for microphone access. Check Settings → Safari → Microphone to ensure the site has permission.'
+                        t('manual.item.1837', '- Voice input not working on Safari (iPhone/iPad) → Safari requires HTTPS for microphone access. Check Settings → Safari → Microphone to ensure the site has permission.')
                     ]
                 },
                 {
@@ -1424,7 +1424,7 @@ const AboutView = () => {
                         t('manual.item.484', 'CALL IT: Can\'t edit records at your own plant despite having access.'),
                         t('manual.item.485', 'CALL IT: System won\'t save adjustments or gives error messages.'),
                         t('manual.item.486', 'CALL IT: Sensor is permanently stuck in alarm state across multiple readings.'),
-                        'CALL IT: System is consistently slow for everyone at the plant.'
+                        t('manual.item.1838', 'CALL IT: System is consistently slow for everyone at the plant.')
                     ]
                 }
             ]
@@ -1451,7 +1451,7 @@ const AboutView = () => {
                         t('manual.item.495', 'Edit — Enable editing all fields.'),
                         t('manual.item.496', 'Save Changes — Saves your edits.'),
                         t('manual.item.497', 'Close Work Order — Opens the Close-Out Wizard.'),
-                        'Add Note — Appends a timestamped comment.'
+                        t('manual.item.1839', 'Add Note — Appends a timestamped comment.')
                     ]
                 },
                 {
@@ -1463,7 +1463,7 @@ const AboutView = () => {
                         t('manual.item.501', 'Timeline — Visual chronological maintenance history.'),
                         t('manual.item.502', 'Meter — Update current runtime hours/cycles.'),
                         t('manual.item.503', 'Change Status — In Production / Spare / Decommissioned.'),
-                        'Asset Logistics tab — Enterprise-wide equipment search.'
+                        t('manual.item.1840', 'Asset Logistics tab — Enterprise-wide equipment search.')
                     ]
                 },
                 {
@@ -1476,7 +1476,7 @@ const AboutView = () => {
                         t('manual.item.508', 'Adjust Stock — Opens stock adjustment form.'),
                         t('manual.item.509', 'Global Logistics tab — Search all plants. Request transfers.'),
                         t('manual.item.510', 'Adjustments tab — Stock adjustment history with audit trail.'),
-                        'Vendors & POs tab — Purchase order management.'
+                        t('manual.item.1841', 'Vendors & POs tab — Purchase order management.')
                     ]
                 },
                 {
@@ -1486,7 +1486,7 @@ const AboutView = () => {
                         t('manual.item.512', 'AI SOP Generator — Auto-generates a procedure from equipment documentation.'),
                         t('manual.item.513', 'Implement — Creates a work order from this procedure template.'),
                         t('manual.item.514', 'Open — View/edit the procedure: steps, tools, parts, safety warnings.'),
-                        'Print — Formatted copy for the field.'
+                        t('manual.item.1842', 'Print — Formatted copy for the field.')
                     ]
                 },
                 {
@@ -1496,7 +1496,7 @@ const AboutView = () => {
                         t('manual.item.516', 'Search bar — Global search across WOs, assets, and parts.'),
                         t('manual.item.517', 'About & Manual — Opens this manual and system credits.'),
                         t('manual.item.518', 'User Setup Document — Configuration guide.'),
-                        'Stat Cards — Click any card to jump to that section.'
+                        t('manual.item.1843', 'Stat Cards — Click any card to jump to that section.')
                     ]
                 },
                 {
@@ -1504,7 +1504,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.519', 'All Users: Change Password, Language selection.'),
                         t('manual.item.520', 'Managers: User Accounts, Site Leadership, Backup, Report Center.'),
-                        'IT Admin/Creator: Admin Console, Data Bridge, Webhooks, Email Settings, Sensor Gateway, SAP Integration, API Docs, Plant Reset, Snapshot Rollback.'
+                        t('manual.item.1844', 'IT Admin/Creator: Admin Console, Data Bridge, Webhooks, Email Settings, Sensor Gateway, SAP Integration, API Docs, Plant Reset, Snapshot Rollback.')
                     ]
                 }
             ]
@@ -1525,7 +1525,7 @@ const AboutView = () => {
                         t('manual.item.522', 'IT Admin — Full access to all plants, all features, all admin functions.'),
                         t('manual.item.523', 'Manager — Read all plants, write own plant only, Dashboard access, no admin.'),
                         t('manual.item.524', 'Technician — Read/write own plant only, optional Dashboard access.'),
-                        'Role changes take effect immediately on the user\'s next page refresh.'
+                        t('manual.item.1845', "Role changes take effect immediately on the user's next page refresh.")
                     ,
                         '',
                         t('manual.item.525', 'ROLE DEFINITIONS:'),
@@ -1543,7 +1543,7 @@ const AboutView = () => {
                         t('manual.item.535', 'TROUBLESHOOTING:'),
                         t('manual.item.536', '   • User cannot see a module? — Check their role. Some modules require Supervisor or above.'),
                         t('manual.item.537', '   • Role change not working? — Refresh the page after role update.'),
-                        '   • Locked out of foreign plant? — The plant-specific override password is set by the plant admin.'
+                        t('manual.item.1846', '   • Locked out of foreign plant? — The plant-specific override password is set by the plant admin.')
                     ]
                 },
                 {
@@ -1555,7 +1555,7 @@ const AboutView = () => {
                         t('manual.item.541', '4. Select the Role (Technician, Manager, IT Admin).'),
                         t('manual.item.542', '5. Assign the user to their Home Plant.'),
                         t('manual.item.543', '6. Optionally grant Dashboard Access.'),
-                        '7. Click "Create Account". The user must change their password on first login.'
+                        t('manual.item.1847', '7. Click "Create Account". The user must change their password on first login.')
                     ]
                 },
                 {
@@ -1564,7 +1564,7 @@ const AboutView = () => {
                         t('manual.item.544', '1. Go to Settings → User Accounts.'),
                         t('manual.item.545', '2. Find the user and click "Reset Password".'),
                         t('manual.item.546', '3. Enter a new temporary password.'),
-                        '4. The user will be forced to create a personal password on next login.'
+                        t('manual.item.1848', '4. The user will be forced to create a personal password on next login.')
                     ]
                 },
                 {
@@ -1573,7 +1573,7 @@ const AboutView = () => {
                         t('manual.item.547', 'Backup: Go to Settings and click "Backup Database". A timestamped backup file is created.'),
                         t('manual.item.548', 'Snapshots: Go to Admin Console → Snapshot Rollback to view auto-created snapshots.'),
                         t('manual.item.549', 'Rollback: Select a snapshot and click "Restore" to roll back to that point in time.'),
-                        'Warning: Rollback replaces all current data with the snapshot contents.'
+                        t('manual.item.1849', 'Warning: Rollback replaces all current data with the snapshot contents.')
                     ,
                         '',
                         t('manual.item.550', 'BACKUP BEST PRACTICES:'),
@@ -1591,7 +1591,7 @@ const AboutView = () => {
                         t('manual.item.560', 'TROUBLESHOOTING:'),
                         t('manual.item.561', '   • Snapshot creation failed? — Check disk space on the server.'),
                         t('manual.item.562', '   • Rollback not working? — The database must not be locked by active connections.'),
-                        '   • Lost data after rollback? — Any changes made after the snapshot timestamp are lost. This is by design.'
+                        t('manual.item.1850', '   • Lost data after rollback? — Any changes made after the snapshot timestamp are lost. This is by design.')
                     ]
                 }
             ]
@@ -1612,7 +1612,7 @@ const AboutView = () => {
                         t('manual.item.564', 'MP2 / Datastream / Infor EAM — .mdb files with verified column mappings.'),
                         t('manual.item.565', 'SQL Server / Express — Direct connection via connection string.'),
                         t('manual.item.566', 'Generic MS Access — .accdb / .mdb with manual column mapping.'),
-                        'CSV — Flat file import with field mapping.'
+                        t('manual.item.1851', 'CSV — Flat file import with field mapping.')
                     ]
                 },
                 {
@@ -1625,7 +1625,7 @@ const AboutView = () => {
                         t('manual.item.571', '5. Select which tables to import.'),
                         t('manual.item.572', '6. Type the confirmation code "TrierCMMS" and click "Execute Import".'),
                         t('manual.item.573', '7. A pre-import snapshot is automatically saved.'),
-                        '8. View the import report with insert/update/skip/fail counts.'
+                        t('manual.item.1852', '8. View the import report with insert/update/skip/fail counts.')
                     ,
                         '',
                         t('manual.item.574', 'STEP-BY-STEP IMPORT GUIDE:'),
@@ -1649,7 +1649,7 @@ const AboutView = () => {
                         t('manual.item.590', '   • Import stuck at 0%? — Check that the file is not open in another program.'),
                         t('manual.item.591', '   • Rows skipped? — Check the import log. Common causes: missing required fields, duplicate IDs.'),
                         t('manual.item.592', '   • Dates not importing correctly? — Use ISO format (YYYY-MM-DD) for best compatibility.'),
-                        '   • Special characters broken? — Save your CSV as UTF-8 encoding.'
+                        t('manual.item.1853', '   • Special characters broken? — Save your CSV as UTF-8 encoding.')
                     ]
                 },
                 {
@@ -1659,7 +1659,7 @@ const AboutView = () => {
                         t('manual.item.594', 'Duplicate Prevention: Existing records are updated, not duplicated.'),
                         t('manual.item.595', 'Auto-Heal: Failed records are cross-referenced against other plants to fill missing data.'),
                         t('manual.item.596', 'Failure Tracking: Every failed record is logged with raw source data for review.'),
-                        'Audit Trail: Complete import history with timestamps and statistics.'
+                        t('manual.item.1854', 'Audit Trail: Complete import history with timestamps and statistics.')
                     ]
                 }
             ]
@@ -1681,7 +1681,7 @@ const AboutView = () => {
                         t('manual.item.600', 'PM Compliance — On-time vs. overdue preventive maintenance.'),
                         t('manual.item.601', 'Part Usage — Most-used parts and cost trends.'),
                         t('manual.item.602', 'Asset Downtime — Total downtime ranked by impact.'),
-                        'Labor Distribution — Hours by technician, craft, and overtime.'
+                        t('manual.item.1855', 'Labor Distribution — Hours by technician, craft, and overtime.')
                     ]
                 },
                 {
@@ -1693,11 +1693,11 @@ const AboutView = () => {
                         t('manual.item.606', '4. Apply filters (date range, priority, status, asset, technician).'),
                         t('manual.item.607', '5. Add grouping and sorting as needed.'),
                         t('manual.item.608', '6. Click "Generate" to preview.'),
-                        '7. Export to Excel, PDF, or CSV.'
+                        t('manual.item.1856', '7. Export to Excel, PDF, or CSV.')
                     ]
                 },
                 {
-                    title: '13.2a Example: Monthly Maintenance Cost Report',
+                    title: t('manual.sub.167', '13.2a Example: Monthly Maintenance Cost Report'),
                     items: [
                         t('manual.item.609', '1. Data Source: Work Orders.'),
                         t('manual.item.610', '2. Columns: WO Number, Asset Name, Priority, Labor Cost, Parts Cost, Total Cost, Close Date.'),
@@ -1705,22 +1705,22 @@ const AboutView = () => {
                         t('manual.item.612', '4. Group By: Asset Name.'),
                         t('manual.item.613', '5. Sort: Total Cost (highest first).'),
                         t('manual.item.614', '6. Generate → Export to PDF.'),
-                        'Result: A printable report showing how much you spent per machine last month.'
+                        t('manual.item.1857', 'Result: A printable report showing how much you spent per machine last month.')
                     ]
                 },
                 {
-                    title: '13.2b Example: Overdue PM Compliance Report',
+                    title: t('manual.sub.168', '13.2b Example: Overdue PM Compliance Report'),
                     items: [
                         t('manual.item.615', '1. Data Source: Schedules.'),
                         t('manual.item.616', '2. Columns: Schedule Name, Asset, Frequency, Last Completed, Next Due, Status.'),
                         t('manual.item.617', '3. Filter: Status = Overdue.'),
                         t('manual.item.618', '4. Sort: Next Due Date (oldest first).'),
                         t('manual.item.619', '5. Generate → Export to Excel.'),
-                        'Result: A list of every PM that\'s past due. Hand this to your Plant Manager for accountability.'
+                        t('manual.item.1858', "Result: A list of every PM that's past due. Hand this to your Plant Manager for accountability.")
                     ]
                 },
                 {
-                    title: '13.2c Example: Top 10 Breakdown Assets',
+                    title: t('manual.sub.169', '13.2c Example: Top 10 Breakdown Assets'),
                     items: [
                         t('manual.item.620', '1. Data Source: Work Orders.'),
                         t('manual.item.621', '2. Columns: Asset Name, WO Count, Total Downtime Hours, Total Cost.'),
@@ -1728,7 +1728,7 @@ const AboutView = () => {
                         t('manual.item.623', '4. Group By: Asset Name.'),
                         t('manual.item.624', '5. Sort: WO Count (highest first), Limit: Top 10.'),
                         t('manual.item.625', '6. Generate → Export to PDF.'),
-                        'Result: Your worst-performing machines — perfect for capital replacement proposals.'
+                        t('manual.item.1859', 'Result: Your worst-performing machines — perfect for capital replacement proposals.')
                     ]
                 },
                 {
@@ -1739,7 +1739,7 @@ const AboutView = () => {
                         t('manual.item.628', 'MTBF (Mean Time Between Failures): Average days between unexpected breakdowns. High = reliable. Low = needs attention.'),
                         t('manual.item.629', 'MTBF Trend: Improving, Stable, or Worsening based on recent vs. historical data.'),
                         t('manual.item.630', 'Predicted Failure Date: Last Repair Date + MTBF Days.'),
-                        'Reliability Index (ISO 14224): STABLE (>93%), AT RISK (89-93%), CRITICAL (<89%).'
+                        t('manual.item.1860', 'Reliability Index (ISO 14224): STABLE (>93%), AT RISK (89-93%), CRITICAL (<89%).')
                     ]
                 },
                 {
@@ -1748,14 +1748,14 @@ const AboutView = () => {
                         t('manual.item.631', 'Cross-Plant Comparison — Compare KPIs across all plants.'),
                         t('manual.item.632', 'Price Intelligence — See which plant pays most/least for common parts.'),
                         t('manual.item.633', 'Labor Efficiency — Compare technician productivity across sites.'),
-                        'Failure Patterns — Identify equipment failing at multiple plants.'
+                        t('manual.item.1861', 'Failure Patterns — Identify equipment failing at multiple plants.')
                     ]
                 },
                 {
                     title: t('manual.sub.69', '13.5 Power BI / BI Export'),
                     items: [
                         t('manual.item.634', 'Structured data exports compatible with Power BI, Tableau, and other BI tools.'),
-                        'Access from Settings → BI Export.'
+                        t('manual.item.1862', 'Access from Settings → BI Export.')
                     ]
                 },
                 {
@@ -1792,7 +1792,7 @@ const AboutView = () => {
                         t('manual.item.635', 'Tetra Pak (Factory OS / PlantMaster) — OPC-UA direct connection.'),
                         t('manual.item.636', 'Allen-Bradley / Rockwell (CompactLogix, ControlLogix) — Via Ignition, Node-RED, or direct REST.'),
                         t('manual.item.637', 'Siemens (S7-1200, S7-1500) — Native OPC-UA via TIA Portal.'),
-                        'Any HTTP-capable device — Direct POST to the REST API.'
+                        t('manual.item.1863', 'Any HTTP-capable device — Direct POST to the REST API.')
                     ]
                 },
                 {
@@ -1801,7 +1801,7 @@ const AboutView = () => {
                         t('manual.item.638', '1. Equipment sends readings to Trier OS (temperature, pressure, vibration, runtime).'),
                         t('manual.item.639', '2. The Threshold Engine compares each reading against configured min/max values.'),
                         t('manual.item.640', '3. If exceeded: alert notification (bell, webhook, email) + optional auto-generated Emergency WO.'),
-                        '4. The Sensor Dashboard shows real-time readings and 30-day trends.'
+                        t('manual.item.1864', '4. The Sensor Dashboard shows real-time readings and 30-day trends.')
                     ]
                 },
                 {
@@ -1811,7 +1811,7 @@ const AboutView = () => {
                         t('manual.item.642', '2. Select the sensor and metric.'),
                         t('manual.item.643', '3. Set Min Value and Max Value.'),
                         t('manual.item.644', '4. Toggle "Auto-Create WO" for automatic emergency work orders.'),
-                        '5. Set a Cooldown Period (default 30 min) to prevent duplicate alerts.'
+                        t('manual.item.1865', '5. Set a Cooldown Period (default 30 min) to prevent duplicate alerts.')
                     ]
                 },
                 {
@@ -1821,7 +1821,7 @@ const AboutView = () => {
                         t('manual.item.646', 'HTST/Pasteurizer: Product temperature, holding tube temp, divert valve status, flow rate (GPM).'),
                         t('manual.item.647', 'Homogenizer: Pressure (PSI), motor amperage, plunger cycle count, oil temperature.'),
                         t('manual.item.648', 'Filling Machine: Cycle count, fill accuracy, sealing temperature, downtime events.'),
-                        'Contact your Tetra Pak field engineer or Rockwell distributor for tag documentation.'
+                        t('manual.item.1866', 'Contact your Tetra Pak field engineer or Rockwell distributor for tag documentation.')
                     ]
                 },
                 {
@@ -1830,7 +1830,7 @@ const AboutView = () => {
                         t('manual.item.649', 'Industrial equipment networks (OT) are typically segmented from IT networks. Work with your security team.'),
                         t('manual.item.650', 'Recommended: Place a DMZ bridge between OT and IT. The reader forwards data to Trier via HTTPS.'),
                         t('manual.item.651', 'Never expose PLC/SCADA devices directly to the IT network. Use unidirectional data flow (OT to IT only).'),
-                        'Ports: HTTPS 3001 (Trier), OPC-UA 4840 (standard), EtherNet/IP 44818 (Rockwell), Modbus TCP 502.'
+                        t('manual.item.1867', 'Ports: HTTPS 3001 (Trier), OPC-UA 4840 (standard), EtherNet/IP 44818 (Rockwell), Modbus TCP 502.')
                     ]
                 },
                 {
@@ -1840,7 +1840,7 @@ const AboutView = () => {
                         t('manual.item.653', 'DUPLICATE WORK ORDERS: Increase threshold cooldown time.'),
                         t('manual.item.654', 'OPC-UA REFUSED: Verify endpoint URL, security policy, certificates, PLC firewall.'),
                         t('manual.item.655', 'NO THRESHOLDS FIRE: Verify threshold is Enabled and metric name matches exactly (case-sensitive).'),
-                        'TEST: Use Settings → Sensor Gateway → Simulate Reading to inject test data.'
+                        t('manual.item.1868', 'TEST: Use Settings → Sensor Gateway → Simulate Reading to inject test data.')
                     ]
                 }
             ]
@@ -1866,7 +1866,7 @@ const AboutView = () => {
                         t('manual.item.891', 'Step 6: Create a Tag Publication: Source = your PLC tags, Destination = the MQTT connection, Publish interval = 30 seconds.'),
                         t('manual.item.892', 'Step 7: In Trier OS → Settings → Sensor Gateway → Add Connection: Type = MQTT, Topic = trier/sensors/#.'),
                         t('manual.item.893', 'Step 8: Click "Test Connection". You should see live readings within 60 seconds.'),
-                        'Result: PLC tag values (temperature, pressure, runtime) now appear in the Trier Sensor Dashboard.'
+                        t('manual.item.1869', 'Result: PLC tag values (temperature, pressure, runtime) now appear in the Trier Sensor Dashboard.')
                     ]
                 },
                 {
