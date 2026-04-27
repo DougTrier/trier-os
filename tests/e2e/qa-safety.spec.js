@@ -28,7 +28,8 @@ async function login(page, account = ADMIN) {
         await page.locator('button').filter({ hasText: /Save|Change/i }).first().click();
     } catch { /* no prompt — continue */ }
     await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+    // h1.hide-mobile is display:none at 360px; use the tile grid as the mount signal instead
+    await expect(page.locator('.mission-control-grid')).toBeVisible({ timeout: 15000 });
     await page.evaluate((plantId) => localStorage.setItem('selectedPlantId', plantId), PLANT);
 }
 

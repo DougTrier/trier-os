@@ -152,6 +152,7 @@ import ScannerWorkspace from './components/ScannerWorkspace';
 import OfflineReceivingView from './components/OfflineReceivingView';
 import useHardwareScanner from './hooks/useHardwareScanner';
 import GuidedExecution from './components/GuidedExecution';
+import GuideContextBridge from './components/GuideContextBridge';
 /**
  * PlantOnboardingRoute — thin route wrapper for the Enterprise Onboarding Wizard.
  * Renders the OnboardingWizard full-screen (it uses modal-overlay / position:fixed)
@@ -185,11 +186,15 @@ function App() {
     const [branding, setBranding] = useState({ dashboardLogo: null, documentLogo: null });
 
     // ── Guided Execution engine — passive overlay, never alters app state ─────
-    const [activeGuideId, setActiveGuideId] = useState(null);
+    const [activeGuideId,      setActiveGuideId]      = useState(null);
+    const [guideContextBridge, setGuideContextBridge] = useState(null);
     useEffect(() => {
-        // Expose a global so Playwright tests and future AboutView trigger can start a guide
-        window.startTrierGuide = (id) => setActiveGuideId(id);
-        return () => { delete window.startTrierGuide; };
+        window.startTrierGuide       = (id)    => setActiveGuideId(id);
+        window.openGuideContextBridge = (cfg)  => setGuideContextBridge(cfg);
+        return () => {
+            delete window.startTrierGuide;
+            delete window.openGuideContextBridge;
+        };
     }, []);
 
     useEffect(() => {
@@ -1108,7 +1113,7 @@ function App() {
                 </header>
 
                 {/* MAIN CONTENT AREA */}
-                <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px',  }} title={t('app.primaryViewContainerTip')}>
+                <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: (guideContextBridge && !activeGuideId) ? '308px' : undefined }} title={t('app.primaryViewContainerTip')}>
 
                     {/* Mobile-only Mission Control back button — shows on any sub-route */}
                     {location.pathname !== '/' && (
@@ -1318,6 +1323,15 @@ function App() {
 
             {isCreatorConsoleOpen && <CreatorConsole isOpen={isCreatorConsoleOpen} onClose={() => setIsCreatorConsoleOpen(false)} />}
             {isLiveStudioOpen && <LiveStudio isOpen={isLiveStudioOpen} initialFile={studioInitialFile} onClose={() => { setIsLiveStudioOpen(false); setStudioInitialFile(null); }} />}
+
+            {/* Context Acquisition Bridge — shown when guide is triggered without a WO selected */}
+            {guideContextBridge && !activeGuideId && (
+                <GuideContextBridge
+                    workflowId={guideContextBridge.workflowId}
+                    sectionId={guideContextBridge.sectionId}
+                    onClose={() => setGuideContextBridge(null)}
+                />
+            )}
 
             {/* Guided Execution engine — renders via portal, never blocks existing UI */}
             {activeGuideId && (

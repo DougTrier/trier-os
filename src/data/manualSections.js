@@ -37,7 +37,10 @@
 const MANUAL_SECTIONS = {
 
     'work-order-closeout': {
-        workflowId: 'close-out-work-order',
+        workflowId:    'close-out-work-order',
+        sectionAnchor: 'close-out',   // HTML id of the manual section element
+        displayTitle:  'Close Out a Work Order',
+        displayIntro:  'This guide will walk you through closing an active work order — labor, parts, and final confirmation.',
     },
 
 };

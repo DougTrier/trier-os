@@ -140,9 +140,18 @@ export default function GuidedExecution({ workflowId, onExit }) {
             return;
         }
 
-        // All gates passed — begin execution
+        // All gates passed — begin execution.
+        // Skip steps whose completion condition is already satisfied before the user acts
+        // (e.g. "navigate to /jobs" when already on /jobs after using the Context Bridge).
+        // Starting mid-workflow is correct: showing instructions for things already done
+        // is disorienting and causes the guide to appear to "zip through" steps on its own.
+        const startCtx  = buildContext();
+        const startStep = schema.steps.findIndex(s => !runCheck(s.validation.check, startCtx));
+
         setWorkflow(schema);
-        setCurrentStep(0);
+        // findIndex returns -1 when all steps are already satisfied — clamp to last step
+        // so normal completion logic fires immediately.
+        setCurrentStep(startStep === -1 ? schema.steps.length - 1 : startStep);
         startTimeRef.current  = Date.now();
         stepTimesRef.current  = [];
         setStatus(STATUS.ACTIVE);
@@ -175,20 +184,36 @@ export default function GuidedExecution({ workflowId, onExit }) {
             if (!el) {
                 stepErrorRef.current = step.onFailure.message;
                 setStepError(step.onFailure.message);
-                return;
+                // Do NOT return — some anchors are conditionally rendered (e.g. the labor
+                // hours input only exists after "+ Add Labor" is clicked). The poll below
+                // retries anchor resolution each tick so the guide self-recovers when the
+                // element eventually appears, without requiring a step re-entry.
+            } else {
+                setStepError(null);
+                el.setAttribute('data-guide-active', 'true');
+                scrollAnchorIntoView(el);
+                activeElRef.current = el;
             }
 
-            setStepError(null);
-            el.setAttribute('data-guide-active', 'true');
-            scrollAnchorIntoView(el);
-            activeElRef.current = el;
-
-            // Poll every 500ms — I-GE3: state proves completion, not a click
+            // Poll every 500ms — I-GE3: state proves completion, not a click.
+            // Always started, even when the anchor wasn't found above.
             clearInterval(intervalRef.current);
             intervalRef.current = setInterval(() => {
                 // Increment attempt counter for this step — direct ref mutation, no render
                 const rec = stepTimesRef.current.find(s => s.stepId === step.id);
                 if (rec) rec.attempts += 1;
+
+                // Retry anchor if not yet highlighted — handles elements rendered
+                // conditionally (e.g. wizard rows that appear after user interaction).
+                if (!activeElRef.current) {
+                    const retryEl = resolveAnchor(step.target.anchor);
+                    if (retryEl) {
+                        setStepError(null);
+                        retryEl.setAttribute('data-guide-active', 'true');
+                        scrollAnchorIntoView(retryEl);
+                        activeElRef.current = retryEl;
+                    }
+                }
 
                 if (runCheck(step.validation.check, buildContext())) {
                     clearInterval(intervalRef.current);
@@ -249,6 +274,19 @@ export default function GuidedExecution({ workflowId, onExit }) {
                 steps:           stepTimesRef.current,
             }),
         }).catch(err => console.warn('[GuidedExecution] Telemetry write failed (non-fatal):', err.message));
+
+        // Discard demo WO if this guide run used one — fire-and-forget, non-fatal
+        if (outcome === 'COMPLETE') {
+            const demoId  = window.__trierGuideContext?.guideDemoWorkOrderId;
+            const plantId = localStorage.getItem('selectedPlantId');
+            if (demoId && plantId) {
+                delete window.__trierGuideContext.guideDemoWorkOrderId;
+                fetch(`/api/work-orders/${demoId}/guide-demo-discard`, {
+                    method:  'DELETE',
+                    headers: { 'x-plant-id': plantId },
+                }).catch(err => console.warn('[GuidedExecution] Demo WO discard failed (non-fatal):', err.message));
+            }
+        }
     }
 
     function clearHighlight() {

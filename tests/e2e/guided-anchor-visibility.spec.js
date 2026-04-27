@@ -107,6 +107,7 @@ test.describe('Anchor visibility — Desktop (1280×800)', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 800 });
+
     });
 
     test('wo-list-row anchor is present and visible on /jobs', async ({ page }) => {

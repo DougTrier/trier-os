@@ -18,10 +18,16 @@
  */
 
 import MANUAL_SECTIONS from '../data/manualSections';
+import { resolveRequired } from './guideContext';
 
 /**
  * Launch the guided workflow mapped to a manual section.
- * No-op if the section has no workflow or the engine is not ready.
+ *
+ * If workOrderId context is missing the engine would immediately block with
+ * "Cannot Start" — a dead end when launched from the manual where no WO is
+ * open.  Instead, open the Context Acquisition Bridge: a split view that
+ * navigates the app to /jobs and waits for the user to select a WO, then
+ * starts the guide automatically.  No context is fixed silently.
  *
  * @param {string} sectionId  — key in MANUAL_SECTIONS (e.g. 'work-order-closeout')
  */
@@ -35,5 +41,16 @@ export function startGuidedFromManual(sectionId) {
         console.warn('[Guide] startTrierGuide not available — guide engine not mounted');
         return;
     }
+
+    const { missing } = resolveRequired([{ key: 'workOrderId', source: 'selection' }]);
+    if (missing.includes('workOrderId')) {
+        if (typeof window.openGuideContextBridge === 'function') {
+            window.openGuideContextBridge({ workflowId: section.workflowId, sectionId });
+        } else {
+            console.warn('[Guide] openGuideContextBridge not available');
+        }
+        return;
+    }
+
     window.startTrierGuide(section.workflowId);
 }

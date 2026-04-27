@@ -29,7 +29,7 @@
  * FILTER PROPS: Can be mounted with statusFilter / priorityFilter to pre-filter
  *   the list — used by HistoryDashboard (completed WOs) and PM history views.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // Resolves the effective plant ID for a WO detail request.
 // Checks all known plant identity fields on the row object before falling
@@ -356,6 +356,22 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
         window.__trierGuideContext.selectedWorkOrder = isValidWO ? selectedWO : null;
     }, [selectedWO]);
 
+    // Ref keeps handleView current for event listeners without re-registering on every render.
+    const handleViewRef = useRef(null);
+
+    // Guide integration events — fired by GuideContextBridge when it needs to
+    // set the status filter or auto-open a work order (e.g. a freshly created demo WO).
+    useEffect(() => {
+        const onFilter = (e) => setStatusFilter(String(e.detail?.status ?? ''));
+        const onOpen   = (e) => { if (e.detail?.id) handleViewRef.current?.(e.detail.id); };
+        window.addEventListener('trier-guide-filter-jobs', onFilter);
+        window.addEventListener('trier-guide-open-wo', onOpen);
+        return () => {
+            window.removeEventListener('trier-guide-filter-jobs', onFilter);
+            window.removeEventListener('trier-guide-open-wo', onOpen);
+        };
+    }, []);
+
     const handleView = async (id, woPlantId) => {
         if (!id) {
             console.warn('Attempted to view Work Order with null/undefined ID');
@@ -419,6 +435,9 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
         }
 
     };
+
+    // Keep ref current so the guide event listener always calls the latest closure.
+    handleViewRef.current = handleView;
 
     const handleNew = async () => {
         if (isForeignPlant && !window.__TRIER_OVERRIDE_PASS__) {
@@ -1527,6 +1546,7 @@ export default function WorkOrdersView({ plantId, searchTerm, statusFilter: init
                 woNumber={selectedWO?.WorkOrderNumber || selectedWO?.ID}
                 assetId={selectedWO?.AstID}
                 onComplete={() => {
+                    if (window.__trierGuideContext) window.__trierGuideContext.lastCloseoutResult = 'success';
                     fetchWorkOrders(meta.page);
                     setSelectedWO(null);
                     setWarrantyInfo(null);

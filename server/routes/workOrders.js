@@ -20,6 +20,7 @@
  *   GET    /:id/unresolved-parts     Parts with qty_returnable > 0 — I-11 close guard
  *   POST   /              Create a new WO (triggers webhook for Critical/Emergency)
  *   PUT    /:id           Update WO (maps GPS lat/lng to Start or Complete columns)
+ *   DELETE /:id/guide-demo-discard  Hard-delete a [GUIDE DEMO] WO (any status; guide cleanup only)
  *   DELETE /:id           Delete WO (blocked for completed WOs -- they are metrics)
  *
  * ALL-SITES PATTERN: When x-plant-id === 'all_sites', the GET / and GET /stats
@@ -805,6 +806,33 @@ router.put('/:id', (req, res) => {
     } catch (err) {
         console.error('PUT /api/work-orders/:id error:', err);
         res.status(500).json({ error: 'Failed to update work order' });
+    }
+});
+
+// ── DELETE /api/work-orders/:id/guide-demo-discard ───────────────────────
+// Hard-deletes a guide demo WO regardless of status. Safety gate: Description
+// must start with '[GUIDE DEMO]'. Called by GuidedExecution after a demo run.
+router.delete('/:id/guide-demo-discard', (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!Number.isFinite(id)) return res.status(400).json({ error: 'Invalid ID' });
+
+        const wo = db.queryOne('SELECT ID, Description FROM Work WHERE ID = ?', [id]);
+        if (!wo) return res.status(404).json({ error: 'Work order not found' });
+        if (!String(wo.Description || '').startsWith('[GUIDE DEMO]')) {
+            return res.status(403).json({ error: 'This endpoint is only for guide demo work orders.' });
+        }
+
+        db.run('DELETE FROM WorkLabor WHERE WoID = ?', [id]);
+        db.run('DELETE FROM WorkParts WHERE WoID = ?', [id]);
+        db.run('DELETE FROM WorkMisc WHERE WoID = ?', [id]);
+        db.run('DELETE FROM WorkTask WHERE WoID = ?', [id]);
+        db.run('DELETE FROM Work WHERE ID = ?', [id]);
+
+        res.json({ success: true, message: 'Guide demo work order discarded' });
+    } catch (err) {
+        console.error('DELETE /api/work-orders/:id/guide-demo-discard error:', err);
+        res.status(500).json({ error: 'Failed to discard guide demo work order' });
     }
 });
 

@@ -290,8 +290,8 @@ window.fetch = async (...args) => {
     if (urlStr && urlStr.startsWith('/api')) {
         config.credentials = config.credentials || 'include';
         config.headers = {
-            ...config.headers,
             'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
+            ...config.headers,
         };
 
         // Pass temporary cross-site authorization if it exists

@@ -52,7 +52,8 @@ async function login(page, account = ADMIN) {
         await page.locator('button').filter({ hasText: /Save|Change/i }).first().click();
     } catch { /* no prompt — continue */ }
     await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+    // h1.hide-mobile is display:none at 360px; use the tile grid as the mount signal instead
+    await expect(page.locator('.mission-control-grid')).toBeVisible({ timeout: 15000 });
     // Belt-and-suspenders: set keys again after mount in case addInitScript ran early
     await page.evaluate(() => {
         for (const s of ['default', 'ghost_admin', 'ghost_tech', 'ghost_exec']) {
@@ -215,7 +216,7 @@ test.describe('I-11 — Unresolved-parts check before WO close', () => {
     test('CloseOutWizard warning appears when unresolved parts exist', async ({ page }) => {
         // Navigate to the work orders view
         await page.goto('/');
-        await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('.mission-control-grid')).toBeVisible({ timeout: 15000 });
 
         // Find a WO with unresolved parts to open in the UI
         const woRes = await api(page, 'GET', `${API}/bi/work-orders`);
@@ -476,7 +477,7 @@ test.describe('I-05 — Scanner ownership flag lifecycle', () => {
         // Navigate away via client-side routing (clicking Mission Control), NOT page.goto
         // which would do a full page reload and destroy window before cleanup can run.
         await page.getByRole('button', { name: /Mission Control/i }).first().click();
-        await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('.mission-control-grid')).toBeVisible({ timeout: 15000 });
         expect(await page.evaluate(() => window.trierActiveScannerInterceptor)).toBe(false);
     });
 

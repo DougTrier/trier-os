@@ -1,7 +1,7 @@
 # Trier OS — Server Standards
 
 **Maintained by:** Engineering  
-**Last updated:** 2026-04-23  
+**Last updated:** 2026-04-27  
 
 These are hard rules, not suggestions. Violations found in code review must be fixed before merge.
 
@@ -274,3 +274,61 @@ Use `Date.now() + '-' + crypto.randomBytes(3).toString('hex')` or `uuid.v4()`. N
 
 **Why this rule exists:**
 The Pass 3 audit (R-7) found that `AUTO-${Date.now()}` WO numbers collided when two workers hit the same millisecond, producing duplicate work order numbers that would violate UNIQUE constraints or corrupt reporting.
+
+---
+
+## Frontend Rules (F-series)
+
+### Rule F-1: Caller-Set `x-plant-id` Must Never Be Overwritten by the Global Fetch Wrapper
+
+**Rule:** The global `window.fetch` wrapper in `src/main.jsx` injects a default
+`x-plant-id` header on every `/api` request. This default must be the **last fallback**,
+not the final value. Caller-supplied headers must always take precedence.
+
+The spread order must be:
+
+```js
+// ✅ Correct — default first, caller wins
+config.headers = {
+    'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
+    ...config.headers,   // caller headers spread after — they override the default
+};
+
+// ❌ Wrong — caller's explicit plant is silently stomped
+config.headers = {
+    ...config.headers,
+    'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
+};
+```
+
+**Applies to:**
+- `src/main.jsx` global fetch wrapper (the only place `window.fetch` is reassigned)
+- Any future fetch interceptor added to the app — same rule applies
+
+**Corollary — never send `all_sites` to a detail endpoint:**
+No request to a single-resource endpoint (e.g. `GET /api/work-orders/:id`,
+`GET /api/assets/:id`) may carry `x-plant-id: all_sites`. Components that open
+a WO or asset detail from an `all_sites` list view must resolve the row's own
+`plantId` field (via `resolveWorkOrderPlantId` or equivalent) and pass it
+explicitly in their fetch headers.
+
+**Why this rule exists:**
+During Phase 5 (Guided Execution), `handleView` in `WorkOrdersView.jsx` was correctly
+calling `resolveWorkOrderPlantId` to derive `x-plant-id: Plant_1` for WO detail fetches.
+But the global wrapper ran after and overwrote the header with `all_sites` (the
+ghost_admin/corporate user's `selectedPlantId`). Every fetch arrived at the server with
+`all_sites`, which routes to `schema_template.db` — a read-only template with no live
+data. The WO was not found, returning 404, and the detail panel never opened.
+
+The bug was invisible in manual testing because developers typically work under a
+plant-scoped session, not `all_sites`. It only surfaced in Playwright tests that run as
+`ghost_admin` (global IT admin with `selectedPlantId: "all_sites"`).
+
+**Grep audit command:**
+```sh
+# Verify spread order is correct in the fetch wrapper
+grep -A6 "window.fetch = " src/main.jsx | grep -A3 "config.headers ="
+```
+
+**Discovery path:** Playwright trace → `window.fetch` stack trace → second frame at
+`main.jsx:4787:124019` → wrapper overwrites caller headers → one-line spread-order fix.
