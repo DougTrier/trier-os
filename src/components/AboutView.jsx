@@ -48,7 +48,7 @@ const AboutView = () => {
         ],
         bio: `Bridging ${yearsExp} years of industrial grit and enterprise technology. Doug's journey began on the front lines—driving wholesale delivery routes, picking in coolers, loading trucks, and operating production equipment, with decades of operational management experience. This 'boots-on-the-ground' foundation evolved into architecting enterprise digital infrastructure. From racking server foundations to acting as the architect for enterprise mobile infrastructure, this platform is the culmination of three decades of operational knowledge.`,
         badges: ['Industrial Engineering', 'V-Sphere/Cloud', 'Mobile Infra'],
-        version: '3.6.1',
+        version: '3.6.2',
         buildDate: 'April 2026',
         experience: yearsExp
     };
@@ -4415,7 +4415,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1735', 'An invariant is a condition that must always be true. If it is ever violated, the system has entered an incorrect state. Trier OS enforces 13 invariants at the database and application layer — not as assertions that can be bypassed, but as UNIQUE constraints, transactional guards, and idempotency checks built into every write path.'),
                         t('manual.item.1736', 'Runtime Proof: GET /api/invariants/report returns a JSON document listing all 13 invariants with their current status (PASS or FAIL), the assertion type (database constraint, idempotency guard, state machine enforcement, etc.), and the last evidence timestamp.'),
-                        t('manual.item.1737', 'Current Status: All 13 invariants return overallStatus: PASS as of v3.6.1. This is verified as part of every pre-release checklist.'),
+                        t('manual.item.1737', 'Current Status: All 13 invariants return overallStatus: PASS as of v3.6.2. This is verified as part of every pre-release checklist.'),
                     ]
                 },
                 {
@@ -4518,7 +4518,7 @@ const AboutView = () => {
                             <img src="/assets/TrierLogo.png" alt="Trier OS" style={{ height: '48px', borderRadius: '8px' }} />
                             <div>
                                 <h1 style={{ fontSize: '1.6rem', margin: 0 }}>{t('about.manualTitle', 'Trier OS — Operational Intelligence Manual')}</h1>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.6.1')}</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('about.manualSubtitle', 'Built on 33 Years of Operational Knowledge • Version 3.6.2')}</p>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>

@@ -9,7 +9,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
   Trier OS is an offline-first industrial operations platform built for real plant floors.
 
-  [![Version](https://img.shields.io/badge/Version-3.6.1-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.6.1)
+  [![Version](https://img.shields.io/badge/Version-3.6.2-brightgreen?style=for-the-badge)](https://github.com/DougTrier/trier-os/releases/tag/v3.6.2)
   [![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
   [![Node.js](https://img.shields.io/badge/Node.js-Express-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
   [![SQLite](https://img.shields.io/badge/SQLite-EDR%20Safe-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
@@ -39,7 +39,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 
 | | |
 |---|---|
-| **Release** | v3.6.1 |
+| **Release** | v3.6.2 |
 | **Invariant Report** | PASS — all invariants (`/api/invariants/report`) |
 | **Playwright (Desktop Chrome)** | 858 passed, 16 skipped, 0 failed |
 | **Playwright (Mobile — Zebra TC77)** | Batched runs, all batches PASS |
@@ -83,7 +83,7 @@ Read this in other languages: English | Español | Français | Deutsch | 中文 
 > 1. **Run a plant or manage a maintenance team?** → [Read the Pilot Guide](./docs/PILOT_GUIDE.md) — plain language, no jargon
 > 2. **Want to see it in action in 5 minutes?** → [Run the Demo Script](./docs/DEMO_SCRIPT.md)
 > 3. **IT, OT, or security reviewer?** → [Read the Threat Model](./docs/THREAT_MODEL.md)
-> 4. **Ready to install?** → [Download v3.6.1 from Releases](https://github.com/DougTrier/trier-os/releases/latest) — includes step-by-step PDF
+> 4. **Ready to install?** → [Download v3.6.2 from Releases](https://github.com/DougTrier/trier-os/releases/latest) — includes step-by-step PDF
 
 ---
 
@@ -201,7 +201,7 @@ This is what the system does on day one, before anyone configures an algorithm o
 
 ### 📱 Mobile (iPhone / iOS)
 
-Real-device screenshots from an iPhone running Trier OS v3.6.1 over a plant LAN:
+Real-device screenshots from an iPhone running Trier OS v3.6.2 over a plant LAN:
 
 <div align="center">
 
@@ -325,7 +325,7 @@ Before every release, Trier OS is tested across:
 
 **Most systems are tested for success. Trier OS is tested for failure.**
 
-Current suite: **1463 / 1482 passing — 0 failures** (v3.6.1, verified 2026-04-26)
+Current suite: **1463 / 1482 passing — 0 failures** (v3.6.2, verified 2026-04-26)
 19 skipped: hardware-dependent tests (run on target device), optional external services (Edge Mesh, Gatekeeper audit), and data-conditional tests that skip gracefully when prerequisite records don't exist.
 
 > **Mobile runs are batched** (<75 tests per batch) to avoid known upstream WebSocket connection exhaustion on Zebra TC77 emulation. Each batch runs independently and must pass. Combined results are equivalent to a full suite run — batching reflects engineering judgment, not instability.

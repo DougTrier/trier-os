@@ -270,5 +270,5 @@ The `Install Instructions.pdf` lives untracked in the repo root — never commit
 
 ## Current Version
 
-v3.6.1 — See CHANGELOG.md and ROADMAP.md for history.
+v3.6.2 — See CHANGELOG.md and ROADMAP.md for history.
 Completed roadmaps and task lists archived in References/.

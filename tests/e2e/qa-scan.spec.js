@@ -136,11 +136,11 @@ test.describe('P2 — Pilot Blockers', () => {
         await expect(page.getByText(/security audit|audit log|login activity/i).first()).toBeVisible({ timeout: 20000 });
     });
 
-    test('package.json version is 3.6.1', async ({ page }) => {
+    test('package.json version is 3.6.2', async ({ page }) => {
         const vRes = await page.request.get(`${API}/version`).catch(() => null);
         if (vRes && vRes.ok()) {
             const body = await vRes.json().catch(() => ({}));
-            if (body.version) expect(body.version).toBe('3.6.1');
+            if (body.version) expect(body.version).toBe('3.6.2');
         }
         expect(true).toBeTruthy();
     });

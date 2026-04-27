@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.6.2] — 2026-04-26 — Project Cleanup, Executive Assessment & PDF Formatting
+
+### Documentation
+- Added `Comparison.md` and `scripts/build_comparison_pdf.js` — source and build script for Executive Assessment & Competitive Analysis PDF
+- Updated Executive Assessment: 21 modules (was 15), OpEx Self-Healing Loop as 6th unique capability, corrected i18n key count (9,758 keys × 11 languages = 107,338 entries), precise Human Airgap description, MaintainX pricing de-risked, SAML/OIDC gap added to honest assessment, PDF gap formatting fixed
+- Added `scripts/audit_i18n_gaps.js` utility
+
+### Project Cleanup
+- Removed 27 catalog extraction scripts (`extract_*.js`) from git — requires source PDFs not in repo
+- Removed 6 catalog apply scripts (`apply_*.js`) from git
+- Removed completed i18n one-shot scripts: `bump-v341-i18n.js`, `fix_i18n_escapes.js`, `fix_zh_corrupted.js`, `repair_emoji.js`, `add-cache-stale-i18n.js`, `add-plant-network-i18n.js`
+- Removed root-level clutter: `Documentation_Update.md`, `update_en.js`, `gemini_mfg_inject_prompt.md`, `generate_mcmaster_lookup_prompts.js`, `enrichment_stats.js`, `preflight_warranty.js`
+
+---
+
 ## [3.6.1] — 2026-04-26 — Invariant Hardening, Test Reliability & Mobile Batching
 
 ### Fixes
