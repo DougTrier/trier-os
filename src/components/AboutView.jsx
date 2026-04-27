@@ -1110,6 +1110,8 @@ const AboutView = () => {
         {
             section: t('manual.s8.title', 'Part 8: Training Scenarios — Real-World Walkthroughs'),
             id: 'scenarios',
+            navigateTo: '/training',
+            filePath: 'src/components/TrainingView.jsx',
             icon: <Lightbulb size={22} />,
             content: t('manual.s8.content', 'Real-world paths through the application for common maintenance situations.'),
             scenarios: [
