@@ -41,10 +41,10 @@ const AboutView = () => {
         name: t('manual.scenario.0.name', 'Doug Trier'),
         email: 'github.com/DougTrier/trier-os/discussions',
         titles: [
-            'Platform Architect',
-            'Systems Administrator',
-            'Enterprise Operations Technologist',
-            'Mobile Infrastructure Specialist'
+            t('manual.creator.title0', 'Platform Architect'),
+            t('manual.creator.title1', 'Systems Administrator'),
+            t('manual.creator.title2', 'Enterprise Operations Technologist'),
+            t('manual.creator.title3', 'Mobile Infrastructure Specialist')
         ],
         bio: `Bridging ${yearsExp} years of industrial grit and enterprise technology. Doug's journey began on the front lines—driving wholesale delivery routes, picking in coolers, loading trucks, and operating production equipment, with decades of operational management experience. This 'boots-on-the-ground' foundation evolved into architecting enterprise digital infrastructure. From racking server foundations to acting as the architect for enterprise mobile infrastructure, this platform is the culmination of three decades of operational knowledge.`,
         badges: ['Industrial Engineering', 'V-Sphere/Cloud', 'Mobile Infra'],
@@ -2322,7 +2322,7 @@ const AboutView = () => {
             content: t('manual.s18.content', 'Built-in safety management: incidents, near-misses, LOTO, permits, JSA/JHA, and OSHA recordkeeping.'),
             subsections: [
                 {
-                    title: '17A.1 Safety Module Overview',
+                    title: t('manual.sub.209', '17A.1 Safety Module Overview'),
                     items: [
                         t('manual.item.929', 'The Safety & Compliance module provides tools for managing workplace safety directly within the Enterprise System.'),
                         '',
@@ -2338,11 +2338,11 @@ const AboutView = () => {
                         '',
                         t('manual.item.939', 'HOW TO ACCESS:'),
                         t('manual.item.940', '   \u2022 Click the Safety & Compliance tile in the Portal.'),
-                        '   \u2022 All safety data integrates with work orders and asset records.'
+                        t('manual.item.1896', '   \u2022 All safety data integrates with work orders and asset records.')
                     ]
                 },
                 {
-                    title: '17A.2 Logging an Incident',
+                    title: t('manual.sub.210', '17A.2 Logging an Incident'),
                     items: [
                         t('manual.item.941', 'HOW TO LOG A SAFETY INCIDENT:'),
                         t('manual.item.942', '1. Navigate to Safety & Compliance.'),
@@ -2365,7 +2365,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.957', 'TROUBLESHOOTING:'),
                         t('manual.item.958', '   \u2022 Cannot submit incident? \u2014 All required fields must be filled.'),
-                        '   \u2022 LOTO not showing for an asset? \u2014 LOTO procedures must be created by a supervisor.'
+                        t('manual.item.1897', '   \u2022 LOTO not showing for an asset? \u2014 LOTO procedures must be created by a supervisor.')
                     ,
                         '',
                         t('manual.item.959', 'NEAR-MISS REPORTING:'),
@@ -2383,7 +2383,7 @@ const AboutView = () => {
                         t('manual.item.969', '   • Job Safety Analysis templates list hazards, risks, and controls for specific job types.'),
                         t('manual.item.970', '   • Pre-built templates for common maintenance tasks (confined space, hot work, electrical).'),
                         t('manual.item.971', '   • Custom JSAs can be created for site-specific procedures.'),
-                        '   • JSAs can be linked to work orders — technicians review before starting work.'
+                        t('manual.item.1898', '   • JSAs can be linked to work orders — technicians review before starting work.')
                     ]
                 },
                 {
@@ -2395,12 +2395,12 @@ const AboutView = () => {
                         t('manual.item.1152', '   \u2022 Navigate to Downtime Logs from the Portal tile or navigation menu.'),
                         t('manual.item.1153', '   \u2022 Data is auto-populated from work orders with ActDown > 0.'),
                         '',
-                        'VIEWS:',
+                        t('manual.item.1899', 'VIEWS:'),
                         t('manual.item.1154', '   \u2022 Summary View \u2014 KPI cards showing total downtime hours, affected assets, and cost impact.'),
                         t('manual.item.1155', '   \u2022 Detail View \u2014 Per-asset breakdown with expandable rows.'),
                         t('manual.item.1156', '   \u2022 Click any asset row to expand and see individual downtime events.'),
                         '',
-                        'KPI CARDS:',
+                        t('manual.item.1900', 'KPI CARDS:'),
                         t('manual.item.1157', '   \u2022 Total Downtime Hours \u2014 Across all assets in the selected period.'),
                         t('manual.item.1158', '   \u2022 Assets Affected \u2014 Count of unique assets with downtime.'),
                         t('manual.item.1159', '   \u2022 Avg Downtime per Event \u2014 Average hours per downtime incident.'),
@@ -2410,7 +2410,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.1162', 'TROUBLESHOOTING:'),
                         t('manual.item.1163', '   \u2022 No data showing? \u2014 Ensure work orders have downtime hours entered in ActDown.'),
-                        '   \u2022 Cost impact inaccurate? \u2014 Verify the hourly production cost in Settings.'
+                        t('manual.item.1901', '   \u2022 Cost impact inaccurate? \u2014 Verify the hourly production cost in Settings.')
                     ]
                 },
                 {
@@ -2418,7 +2418,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1164', 'The Digital Twin viewer provides interactive equipment schematics with live health overlays.'),
                         '',
-                        'FEATURES:',
+                        t('manual.item.1902', 'FEATURES:'),
                         t('manual.item.1165', '   \u2022 Upload equipment schematics, piping diagrams, or wiring layouts.'),
                         t('manual.item.1166', '   \u2022 Place draggable pins on component locations \u2014 pins show live health status.'),
                         t('manual.item.1167', '   \u2022 Pin Types: Component (\u2699\ufe0f), Sensor (\ud83d\udce1), Lubrication (\ud83d\udee2\ufe0f), Electrical (\u26a1), Inspection (\ud83d\udd0d).'),
@@ -2438,7 +2438,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.1178', 'TROUBLESHOOTING:'),
                         t('manual.item.1179', '   \u2022 Schematic blurry? \u2014 Upload a higher resolution image (2000px+ recommended).'),
-                        '   \u2022 Pins not updating? \u2014 Ensure the linked asset has work orders in the system.'
+                        t('manual.item.1903', '   \u2022 Pins not updating? \u2014 Ensure the linked asset has work orders in the system.')
                     ]
                 },
                 {
@@ -2446,7 +2446,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1180', 'The Governance module provides audit trail visibility, security monitoring, and RBAC compliance.'),
                         '',
-                        'FEATURES:',
+                        t('manual.item.1904', 'FEATURES:'),
                         t('manual.item.1181', '   \u2022 Audit Trail \u2014 Complete log of all user actions (logins, changes, deletions).'),
                         t('manual.item.1182', '   \u2022 Activity Timeline \u2014 Visual timeline of system events.'),
                         t('manual.item.1183', '   \u2022 Security Events \u2014 Failed logins, permission violations, suspicious activity.'),
@@ -2466,7 +2466,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.1195', 'TROUBLESHOOTING:'),
                         t('manual.item.1196', '   \u2022 Not seeing events? \u2014 Audit logging may be disabled in Settings. Contact IT.'),
-                        '   \u2022 Export failing? \u2014 Large date ranges may time out. Narrow the filter.'
+                        t('manual.item.1905', '   \u2022 Export failing? \u2014 Large date ranges may time out. Narrow the filter.')
                     ]
                 }
             ]
@@ -2480,7 +2480,7 @@ const AboutView = () => {
             content: t('manual.s19.content', 'Advanced reliability engineering: RCA, FMEA, Repair vs. Replace, Capital Projects, Lubrication Routes, Oil Analysis, and Calibration.'),
             subsections: [
                 {
-                    title: '17B.1 Engineering Module Overview',
+                    title: t('manual.sub.211', '17B.1 Engineering Module Overview'),
                     items: [
                         t('manual.item.972', 'The Engineering Excellence module provides reliability-focused tools for continuous improvement.'),
                         '',
@@ -2492,11 +2492,11 @@ const AboutView = () => {
                         t('manual.item.978', '   \u2022 Capital Projects \u2014 Track large improvement projects with budget and timeline.'),
                         t('manual.item.979', '   \u2022 Lubrication Routes \u2014 Planned lube routes with points, grades, and frequencies.'),
                         t('manual.item.980', '   \u2022 Oil Analysis \u2014 Sample results tracking with wear metal trending and alerts.'),
-                        '   \u2022 Calibration \u2014 Instrument calibration tracking with due dates and certificates.'
+                        t('manual.item.1906', '   \u2022 Calibration \u2014 Instrument calibration tracking with due dates and certificates.')
                     ]
                 },
                 {
-                    title: '17B.2 Running a 5-Why RCA',
+                    title: t('manual.sub.212', '17B.2 Running a 5-Why RCA'),
                     items: [
                         t('manual.item.981', 'HOW TO PERFORM A ROOT CAUSE ANALYSIS:'),
                         t('manual.item.982', '1. Navigate to Engineering Excellence and select "Root Cause Analysis."'),
@@ -2520,11 +2520,11 @@ const AboutView = () => {
                         '',
                         t('manual.item.998', 'TROUBLESHOOTING:'),
                         t('manual.item.999', '   \u2022 RPN not calculating? \u2014 All three scores (S, O, D) must be entered.'),
-                        '   \u2022 ECN stuck in review? \u2014 Check the approval chain in Engineering settings.'
+                        t('manual.item.1907', '   \u2022 ECN stuck in review? \u2014 Check the approval chain in Engineering settings.')
                     ]
                 },
                 {
-                    title: '17B.3 Lubrication Routes & Oil Analysis',
+                    title: t('manual.sub.213', '17B.3 Lubrication Routes & Oil Analysis'),
                     items: [
                         t('manual.item.1000', 'LUBRICATION ROUTES:'),
                         t('manual.item.1001', '   \u2022 Define lube points on each asset (bearing, chain, gearbox, etc.).'),
@@ -2544,7 +2544,7 @@ const AboutView = () => {
                         t('manual.item.1013', '   \u2022 Track instrument calibration schedules and certificates.'),
                         t('manual.item.1014', '   \u2022 Set calibration intervals and due date alerts.'),
                         t('manual.item.1015', '   \u2022 Record as-found and as-left values.'),
-                        '   \u2022 Supports compliance with ISO, FDA, and GMP requirements.'
+                        t('manual.item.1908', '   \u2022 Supports compliance with ISO, FDA, and GMP requirements.')
                     ]
                 }
             ]
@@ -2558,7 +2558,7 @@ const AboutView = () => {
             content: t('manual.s20.content', 'Manage outside contractors, track their jobs, insurance, and certifications. Self-service vendor portal for status updates.'),
             subsections: [
                 {
-                    title: '17C.1 Contractor Management',
+                    title: t('manual.sub.214', '17C.1 Contractor Management'),
                     items: [
                         t('manual.item.1016', 'HOW TO ADD A CONTRACTOR:'),
                         t('manual.item.1017', '1. Navigate to Contractors & Vendors.'),
@@ -2583,7 +2583,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.1033', 'TROUBLESHOOTING:'),
                         t('manual.item.1034', '   \u2022 Contractor not showing in assignment list? \u2014 Check if their insurance is expired.'),
-                        '   \u2022 Vendor portal login issues? \u2014 Portal credentials are separate from internal logins.'
+                        t('manual.item.1909', '   \u2022 Vendor portal login issues? \u2014 Portal credentials are separate from internal logins.')
                     ,
                         '',
                         t('manual.item.1035', 'PERFORMANCE TRACKING IN DETAIL:'),
@@ -2599,10 +2599,10 @@ const AboutView = () => {
                         t('manual.item.1044', '   • System sends alerts 30 and 7 days before expiry.'),
                         t('manual.item.1045', '   • Expired contractors are automatically flagged and blocked from new assignments.'),
                         '',
-                        'REPORTING:',
+                        t('manual.item.1910', 'REPORTING:'),
                         t('manual.item.1046', '   • Contractor Spend Report — Total costs by contractor over a date range.'),
                         t('manual.item.1047', '   • Compliance Report — Which contractors have valid vs. expired insurance.'),
-                        '   • Performance Comparison — Side-by-side rating of contractors by trade.'
+                        t('manual.item.1911', '   • Performance Comparison — Side-by-side rating of contractors by trade.')
                     ]
                 }
             ]
@@ -2616,7 +2616,7 @@ const AboutView = () => {
             content: t('manual.s21.content', 'OEE Dashboard (Availability \u00d7 Performance \u00d7 Quality), Workforce Analytics, Technician Metrics, Budget Forecaster, and Energy Dashboard.'),
             subsections: [
                 {
-                    title: '17D.1 OEE Dashboard',
+                    title: t('manual.sub.215', '17D.1 OEE Dashboard'),
                     items: [
                         t('manual.item.1048', 'OEE (Overall Equipment Effectiveness) is the gold standard manufacturing metric.'),
                         '',
@@ -2641,11 +2641,11 @@ const AboutView = () => {
                         '',
                         t('manual.item.1064', 'TROUBLESHOOTING:'),
                         t('manual.item.1065', '   \u2022 OEE showing 0%? \u2014 Downtime hours must be logged on work orders (ActDown field).'),
-                        '   \u2022 Only seeing a few assets? \u2014 Assets need work order history for OEE calculation.'
+                        t('manual.item.1912', '   \u2022 Only seeing a few assets? \u2014 Assets need work order history for OEE calculation.')
                     ]
                 },
                 {
-                    title: '17D.2 Workforce Analytics & Technician Metrics',
+                    title: t('manual.sub.216', '17D.2 Workforce Analytics & Technician Metrics'),
                     items: [
                         t('manual.item.1066', 'WORKFORCE ANALYTICS provides management oversight of technician performance.'),
                         '',
@@ -2663,11 +2663,11 @@ const AboutView = () => {
                         '',
                         t('manual.item.1076', 'TROUBLESHOOTING:'),
                         t('manual.item.1077', '   \u2022 Technician not listed? \u2014 They must have at least one closed work order.'),
-                        '   \u2022 Hours seem wrong? \u2014 Labor is pulled from close-out wizard entries.'
+                        t('manual.item.1913', '   \u2022 Hours seem wrong? \u2014 Labor is pulled from close-out wizard entries.')
                     ]
                 },
                 {
-                    title: '17D.3 Budget Forecaster & Energy Dashboard',
+                    title: t('manual.sub.217', '17D.3 Budget Forecaster & Energy Dashboard'),
                     items: [
                         t('manual.item.1078', 'BUDGET FORECASTER:'),
                         t('manual.item.1079', '   \u2022 Predicts future maintenance spend based on historical trends.'),
@@ -2683,7 +2683,7 @@ const AboutView = () => {
                         t('manual.item.1087', '   \u2022 Live weather conditions for each plant location.'),
                         t('manual.item.1088', '   \u2022 Useful for outdoor maintenance planning and safety decisions.'),
                         '',
-                        'HOW TO ACCESS: All three are accessible from the Analytics section in the Portal.'
+                        t('manual.item.1914', 'HOW TO ACCESS: All three are accessible from the Analytics section in the Portal.')
                     ]
                 }
             ]
@@ -2697,24 +2697,24 @@ const AboutView = () => {
             content: t('manual.s22.content', 'Portal launcher, onboarding tour, enrollment process, asset photos & OCR, warranty tracking, tribal knowledge, LDAP, and UI features.'),
             subsections: [
                 {
-                    title: '18A.1 Portal / Mission Control',
+                    title: t('manual.sub.218', '18A.1 Portal / Mission Control'),
                     items: [
                         t('manual.item.1089', 'The Portal (also called Mission Control) is your application launcher.'),
                         '',
-                        'FEATURES:',
+                        t('manual.item.1915', 'FEATURES:'),
                         t('manual.item.1090', '   \u2022 Tile-based layout with category grouping.'),
                         t('manual.item.1091', '   \u2022 Role-based visibility \u2014 you only see tiles your role has access to.'),
                         t('manual.item.1092', '   \u2022 Recent items and quick-access favorites.'),
                         t('manual.item.1093', '   \u2022 Session uptime timer.'),
                         '',
                         t('manual.item.1094', 'Each tile shows a title, description, and quick-access pills (keywords) for context.'),
-                        'Click any tile to open that workspace.',
+                        t('manual.item.1916', 'Click any tile to open that workspace.'),
                         '',
                         t('manual.item.1734', 'AUDIT & HISTORY TILE: Access the Audit & History module from Mission Control. Available to Manager, Plant Manager, Maintenance Manager, IT Admin, and Creator roles. Opens HistoryDashboard with tabs for Work Order History, PM History, Scan Audit Log, and Dynamic Reports.'),
                     ]
                 },
                 {
-                    title: '18A.2 Onboarding Tour & Enrollment',
+                    title: t('manual.sub.219', '18A.2 Onboarding Tour & Enrollment'),
                     items: [
                         t('manual.item.1095', 'FIRST-TIME ONBOARDING:'),
                         t('manual.item.1096', '   \u2022 New users see a guided tour highlighting key features.'),
@@ -2729,11 +2729,11 @@ const AboutView = () => {
                         '',
                         t('manual.item.1104', 'TROUBLESHOOTING:'),
                         t('manual.item.1105', '   \u2022 Tour not appearing? \u2014 It only shows once. Replay from Settings > Onboarding.'),
-                        '   \u2022 Enrollment pending for too long? \u2014 Contact your plant administrator.'
+                        t('manual.item.1917', '   \u2022 Enrollment pending for too long? \u2014 Contact your plant administrator.')
                     ]
                 },
                 {
-                    title: '18A.3 Asset Photos, OCR & Warranty',
+                    title: t('manual.sub.220', '18A.3 Asset Photos, OCR & Warranty'),
                     items: [
                         t('manual.item.1106', 'ASSET PHOTO MANAGEMENT:'),
                         t('manual.item.1107', '   \u2022 Each asset can have multiple photos attached.'),
@@ -2756,11 +2756,11 @@ const AboutView = () => {
                         '',
                         t('manual.item.1122', 'TROUBLESHOOTING:'),
                         t('manual.item.1123', '   \u2022 OCR not detecting anything? \u2014 Take a clearer, well-lit photo of the nameplate.'),
-                        '   \u2022 Warranty warning not showing? \u2014 Ensure dates are set in the asset Warranty section.'
+                        t('manual.item.1918', '   \u2022 Warranty warning not showing? \u2014 Ensure dates are set in the asset Warranty section.')
                     ]
                 },
                 {
-                    title: '18A.4 Tribal Knowledge / Wisdom Exchange',
+                    title: t('manual.sub.221', '18A.4 Tribal Knowledge / Wisdom Exchange'),
                     items: [
                         t('manual.item.1124', 'Tribal Knowledge (also called Wisdom Exchange) captures institutional know-how for each asset.'),
                         '',
@@ -2778,11 +2778,11 @@ const AboutView = () => {
                         t('manual.item.1135', '   \u2022 Every entry is timestamped and attributed to the contributor.'),
                         '',
                         t('manual.item.1136', 'TROUBLESHOOTING:'),
-                        '   \u2022 Cannot add knowledge? \u2014 You must have technician role or above.'
+                        t('manual.item.1919', '   \u2022 Cannot add knowledge? \u2014 You must have technician role or above.')
                     ]
                 },
                 {
-                    title: '18A.5 LDAP / Active Directory & Escalation Rules',
+                    title: t('manual.sub.222', '18A.5 LDAP / Active Directory & Escalation Rules'),
                     items: [
                         t('manual.item.1137', 'LDAP / ACTIVE DIRECTORY INTEGRATION:'),
                         t('manual.item.1138', '   \u2022 Trier OS can authenticate against your corporate Active Directory.'),
@@ -2799,7 +2799,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.1148', 'TROUBLESHOOTING:'),
                         t('manual.item.1149', '   \u2022 LDAP login failing? \u2014 Verify server URL, port, and Base DN with IT.'),
-                        '   \u2022 Escalation not triggering? \u2014 Check that rules are active and thresholds are correctly set.'
+                        t('manual.item.1920', '   \u2022 Escalation not triggering? \u2014 Check that rules are active and thresholds are correctly set.')
                     ]
                 },
                 {
@@ -2826,14 +2826,14 @@ const AboutView = () => {
                         t('manual.item.1212', '   \u2022 When parts arrive, update the PO with received quantities.'),
                         t('manual.item.1213', '   \u2022 Inventory adjusts automatically upon receiving.'),
                         '',
-                        'TRACKING:',
+                        t('manual.item.1921', 'TRACKING:'),
                         t('manual.item.1214', '   \u2022 View total PO cost, line item details, and delivery dates.'),
                         t('manual.item.1215', '   \u2022 Filter by status, vendor, or date range.'),
                         t('manual.item.1216', '   \u2022 Print POs for submittal to vendors.'),
                         '',
                         t('manual.item.1217', 'TROUBLESHOOTING:'),
                         t('manual.item.1218', '   \u2022 PO stuck in "Pending"? \u2014 Check with the approver or adjust approval thresholds in Settings.'),
-                        '   \u2022 Parts not in catalog? \u2014 Add them to Parts first, then add to PO.'
+                        t('manual.item.1922', '   \u2022 Parts not in catalog? \u2014 Add them to Parts first, then add to PO.')
                     ]
                 },
                 {
@@ -2858,7 +2858,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.1232', 'TROUBLESHOOTING:'),
                         t('manual.item.1233', '   \u2022 Adjustment not reflecting? \u2014 Refresh the parts view.'),
-                        '   \u2022 Negative inventory? \u2014 System allows it but flags a warning. Investigate promptly.'
+                        t('manual.item.1923', '   \u2022 Negative inventory? \u2014 System allows it but flags a warning. Investigate promptly.')
                     ]
                 },
                 {
@@ -2866,7 +2866,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1234', 'The SAP Integration module connects Trier OS to SAP ERP systems for data synchronization.'),
                         '',
-                        'FEATURES:',
+                        t('manual.item.1924', 'FEATURES:'),
                         t('manual.item.1235', '   \u2022 Import assets, parts, and work orders from SAP.'),
                         t('manual.item.1236', '   \u2022 Export completed work orders and inventory changes back to SAP.'),
                         t('manual.item.1237', '   \u2022 Bi-directional sync with configurable field mapping.'),
@@ -2886,7 +2886,7 @@ const AboutView = () => {
                         t('manual.item.1248', '   \u2022 Connection failed? \u2014 Verify SAP server URL and credentials. Check firewall rules.'),
                         t('manual.item.1249', '   \u2022 Duplicate records? \u2014 Ensure unique key mapping (e.g., asset number, part number).'),
                         t('manual.item.1250', '   \u2022 Sync errors? \u2014 Check the sync log for specific field validation failures.'),
-                        '   \u2022 SAP timeout? \u2014 Reduce batch size in sync settings.'
+                        t('manual.item.1925', '   \u2022 SAP timeout? \u2014 Reduce batch size in sync settings.')
                     ]
                 }
             ]
@@ -2906,7 +2906,7 @@ const AboutView = () => {
                         t('manual.item.1251', 'Trier OS uses a two-layer email system:'),
                         t('manual.item.1252', '1. Organization-Wide SMTP Relay — Configured once by IT. This is the "mail pipeline" for all outbound emails.'),
                         t('manual.item.1253', '2. Per-User Subscriptions — Each user chooses which alerts they want and provides their email address.'),
-                        'No IT involvement needed after the initial SMTP setup — users manage their own alerts.'
+                        t('manual.item.1926', 'No IT involvement needed after the initial SMTP setup — users manage their own alerts.')
                     ]
                 },
                 {
@@ -2918,7 +2918,7 @@ const AboutView = () => {
                         t('manual.item.1257', '4. Toggle SSL/TLS ON for encrypted connections.'),
                         t('manual.item.1258', '5. Click "Test Relay" to send a test email.'),
                         t('manual.item.1259', '6. Look for "[YES] Relay Verified" — this confirms emails are flowing.'),
-                        'This is a one-time setup. Once configured, all users across all plants can subscribe to alerts.'
+                        t('manual.item.1927', 'This is a one-time setup. Once configured, all users across all plants can subscribe to alerts.')
                     ]
                 },
                 {
@@ -2937,7 +2937,7 @@ const AboutView = () => {
                         t('manual.item.1270', '    Compliance Due — Regulatory checklist reminders.'),
                         t('manual.item.1271', '    Security Events — Failed logins and account changes.'),
                         t('manual.item.1272', '5. Select Digest Frequency: Immediate, Hourly Digest, or Daily Digest.'),
-                        '6. Click "Save Preferences".'
+                        t('manual.item.1928', '6. Click "Save Preferences".')
                     ]
                 }
             ]
@@ -2955,7 +2955,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1273', 'Trier OS is a Progressive Web App (PWA) — install it like a native app on any phone or tablet.'),
                         t('manual.item.1274', 'It continues working even when: you are in a plant basement, the server is down, or your Wi-Fi drops mid-shift.'),
-                        'Your work is saved locally and automatically synced when you reconnect.'
+                        t('manual.item.1929', 'Your work is saved locally and automatically synced when you reconnect.')
                     ]
                 },
                 {
@@ -2963,7 +2963,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1275', 'Android (Chrome): Tap the three-dot menu → "Add to Home Screen". Or use the "Install Trier OS" banner.'),
                         t('manual.item.1276', 'iPhone/iPad (Safari): Tap the Share button → "Add to Home Screen".'),
-                        'The app icon appears on your home screen like any other app.'
+                        t('manual.item.1930', 'The app icon appears on your home screen like any other app.')
                     ]
                 },
                 {
@@ -2972,7 +2972,7 @@ const AboutView = () => {
                         t('manual.item.1277', '1. Outage detected — An amber banner appears: " Offline Mode — Changes saved locally".'),
                         t('manual.item.1278', '2. Data served from cache — Work orders, assets, parts, and contacts available from local storage.'),
                         t('manual.item.1279', '3. Changes queued — Any work you do is saved to a local queue.'),
-                        '4. Pending count shown — Banner displays: " 3 pending".'
+                        t('manual.item.1931', '4. Pending count shown — Banner displays: " 3 pending".')
                     ]
                 },
                 {
@@ -2986,7 +2986,7 @@ const AboutView = () => {
                         t('manual.item.1285', '[NO] Upload photos/attachments (requires server).'),
                         t('manual.item.1286', '[NO] Barcode scanner (requires server lookup).'),
                         t('manual.item.1287', '[NO] Global Logistics search (requires live connection to all plants).'),
-                        '[NO] Run reports (requires server-side queries).'
+                        t('manual.item.1932', '[NO] Run reports (requires server-side queries).')
                     ]
                 },
                 {
@@ -2996,7 +2996,7 @@ const AboutView = () => {
                         t('manual.item.1289', '2. Queued changes replayed in order: "Syncing 1 of 3..."'),
                         t('manual.item.1290', '3. Completion: "[YES] Done. All changes saved."'),
                         t('manual.item.1291', '4. Banner auto-dismisses.'),
-                        'If a sync conflict occurs, the system flags it for your review rather than silently overwriting.'
+                        t('manual.item.1933', 'If a sync conflict occurs, the system flags it for your review rather than silently overwriting.')
                     ]
                 },
                 {
@@ -3004,7 +3004,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1292', 'On login: Full data download (2-second delay to let the page load).'),
                         t('manual.item.1293', 'Every 15 minutes: Background delta sync pulls only changed records.'),
-                        'Manually: Pull down to refresh on mobile devices.'
+                        t('manual.item.1934', 'Manually: Pull down to refresh on mobile devices.')
                     ]
                 }
             ]
@@ -3026,7 +3026,7 @@ const AboutView = () => {
                         t('manual.item.1295', 'Primary (Master) — Active server on-premises. Accepts all writes.'),
                         t('manual.item.1296', 'Secondary (Replica) — Standby server in AWS Cloud (or another location). Read-only.'),
                         t('manual.item.1297', 'The Primary pushes all database changes to the Secondary every 60 seconds.'),
-                        'If the Primary goes down, you promote the Secondary to Primary and keep working.'
+                        t('manual.item.1935', 'If the Primary goes down, you promote the Secondary to Primary and keep working.')
                     ]
                 },
                 {
@@ -3035,7 +3035,7 @@ const AboutView = () => {
                         t('manual.item.1298', '1. Change Capture — Every INSERT/UPDATE/DELETE is recorded in a sync_ledger via SQLite triggers.'),
                         t('manual.item.1299', '2. Batch Push — Every 60 seconds, unsynced entries are sent to the Secondary via secure API.'),
                         t('manual.item.1300', '3. Apply on Secondary — Changes applied to the Secondary databases, keeping them in sync.'),
-                        '4. Pairing Key — Servers authenticate using a shared pairing key (not user credentials).'
+                        t('manual.item.1936', '4. Pairing Key — Servers authenticate using a shared pairing key (not user credentials).')
                     ]
                 },
                 {
@@ -3051,7 +3051,7 @@ const AboutView = () => {
                         t('manual.item.1308', '1. Select "[P3] Secondary (Replica)" from the role selector.'),
                         t('manual.item.1309', '2. Enter the Primary server\'s address.'),
                         t('manual.item.1310', '3. Paste the key into "Import Key" and click Import.'),
-                        '4. Click "Save Configuration". Replication begins automatically.'
+                        t('manual.item.1937', '4. Click "Save Configuration". Replication begins automatically.')
                     ]
                 },
                 {
@@ -3064,7 +3064,7 @@ const AboutView = () => {
                         t('manual.item.1315', 'Total Ledger — Total change entries tracked.'),
                         t('manual.item.1316', 'Last Sync — Most recent successful sync timestamp.'),
                         t('manual.item.1317', 'Total DB Size — Combined size of all plant databases.'),
-                        'Use the "Test" button to check Secondary reachability and latency.'
+                        t('manual.item.1938', 'Use the "Test" button to check Secondary reachability and latency.')
                     ]
                 },
                 {
@@ -3077,7 +3077,7 @@ const AboutView = () => {
                         t('manual.item.1322', '4. Enter your admin password to confirm.'),
                         t('manual.item.1323', '5. Click "[PARTIAL] Confirm Failover".'),
                         t('manual.item.1324', '6. Restart the server for the change to take effect.'),
-                        'IMPORTANT: When the original Primary comes back online, reconfigure it as Secondary to prevent split-brain.'
+                        t('manual.item.1939', 'IMPORTANT: When the original Primary comes back online, reconfigure it as Secondary to prevent split-brain.')
                     ]
                 },
                 {
@@ -3087,7 +3087,7 @@ const AboutView = () => {
                         t('manual.item.1326', 'Pre-Sync Snapshots: The Secondary auto-snapshots before applying changes.'),
                         t('manual.item.1327', 'Snapshots stored in data/ha_snapshots/ — last 5 per plant are kept.'),
                         t('manual.item.1328', 'Rollback: If replication introduces corrupt data, restore from the latest snapshot.'),
-                        'HA uses Active-Passive architecture by design. Auto-failover was intentionally NOT implemented to prevent split-brain.'
+                        t('manual.item.1940', 'HA uses Active-Passive architecture by design. Auto-failover was intentionally NOT implemented to prevent split-brain.')
                     ]
                 }
             ]
@@ -3105,7 +3105,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1329', 'A Enterprise System manages safety-critical work orders, regulatory compliance records, and financial data across 40+ facilities.'),
                         t('manual.item.1330', 'A bug in a calculation, a missing work order, or a failed data sync could impact plant operations.'),
-                        'Our testing process exists to catch these problems before they reach the production floor.'
+                        t('manual.item.1941', 'Our testing process exists to catch these problems before they reach the production floor.')
                     ]
                 },
                 {
@@ -3117,7 +3117,7 @@ const AboutView = () => {
                         t('manual.item.1334', 'Phase 4 — Integration Testing: Email, sensors, webhooks, BI exports, HA sync. Confirms external systems can communicate with Trier.'),
                         t('manual.item.1335', 'Phase 5 — Multi-Plant & Corporate: All-sites data aggregation, global search, plant registry. Ensures corporate views combine data from all 40+ plants correctly.'),
                         t('manual.item.1336', 'Phase 6 — User Journey Validation: Complete workflows — WO lifecycle, asset management, parts, SOPs. Walks through every step a technician or manager would perform.'),
-                        'Phase 7 — Security & Edge Cases: Authentication, bad data handling, injection attacks. Proves the system doesn\'t crash or leak data under abnormal conditions.'
+                        t('manual.item.1942', 'Phase 7 — Security & Edge Cases: Authentication, bad data handling, injection attacks. Proves the system doesn\'t crash or leak data under abnormal conditions.')
                     ]
                 },
                 {
@@ -3127,7 +3127,7 @@ const AboutView = () => {
                         t('manual.item.1338', 'Phase 5 — Multi-Plant: 18/18 tests passed (100% [YES])'),
                         t('manual.item.1339', 'Phase 6 — User Journeys: 23/23 tests passed (100% [YES])'),
                         t('manual.item.1340', 'Phase 7 — Security: 21/21 tests passed (100% [YES])'),
-                        'TOTAL: 91 tests run, 91 tests passed — 100% pass rate.'
+                        t('manual.item.1943', 'TOTAL: 91 tests run, 91 tests passed — 100% pass rate.')
                     ]
                 },
                 {
@@ -3140,7 +3140,7 @@ const AboutView = () => {
                         t('manual.item.1345', 'Workflow Completeness: Parts search returns results across the correct plant databases.'),
                         t('manual.item.1346', 'Error Handling: Searching for something that doesn\'t exist returns "0 results" — not an error page.'),
                         t('manual.item.1347', 'Error Handling: Very long text (1,000+ characters), special characters, and emoji all save correctly.'),
-                        'Error Handling: If a sensor sends data for a non-existent device, the system handles it gracefully.'
+                        t('manual.item.1944', 'Error Handling: If a sensor sends data for a non-existent device, the system handles it gracefully.')
                     ]
                 },
                 {
@@ -3148,7 +3148,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.1348', 'Technicians: The work orders, parts counts, and schedules you see on screen have been verified to be accurate.'),
                         t('manual.item.1349', 'Managers: The dashboard numbers, compliance rates, and financial summaries are tested against the actual data in the database.'),
-                        'IT Staff: Integration points (email, sensors, HA replication) are verified, including handling expected failures gracefully.'
+                        t('manual.item.1945', 'IT Staff: Integration points (email, sensors, HA replication) are verified, including handling expected failures gracefully.')
                     ]
                 }
             ]
@@ -3170,7 +3170,7 @@ const AboutView = () => {
                         t('manual.item.1353', '[YES] Garbage/malformed token → Request rejected, system doesn\'t crash'),
                         t('manual.item.1354', '[YES] Wrong password at login → Login denied with clear error message'),
                         t('manual.item.1355', '[YES] Non-existent username → Login denied — system does NOT reveal whether the username exists'),
-                        '[YES] Admin-only features accessed by non-admin → Blocked with 403 Forbidden'
+                        t('manual.item.1946', '[YES] Admin-only features accessed by non-admin → Blocked with 403 Forbidden')
                     ]
                 },
                 {
@@ -3182,7 +3182,7 @@ const AboutView = () => {
                         t('manual.item.1359', 'The lockout lasts for the remainder of the 5-minute window — it does NOT extend with each additional attempt.'),
                         t('manual.item.1360', 'After the window expires, the counter resets and you can try again.'),
                         t('manual.item.1361', 'What to do if locked out: Wait 5 minutes from your first failed attempt, then try again.'),
-                        'Important: The rate limiter is per IP address. If multiple people share the same network, failures from one can affect others at the same location.'
+                        t('manual.item.1947', 'Important: The rate limiter is per IP address. If multiple people share the same network, failures from one can affect others at the same location.')
                     ]
                 },
                 {
@@ -3192,7 +3192,7 @@ const AboutView = () => {
                         t('manual.item.1363', 'Managers can view data at plants where they have an explicit role.'),
                         t('manual.item.1364', 'IT Administrators can access all plants (required for enterprise-wide support).'),
                         t('manual.item.1365', 'If you try to access a plant where you have no role: "Access Denied: You do not have an authorized role at [Plant Name]."'),
-                        'This ensures a technician at Anderson, IN cannot view or modify work orders at Tyler, TX.'
+                        t('manual.item.1948', 'This ensures a technician at Anderson, IN cannot view or modify work orders at Tyler, TX.')
                     ]
                 },
                 {
@@ -3203,7 +3203,7 @@ const AboutView = () => {
                         t('manual.item.1368', 'Path Traversal: File paths are validated and sanitized. [YES]'),
                         t('manual.item.1369', 'Test: Typing \' OR 1=1 -- (classic SQL injection) into search → 0 results, no data leak, no crash. [YES]'),
                         t('manual.item.1370', 'Test: Saving <script>alert(\'hack\')</script> as a WO description → stored as plain text, never executes. [YES]'),
-                        'Test: Attempting ../../etc/passwd in a URL → blocked, no file access. [YES]'
+                        t('manual.item.1949', 'Test: Attempting ../../etc/passwd in a URL → blocked, no file access. [YES]')
                     ]
                 },
                 {
@@ -3214,7 +3214,7 @@ const AboutView = () => {
                         t('manual.item.1373', '[YES] Unicode characters and emoji (検査完了) — saved and displayed correctly.'),
                         t('manual.item.1374', '[YES] Negative numbers in cost fields — no server crash.'),
                         t('manual.item.1375', '[YES] Empty form submission — handled gracefully (system tracks who submitted it).'),
-                        '[YES] Requesting 999,999 records at once — no crash, query completes normally.'
+                        t('manual.item.1950', '[YES] Requesting 999,999 records at once — no crash, query completes normally.')
                     ]
                 },
                 {
@@ -3224,7 +3224,7 @@ const AboutView = () => {
                         t('manual.item.1377', '2. Password guessing is blocked — the rate limiter stops automated attacks before they can succeed.'),
                         t('manual.item.1378', '3. Plant boundaries are enforced — a user at one plant cannot see another plant\'s data without explicit authorization.'),
                         t('manual.item.1379', '4. The system doesn\'t crash — even under extreme or abnormal inputs, Trier OS continues operating normally.'),
-                        '5. Common web attacks don\'t work — SQL injection, XSS, and path traversal are all neutralized.'
+                        t('manual.item.1951', '5. Common web attacks don\'t work — SQL injection, XSS, and path traversal are all neutralized.')
                     ]
                 },
                 {
@@ -3252,7 +3252,7 @@ const AboutView = () => {
                         t('manual.item.1476', '   • The public maintenance request form is limited to 5 submissions per 10 minutes per IP address to prevent spam flooding.'),
                         t('manual.item.1477', '   • The server will not start if the encryption secret is missing, preventing operation in an insecure state.'),
                         '',
-                        '6. All security measures are transparent to end users — they work automatically without requiring any user action or training.'
+                        t('manual.item.1952', '6. All security measures are transparent to end users — they work automatically without requiring any user action or training.')
                     ]
                 },
                 {
@@ -3283,7 +3283,7 @@ const AboutView = () => {
                         t('manual.item.1409', '  • IT Admin & Creator: Full access to all IT assets — view, add, edit, delete, and see license keys in plain text.'),
                         t('manual.item.1410', '  • Corporate: Can view the IT Department tile for metrics only. License keys are masked (••••••••). No edit or delete access.'),
                         t('manual.item.1411', '  • Plant roles (Manager, Supervisor, Technician, etc.): No access to the IT tile. IT assets are corporate-managed.'),
-                        'The IT group also contains: Governance & Security, Admin Console, and Import & API Hub.'
+                        t('manual.item.1953', 'The IT group also contains: Governance & Security, Admin Console, and Import & API Hub.')
                     ]
                 },
                 {
@@ -3294,7 +3294,7 @@ const AboutView = () => {
                         t('manual.item.1414', 'Expiry tracking: Licenses approaching expiry (<30 days) show amber warnings. Expired licenses show red alerts.'),
                         t('manual.item.1415', 'License keys are sensitive data — only IT Admin and Creator roles can view them. Corporate users see "••••••••" in the key field.'),
                         t('manual.item.1416', 'Seat utilization: Track how many seats are used vs. available to prevent over-deployment or identify opportunities to reduce licensing costs.'),
-                        'Categories include: Operating System, Productivity, Security, Database, Communication, ERP, CAD/CAM, Analytics, and DevOps.'
+                        t('manual.item.1954', 'Categories include: Operating System, Productivity, Security, Database, Communication, ERP, CAD/CAM, Analytics, and DevOps.')
                     ]
                 },
                 {
@@ -3306,7 +3306,7 @@ const AboutView = () => {
                         t('manual.item.1420', 'Depreciation tracking: Each hardware asset has Purchase Cost, Salvage Value, Useful Life (default 5 years for hardware), and Depreciation Method (Straight-Line or Declining Balance).'),
                         t('manual.item.1421', 'Current Book Value is calculated on-the-fly based on the depreciation schedule. This appears in the table and detail views.'),
                         t('manual.item.1422', 'Condition tracking: New → Good → Fair → Poor → End of Life.'),
-                        'Status tracking: Active, Inactive, In Transit, Retired, Disposed, In Repair.'
+                        t('manual.item.1955', 'Status tracking: Active, Inactive, In Transit, Retired, Disposed, In Repair.')
                     ]
                 },
                 {
@@ -3318,7 +3318,7 @@ const AboutView = () => {
                         t('manual.item.1426', 'Status tracking: Online, Offline, Degraded, In Transit, Maintenance, Decommissioned.'),
                         t('manual.item.1427', 'Infrastructure assets have a 7-year default useful life for depreciation calculations.'),
                         t('manual.item.1428', 'Firmware tracking helps identify devices that need security patches or updates.'),
-                        'Rack position tracking (e.g., "R2-U15") helps IT staff locate equipment in server rooms and IDF closets.'
+                        t('manual.item.1956', 'Rack position tracking (e.g., "R2-U15") helps IT staff locate equipment in server rooms and IDF closets.')
                     ]
                 },
                 {
@@ -3330,7 +3330,7 @@ const AboutView = () => {
                         t('manual.item.1432', 'IMEI tracking for each cellular-enabled device.'),
                         t('manual.item.1433', 'Mobile devices have a 3-year default useful life for depreciation.'),
                         t('manual.item.1434', 'Devices are assigned to specific plant locations and users. Corporate IT has full visibility across all plants.'),
-                        'The SOTI MDM platform manages remote wipe, application deployment, and device configuration.'
+                        t('manual.item.1957', 'The SOTI MDM platform manages remote wipe, application deployment, and device configuration.')
                     ]
                 },
                 {
@@ -3341,7 +3341,7 @@ const AboutView = () => {
                         t('manual.item.1437', 'Movement types: Received, Shipped, Internal Transfer, Audit Scan.'),
                         t('manual.item.1438', 'Each movement records: Asset Category, Asset ID, From Plant/Location, To Plant/Location, Scanned By, Timestamp, Tracking Number, and Notes.'),
                         t('manual.item.1439', 'Scan workflow (mirrors parts receiving): Scan barcode → Identify asset → Confirm movement → Log to movement ledger.'),
-                        'All movements are permanent records — they cannot be deleted. This creates an auditable chain of custody for every IT asset.'
+                        t('manual.item.1958', 'All movements are permanent records — they cannot be deleted. This creates an auditable chain of custody for every IT asset.')
                     ]
                 },
                 {
@@ -3356,7 +3356,7 @@ const AboutView = () => {
                         t('manual.item.1446', '  • Current Book Value: Total book value of all IT assets.'),
                         t('manual.item.1447', '  • Monthly Expense: Monthly depreciation charge across all categories.'),
                         t('manual.item.1448', 'Reports are broken down by category (Hardware, Infrastructure, Mobile) with per-asset detail.'),
-                        'Book values are calculated on-the-fly from purchase dates and depreciation parameters — not stored statically.'
+                        t('manual.item.1959', 'Book values are calculated on-the-fly from purchase dates and depreciation parameters — not stored statically.')
                     ]
                 },
                 {
@@ -3370,7 +3370,7 @@ const AboutView = () => {
                         t('manual.item.1454', 'SLA tracking: Response Time (e.g., "4 hours", "Next Business Day") and Uptime Guarantee (e.g., "99.9%").'),
                         t('manual.item.1455', 'Contract expiry alerting: Contracts within 60 days of expiration show amber warnings in the table. Expired contracts show red.'),
                         t('manual.item.1456', 'Payment terms: Net 15, Net 30, Net 45, Net 60, Net 90, Annual Prepay, Monthly, Quarterly.'),
-                        'The stats bar shows total vendor/contract count with an alert for contracts expiring soon.'
+                        t('manual.item.1960', 'The stats bar shows total vendor/contract count with an alert for contracts expiring soon.')
                     ]
                 },
                 {
@@ -3380,7 +3380,7 @@ const AboutView = () => {
                         t('manual.item.1458', '  • SOTI MobiControl: Auto-sync mobile device inventory including IMEI, OS version, enrollment status, and assigned users.'),
                         t('manual.item.1459', '  • Fortinet / FortiGate: Import network device inventory including IP addresses, MAC addresses, firmware versions, and models.'),
                         t('manual.item.1460', '  • Domain Active Directory: Sync computer objects from AD including hostname, OS, department (OU), last logon, and assigned users.'),
-                        'These adapters will support both one-click CSV import and scheduled API sync for automated inventory updates.'
+                        t('manual.item.1961', 'These adapters will support both one-click CSV import and scheduled API sync for automated inventory updates.')
                     ]
                 },
                 {
@@ -3393,7 +3393,7 @@ const AboutView = () => {
                         t('manual.item.1482', '   • License Spend: Total annual software licensing costs with seat utilization tracking.'),
                         t('manual.item.1483', '   • Category breakdowns: Hardware, Infrastructure, Mobile, and Software costs shown separately.'),
                         t('manual.item.1484', '   • Trend charts: Monthly spending trends and depreciation curves over time.'),
-                        'Access: IT Metrics is available from the IT Department group on Mission Control.'
+                        t('manual.item.1962', 'Access: IT Metrics is available from the IT Department group on Mission Control.')
                     ]
                 },
                 {
@@ -3403,7 +3403,7 @@ const AboutView = () => {
                         t('manual.item.1486', '   • Search by asset name, serial number, barcode ID, model, or manufacturer.'),
                         t('manual.item.1487', '   • Results show asset type, location, assigned user, status, and current book value.'),
                         t('manual.item.1488', '   • Click any result to jump directly to the full asset detail.'),
-                        'Similar to Global Logistics for parts, but for IT equipment across all plants.'
+                        t('manual.item.1963', 'Similar to Global Logistics for parts, but for IT equipment across all plants.')
                     ]
                 },
                 {
@@ -3414,7 +3414,7 @@ const AboutView = () => {
                         t('manual.item.1491', '   • Expired licenses show red alerts with days past expiration.'),
                         t('manual.item.1492', '   • Vendor contracts within 60 days of renewal show renewal warnings.'),
                         t('manual.item.1493', '   • Hardware nearing end-of-life based on useful life depreciation schedule.'),
-                        'The IT Alerts dashboard aggregates all expiry warnings in one view.'
+                        t('manual.item.1964', 'The IT Alerts dashboard aggregates all expiry warnings in one view.')
                     ]
                 }
             ]
@@ -3433,7 +3433,7 @@ const AboutView = () => {
                         t('manual.item.1494', 'Lockout/Tagout (LOTO) is an OSHA-mandated safety procedure for isolating hazardous energy sources before maintenance.'),
                         t('manual.item.1495', 'Trier OS provides a digital LOTO permit system that tracks every lock application, verification, and release with timestamps.'),
                         t('manual.item.1496', 'Digital permits replace paper forms — no more lost or illegible lockout tags.'),
-                        'All LOTO activity is permanently recorded in the audit trail for regulatory compliance.'
+                        t('manual.item.1965', 'All LOTO activity is permanently recorded in the audit trail for regulatory compliance.')
                     ]
                 },
                 {
@@ -3445,7 +3445,7 @@ const AboutView = () => {
                         t('manual.item.1500', '4. Identify the energy sources (Electrical, Pneumatic, Hydraulic, Mechanical, Chemical, Thermal, Gravity, Radiation).'),
                         t('manual.item.1501', '5. Enter isolation procedures for each energy source.'),
                         t('manual.item.1502', '6. Add personnel applying locks — each person gets a numbered lock entry.'),
-                        '7. Submit the permit for approval (if required by your plant procedure).'
+                        t('manual.item.1966', '7. Submit the permit for approval (if required by your plant procedure).')
                     ]
                 },
                 {
@@ -3455,7 +3455,7 @@ const AboutView = () => {
                         t('manual.item.1504', 'VERIFIED — A second person verifies the lockout is effective (zero energy check).'),
                         t('manual.item.1505', 'RELEASED — Work is complete. Lock is removed, energy is restored. Timestamp recorded.'),
                         t('manual.item.1506', 'Each step is timestamped and tied to the employee who performed it.'),
-                        'Active locks on an asset prevent work order close-out until all locks are released.'
+                        t('manual.item.1967', 'Active locks on an asset prevent work order close-out until all locks are released.')
                     ]
                 },
                 {
@@ -3464,7 +3464,7 @@ const AboutView = () => {
                         t('manual.item.1507', '   • Always verify zero energy before starting work. Use the Verify button to confirm.'),
                         t('manual.item.1508', '   • Never remove another person\'s lock — each person must remove their own.'),
                         t('manual.item.1509', '   • Document any deviations or abnormalities in the permit notes.'),
-                        '   • Shift changes: If work extends into the next shift, transfer locks using the handoff procedure.'
+                        t('manual.item.1968', '   • Shift changes: If work extends into the next shift, transfer locks using the handoff procedure.')
                     ]
                 }
             ]
@@ -3483,7 +3483,7 @@ const AboutView = () => {
                         t('manual.item.1510', 'Schedule recurring inspections: Fire safety, boiler, ammonia, OSHA, FDA, environmental, and custom inspection types.'),
                         t('manual.item.1511', 'Each inspection record includes: Inspector, Date, Type, Area, Result (Pass/Fail/Conditional), and Notes.'),
                         t('manual.item.1512', 'Overdue inspections appear as alerts to ensure no compliance deadlines are missed.'),
-                        'The inspection calendar integrates with the PM calendar for a unified maintenance and compliance view.'
+                        t('manual.item.1969', 'The inspection calendar integrates with the PM calendar for a unified maintenance and compliance view.')
                     ]
                 },
                 {
@@ -3495,7 +3495,7 @@ const AboutView = () => {
                         t('manual.item.1516', '   • Corrective action required'),
                         t('manual.item.1517', '   • Assigned responsible party and due date'),
                         t('manual.item.1518', '   • Status tracking (Open → In Progress → Closed)'),
-                        'Findings can be linked to work orders for repair tracking and closed with evidence documentation.'
+                        t('manual.item.1970', 'Findings can be linked to work orders for repair tracking and closed with evidence documentation.')
                     ]
                 },
                 {
@@ -3506,7 +3506,7 @@ const AboutView = () => {
                         t('manual.item.1521', '   • Open vs. closed findings with aging metrics'),
                         t('manual.item.1522', '   • Corrective action completion rates'),
                         t('manual.item.1523', '   • Equipment-specific compliance history'),
-                        'All records are permanent and auditable — required for OSHA, FDA, and ISO compliance environments.'
+                        t('manual.item.1971', 'All records are permanent and auditable — required for OSHA, FDA, and ISO compliance environments.')
                     ]
                 }
             ]
@@ -3533,7 +3533,7 @@ const AboutView = () => {
                         t('manual.item.1532a', '   • Korean (KO) — 한국어'),
                         t('manual.item.1533', '   • Arabic (AR) — العربية'),
                         t('manual.item.1534', '   • Hindi (HI) — हिन्दी'),
-                        '   • Turkish (TR) — Türkçe'
+                        t('manual.item.1972', '   • Turkish (TR) — Türkçe')
                     ]
                 },
                 {
@@ -3543,7 +3543,7 @@ const AboutView = () => {
                         t('manual.item.1536', '2. Find the Language selector.'),
                         t('manual.item.1537', '3. Select your preferred language from the dropdown.'),
                         t('manual.item.1538', '4. The entire interface updates immediately — no logout or page refresh required.'),
-                        'Your language preference is saved to your device and persists across sessions.'
+                        t('manual.item.1973', 'Your language preference is saved to your device and persists across sessions.')
                     ]
                 },
                 {
@@ -3556,7 +3556,7 @@ const AboutView = () => {
                         t('manual.item.1543', '   • Toast notifications and alert messages'),
                         t('manual.item.1544', '   • Calendar and date displays (locale-aware formatting)'),
                         t('manual.item.1545', '   • Greeting messages (Good morning/afternoon/evening)'),
-                        'Over 4,200 text elements are translated across every screen.'
+                        t('manual.item.1974', 'Over 4,200 text elements are translated across every screen.')
                     ]
                 },
                 {
@@ -3567,7 +3567,7 @@ const AboutView = () => {
                         t('manual.item.1548', '   • Proper nouns: "Trier OS", "Mission Control", plant names, and user names.'),
                         t('manual.item.1549', '   • Data values: Part numbers, serial numbers, work order numbers, and barcode IDs.'),
                         t('manual.item.1550', '   • This Operations Manual — reference documentation remains in English for consistency.'),
-                        'If a translation is missing for any element, the system automatically shows the English version as a fallback.'
+                        t('manual.item.1975', 'If a translation is missing for any element, the system automatically shows the English version as a fallback.')
                     ]
                 }
             ]
@@ -4305,7 +4305,7 @@ const AboutView = () => {
                         t('manual.item.1382', '60-Day Evaluation — Extended evaluation for comprehensive testing.'),
                         t('manual.item.1383', '1-Year Subscription — Annual license, renewable each year.'),
                         t('manual.item.1384', '5-Year Enterprise — Multi-year commitment at a discounted rate.'),
-                        'Perpetual License — One-time purchase, no expiration.'
+                        t('manual.item.1976', 'Perpetual License — One-time purchase, no expiration.')
                     ]
                 },
                 {
@@ -4317,7 +4317,7 @@ const AboutView = () => {
                         t('manual.item.1388', '4. Click the Machine ID to copy it to your clipboard.'),
                         t('manual.item.1389', '5. Send the Machine ID to your Trier OS administrator (see Support Contact below).'),
                         t('manual.item.1390', '6. You will receive a License Key — paste it into the activation field and click Activate.'),
-                        '7. The application will unlock and you can proceed to log in.'
+                        t('manual.item.1977', '7. The application will unlock and you can proceed to log in.')
                     ]
                 },
                 {
@@ -4328,7 +4328,7 @@ const AboutView = () => {
                         t('manual.item.1393', 'Renewal keys are generated instantly — typical turnaround is within 24 hours.'),
                         t('manual.item.1394', 'Paste the new key on the renewal page to reactivate immediately.'),
                         t('manual.item.1395', 'All your data, settings, and work orders are preserved — nothing is lost when a license expires.'),
-                        'The application simply pauses access until a new key is entered.'
+                        t('manual.item.1978', 'The application simply pauses access until a new key is entered.')
                     ]
                 },
                 {
@@ -4338,7 +4338,7 @@ const AboutView = () => {
                         t('manual.item.1397', 'If you replace your server hardware, contact support for a new key at no additional charge.'),
                         t('manual.item.1398', 'The license file is stored locally and does not require internet connectivity to validate.'),
                         t('manual.item.1399', 'Do not edit the license.key file manually — the key is cryptographically signed and will be invalidated.'),
-                        'Your license status can be checked at any time via Settings → About.'
+                        t('manual.item.1979', 'Your license status can be checked at any time via Settings → About.')
                     ]
                 },
                 {
@@ -4351,7 +4351,7 @@ const AboutView = () => {
                         t('manual.item.1404', 'When contacting support, please include:'),
                         t('manual.item.1405', '  • Your Machine ID (shown on the activation or expired page)'),
                         t('manual.item.1406', '  • Your plant/facility name'),
-                        '  • A brief description of your issue or request'
+                        t('manual.item.1980', '  • A brief description of your issue or request')
                     ]
                 }
             ]
