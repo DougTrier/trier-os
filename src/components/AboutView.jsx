@@ -151,7 +151,7 @@ const AboutView = () => {
                         t('manual.item.29', 'Vendor Management — Trier [YES] | Fiix [YES] | UpKeep [YES] | Limble [YES] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
                         t('manual.item.30', 'Cross-Plant Parts Search (Global Logistics) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [PARTIAL] | IBM Maximo [PARTIAL]'),
                         t('manual.item.31', 'Cross-Plant Transfer Requests — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [PARTIAL] | IBM Maximo [PARTIAL]'),
-                        'Network Price Discovery — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'
+                        t('manual.item.1765', 'Network Price Discovery — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
                     ]
                 },
                 {
@@ -163,7 +163,7 @@ const AboutView = () => {
                         t('manual.item.35', 'Network Onboarding Wizard (Clone from Sister Plant) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
                         t('manual.item.36', 'Role-Based Access Control (RBAC) — Trier [YES] | Fiix [YES] | UpKeep [YES] | Limble [YES] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
                         t('manual.item.37', 'Enterprise Contact Directory — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
-                        'SAP/ERP Integration — Trier [YES] | Fiix [YES] | UpKeep [PARTIAL] | Limble [PARTIAL] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'
+                        t('manual.item.1766', 'SAP/ERP Integration — Trier [YES] | Fiix [YES] | UpKeep [PARTIAL] | Limble [PARTIAL] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]')
                     ]
                 },
                 {
@@ -174,7 +174,7 @@ const AboutView = () => {
                         t('manual.item.40', 'Webhook Alerts (Slack/Teams/Discord) — Trier [YES] | Fiix [YES] | UpKeep [PARTIAL] | Limble [PARTIAL] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [PARTIAL] | IBM Maximo [YES]'),
                         t('manual.item.41', 'Email Notifications — Trier [YES] | Fiix [YES] | UpKeep [YES] | Limble [YES] | MaintainX [YES] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
                         t('manual.item.42', 'In-App Notification Center — Trier [YES] | Fiix [YES] | UpKeep [YES] | Limble [YES] | MaintainX [YES] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
-                        'Shift Handoff Log (Digital Logbook) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'
+                        t('manual.item.1767', 'Shift Handoff Log (Digital Logbook) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
                     ]
                 },
                 {
@@ -188,7 +188,7 @@ const AboutView = () => {
                         t('manual.item.48', 'Server-to-Server HA Replication — Trier [YES][UNIQUE] | Fiix [PARTIAL] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [PARTIAL] | SAP PM [YES] | IBM Maximo [YES]'),
                         t('manual.item.49', 'Shop Floor Mode (High-Contrast Display) — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'),
                         t('manual.item.50', 'Multi-Language Support (11 Languages) — Trier [YES] | Fiix [PARTIAL] | UpKeep [PARTIAL] | Limble [PARTIAL] | MaintainX [PARTIAL] | eMaint [PARTIAL] | SAP PM [YES] | IBM Maximo [YES]'),
-                        'In-House Data — No Vendor Lock-In — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'
+                        t('manual.item.1768', 'In-House Data — No Vendor Lock-In — Trier [YES][UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
                     ]
                 },
                 {
@@ -201,7 +201,7 @@ const AboutView = () => {
                         t('manual.item.55', 'Audit Trail / Compliance Logging — Trier [YES] | Fiix [YES] | UpKeep [YES] | Limble [YES] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
                         t('manual.item.56', 'Report Center (Pre-Built Reports) — Trier [YES] | Fiix [YES] | UpKeep [YES] | Limble [YES] | MaintainX [PARTIAL] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
                         t('manual.item.57', 'Custom Report Builder (Drag & Drop) — Trier [YES] | Fiix [YES] | UpKeep [PARTIAL] | Limble [PARTIAL] | MaintainX [NO] | eMaint [YES] | SAP PM [YES] | IBM Maximo [YES]'),
-                        'Built-In Operational Intelligence Manual — Trier [YES+UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]'
+                        t('manual.item.1769', 'Built-In Operational Intelligence Manual — Trier [YES+UNIQUE] | Fiix [NO] | UpKeep [NO] | Limble [NO] | MaintainX [NO] | eMaint [NO] | SAP PM [NO] | IBM Maximo [NO]')
                     ]
                 },
                 {
@@ -221,7 +221,7 @@ const AboutView = () => {
             ]
         },
         {
-            section: 'TCO Analysis: True Cost vs. Market Leaders',
+            section: t('manual.tco.title', 'TCO Analysis: True Cost vs. Market Leaders'),
             id: 'tco-analysis',
             navigateTo: '/dashboard',
             filePath: 'src/components/AboutView.jsx',
@@ -408,7 +408,7 @@ const AboutView = () => {
                         t('manual.item.58', 'Trier OS runs on your company\'s private network. No internet connection is required.'),
                         t('manual.item.59', 'From a Desktop: Open your browser (Chrome, Edge, or Firefox) and navigate to the address provided by IT.'),
                         t('manual.item.60', 'From a Tablet or Phone: Navigate to the same address. Select "Add to Home Screen" to install it as an app icon.'),
-                        'The app works even in areas with poor Wi-Fi (Cooler-Proof Mode).'
+                        t('manual.item.1770', 'The app works even in areas with poor Wi-Fi (Cooler-Proof Mode).')
                     ]
                 },
                 {
@@ -418,7 +418,7 @@ const AboutView = () => {
                         t('manual.item.62', '2. Enter your Password.'),
                         t('manual.item.63', '3. Click "Sign In".'),
                         t('manual.item.64', 'First-Time Users: You will be prompted to change your temporary password immediately.'),
-                        'Site Code Login: New users can self-register using a Site Code provided by their supervisor.'
+                        t('manual.item.1771', 'Site Code Login: New users can self-register using a Site Code provided by their supervisor.')
                     ]
                 },
                 {
@@ -435,7 +435,7 @@ const AboutView = () => {
                         t('manual.item.73', 'Parts — Parts inventory: stock levels, vendors, adjustments.'),
                         t('manual.item.74', 'Assets — Equipment registry: every machine and its maintenance history.'),
                         t('manual.item.75', 'Procedures — SOP library: step-by-step instructions for any task.'),
-                        '→ Logout — Signs you out and locks your shift log entries.'
+                        t('manual.item.1772', '→ Logout — Signs you out and locks your shift log entries.')
                     ]
                 },
                 {
@@ -444,14 +444,14 @@ const AboutView = () => {
                         t('manual.item.76', 'The plant dropdown in the header controls which location\'s data you see.'),
                         t('manual.item.77', 'Your Home Plant is selected automatically. You have full read/write access.'),
                         t('manual.item.78', 'Other Plants: Admins can switch to view other plants. Data is read-only with a red warning banner.'),
-                        'Corporate (All Sites): Admins see aggregated data across all 40+ facilities.'
+                        t('manual.item.1773', 'Corporate (All Sites): Admins see aggregated data across all 40+ facilities.')
                     ]
                 },
                 {
                     title: t('manual.sub.4', '1.5 Session Security'),
                     items: [
                         t('manual.item.79', 'Automatic Timeout: 15 minutes of inactivity triggers a warning. Click "Stay Logged In" or the system logs you out.'),
-                        'Shift Log Lock: When you log out, your open shift log entries are automatically locked.'
+                        t('manual.item.1774', 'Shift Log Lock: When you log out, your open shift log entries are automatically locked.')
                     ]
                 }
             ]
@@ -471,7 +471,7 @@ const AboutView = () => {
                         t('manual.item.81', 'Reading Previous Notes: From the Dashboard, read entries from the previous shift in the Shift Handoff card.'),
                         t('manual.item.82', 'Writing Your Entry: Click the text area and type your observations. Entries auto-save in real time.'),
                         t('manual.item.83', 'Once you log out, your entry is locked and cannot be edited except by administrators.'),
-                        'A profanity filter is active on all shift log entries. Keep entries professional.'
+                        t('manual.item.1775', 'A profanity filter is active on all shift log entries. Keep entries professional.')
                     ,
                         '',
                         t('manual.item.84', 'HOW TO USE THE SHIFT HANDOFF LOG:'),
@@ -488,7 +488,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.94', 'TROUBLESHOOTING:'),
                         t('manual.item.95', '   • Notes not saving? — Check your internet connection. Auto-save requires server access.'),
-                        '   • Cannot see previous shift notes? — Handoff logs are per-plant. Verify your plant selection.'
+                        t('manual.item.1776', '   • Cannot see previous shift notes? — Handoff logs are per-plant. Verify your plant selection.')
                     ]
                 },
                 {
@@ -497,7 +497,7 @@ const AboutView = () => {
                         t('manual.item.96', 'Work Orders — Total active work orders at your plant. Click to jump to Jobs.'),
                         t('manual.item.97', 'Equipment Assets — Total registered machines. Click to jump to Assets.'),
                         t('manual.item.98', 'Parts Catalog — Total parts in inventory. Click to jump to Parts.'),
-                        'Active PM Schedules — Number of PM schedules running. Click to jump to the calendar.'
+                        t('manual.item.1777', 'Active PM Schedules — Number of PM schedules running. Click to jump to the calendar.')
                     ]
                 },
                 {
@@ -509,7 +509,7 @@ const AboutView = () => {
                         t('manual.item.102', '[P1] Priority 1 — Emergency: Production is stopped. Drop everything.'),
                         t('manual.item.103', '[P2] Priority 2 — High: Needs attention today.'),
                         t('manual.item.104', '[P3] Priority 3 — Medium: Scheduled maintenance, complete this week.'),
-                        '[P4] Priority 4 — Routine: Low urgency, complete when available.'
+                        t('manual.item.1778', '[P4] Priority 4 — Routine: Low urgency, complete when available.')
                     ]
                 },
                 {
@@ -517,7 +517,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.105', '1. Type your search term in the Dashboard search bar (WO number, asset name, part number).'),
                         t('manual.item.106', '2. Press Enter.'),
-                        '3. Results appear grouped by category. Click any result to jump to that record.'
+                        t('manual.item.1779', '3. Results appear grouped by category. Click any result to jump to that record.')
                     ]
                 },
                 {
@@ -548,7 +548,7 @@ const AboutView = () => {
                         t('manual.item.107', '1. Go to "Jobs" in the navigation.'),
                         t('manual.item.108', '2. Find your work order using search, filters, or scrolling.'),
                         t('manual.item.109', '3. Click "View" on the right side of the row.'),
-                        '4. The detail screen shows: WO Number, Description, Asset, Priority, Status, Assigned Technician, Dates, Comments, Procedure, and Parts Used.'
+                        t('manual.item.1780', '4. The detail screen shows: WO Number, Description, Asset, Priority, Status, Assigned Technician, Dates, Comments, Procedure, and Parts Used.')
                     ]
                 },
                 {
@@ -559,7 +559,7 @@ const AboutView = () => {
                         t('manual.item.112', '3. Change Status from "Open" to "Started".'),
                         t('manual.item.113', '4. Add a Comment describing what you found or are doing.'),
                         t('manual.item.114', '5. Click "Save Changes".'),
-                        'Why This Matters: Changing to "Started" tells your supervisor you are actively working the job and clears emergency notifications.'
+                        t('manual.item.1781', 'Why This Matters: Changing to "Started" tells your supervisor you are actively working the job and clears emergency notifications.')
                     ]
                 },
                 {
@@ -569,7 +569,7 @@ const AboutView = () => {
                         t('manual.item.116', '2. Look for the "Tasks" or "Procedure" section.'),
                         t('manual.item.117', '3. Each step is listed in order with a checkbox.'),
                         t('manual.item.118', '4. Check off each step as you complete it.'),
-                        '5. Progress saves automatically.'
+                        t('manual.item.1782', '5. Progress saves automatically.')
                     ]
                 },
                 {
@@ -579,7 +579,7 @@ const AboutView = () => {
                         t('manual.item.120', '2. Type the part number or name in the Search bar.'),
                         t('manual.item.121', '3. Check "QTY On Hand" to see if it is in stock.'),
                         t('manual.item.122', '4. The "Location" column tells you where to find it (warehouse, aisle, bin).'),
-                        '5. If out of stock — see Part V for how to search other plants.'
+                        t('manual.item.1783', '5. If out of stock — see Part V for how to search other plants.')
                     ]
                 },
                 {
@@ -592,14 +592,14 @@ const AboutView = () => {
                         t('manual.item.127', '5. Set Priority (1=Emergency through 4=Routine).'),
                         t('manual.item.128', '6. Select Assigned To (yourself or another technician).'),
                         t('manual.item.129', '7. Click "Save Changes".'),
-                        'Tip: Use the SCAN button to scan the asset barcode — it pre-fills the asset info automatically.'
+                        t('manual.item.1784', 'Tip: Use the SCAN button to scan the asset barcode — it pre-fills the asset info automatically.')
                     ]
                 },
                 {
                     title: t('manual.sub.14', '3.6 Adding Notes & Printing'),
                     items: [
                         t('manual.item.130', 'Adding Notes: Open the WO, scroll to Comments, type your note, and click "Add Note". Notes are timestamped.'),
-                        'Printing: Open the WO and click the Print button. A formatted print version appears. Use Ctrl+P to send to your printer.'
+                        t('manual.item.1785', 'Printing: Open the WO and click the Print button. A formatted print version appears. Use Ctrl+P to send to your printer.')
                     ]
                 },
                 {
@@ -636,7 +636,7 @@ const AboutView = () => {
                         t('manual.item.154', 'TROUBLESHOOTING:'),
                         t('manual.item.155', '   \u2022 Upload fails? \u2014 Check file size (50 MB limit) and file type.'),
                         t('manual.item.156', '   \u2022 Camera not working? \u2014 Browser must have camera permission granted.'),
-                        '   \u2022 Photos appear rotated? \u2014 Try re-taking in landscape mode.'
+                        t('manual.item.1786', '   \u2022 Photos appear rotated? \u2014 Try re-taking in landscape mode.')
                     ]
                 },
                 {
@@ -665,7 +665,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.174', 'TROUBLESHOOTING:'),
                         t('manual.item.175', '   \u2022 Dropdown is empty? \u2014 The failure code library needs to be populated by an admin.'),
-                        '   \u2022 Cannot delete an entry? \u2014 You must be in Edit mode on the work order.'
+                        t('manual.item.1787', '   \u2022 Cannot delete an entry? \u2014 You must be in Edit mode on the work order.')
                     ]
                 },
                 {
@@ -687,7 +687,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.187', 'TROUBLESHOOTING:'),
                         t('manual.item.188', '   \u2022 Timer hours seem wrong? \u2014 The timer captures wall-clock time including breaks. Adjust manually.'),
-                        '   \u2022 Timer not visible? \u2014 Make sure you are viewing the WO in detail view (click View).'
+                        t('manual.item.1788', '   \u2022 Timer not visible? \u2014 Make sure you are viewing the WO in detail view (click View).')
                     ]
                 }
             ]
@@ -705,7 +705,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.189', '1. Open the completed Work Order.'),
                         t('manual.item.190', '2. Click the "Close Work Order" button (green, at the bottom).'),
-                        '3. The Close-Out Wizard opens as a multi-step form.'
+                        t('manual.item.1789', '3. The Close-Out Wizard opens as a multi-step form.')
                     ]
                 },
                 {
@@ -715,7 +715,7 @@ const AboutView = () => {
                         t('manual.item.192', '2. Select the Employee who performed the work.'),
                         t('manual.item.193', '3. Enter Regular Hours, Overtime Hours, and Double-Time Hours as applicable.'),
                         t('manual.item.194', '4. Repeat for each person who worked on this job.'),
-                        'Why: Labor hours feed cost reports and calculate Mean Time To Repair (MTTR).'
+                        t('manual.item.1790', 'Why: Labor hours feed cost reports and calculate Mean Time To Repair (MTTR).')
                     ,
                         '',
                         t('manual.item.195', 'DETAILED LABOR ENTRY GUIDE:'),
@@ -729,7 +729,7 @@ const AboutView = () => {
                         t('manual.item.202', 'TROUBLESHOOTING:'),
                         t('manual.item.203', '   • Timer hours seem wrong? — The timer captures wall-clock time. Adjust manually if you took breaks.'),
                         t('manual.item.204', '   • Cannot find a technician in the dropdown? — They must be in the system as a registered user.'),
-                        '   • Draft data disappeared? — Drafts are saved per work order. Clear browser data clears drafts.'
+                        t('manual.item.1791', '   • Draft data disappeared? — Drafts are saved per work order. Clear browser data clears drafts.')
                     ]
                 },
                 {
@@ -740,7 +740,7 @@ const AboutView = () => {
                         t('manual.item.207', '3. Enter the Quantity Used.'),
                         t('manual.item.208', '4. Unit cost auto-fills from the database.'),
                         t('manual.item.209', '5. Repeat for every part consumed.'),
-                        'Important: Adding parts here automatically deducts them from your plant\'s inventory.'
+                        t('manual.item.1792', "Important: Adding parts here automatically deducts them from your plant's inventory.")
                     ,
                         '',
                         t('manual.item.210', 'DETAILED PARTS ENTRY GUIDE:'),
@@ -754,7 +754,7 @@ const AboutView = () => {
                         t('manual.item.217', 'TROUBLESHOOTING:'),
                         t('manual.item.218', '   • Part not found? — Check spelling or search by partial description.'),
                         t('manual.item.219', '   • Stock shows 0 but you used one? — Enter it anyway. Inventory will go negative (flags a count issue).'),
-                        '   • Accidentally added wrong part? — Click the X icon to remove it before submitting.'
+                        t('manual.item.1793', '   • Accidentally added wrong part? — Click the X icon to remove it before submitting.')
                     ]
                 },
                 {
@@ -762,7 +762,7 @@ const AboutView = () => {
                     items: [
                         t('manual.item.220', 'Misc Costs: Add external expenses (crane rental, contractor fees, specialty tools).'),
                         t('manual.item.221', 'Downtime: Enter actual hours the machine was out of production.'),
-                        'Resolution: Select the type (Repaired, Replaced, Temporary Fix, etc.) and write a brief summary.'
+                        t('manual.item.1794', 'Resolution: Select the type (Repaired, Replaced, Temporary Fix, etc.) and write a brief summary.')
                     ]
                 },
                 {
@@ -772,7 +772,7 @@ const AboutView = () => {
                         t('manual.item.223', '2. Review all entered data.'),
                         t('manual.item.224', '3. Click "Execute Close-Out".'),
                         t('manual.item.225', '4. The work order status changes to "Closed" and all costs are permanently recorded.'),
-                        'Once closed, a work order cannot be re-opened. If you made a mistake, contact your supervisor.'
+                        t('manual.item.1795', 'Once closed, a work order cannot be re-opened. If you made a mistake, contact your supervisor.')
                     ]
                 }
             ]
@@ -853,7 +853,7 @@ const AboutView = () => {
                         t('manual.item.228', 'Scan part labels to see stock levels and vendor info.'),
                         t('manual.item.229', 'Scan printed work order barcodes to find the job instantly.'),
                         t('manual.item.230', 'If no record exists, you can create a new asset or part from the scan.'),
-                        'Tip: Wipe your camera lens in cold environments — frost causes focus issues.'
+                        t('manual.item.1796', 'Tip: Wipe your camera lens in cold environments — frost causes focus issues.')
                     ]
                 },
                 {
@@ -862,7 +862,7 @@ const AboutView = () => {
                         t('manual.item.231', '1. Click "Parts" in the navigation.'),
                         t('manual.item.232', '2. Type your search term.'),
                         t('manual.item.233', '3. Results show: Part ID, Description, QTY On Hand, Location, Unit Cost, Vendor.'),
-                        '4. Click any part for full details including substitutes.'
+                        t('manual.item.1797', '4. Click any part for full details including substitutes.')
                     ]
                 },
                 {
@@ -872,7 +872,7 @@ const AboutView = () => {
                         t('manual.item.235', '2. Click the "Global Logistics" tab.'),
                         t('manual.item.236', '3. Search by part description or number.'),
                         t('manual.item.237', '4. Results show which plants have it, quantity, and unit cost.'),
-                        '5. Click "Request Transfer" to start getting the part from a sister plant.'
+                        t('manual.item.1798', '5. Click "Request Transfer" to start getting the part from a sister plant.')
                     ]
                 },
                 {
@@ -881,7 +881,7 @@ const AboutView = () => {
                         t('manual.item.238', '1. Go to the Assets page.'),
                         t('manual.item.239', '2. Click the "Asset Logistics" tab.'),
                         t('manual.item.240', '3. Search by asset description, model, or manufacturer.'),
-                        '4. Results show location, operational status (In Production vs. Spare), and plant.'
+                        t('manual.item.1799', '4. Results show location, operational status (In Production vs. Spare), and plant.')
                     ]
                 },
                 {
@@ -891,7 +891,7 @@ const AboutView = () => {
                         t('manual.item.242', '2. Click "Adjust Stock".'),
                         t('manual.item.243', '3. Enter the new quantity.'),
                         t('manual.item.244', '4. Select a Reason (Cycle Count, Correction, Damage, Found Stock, etc.).'),
-                        '5. Click "Update". The adjustment is recorded in the audit trail.'
+                        t('manual.item.1800', '5. Click "Update". The adjustment is recorded in the audit trail.')
                     ]
                 },
                 {
@@ -900,7 +900,7 @@ const AboutView = () => {
                         t('manual.item.245', '1. Take a photo of an equipment nameplate.'),
                         t('manual.item.246', '2. The OCR engine reads model, serial number, and manufacturer from the photo.'),
                         t('manual.item.247', '3. Review the extracted fields.'),
-                        '4. Click "Create Asset" or "Create Part" to add it with pre-filled data.'
+                        t('manual.item.1801', '4. Click "Create Asset" or "Create Part" to add it with pre-filled data.')
                     ]
                 },
                 {
@@ -915,7 +915,7 @@ const AboutView = () => {
                         t('manual.item.253', '4. Supported types: JPEG, PNG, GIF, WebP, MP4, MOV, PDF, DOC, and more.'),
                         t('manual.item.254', '5. Maximum file size: 50 MB per attachment.'),
                         '',
-                        'USE CASES:',
+                        t('manual.item.1802', 'USE CASES:'),
                         t('manual.item.255', '   \u2022 Attach a photo of the actual part for visual identification.'),
                         t('manual.item.256', '   \u2022 Upload the manufacturer data sheet or spec PDF.'),
                         t('manual.item.257', '   \u2022 Take a photo of the shelf label showing bin location.'),
@@ -923,7 +923,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.259', 'TROUBLESHOOTING:'),
                         t('manual.item.260', '   \u2022 Upload fails? \u2014 Check file size (50 MB limit) and file type.'),
-                        '   \u2022 Photos not showing? \u2014 Refresh the page. Thumbnails load on demand.'
+                        t('manual.item.1803', '   \u2022 Photos not showing? \u2014 Refresh the page. Thumbnails load on demand.')
                     ]
                 }
             ]
@@ -942,7 +942,7 @@ const AboutView = () => {
                         t('manual.item.261', '1. Click "Jobs" then select the "Calendar" tab.'),
                         t('manual.item.262', '2. The calendar shows all scheduled PMs by date.'),
                         t('manual.item.263', '3. Overdue PMs are highlighted in red.'),
-                        '4. Click any PM entry to see its details.'
+                        t('manual.item.1804', '4. Click any PM entry to see its details.')
                     ,
                         '',
                         t('manual.item.264', 'UNDERSTANDING THE CALENDAR:'),
@@ -954,7 +954,7 @@ const AboutView = () => {
                         t('manual.item.269', 'TROUBLESHOOTING:'),
                         t('manual.item.270', '   • Calendar is empty? — No PM schedules have been created yet. Go to Jobs to create one.'),
                         t('manual.item.271', '   • PM not generating work orders? — Check that the PM schedule is set to "Active" status.'),
-                        '   • Wrong frequency? — Edit the PM schedule and adjust the interval (daily, weekly, monthly, or by meter).'
+                        t('manual.item.1805', '   • Wrong frequency? — Edit the PM schedule and adjust the interval (daily, weekly, monthly, or by meter).')
                     ]
                 },
                 {
@@ -963,7 +963,7 @@ const AboutView = () => {
                         t('manual.item.272', 'Time-Based: PM comes due every X days (e.g., "Inspect fire extinguishers every 30 days").'),
                         t('manual.item.273', 'Meter-Based: PM comes due after X runtime hours or cycles (e.g., "Change oil every 500 hours").'),
                         t('manual.item.274', 'Dual Trigger: PM comes due at whichever happens first — time OR meter.'),
-                        'When a PM comes due, the system automatically creates a work order tagged [PM-AUTO] or [PM-METER].'
+                        t('manual.item.1806', 'When a PM comes due, the system automatically creates a work order tagged [PM-AUTO] or [PM-METER].')
                     ]
                 },
                 {
@@ -975,7 +975,7 @@ const AboutView = () => {
                         t('manual.item.278', '2. Find the procedure and click "Implement".'),
                         t('manual.item.279', '3. Select the Asset this procedure applies to.'),
                         t('manual.item.280', '4. Set the Schedule (date, frequency, or meter trigger).'),
-                        '5. Click "Create" — the system now auto-generates work orders on schedule.'
+                        t('manual.item.1807', '5. Click "Create" — the system now auto-generates work orders on schedule.')
                     ,
                         '',
                         t('manual.item.281', 'BUILDING AN EFFECTIVE SOP:'),
@@ -993,7 +993,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.292', 'TROUBLESHOOTING:'),
                         t('manual.item.293', '   • SOP steps not saving? — Each step must have text content. Empty steps are not saved.'),
-                        '   • AI generator not working? — Ensure you have an internet connection for the AI service.'
+                        t('manual.item.1808', '   • AI generator not working? — Ensure you have an internet connection for the AI service.')
                     ]
                 },
                 {
@@ -1007,7 +1007,7 @@ const AboutView = () => {
                         t('manual.item.298', '3. Drag and drop files, click Browse, or use the Camera button.'),
                         t('manual.item.299', '4. Supported types: JPEG, PNG, WebP, MP4, PDF, DOC, and more.'),
                         '',
-                        'USE CASES:',
+                        t('manual.item.1809', 'USE CASES:'),
                         t('manual.item.300', '   \u2022 Attach step-by-step photos showing how to perform each task.'),
                         t('manual.item.301', '   \u2022 Upload manufacturer service manuals or technical bulletins.'),
                         t('manual.item.302', '   \u2022 Add safety diagrams or LOTO placards as reference images.'),
@@ -1016,7 +1016,7 @@ const AboutView = () => {
                         t('manual.item.304', 'BEST PRACTICES:'),
                         t('manual.item.305', '   \u2022 Number your photos to match procedure step numbers.'),
                         t('manual.item.306', '   \u2022 Use landscape orientation for clearer detail on mobile.'),
-                        '   \u2022 Attach the OEM manual PDF so technicians have it at the machine.'
+                        t('manual.item.1810', '   \u2022 Attach the OEM manual PDF so technicians have it at the machine.')
                     ]
                 },
                 {
@@ -1025,7 +1025,7 @@ const AboutView = () => {
                         t('manual.item.307', '1. Click on any date in the calendar.'),
                         t('manual.item.308', '2. Type your reminder (e.g., "Vendor arriving at 10AM").'),
                         t('manual.item.309', '3. Click "Add Reminder". The note appears as a colored sticky note.'),
-                        '4. Check it off as "Completed" when done.'
+                        t('manual.item.1811', '4. Check it off as "Completed" when done.')
                     ]
                 }
             ]
@@ -1045,7 +1045,7 @@ const AboutView = () => {
                         t('manual.item.311', '2. Click "Create New Topic".'),
                         t('manual.item.312', '3. Enter a descriptive title (e.g., "VFD Trip Codes on Boiler Feed Pump").'),
                         t('manual.item.313', '4. Write your message, optionally attach photos or documents with attach files.'),
-                        '5. Submit your post. Your plant name and username appear with the message.'
+                        t('manual.item.1812', '5. Submit your post. Your plant name and username appear with the message.')
                     ,
                         '',
                         t('manual.item.314', 'CHAT FEATURES IN DETAIL:'),
@@ -1056,7 +1056,7 @@ const AboutView = () => {
                         '',
                         t('manual.item.319', 'TROUBLESHOOTING:'),
                         t('manual.item.320', '   • Cannot see messages? — You must be assigned to the plant to see its chat channel.'),
-                        '   • Message not sending? — Check your internet connection. Messages queue if offline.'
+                        t('manual.item.1813', '   • Message not sending? — Check your internet connection. Messages queue if offline.')
                     ]
                 },
                 {
@@ -1065,7 +1065,7 @@ const AboutView = () => {
                         t('manual.item.321', '1. Press and hold the Microphone button in any message box.'),
                         t('manual.item.322', '2. Speak clearly into your device.'),
                         t('manual.item.323', '3. Release the button. Speech is converted to text.'),
-                        '4. Review and send. Ideal for gloves-on or dirty environments.'
+                        t('manual.item.1814', '4. Review and send. Ideal for gloves-on or dirty environments.')
                     ]
                 },
                 {
@@ -1076,14 +1076,14 @@ const AboutView = () => {
                         t('manual.item.326', 'PM Due Today — A scheduled PM is ready.'),
                         t('manual.item.327', '[YES] Work Order Completed — A tracked job has been closed.'),
                         t('manual.item.328', 'Transfer Request — Another plant needs a part from you.'),
-                        'To permanently clear a notification, take action on the underlying item.'
+                        t('manual.item.1815', 'To permanently clear a notification, take action on the underlying item.')
                     ]
                 },
                 {
                     title: t('manual.sub.38', '7.4 Webhook & Email Alerts'),
                     items: [
                         t('manual.item.329', 'Webhooks: Your plant can send real-time alerts to Slack, Microsoft Teams, or Discord. Configured by IT in Settings.'),
-                        'Email: SMTP email alerts for critical events — configurable per-plant and per-user in Settings.'
+                        t('manual.item.1816', 'Email: SMTP email alerts for critical events — configurable per-plant and per-user in Settings.')
                     ,
                         '',
                         t('manual.item.330', 'SETTING UP WEBHOOK ALERTS:'),
@@ -1102,7 +1102,7 @@ const AboutView = () => {
                         t('manual.item.341', 'TROUBLESHOOTING:'),
                         t('manual.item.342', '   • Webhook not firing? — Verify the URL is correct and the platform has not disabled the webhook.'),
                         t('manual.item.343', '   • Duplicate alerts? — Check that you do not have both webhook AND email enabled for the same event.'),
-                        '   • Webhook returns errors? — Check the webhook log in Settings for response codes.'
+                        t('manual.item.1817', '   • Webhook returns errors? — Check the webhook log in Settings for response codes.')
                     ]
                 }
             ]
