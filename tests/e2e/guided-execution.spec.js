@@ -80,10 +80,12 @@ async function addFirstPartResult(page) {
     const searchInput = page.locator('[data-guide="closeout-parts-search"]');
     await searchInput.click();
     await searchInput.fill('belt');
-    await page.waitForTimeout(700); // debounce
-    const firstResult = page.locator('.asset-row-hover').first();
-    const hasResult = await firstResult.isVisible({ timeout: 4000 }).catch(() => false);
-    if (hasResult) await firstResult.dispatchEvent('click');
+    // Wait for the dropdown to populate (not a fixed timeout — use visibility)
+    await expect(page.locator('.asset-row-hover').first()).toBeVisible({ timeout: 6000 });
+    // Use .click() so Playwright's retry/actionability logic applies (not dispatchEvent)
+    await page.locator('.asset-row-hover').first().click();
+    // Confirm the part registered in guide context before the caller tries to advance
+    await page.waitForFunction(() => (window.__trierGuideContext?.partsCount ?? 0) >= 1, { timeout: 5000 });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -200,25 +202,26 @@ test.describe('Step mechanics — I-GE1 and I-GE3', () => {
         await page.setViewportSize({ width: 1280, height: 800 });
     });
 
-    test('I-GE1: step 1 highlights wo-list-row via data-guide-active attribute', async ({ page }) => {
+    test('I-GE1: pre-selected WO skips to step 3 — closeout-button anchor is highlighted', async ({ page }) => {
         await navigateToJobs(page);
         await openFirstWorkOrder(page);
         await startGuide(page);
         await waitForGuidePanel(page);
-        // Engine resolves and highlights the anchor after its 350ms delay.
-        // Steps 1 and 2 both anchor wo-list-row, giving ~1.7s window; use 4000ms to be safe.
-        await expect(page.locator('[data-guide="wo-list-row"][data-guide-active]').first())
-            .toBeVisible({ timeout: 4000 });
+        // Steps 1 (onJobsRoute) and 2 (workOrderSelected) are already satisfied before
+        // the engine starts, so the skip logic lands on step 3 (open-closeout-wizard).
+        // The first anchor highlighted is closeout-button, not wo-list-row.
+        await expect(page.locator('[data-guide="closeout-button"][data-guide-active]'))
+            .toBeVisible({ timeout: 5000 });
     });
 
-    test('step counter shows Step 1 of 6 immediately on activation', async ({ page }) => {
+    test('step counter shows Step 3 of 6 immediately when WO pre-selected', async ({ page }) => {
         await navigateToJobs(page);
         await openFirstWorkOrder(page);
         await startGuide(page);
         await waitForGuidePanel(page);
         const panel = page.locator('[data-testid="guide-panel"]');
-        // Panel renders step counter as soon as status = ACTIVE
-        await expect(panel).toContainText('Step 1 of 6');
+        // Steps 1 and 2 are pre-satisfied — engine skips directly to step 3
+        await expect(panel).toContainText('Step 3 of 6', { timeout: 3000 });
     });
 
     test('I-GE3: steps 1 and 2 advance automatically when state is already valid', async ({ page }) => {
@@ -266,11 +269,12 @@ test.describe('I-GE5 — Panel does not occlude target', () => {
         await openFirstWorkOrder(page);
         await startGuide(page);
         await waitForGuidePanel(page);
-        await expect(page.locator('[data-guide="wo-list-row"][data-guide-active]').first())
-            .toBeVisible({ timeout: 4000 });
+        // WO pre-selected → guide starts at step 3 (closeout-button), not step 1 (wo-list-row)
+        await expect(page.locator('[data-guide="closeout-button"][data-guide-active]'))
+            .toBeVisible({ timeout: 5000 });
 
         const panelBox  = await page.locator('[data-testid="guide-panel"]').boundingBox();
-        const targetBox = await page.locator('[data-guide="wo-list-row"][data-guide-active]').first().boundingBox();
+        const targetBox = await page.locator('[data-guide="closeout-button"][data-guide-active]').boundingBox();
 
         expect(panelBox).not.toBeNull();
         expect(targetBox).not.toBeNull();
@@ -324,6 +328,17 @@ test.describe('Full workflow completion', () => {
         await page.route('/api/guide/complete', async (route) => {
             auditRequests.push(await route.request().postDataJSON());
             await route.continue();
+        });
+
+        // Mock the WO close API so stock depletion across test runs cannot cause failure.
+        // This test verifies the guide engine's completion logic; the close API itself
+        // is exercised by qa-inspection and operator-care tests against real DB state.
+        await page.route('**/api/v2/work-orders/*/close', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ success: true, message: 'Work order closed and costs captured.' })
+            });
         });
 
         await navigateToJobs(page);
@@ -413,21 +428,21 @@ test.describe('Edge cases', () => {
         expect(await page.locator('[data-guide-active]').count()).toBe(0);
     });
 
-    test('missing anchor: engine shows step failure message and does not crash', async ({ page }) => {
+    test('missing anchor: engine shows step failure message and keeps polling', async ({ page }) => {
         await navigateToJobs(page);
         await openFirstWorkOrder(page);
-        // Remove all wo-list-row anchors before guide starts its step 1 anchor resolution
+        // Remove the step-3 anchor (closeout-button) — guide starts at step 3 when WO is pre-selected
         await page.evaluate(() => {
-            document.querySelectorAll('[data-guide="wo-list-row"]')
+            document.querySelectorAll('[data-guide="closeout-button"]')
                 .forEach(el => el.removeAttribute('data-guide'));
         });
         await startGuide(page);
         await waitForGuidePanel(page);
 
         // Engine attempts anchor resolution after 350ms — resolveAnchor returns null —
-        // setStepError is called with step1.onFailure.message
+        // setStepError is called with step3.onFailure.message
         await expect(page.locator('[data-testid="guide-panel"]'))
-            .toContainText('Navigate to the Work Orders page to continue.', { timeout: 2000 });
+            .toContainText('Complete with Costs button not found', { timeout: 2000 });
 
         // No element is highlighted when anchor resolution failed
         expect(await page.locator('[data-guide-active]').count()).toBe(0);
@@ -663,14 +678,13 @@ test.describe('Manual integration', () => {
         await exitGuide(page);
     });
 
-    test('context block: Start Guided Mode without a WO selected shows Cannot Start', async ({ page }) => {
+    test('context block: Start Guided Mode without a WO selected shows bridge panel', async ({ page }) => {
         // Navigate directly to the manual — no WO context, no Jobs view mounted.
-        // The engine's workOrderId context key resolves to null → eligibility block.
+        // Without a selected WO the app now opens GuideContextBridge (not the engine).
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
         await page.evaluate(() => {
             localStorage.setItem('selectedPlantId', 'Plant_1');
-            // Plant is valid so the block reason is workOrderId (missingContext), not missingPlant
         });
         await page.goto('/about?manual=true');
         await page.waitForLoadState('domcontentloaded');
@@ -682,12 +696,17 @@ test.describe('Manual integration', () => {
         await expect(btn).toBeVisible({ timeout: 5000 });
         await btn.click();
 
-        await waitForGuidePanel(page);
-        const panel = page.locator('[data-testid="guide-panel"]');
-        await expect(panel).toContainText('Cannot Start');
-        await expect(panel).toContainText('Please select a work order before starting guided mode.');
+        // Bridge opens instead of the engine panel — guides user to select a WO first
+        const bridge = page.locator('[data-testid="guide-context-bridge"]');
+        await expect(bridge).toBeVisible({ timeout: 5000 });
+        // Bridge always shows the workflow title and footer buttons regardless of WO availability
+        await expect(bridge).toContainText('Close Out a Work Order');
+        await expect(bridge).toContainText('Back to Manual');
 
-        await exitGuide(page);
+        // Dismiss via the X / Cancel button
+        const cancelBtn = bridge.locator('button[title]').first();
+        await cancelBtn.dispatchEvent('click');
+        await expect(bridge).not.toBeVisible({ timeout: 3000 });
     });
 
     test('invariant: guide from manual never sends x-plant-id=all_sites on WO detail requests', async ({ page }) => {

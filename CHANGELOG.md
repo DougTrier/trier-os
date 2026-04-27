@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.7.1] — 2026-04-27 — Guided Execution Test Stability
+
+### Fixed
+- `guided-execution.spec.js` full workflow test: mocked `/api/v2/work-orders/*/close` so repeated test runs cannot deplete part stock and break the test; the guide engine's completion logic (the invariant being tested) does not require a real DB commit — close API correctness is covered by operator-care and qa-inspection suites
+- Root cause: `PRT00046` (V-Belt C120 Classical) was returned first by the parts search (sorted by usage DESC, 24 prior uses) and had Stock=0 after N test runs; stock guard in `closeWorkOrderWithCosts` correctly threw "Insufficient stock", transaction rolled back, close returned 500
+
+### Version bumps (3.7.0 → 3.7.1)
+- `package.json`, `README.md`, `CLAUDE.md`, `docs/DEMO_SCRIPT.md`, `docs/THREAT_MODEL.md`, `docs/INSTALL_GUIDE.html`, `src/components/AboutView.jsx`, `tests/e2e/qa-scan.spec.js`, all 11 `src/i18n/*.json` files
+
+---
+
 ## [3.7.0] — 2026-04-27 — Guided Execution Mode (Phase 5 Complete)
 
 ### Added — Guided Execution Engine

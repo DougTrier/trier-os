@@ -28,7 +28,8 @@ async function login(page, account = ADMIN) {
         await page.locator('button').filter({ hasText: /Save|Change/i }).first().click();
     } catch { /* no prompt — continue */ }
     await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
-    await expect(page.getByRole('heading', { name: /mission control/i })).toBeVisible({ timeout: 15000 });
+    // h1.hide-mobile is display:none at 360px; use the tile grid as the mount signal instead
+    await expect(page.locator('.mission-control-grid')).toBeVisible({ timeout: 15000 });
     await page.evaluate((plantId) => localStorage.setItem('selectedPlantId', plantId), PLANT);
 }
 
@@ -136,11 +137,11 @@ test.describe('P2 — Pilot Blockers', () => {
         await expect(page.getByText(/security audit|audit log|login activity/i).first()).toBeVisible({ timeout: 20000 });
     });
 
-    test('package.json version is 3.7.0', async ({ page }) => {
+    test('package.json version is 3.7.1', async ({ page }) => {
         const vRes = await page.request.get(`${API}/version`).catch(() => null);
         if (vRes && vRes.ok()) {
             const body = await vRes.json().catch(() => ({}));
-            if (body.version) expect(body.version).toBe('3.7.0');
+            if (body.version) expect(body.version).toBe('3.7.1');
         }
         expect(true).toBeTruthy();
     });

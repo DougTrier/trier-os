@@ -298,5 +298,5 @@ Status: PASS / FAIL
 
 ## Current Version
 
-v3.7.0 — See CHANGELOG.md and ROADMAP.md for history.
+v3.7.1 — See CHANGELOG.md and ROADMAP.md for history.
 Completed roadmaps and task lists archived in References/.
