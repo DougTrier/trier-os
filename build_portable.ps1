@@ -118,6 +118,8 @@ Set-Location $BUILD
 & npm install --production --ignore-scripts 2>&1 | Select-String "added" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  Rebuilding native modules..."
 & npm rebuild better-sqlite3 2>&1 | Select-String "better-sqlite3" | ForEach-Object { Write-Host "  $_" }
+Write-Host "  Installing vite for Live Studio deploy pipeline..."
+& npm install --no-save vite @vitejs/plugin-react 2>&1 | Select-String "added" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 6: Bundle Node.js

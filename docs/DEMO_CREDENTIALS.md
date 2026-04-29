@@ -47,7 +47,7 @@ The following accounts are pre-seeded for testing role-based access control (RBA
 3. **LOTO Permits** (`/underwriter` → LOTO tab) — Digital lockout/tagout with audit trail.
 4. **Corporate Analytics** (`/corp-analytics`) — Executive financial intelligence aggregated across all plants.
 5. **SOP Library** (`/procedures`) — Standard Operating Procedures with AI generation.
-6. **Live Studio** (Settings → About → Go to Code) — The embedded Monaco IDE.
+6. **Live Studio** (Settings → About → Go to Code) — The embedded Monaco IDE. Available on source and ZIP portable installs only; disabled in the EXE and MSI installers.
 
 ---
 

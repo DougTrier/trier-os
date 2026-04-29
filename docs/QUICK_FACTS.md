@@ -70,6 +70,8 @@ A static UX analyzer that calculates the exact financial "wrench-time" cost of U
 ### The Live Studio IDE
 An embedded Monaco-based code editor (the same engine powering VS Code) that allows authorized Creator-role operators to write, sandbox, and hot-reload source code directly inside the running production application—without external servers or deployment pipelines.
 
+> **Availability:** Live Studio is active on **source installations** (`git clone` + `npm install`) and the **ZIP portable build**. It is disabled in the **EXE and MSI installers** (Electron-packaged builds harden the IDE off for production deployments).
+
 ### Human Airgap Security
 All AI assistance is architecturally decoupled from the plant network and strictly human-mediated. The system enforces a hard security boundary ensuring no AI model has autonomous write access to plant data.
 

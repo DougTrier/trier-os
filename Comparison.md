@@ -119,6 +119,8 @@ A static UX analyzer that calculates the financial "wrench-time" cost of UI chan
 ### 4.3 The Live Studio IDE
 An embedded Monaco-based code editor (the engine powering VS Code) that allows authorized Creator-role operators to write, sandbox, and hot-reload source code directly inside the running production application. There is no external deployment pipeline, no Jenkins job, no CI/CD queue. Authorized personnel modify the system from within the system, with every deploy logged to an append-only `StudioDeployLedger`.
 
+> **Install method note:** Live Studio is available on **source installations** (`git clone` + `npm install`) and the **ZIP portable build** — both run Node.js directly without the Electron wrapper. It is **not available in the EXE or MSI installers**, which are Electron-packaged builds that disable the IDE for production hardening.
+
 ### 4.4 The Human Airgap Security Model
 AI assistance is architecturally decoupled from operational plant data writes. The AI inference layer has no direct database handle to operational tables — it cannot autonomously create work orders, close permits, trigger scan state transitions, or bypass role-based access control on the operational write path. Every AI recommendation on the operational path requires a human to explicitly trigger the corresponding authenticated API call. This is an architectural constraint enforced in code, not a policy.
 
