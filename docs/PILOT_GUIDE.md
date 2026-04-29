@@ -51,13 +51,15 @@ If someone is telling you Trier OS will replace your ERP, they are wrong.
 
 ## 4. How do I try it safely?
 
-The system ships with three demo accounts that give you a realistic picture of what each role sees. No production data. No risk. Nothing gets configured on your actual plant until you say so.
+On first launch, Trier OS generates a secure password for the `creator` admin account and saves it to a file called `first_login.txt` — it opens automatically in Notepad. Log in with that, set a new password, and you're in.
 
-| Account | What it shows you |
-|---|---|
-| `ghost_admin` | Full plant administration — setup, user management, reporting |
-| `ghost_tech` | The technician experience — scanning, work orders, safety permits |
-| `ghost_exec` | Cross-plant analytics and dashboards — what leadership sees |
+From there, the system ships with pre-built demo accounts that show you exactly what each role sees. No production data. No risk. Nothing gets configured on your actual plant until you say so.
+
+| Account | Password | What it shows you |
+|---|---|---|
+| `demo_maint_mgr` | `TrierDemo2026!` | Maintenance manager — shift oversight, backlog, reports |
+| `demo_tech` | `TrierDemo2026!` | Technician experience — scanning, work orders, safety permits |
+| `demo_plant_mgr` | `TrierDemo2026!` | Plant manager — single-plant view, dashboards |
 
 Log in with any of these accounts and use the system as aggressively as you want. Create work orders. Walk through a LOTO permit. Pull a quality inspection. Look at the maintenance backlog. None of it touches real data.
 
