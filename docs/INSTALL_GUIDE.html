@@ -692,6 +692,13 @@
         <h4>Launch Trier OS</h4>
         <p>Look for the <strong>Trier OS</strong> icon on your Desktop or in the Start Menu. Double-click it to launch.</p>
         <p>The app will open — on first launch it will set up the databases automatically. This takes about 30 seconds. Wait for the login screen to appear.</p>
+        <div class="callout warning">
+          <div class="callout-icon">📱</div>
+          <div class="callout-body">
+            <strong>Plant floor devices need HTTPS to scan.</strong>
+            <p>The Trier OS desktop app opens on this machine automatically. For phones, tablets, and Zebra scanners on the plant LAN, direct them to <code>https://YOUR-SERVER-IP:1938</code> — mobile browsers require HTTPS for camera and barcode scan access.</p>
+          </div>
+        </div>
         <div class="callout success">
           <div class="callout-icon">✅</div>
           <div class="callout-body">
@@ -744,6 +751,13 @@
       <div class="step-content">
         <h4>Launch Trier OS</h4>
         <p>After install, launch from the Start Menu or run <code>Trier OS.exe</code> from the install folder. On first launch, databases are set up automatically.</p>
+        <div class="callout warning">
+          <div class="callout-icon">📱</div>
+          <div class="callout-body">
+            <strong>Plant floor devices need HTTPS to scan.</strong>
+            <p>For phones, tablets, and Zebra scanners on the plant LAN, direct them to <code>https://YOUR-SERVER-IP:1938</code> — mobile browsers require HTTPS for camera and barcode scan access.</p>
+          </div>
+        </div>
         <div class="callout success">
           <div class="callout-icon">✅</div>
           <div class="callout-body">
@@ -800,6 +814,14 @@
       <div class="step-content">
         <h4>Launch Trier OS</h4>
         <p>Double-click <code>Trier OS.bat</code> to launch. A console window will open showing the server log — leave it running. On first launch, a text file with your login credentials will open automatically in Notepad.</p>
+        <p>Once running, open your browser on this machine and go to <strong>http://localhost:3000</strong>.</p>
+        <div class="callout warning">
+          <div class="callout-icon">📱</div>
+          <div class="callout-body">
+            <strong>Accessing from a phone, tablet, or Zebra scanner?</strong>
+            <p>Use <code>https://YOUR-SERVER-IP:1938</code> instead of port 3000. Mobile browsers require HTTPS for camera and barcode scan access. Accept the self-signed certificate warning on first visit. Your server's IP address is shown in the console window.</p>
+          </div>
+        </div>
         <div class="callout warning">
           <div class="callout-icon">⚠️</div>
           <div class="callout-body">
@@ -934,6 +956,13 @@
             <p>Trier OS runs as long as this terminal is open. Press <strong>Ctrl + C</strong> to stop. Run <code>npm run dev:full</code> again to restart.</p>
           </div>
         </div>
+        <div class="callout warning">
+          <div class="callout-icon">📱</div>
+          <div class="callout-body">
+            <strong>Testing scan from a phone, tablet, or Zebra scanner?</strong>
+            <p>Use <code>https://YOUR-SERVER-IP:1938</code> — not port 5173. Mobile browsers block camera access on plain HTTP. Accept the self-signed certificate warning on first visit. Your server IP is shown in the terminal output when Trier OS starts.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -948,6 +977,14 @@
   <h2>First Login</h2>
 
   <p>Whether you used the EXE, MSI, ZIP, or source install — this step is the same for everyone. You should be looking at the Trier OS login screen.</p>
+
+  <div class="callout warning">
+    <div class="callout-icon">📱</div>
+    <div class="callout-body">
+      <strong>Plant floor devices (phones, tablets, Zebra scanners) need HTTPS to scan.</strong>
+      <p>Open <code>https://YOUR-SERVER-IP:1938</code> on any device that needs to use the barcode or camera scan features. Plain HTTP blocks camera access in mobile browsers. Accept the self-signed certificate warning on first visit — this is expected for on-premise deployments without a signed TLS certificate.</p>
+    </div>
+  </div>
 
   <div class="steps">
     <div class="step">

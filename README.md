@@ -284,6 +284,8 @@ npm run dev:full       # starts API + UI
 
 Open `http://localhost:5173` — on first boot a `data/first_login.txt` file is created with your `creator` account credentials. Log in with those, set a new password, then use `demo_tech` / `TrierDemo2026!` (or any `demo_*` account) to explore.
 
+> **Testing scan from a phone or tablet?** Use `https://YOUR-SERVER-IP:1938` instead. Mobile browsers block camera access on plain HTTP — HTTPS is required. Accept the self-signed certificate warning on first visit.
+
 ### Keeping Trier OS Updated
 ```bash
 git pull origin main && npm install
