@@ -16,7 +16,7 @@ questions, you'll land it in 4:30. That's fine — better short than rushed.
 Do this before anyone is in the room.
 
 1. **Server is running.** `node server/index.js` from the project root. Wait for
-   `Trier OS server listening on port 5000` (or your configured port) in the terminal.
+   `Trier OS server listening on port 3000` (or your configured port) in the terminal.
    Leave that terminal visible but minimized — you may want it for step 8.
 
 2. **Plant is seeded.** The Demo Plant 1 database (`data/Demo_Plant_1.db`) must exist and
@@ -43,12 +43,15 @@ Do this before anyone is in the room.
 
 | Account | Password | Role |
 |---|---|---|
-| `ghost_admin` | `Trier3652!` | Full admin — use for most of the demo |
-| `ghost_tech` | `Trier3292!` | Technician — use for step 2 onward if you want to show the floor-level view |
-| `ghost_exec` | `Trier7969!` | Executive — use if you want to show Corporate Analytics at the end |
+| `creator` | Set by you on first boot | Full access across all plants — use for most of the demo |
+| `demo_maint_mgr` | `TrierDemo2026!` | Maintenance manager — if you want to show the manager view |
+| `demo_tech` | `TrierDemo2026!` | Technician — if you want to show the floor-level view |
 
-For a standard 5-minute run, stay on `ghost_admin` the whole time. Role-switching mid-demo
+For a standard 5-minute run, stay on `creator` the whole time. Role-switching mid-demo
 adds context you don't have time to explain.
+
+> **Note:** `demo_*` accounts are scoped to the `examples` plant. Use `creator` when
+> demoing against Demo Plant 1 or any real plant data.
 
 ---
 
@@ -58,7 +61,7 @@ adds context you don't have time to explain.
 
 **What you do:**
 Navigate to the app root. The login screen is the first thing the audience sees.
-Type `ghost_admin` into the username field. Type `Trier3652!` into the password field.
+Type `creator` into the username field. Type your password into the password field.
 Click **Log In**.
 
 **What to say:**
