@@ -140,6 +140,30 @@ if (!creatorAcctExists) {
     console.log(`║  Password: ${creatorPassword.padEnd(46)}║`);
     console.log('║  ⚠️  SAVE THIS PASSWORD — it will not be shown again!       ║');
     console.log('╚══════════════════════════════════════════════════════════════╝');
+
+    // Write credentials to a file so all install types (EXE, MSI, ZIP) can
+    // show the password to the user. The Electron shell opens this automatically;
+    // the portable BAT install opens it via notepad. Delete after first login.
+    try {
+        const firstLoginPath = path.join(dataDir, 'first_login.txt');
+        const content = [
+            'Trier OS - First Login Credentials',
+            '====================================',
+            '',
+            '  Username : creator',
+            `  Password : ${creatorPassword}`,
+            '',
+            '  IMPORTANT: Save this password -- it will not be shown again.',
+            '  Delete this file after you have logged in and changed your',
+            '  password in Settings > My Account.',
+            '',
+            `  Generated: ${new Date().toISOString()}`,
+            '',
+        ].join('\r\n');
+        fs.writeFileSync(firstLoginPath, content, 'utf8');
+    } catch (e) {
+        console.error('[Auth] Could not write first_login.txt:', e.message);
+    }
 }
 
 // Ensure creator account always has full permissions

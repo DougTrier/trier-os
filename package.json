@@ -62,7 +62,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@zxing/library": "^0.21.3",
     "bcryptjs": "^3.0.2",
-    "better-sqlite3": "^11.9.1",
+    "better-sqlite3": "^12.9.0",
     "cesium": "^1.139.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

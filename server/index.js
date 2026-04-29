@@ -2101,6 +2101,17 @@ const _httpServer = app.listen(PORT, '0.0.0.0', async () => {
     // headersTimeout, so we don't need to manage that separately.
     _httpServer.requestTimeout = 2 * 60 * 1000;
     _serverReady = true; // Signal to Electron poller that boot is complete
+
+    // Open first-login credential file for portable installs (ZIP/BAT).
+    // Electron opens it itself via shell.openPath after startEmbeddedServer resolves.
+    if (process.env.ELECTRON_EMBEDDED !== 'true') {
+        const firstLoginPath = path.join(_dataDir, 'first_login.txt');
+        if (fs.existsSync(firstLoginPath)) {
+            const { exec } = require('child_process');
+            exec(`start "" notepad.exe "${firstLoginPath}"`);
+        }
+    }
+
     // Use the same smart detection as the API endpoint
     const os = require('os');
     const adminIp = _getAdminOverrideIp();

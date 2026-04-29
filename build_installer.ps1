@@ -38,6 +38,16 @@ Set-Location $BUILD_DIR
 & cmd /c "npm install 2>&1" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  OK - All dependencies installed." -ForegroundColor Green
 
+# -- Step 2b: Rebuild native modules for Electron's Node.js ABI --
+# better-sqlite3 is a native module; system Node.js and Electron embed different
+# Node.js ABIs so the module must be recompiled against the Electron headers.
+Write-Host ""
+Write-Host "[2b/5] Rebuilding native modules for Electron..." -ForegroundColor Yellow
+
+Set-Location $BUILD_DIR
+& cmd /c "npx --yes @electron/rebuild 2>&1" | ForEach-Object { Write-Host "  $_" }
+Write-Host "  OK - Native modules rebuilt for Electron." -ForegroundColor Green
+
 # -- Step 3: Build frontend (needs vite = dev dependency) --
 Write-Host ""
 Write-Host "[3/5] Building frontend (vite build)..." -ForegroundColor Yellow

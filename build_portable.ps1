@@ -57,7 +57,22 @@ if (Test-Path "$SOURCE\eng.traineddata") {
 }
 Copy-Item "$SOURCE\package.json" "$BUILD\" -Force
 Copy-Item "$SOURCE\package-lock.json" "$BUILD\" -Force
-Copy-Item "$SOURCE\.env" "$BUILD\" -Force
+# Generate fresh secrets — never ship dev keys or personal API credentials
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$jwtBytes = New-Object byte[] 32
+$hubBytes  = New-Object byte[] 64
+$rng.GetBytes($jwtBytes)
+$rng.GetBytes($hubBytes)
+$jwtSecret = ($jwtBytes | ForEach-Object { $_.ToString('x2') }) -join ''
+$hubSecret  = ($hubBytes | ForEach-Object { $_.ToString('x2') }) -join ''
+@"
+JWT_SECRET=$jwtSecret
+HUB_TOKEN_SECRET=$hubSecret
+PORT=3000
+NODE_ENV=production
+ALLOWED_ORIGINS=http://localhost:3000
+"@ | Set-Content -Path "$BUILD\.env" -Encoding UTF8
+Write-Host "  Fresh secrets generated (dev keys excluded)" -ForegroundColor Green
 Copy-Item "$SOURCE\index.html" "$BUILD\" -Force
 Copy-Item "$SOURCE\vite.config.js" "$BUILD\" -Force
 Write-Host "  config files"
@@ -65,7 +80,7 @@ Write-Host "  OK" -ForegroundColor Green
 
 # Step 4: Copy ALL databases with full data
 Write-Host "[4/7] Copying databases (FULL DATA)..." -ForegroundColor Yellow
-robocopy "$SOURCE\data" "$BUILD\data" /MIR /NFL /NDL /NJH /NJS /NC /NS /XF "*.db-shm" "*.db-wal" "*.IMPORT_SNAP_*" "*.RESET_SNAP_*" | Out-Null
+robocopy "$SOURCE\data" "$BUILD\data" /MIR /NFL /NDL /NJH /NJS /NC /NS /XF "*.db-shm" "*.db-wal" "*.IMPORT_SNAP_*" "*.RESET_SNAP_*" "trier_auth.db" | Out-Null
 
 # Verify DBs are not empty
 $dbCount = @(Get-ChildItem "$BUILD\data\*.db" -ErrorAction SilentlyContinue).Count

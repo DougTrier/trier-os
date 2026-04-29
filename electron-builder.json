@@ -36,7 +36,8 @@
         "!**/*.db-shm",
         "!**/*.db-wal",
         "!**/*SNAP*",
-        "!backups/**/*"
+        "!backups/**/*",
+        "!trier_auth.db"
       ]
     }
   ],

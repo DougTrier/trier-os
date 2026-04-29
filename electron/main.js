@@ -163,27 +163,31 @@ function startEmbeddedServer() {
         // ELECTRON_RUN_AS_NODE=1 makes the child process behave as plain Node.js
         // Without this, the packaged Electron exe ignores the script argument and re-runs main.js
         
-        // Generate or load a persistent JWT secret for the embedded server
-        let jwtSecret;
+        // Generate or load persistent secrets for the embedded server.
+        // JWT_SECRET signs session tokens; HUB_TOKEN_SECRET signs LAN-hub tokens
+        // stored in localStorage — they MUST be distinct (security rule H-8).
+        const crypto = require('crypto');
+        let jwtSecret, hubTokenSecret;
         try {
             const configFile = path.join(APP_DATA_DIR, 'config.json');
-            if (fs.existsSync(configFile)) {
-                const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-                jwtSecret = config.jwtSecret;
+            let config = fs.existsSync(configFile)
+                ? JSON.parse(fs.readFileSync(configFile, 'utf8'))
+                : {};
+            if (!config.jwtSecret) {
+                config.jwtSecret = crypto.randomBytes(32).toString('hex');
+                diagLog('[STARTUP] Generated new JWT secret');
             }
-            if (!jwtSecret) {
-                // Generate a cryptographically secure secret on first launch
-                const crypto = require('crypto');
-                jwtSecret = crypto.randomBytes(32).toString('hex');
-                const config = fs.existsSync(configFile) ? JSON.parse(fs.readFileSync(configFile, 'utf8')) : {};
-                config.jwtSecret = jwtSecret;
-                fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
-                diagLog(`[STARTUP] Generated new JWT secret and saved to config`);
+            if (!config.hubTokenSecret || config.hubTokenSecret === config.jwtSecret) {
+                config.hubTokenSecret = crypto.randomBytes(64).toString('hex');
+                diagLog('[STARTUP] Generated new hub token secret');
             }
+            jwtSecret = config.jwtSecret;
+            hubTokenSecret = config.hubTokenSecret;
+            fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
         } catch (e) {
-            // Fallback: use a static secret if config file fails
-            jwtSecret = 'trier-os-embedded-desktop-secret-' + Date.now();
-            diagLog(`[STARTUP] JWT secret fallback used: ${e.message}`);
+            jwtSecret = 'trier-os-embedded-jwt-' + Date.now();
+            hubTokenSecret = 'trier-os-embedded-hub-' + (Date.now() + 1);
+            diagLog(`[STARTUP] Secret generation fallback: ${e.message}`);
         }
 
         const env = {
@@ -195,7 +199,8 @@ function startEmbeddedServer() {
             ELECTRON_EMBEDDED: 'true',
             DISABLE_LIVE_STUDIO: 'true',
             DATA_DIR: dataDir,
-            JWT_SECRET: jwtSecret
+            JWT_SECRET: jwtSecret,
+            HUB_TOKEN_SECRET: hubTokenSecret
         };
 
         serverProcess = spawn(process.execPath, [serverScript], {
@@ -528,6 +533,12 @@ app.whenReady().then(async () => {
             console.log('[ELECTRON] Starting embedded server...');
             await startEmbeddedServer();
             console.log('[ELECTRON] �S& Server started successfully');
+            // Open first-login credential file so the user can see their password
+            const { shell } = require('electron');
+            const firstLoginPath = path.join(getDataDir(), 'first_login.txt');
+            if (fs.existsSync(firstLoginPath)) {
+                shell.openPath(firstLoginPath);
+            }
         } catch (err) {
             console.error('[ELECTRON] �R Failed to start server:', err.message);
             dialog.showErrorBox(
