@@ -533,10 +533,13 @@ app.whenReady().then(async () => {
             console.log('[ELECTRON] Starting embedded server...');
             await startEmbeddedServer();
             console.log('[ELECTRON] �S& Server started successfully');
-            // Open first-login credential file so the user can see their password
+            // Open first-login credential file so the user can see their password.
+            // Only open once — sentinel flag prevents re-opening on subsequent boots.
             const { shell } = require('electron');
             const firstLoginPath = path.join(getDataDir(), 'first_login.txt');
-            if (fs.existsSync(firstLoginPath)) {
+            const firstLoginShownPath = path.join(getDataDir(), 'first_login_shown.flag');
+            if (fs.existsSync(firstLoginPath) && !fs.existsSync(firstLoginShownPath)) {
+                fs.writeFileSync(firstLoginShownPath, new Date().toISOString(), 'utf8');
                 shell.openPath(firstLoginPath);
             }
         } catch (err) {
