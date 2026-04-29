@@ -2,18 +2,24 @@
 
 ## First Boot — Creator Account
 
-On first boot, Trier OS automatically generates a secure random password for the `creator` account and prints it to the server console:
+On first boot, Trier OS automatically generates a secure random password for the `creator` account and saves it to **`data/first_login.txt`**.
+
+- **EXE / MSI installs:** The file opens automatically in Notepad when the app first starts.
+- **ZIP / Portable:** The file opens automatically in Notepad when the BAT server first starts.
+- **From Source:** Look for `data/first_login.txt` in your project folder.
 
 ```
-╔══════════════════════════════════════════════════════════════╗
-║  🔑  Creator System Admin Account Created                   ║
-║  Username: creator                                           ║
-║  Password: <randomly generated>                              ║
-║  ⚠️  SAVE THIS PASSWORD — it will not be shown again!       ║
-╚══════════════════════════════════════════════════════════════╝
+Trier OS - First Login Credentials
+====================================
+
+  Username : creator
+  Password : <randomly generated>
+
+  IMPORTANT: Save this password -- it will not be shown again.
+  Delete this file after you have logged in and changed your password.
 ```
 
-**Save this password immediately.** It will not be shown again. If lost, delete `data/trier_auth.db` and restart the server to regenerate.
+**Save this password before closing the file.** You will be required to set a new password on first login. After doing so, delete `first_login.txt`.
 
 The `creator` account has full god-mode access across all modules and all plant sites.
 
@@ -47,4 +53,4 @@ The following accounts are pre-seeded for testing role-based access control (RBA
 
 ## Resetting Credentials
 
-If you lose the `creator` password, delete `data/trier_auth.db` and restart the server. A new password will be generated and printed to the console on next boot.
+If you lose the `creator` password, delete `data/trier_auth.db` and restart the server. A new password will be generated and saved to `data/first_login.txt` on next boot.

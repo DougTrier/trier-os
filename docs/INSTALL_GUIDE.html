@@ -749,7 +749,7 @@
       <div class="step-num amber">2</div>
       <div class="step-content">
         <h4>Open the extracted folder</h4>
-        <p>Navigate into the folder that was created. You should see a file called <code>TrierOS.exe</code> (or similar) inside.</p>
+        <p>Navigate into the folder that was created. You should see a file called <code>Trier OS.bat</code> along with <code>server/</code>, <code>data/</code>, and <code>runtime/</code> folders.</p>
       </div>
     </div>
 
@@ -757,7 +757,7 @@
       <div class="step-num amber">3</div>
       <div class="step-content">
         <h4>Launch Trier OS</h4>
-        <p>Double-click <code>TrierOS.exe</code> to launch. On first run, Trier OS will create a <code>data/</code> folder in the same directory and set up the databases. This takes about 30 seconds.</p>
+        <p>Double-click <code>Trier OS.bat</code> to launch. A console window will open showing the server log — leave it running. On first launch, a text file with your login credentials will open automatically in Notepad.</p>
         <div class="callout warning">
           <div class="callout-icon">⚠️</div>
           <div class="callout-body">
@@ -911,29 +911,16 @@
     <div class="step">
       <div class="step-num blue">1</div>
       <div class="step-content">
-        <h4>Log in with a demo account</h4>
-        <p>Use one of the pre-built accounts below. <strong>Start with Admin</strong> to see everything the platform can do.</p>
-
-        <div class="creds">
-          <div class="creds-row header">
-            <span>Username</span>
-            <span>Password</span>
-            <span>What You'll See</span>
-          </div>
-          <div class="creds-row">
-            <span><code>ghost_admin</code></span>
-            <span><code>Trier3652!</code></span>
-            <span><span class="role-badge role-admin">Full Access — Everything</span></span>
-          </div>
-          <div class="creds-row">
-            <span><code>ghost_tech</code></span>
-            <span><code>Trier3292!</code></span>
-            <span><span class="role-badge role-tech">Technician View</span></span>
-          </div>
-          <div class="creds-row">
-            <span><code>ghost_exec</code></span>
-            <span><code>Trier7969!</code></span>
-            <span><span class="role-badge role-exec">Executive Analytics</span></span>
+        <h4>Find your credentials</h4>
+        <p>On first launch, Trier OS automatically generates a secure password for the <code>creator</code> account and saves it to a file called <strong><code>first_login.txt</code></strong>.</p>
+        <p><strong>EXE / MSI:</strong> The file opens automatically in Notepad when the app starts for the first time.</p>
+        <p><strong>ZIP / Portable:</strong> The file opens automatically in Notepad when the server starts for the first time.</p>
+        <p><strong>From Source:</strong> Look for <code>data/first_login.txt</code> in your project folder.</p>
+        <div class="callout warning">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-body">
+            <strong>Save this password before closing the file.</strong>
+            <p>It will not be shown again. If you lose it, delete <code>data/trier_auth.db</code> and restart — a new password will be generated.</p>
           </div>
         </div>
       </div>
@@ -942,13 +929,68 @@
     <div class="step">
       <div class="step-num blue">2</div>
       <div class="step-content">
+        <h4>Log in as <code>creator</code></h4>
+        <p>On the login screen, enter:</p>
+        <div class="creds">
+          <div class="creds-row header">
+            <span>Username</span>
+            <span>Password</span>
+          </div>
+          <div class="creds-row">
+            <span><code>creator</code></span>
+            <span>From your <code>first_login.txt</code> file</span>
+          </div>
+        </div>
+        <p style="margin-top:10px;">You will be prompted to set a new password immediately. Choose something strong and save it.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">3</div>
+      <div class="step-content">
         <h4>Select a plant</h4>
         <p>After logging in you'll land on <strong>Mission Control</strong>. If prompted to select a plant, choose <strong>Demo Plant 1</strong>. This is the fully-populated demo environment with sample data.</p>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num blue">3</div>
+      <div class="step-num blue">4</div>
+      <div class="step-content">
+        <h4>Explore with demo accounts</h4>
+        <p>To explore different role perspectives without using the <code>creator</code> account, use the pre-built demo accounts:</p>
+        <div class="creds">
+          <div class="creds-row header">
+            <span>Username</span>
+            <span>Password</span>
+            <span>Role</span>
+          </div>
+          <div class="creds-row">
+            <span><code>demo_tech</code></span>
+            <span><code>TrierDemo2026!</code></span>
+            <span><span class="role-badge role-tech">Technician</span></span>
+          </div>
+          <div class="creds-row">
+            <span><code>demo_operator</code></span>
+            <span><code>TrierDemo2026!</code></span>
+            <span><span class="role-badge role-tech">Operator</span></span>
+          </div>
+          <div class="creds-row">
+            <span><code>demo_maint_mgr</code></span>
+            <span><code>TrierDemo2026!</code></span>
+            <span><span class="role-badge role-admin">Maintenance Manager</span></span>
+          </div>
+          <div class="creds-row">
+            <span><code>demo_plant_mgr</code></span>
+            <span><code>TrierDemo2026!</code></span>
+            <span><span class="role-badge role-exec">Plant Manager</span></span>
+          </div>
+        </div>
+        <p style="margin-top:10px;">Demo accounts are scoped to the <code>examples</code> database and cannot access real plant data.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num blue">5</div>
       <div class="step-content">
         <h4>Explore!</h4>
         <p>You're in. Here are some great places to start:</p>
@@ -1004,7 +1046,7 @@
       <div class="step-num">?</div>
       <div class="step-content">
         <h4>Login fails — "Invalid credentials"</h4>
-        <p>Make sure the app finished its first-run database setup (wait for the login screen to fully appear). Check you're typing the username in all <strong>lowercase</strong> with no spaces. Passwords are case-sensitive.</p>
+        <p>Make sure you are using the password from <code>first_login.txt</code> — not a password you chose. If the file did not open automatically, look for it in the <code>data/</code> folder inside your install directory. Usernames are all <strong>lowercase</strong>, passwords are case-sensitive.</p>
       </div>
     </div>
     <div class="step">
