@@ -5,7 +5,7 @@ It is not a claim of SOC2 certification. It is a factual inventory of controls i
 organized so that security reviewers and enterprise evaluators can assess posture without
 reading source code.
 
-All controls are implemented in the listed files. Line numbers reference v3.6.1.
+All controls are implemented in the listed files. Line numbers reference v3.7.1.
 
 ---
 
@@ -133,7 +133,7 @@ check, constraint certification with SHA-256 proof receipts. All decisions appen
 **Audit trail middleware**
 `server/middleware/auditTrail.js` guarantees at least one audit record for every successful
 POST/PUT/PATCH/DELETE request, even if the route handler doesn't explicitly call `logAudit`.
-Coverage verified across 67 DELETE endpoints and 41 route files (v3.6.1).
+Coverage verified across 67 DELETE endpoints and 41 route files (v3.7.1).
 
 Each record includes: `UserID`, `Username`, `Action`, `PlantID`, `Details` (JSON), `Severity`,
 `IPAddress`, `Timestamp`. Written to `AuditLog` in `trier_logistics.db`. Secondary filesystem

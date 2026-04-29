@@ -52,7 +52,7 @@ When you first launch Trier OS, the **Plant Location Selector** in the top navig
 
 ## Going Live
 
-1. Log in as `ghost_admin`
+1. Log in as `creator` (credentials in `data/first_login.txt` on first boot)
 2. Navigate to **Settings → Edit Locations**
 3. Delete **Plant 1** and **Plant 2**
 4. Click **+ Add New Plant** and enter your facility name

@@ -663,5 +663,5 @@ other workflow is started.
 
 ---
 
-*Trier OS v3.6.2 — docs/GUIDED_EXECUTION_DESIGN.md*  
+*Trier OS v3.7.1 — docs/GUIDED_EXECUTION_DESIGN.md*  
 *© 2026 Doug Trier — Released under the MIT License*

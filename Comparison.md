@@ -1,7 +1,7 @@
 # Trier OS — Executive Assessment & Competitive Analysis
 **Prepared for:** C-Suite & Stakeholders  
 **Date:** April 26, 2026  
-**Version Assessed:** 3.6.2  
+**Version Assessed:** 3.7.1  
 **Classification:** Strategic — Internal Distribution  
 
 ---
@@ -176,7 +176,7 @@ Trier OS enforces 13 formal architectural invariants — correctness guarantees 
 | I-12 | Explain cache never serves cross-plant state | **PASS** |
 | I-13 | Artifact availability is explicitly labeled | **PASS** |
 
-**Runtime verification:** `GET /api/invariants/report` returns `overallStatus: PASS` across all invariants on v3.6.2. The invariant system is not a policy — it is enforced in code and verifiable on demand.
+**Runtime verification:** `GET /api/invariants/report` returns `overallStatus: PASS` across all invariants on v3.7.1. The invariant system is not a policy — it is enforced in code and verifiable on demand.
 
 The open gaps are documented with exact file locations and line numbers. This level of formal correctness reasoning is unprecedented in the CMMS/EAM market.
 
@@ -293,7 +293,7 @@ Trier OS was designed and built by a single developer using Advanced Agentic Cod
 |---|---|
 | Development Start | March 7, 2026 |
 | Public Open-Source Release | April 9, 2026 |
-| Current Version | 3.6.2 (April 26, 2026) |
+| Current Version | 3.7.1 (April 29, 2026) |
 | **Total Build Time** | **37 days** |
 | Core Application Logic | 158,221 lines (JS/JSX) |
 | Backend Route Files | 108 files |
@@ -327,7 +327,7 @@ For a C-suite or technical evaluator assessing Trier OS for deployment:
 
 **Week 1 — Pilot (< 1 hour to stand up)**
 - Download installer from [github.com/DougTrier/trier-os](https://github.com/DougTrier/trier-os)
-- Log in as `ghost_tech`, `ghost_admin`, `ghost_exec` to explore the three primary personas
+- Log in as `creator` (credentials in `first_login.txt`), then use `demo_tech`, `demo_maint_mgr`, `demo_plant_mgr` (`TrierDemo2026!`) to explore the primary personas
 - Scan mock assets, walk through a LOTO permit, pull an analytics dashboard
 
 **Week 2 — Proof of Concept**
@@ -359,7 +359,7 @@ For organizations with unreliable Wi-Fi, air-gapped OT security requirements, fl
 
 ---
 
-*Trier OS v3.6.2 — Assessed April 26, 2026*  
+*Trier OS v3.7.1 — Assessed April 29, 2026*  
 *© 2026 Doug Trier — Released under the MIT License*  
 *Repository: [github.com/DougTrier/trier-os](https://github.com/DougTrier/trier-os)*  
 *Documentation: `G:\Trier OS\docs\`*

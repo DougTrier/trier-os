@@ -282,7 +282,7 @@ npm run seed           # creates databases with demo data
 npm run dev:full       # starts API + UI
 ```
 
-Open `http://localhost:5173` and log in with `ghost_admin` / `Trier3652!`
+Open `http://localhost:5173` — on first boot a `data/first_login.txt` file is created with your `creator` account credentials. Log in with those, set a new password, then use `demo_tech` / `TrierDemo2026!` (or any `demo_*` account) to explore.
 
 ### Keeping Trier OS Updated
 ```bash
