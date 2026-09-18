@@ -1,4 +1,4 @@
-﻿{
+{
   ".aboutManual": "关于 & 手册",
   ".accessThePlatformOperations": "访问平台运营情报手册、培训场景和系统积分",
   ".action": "操作",
@@ -184,7 +184,7 @@
   "about.goThere": "去那里",
   "about.goToCode": "转到代码",
   "about.industrialEngineering": "工业工程",
-  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.1",
+  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.2",
   "about.manualTitle": "Trier OS — 运营情报手册",
   "about.mobileInfra": "移动基础设施",
   "about.namePlaceholder": "姓名",
@@ -7143,7 +7143,7 @@
   "printEngine.totalOperatingSpend": "总运营支出：",
   "printEngine.trierOs": "特里尔操作系统",
   "printEngine.trierOsEnterpriseMaintenancePlatform": "Trier OS——企业维护平台",
-  "printEngine.v1126gold": "v3.7.1",
+  "printEngine.v1126gold": "v3.7.2",
   "printEngine.version": "版本",
   "priority.critical": "紧急",
   "priority.emergency": "紧急",

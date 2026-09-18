@@ -1,3 +1,5 @@
+> Historical phase specification/review. Proposed behavior, acceptance boxes and version samples below are design history, not a current implementation guarantee or new feature roadmap. Current prepared 3.7.2 implementation and the established remediation evidence win; see [architecture](../ARCHITECTURE.md), [validation limits](../SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](../MAINTENANCE.md).
+
 # Failure Domain Isolation — Architecture v1
 > Trier OS P2 Pilot Blocker · Reviewed before any safety-critical plant deployment
 
@@ -89,8 +91,8 @@ Each subsystem is designed to fail without cascading:
 
 ## Acceptance Criteria Status
 
-- [x] Zero plant impact from any Trier OS failure — Control Plane independent by design
-- [x] No cascading failures across subsystems — each engine wrapped, non-blocking
+- [x] PLCs remain independent; operations-record availability can still be affected — Control Plane independent by design
+- [x] Failure isolation design; not proof of every failure path — each engine wrapped, non-blocking
 - [x] All failures result in predictable degraded state — modes documented + enforced
 - [ ] Full process isolation per subsystem — future milestone (NATS + containerization)
 - [ ] Failure injection test suite — see `Failure_Test_Report_v1.md`

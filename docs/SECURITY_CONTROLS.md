@@ -1,251 +1,61 @@
-# Trier OS — Security Controls Reference
-
-This document maps Trier OS security implementations to SOC2 Trust Service Criteria.
-It is not a claim of SOC2 certification. It is a factual inventory of controls in place,
-organized so that security reviewers and enterprise evaluators can assess posture without
-reading source code.
+# Trier OS security control inventory — 3.7.2
 
-All controls are implemented in the listed files. Line numbers reference v3.7.1.
+This source-based inventory uses SOC2-style categories for reviewer navigation. It is **not** SOC2 certification, an equivalence assessment or proof that every route/failure path satisfies a control. Current reviewed security maintenance is not yet committed/published. See [SECURITY.md](../SECURITY.md) for deployment policy.
 
----
+## Logical access and authentication
 
-## CC6 — Logical and Physical Access Controls
+| Control | Current implementation / limit |
+|---|---|
+| Session verification | `server/middleware/auth.js`: JWT signature/expiry, current user/TokenVersion, route and plant checks |
+| Browser credential handling | `server/routes/auth.js`: HttpOnly authToken cookie, SameSite=Lax, Secure on `req.secure`, 7-day absolute expiry |
+| Integration tokens | Appropriate routes can accept valid Bearer session JWTs; HA and API-key paths have separate controls |
+| Password hashing | `server/auth_db.js` / auth routes: bcrypt; fresh creator password is randomly generated, not a shared default |
+| Creator TOTP | Optional enrolled/enforced flow; 5-minute pre2fa challenge, dedicated completion, generic protected auth rejects challenge tokens |
+| Session invalidation | Applicable password/account changes advance TokenVersion; logout only clears cookie and does not revoke a copied token |
+| Hub token | Separate 24-hour localStorage token signed by HUB_TOKEN_SECRET; not a corporate API session |
+| User/plant roles and feature flags | `trier_auth.db`; UI tile availability is distinct from server authorization |
+| LDAP | Optional configured integration; validate intended mapping, transport and local fallback in the deployment |
 
-### CC6.1 — Access Restriction to Data and Systems
+HttpOnly does not prevent XSS from making authenticated requests. SameSite mitigates some cross-site requests, not every cross-origin/same-site case. Broad default LAN CORS is a browser policy, not authentication or network segmentation.
 
-**Parameterized queries (SQL injection prevention)**
-All database access uses `better-sqlite3` prepared statements. User input is never
-interpolated into SQL strings. Mass-assignment filtered via `server/utils/sql_sanitizer.js`,
-which validates payload keys against live `PRAGMA table_info()` before write.
+## Data and input boundaries
 
-**Plant scoping (multi-tenant isolation)**
-Every HTTP request carries an `x-plant-id` header validated by middleware before any route
-handler runs. The validated plant ID is stored in AsyncLocalStorage and used to resolve the
-correct SQLite database. It is never taken from `req.body`. Routes cannot access a different
-plant's data regardless of what the client sends.
-
-**Route-level authorization**
-`server/middleware/auth.js` enforces three layers before any route handler runs:
-1. JWT token validity and `tokenVersion` freshness check
-2. Enterprise path protection (IT Admin / Creator only for admin routes)
-3. Plant jail enforcement — non-admin users cannot write to plants they have no assigned role for
+Ordinary plant requests use validated AsyncLocalStorage context. Internal explicit DB selectors exist; unchecked external inputs must not be passed to them. Authorized staff cross-plant search/read is intentional within the organization. Shared logistics rows need route-specific role/plant/object checks. [Architecture](ARCHITECTURE.md).
 
-**Feature flags**
-Per-user capabilities (`CanImport`, `CanSensorConfig`, `CanViewAnalytics`, etc.) stored in
-`auth_db.sqlite`. Creator and IT Admin auto-granted all flags. Granular control for other roles.
+Public demo identities are server-confined to examples, with foreign/all-sites header/query/body rejection and a demo-context explicit-selector guard (`server/demo_scope.js`, middleware and database helper). `server/routes/floorplans.js` checks decoded plan IDs and actual nested-object owning plans. This is targeted verified scope, not a claim of exhaustive proof for every shared endpoint.
 
----
+Bound SQL values, validated dynamic identifiers and write-field allowlists are required by [server standards](../server/standards.md). Those standards do not justify declaring SQL injection impossible without review of the specific route.
 
-### CC6.2 — User Registration and Access Provisioning
+Static-IP administration requires authorized global IT Admin/Creator or selected-plant IT Admin. `server/network_config.js` validates host adapter inventory and IPv4 fields and invokes fixed executables with argument arrays, without a shell. Tests observe commands rather than modifying host networking.
 
-**Role-based access control (RBAC)**
-Eight roles: `technician`, `operator`, `manager`, `plant_manager`, `maintenance_manager`,
-`general_manager`, `it_admin`, `creator`. Defined in `server/middleware/auth.js`.
-Plant-specific role overrides stored in `UserPlantRoles` table — a user can be a technician
-at one plant and a manager at another.
+Floorplan rasters require PNG/JPEG/GIF/WebP signature checks and decoding (`server/upload_safety.js` and floorplan routes). Active/disguised formats are rejected, including SVG floorplans; use safe raster conversion. Shared active/unknown attachments are downloads with nosniff and sandbox headers; supported raster/PDF/media remains inline. Execution protection does not itself authenticate attachment URLs.
 
-**LDAP / Active Directory integration**
-`server/routes/ldap.js` supports full AD sync with configurable search filter (RFC 4515
-escaped), TLS, group-to-role mapping, and automatic user provisioning. LDAP failure falls
-back to local bcrypt auth. Protected system accounts (`admin`, `it_admin`, `trier`) always
-use local auth regardless of LDAP config.
+## Change control and observability
 
-**Session revocation via TokenVersion**
-Every JWT includes a `tokenVersion` claim matched against the current DB value on every
-request (`server/middleware/auth.js` lines 80–95). Password changes, role edits, and admin
-resets all increment `tokenVersion`, instantly invalidating all existing sessions for that
-user. There is no need to wait for JWT expiry.
+Live Studio is elevated optional development functionality. Disable it with DISABLE_LIVE_STUDIO=true in production; Electron sets this flag. Existing path/role controls and deploy ledgers are not permission to edit production code during maintenance or a guarantee of safe rollback.
 
-**JWT implementation**
-Signed with `JWT_SECRET` (64+ hex chars). 7-day expiry. Claims include `UserID`, `Username`,
-`globalRole`, `plantRoles`, `tokenVersion`, and feature flags. In production, server exits
-at boot if `JWT_SECRET` is missing, weak (< 32 chars), or set to a known placeholder value
-(`server/index.js` lines 65–96).
+Audit middleware and route-level logging provide attribution in `AuditLog` / domain ledgers within `trier_logistics.db`. Filesystem fallback and logging reduce silent failures; storage/permission failures still need monitoring. No absolute “audit can never be lost” or cryptographic tamper-proof guarantee is asserted. Gatekeeper records permit/change decisions and proof receipts for configured safety-critical paths; it does not certify legal compliance automatically.
 
----
+Use readiness/health diagnostics, audit records and pending/failed integration summaries alongside operator checks. Retry/outbox mechanisms are recovery controls, not universal exactly-once delivery guarantees.
 
-### CC6.3 — Authentication
+## Encryption, availability and deployment
 
-**Password hashing**
-bcrypt, 10 rounds. Applied to all user accounts including ghost/demo accounts in development.
-Creator account password is 16 random bytes (hex) generated per deployment — no default
-shared password (`server/auth_db.js` line 127).
+HTTPS normally listens on 1938; plaintext HTTP normally remains on 1937 (portable configuration may differ). Operators must restrict exposure and trust certificates. The application supports certificate selection/generation; trusted client setup and renewal are deployment responsibilities. A Secure cookie depends on actual request/proxy handling.
 
-**Session cookies**
-`httpOnly: true` — invisible to JavaScript, blocks XSS exfiltration.
-`Secure` flag set when served over HTTPS (`req.secure`).
-`SameSite: Lax` — blocks cross-origin state-changing requests (CSRF mitigation).
-Cookie cleared on logout (`res.clearCookie` with matching flags).
+TOTP and SMTP encrypted fields use AES-256-GCM and JWT_SECRET-derived key material. This is field encryption, not whole-database encryption. Rotating JWT_SECRET can make existing encrypted fields unreadable; plan and test recovery/re-enrollment before rotation. No future rotation tooling is promised.
 
-**Two-Factor Authentication (TOTP)**
-Creator account requires TOTP (RFC 6238, compatible with Google Authenticator / Authy /
-Microsoft Authenticator). Flow: password verified → pre-auth token (5-min TTL) issued →
-TOTP code submitted → full session token issued. Controls:
-- 5 failed TOTP attempts per pre-auth token before lockout
-- TOTP replay cache: same delta rejected within 90 seconds
-- Secret stored AES-256-GCM encrypted in `trier_logistics.db`
+Optional HA has explicit fresh 64-hex peer-key provisioning, environment precedence, fail-closed invalid/missing/retired credentials and three narrowly permitted peer endpoints (`server/ha_key.js`, HA routes, index and sync engine). [HA provisioning](HA_SECRET_PROVISIONING.md). Historical ZIP credentials require coordinated operator rotation; deleting source does not revoke them. Replication ordering/deduplication and rollback connection lifecycle remain deferred.
 
----
+Optional LAN Hub supports authenticated local WebSockets, scan state and a separate SQLite queue; PWA IndexedDB is another queue/cache mechanism. Real replay authentication/defaults/per-item acknowledgements and outage/restart recovery remain deferred integration limits. Do not advertise universally ordered/lossless fallback from a transport PING test.
 
-### CC6.4 — Restriction of Unauthorized Access
+## Production requirements and honest gaps
 
-**Rate limiting — login**
-8 attempts per 5 minutes per username (not per IP — factory floors NAT behind one address).
-Configurable via `RATE_LIMIT_LOGIN_MAX` env var. (`server/index.js` lines 424–428)
+Provision production mode, independently random 64+ hex session/hub secrets, disabled Live Studio, trusted TLS, appropriate network/origin restrictions, reviewed accounts and secured consistent backups. Boot enforcement rejects missing/short/recognized placeholders, not all low-entropy values. Public demos are also seeded in production; ghost seeding is non-production only, and mode changes do not remove existing accounts.
 
-**Rate limiting — sensors**
-1,000 requests per 60 seconds keyed on plant + sensor identity. Prevents a chatty PLC from
-exhausting the API budget for all users. Falls back to IP if sensor identity is malformed.
+Only current maintained 3.7.2 is covered by the policy unless Doug documents otherwise. Feature freeze does not end risk-based security maintenance. Remaining dependency advisories need reachability assessment and narrow compatible patches with regressions; no blanket forced upgrades.
 
-**Rate limiting — general API**
-1,200 requests per 60 seconds per authenticated user. Falls back to IP for unauthenticated.
+No formal SOC2/ISO security certification, all-route isolation proof, fully validated physical outage/restart or paired-server recovery is claimed. Migration 047 coverage and zero-coverage invariant PASS are also deferred. See [validation evidence](SECURITY_MAINTENANCE_VALIDATION.md) and [threat model](THREAT_MODEL.md).
 
-**Request timeout**
-120-second wall-clock timeout on all requests (`server.requestTimeout`). Prevents slow-loris
-attacks and stuck route handlers. (`server/index.js` lines 2091–2101)
+## Browser inactivity behavior
 
----
-
-### CC6.5 — Change Management
-
-**Live Studio access control**
-In-app code editor restricted to `creator` role only. All file writes are to a whitelist of
-paths (`src/components`, `server/routes`). Core infrastructure files (`vite.config.js`,
-`package.json`, `server/index.js`) cannot be overwritten via Studio.
-
-Every deploy is recorded in `StudioDeployLedger` (append-only, in `trier_logistics.db`):
-deployer, branch, commit SHA, stable tag, build status, build log, start/end timestamps.
-Deploy pipeline: stage → commit sandbox branch → `npm run build` (120s timeout) → auto-tag
-`stable-YYYY-MM-DD` → optional PM2 reload. Revert rolls back to last stable tag.
-
-**Gatekeeper change control (safety-critical systems)**
-`server/gatekeeper/engine.js` enforces a 7-step validation pipeline for any change touching
-safety-critical equipment: Permit to Work (PTW) validation, Management of Change (MOC) state
-check, constraint certification with SHA-256 proof receipts. All decisions appended to
-`GatekeeperAuditLedger`.
-
----
-
-## CC7 — System Operations
-
-### CC7.1 — Vulnerability and Threat Detection
-
-**Audit trail middleware**
-`server/middleware/auditTrail.js` guarantees at least one audit record for every successful
-POST/PUT/PATCH/DELETE request, even if the route handler doesn't explicitly call `logAudit`.
-Coverage verified across 67 DELETE endpoints and 41 route files (v3.7.1).
-
-Each record includes: `UserID`, `Username`, `Action`, `PlantID`, `Details` (JSON), `Severity`,
-`IPAddress`, `Timestamp`. Written to `AuditLog` in `trier_logistics.db`. Secondary filesystem
-write on DB failure — audit is never silently lost.
-
-**Sensor threshold monitoring**
-`server/routes/sensors.js` evaluates every inbound reading against configured thresholds.
-Breach triggers automatic work order creation with templated description. 30-minute cooldown
-(configurable) prevents duplicate WOs from chatty sensors. All threshold events flagged in
-`sensor_readings`.
-
-### CC7.2 — Monitoring of System Components
-
-**System diagnostics**
-`GET /api/creator/diagnostics` (Creator only): DB sizes, connection counts, server uptime,
-memory usage. `GET /api/creator/audit`: full cross-plant audit log (last 500 entries).
-
-**ERP outbox health**
-`GET /api/integrations/outbox/summary`: counts pending/sent/failed events and age of oldest
-pending. Surfaces integration delivery problems before they become data gaps.
-
-### CC7.4 — Incident Response
-
-**Audit log access**
-Full cross-plant audit log accessible to Creator and IT Admin via `GET /api/creator/audit`.
-Immutable — no route provides audit log deletion.
-
-**Manual retry**
-`POST /api/integrations/outbox/retry/:id` allows manual re-queue of failed ERP delivery
-events without data loss or re-entry.
-
----
-
-## CC9 — Risk Mitigation
-
-### CC9.1 — Encryption in Transit
-
-TLS priority order (auto-detected at boot):
-1. Let's Encrypt certificate (if present from `scripts/certbot_setup.js`)
-2. Custom CA-signed certificate in `data/certs/`
-3. Auto-generated self-signed certificate (RSA 2048)
-
-HTTPS server on port 1938. HTTP on port 1937 for development only.
-HSTS header applied only on HTTPS responses (prevents TLS-strip attacks on downgrade).
-Mobile camera and scanner APIs require HTTPS — enforced by browser WebRTC policy.
-
-### CC9.2 — Encryption at Rest
-
-Sensitive fields stored AES-256-GCM encrypted in SQLite:
-- TOTP secret (`creator_settings.totp_secret` in `trier_logistics.db`)
-- SMTP password (`creator_settings.smtp_pass`)
-
-Key derivation: SHA-256 of `JWT_SECRET`. Format: `iv_hex:tag_hex:ciphertext_hex`.
-Decryption occurs only at point of use (TOTP verify, email send) — plaintext never persisted.
-
-**Note on key rotation:** Rotating `JWT_SECRET` invalidates all encrypted fields. A migration
-path for key rotation is documented in code comments and is a planned tooling addition.
-
----
-
-## A1 — Availability
-
-### A1.1 — Availability Commitments
-
-**HA replication**
-`server/ha_sync.js`: unidirectional SQLite trigger-based replication from primary to secondary.
-SQLite triggers capture every INSERT/UPDATE/DELETE on operational tables into `sync_ledger`.
-Drain runs every 60 seconds. `POST /api/ha/promote` for failover. Auth via `HA_SYNC_KEY`
-(separate 64-char hex key, distinct from JWT).
-
-**LAN Hub fallback**
-`server/lan_hub.js`: lightweight WebSocket server embedded in the Electron desktop app at
-each plant (port 1940). When central server is unreachable, all plant devices connect to the
-hub. Scans queued in local SQLite `OfflineScanQueue`. On central server return, hub replays
-the full queue to `POST /api/scan/offline-sync` preserving `deviceTimestamp` order.
-JWT-authenticated on WebSocket upgrade — expired or invalid tokens refused with code 1008.
-
-**Client-side offline queue**
-IndexedDB `OfflineDB` on every PWA client. Captures scans during hub or full offline state.
-On reconnect, queue drains with dedup guard (`SYNC_PENDING`/`SYNC_ACK` protocol) to prevent
-double-replay.
-
-### A1.2 — Environmental Protections
-
-**Silent auto-close engine**
-`server/silent_close_engine.js`: hourly cron detects work segments left open past the
-auto-review threshold (default 12 hours). Closes as `TimedOut`, flags parent WO for
-supervisor review (`needsReview=1`, `reviewReason='SILENT_AUTO_CLOSE'`). Exempt hold
-reasons (`WAITING_ON_PARTS`, `WAITING_ON_VENDOR`, `WAITING_ON_APPROVAL`, `SCHEDULED_RETURN`)
-are never auto-closed. Does not overwrite an existing `reviewReason`.
-
----
-
-## Secrets Checklist (Production Deployment)
-
-| Secret | Requirement | Behavior if Missing |
-|---|---|---|
-| `JWT_SECRET` | 64+ hex chars | Server exits at boot |
-| `HUB_TOKEN_SECRET` | 64+ hex chars, ≠ JWT_SECRET | Server exits at boot |
-| `NODE_ENV=production` | Must be set | Security paths not hardened |
-| `HA_SYNC_KEY` | 64-char hex | HA replication disabled |
-| `DISABLE_LIVE_STUDIO` | Recommended | Live Studio API surface exposed |
-
----
-
-## Known Gaps (Honest Assessment)
-
-| Gap | Risk | Notes |
-|---|---|---|
-| JWT_SECRET rotation invalidates encrypted fields | Medium | Key rotation requires migration tooling (planned) |
-| No formal SOC2 audit | High (for regulated buyers) | Controls are equivalent; audit not yet performed |
-| No SSO / SAML / OIDC | Medium | LDAP covers AD; SAML roadmap item |
-| Demo accounts with public password | Low | Gated behind `NODE_ENV !== production` |
-| No secrets vault integration | Low | `.env` file; Vault/AWS Secrets Manager integration is roadmap |
-| LDAP search filter (RFC 4515 escaped, not library-parameterized) | Low | Escaping is correct; library-level parameterization would be stronger |
+The React App implements a 15-minute inactivity timer, a warning during the last minute, and client logout. Client logout makes a best-effort shift-log lock request before clearing the cookie/local session state. This UI timer is separate from the server JWT's 7-day absolute expiry and does not revoke a copied token. Browser sleep, closed clients and failed requests are not a server-enforced inactivity/revocation guarantee.

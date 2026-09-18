@@ -513,7 +513,7 @@ if (!fs.existsSync(pdfUploadDir)) fs.mkdirSync(pdfUploadDir, { recursive: true }
 
 const pdfUpload = multer({
     dest: pdfUploadDir,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for large manuals
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 50 * 1024 * 1024 }, // 50MB for large manuals
     fileFilter: (req, file, cb) => {
         const allowed = ['.txt', '.md', '.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.webp'];
         const ext = path.extname(file.originalname).toLowerCase();

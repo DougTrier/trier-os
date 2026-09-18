@@ -1,92 +1,27 @@
-# Runbook: System Outage (Trier OS Down)
-> Severity: Sev 1 · Contact Trier OS Engineering if not resolved in 15 minutes
+# Runbook: corporate Trier OS outage
 
----
+Use the installation's approved incident/escalation plan. Preserve queues and data; avoid repeated restarts before recording the failure.
 
-## Confirm the Outage
+## Diagnose before restarting
 
-1. Browse to `http://<server-ip>:5173/`
-   - Blank page or "Cannot connect" → server is down
-   - Login page loads → server is up, issue is elsewhere
-2. From the server machine, run: `curl http://localhost:5173/api/ping`
-   - Returns `{"status":"ok"}` → server is running, check browser/network
-   - Connection refused → Node process is not running
+1. Check the configured corporate URL and `GET /api/ping`. Normal HTTPS is port 1938; HTTP API defaults to 1937. Vite 5173 is a development UI, and portable HTTP may be configured as 3000. Check `ready`, not only whether a page loads.
+2. Confirm the expected service/Node/Electron process, listener, disk space and access to the resolved data directory. Check startup logs for failed secrets, DB access, port conflicts or module errors.
+3. Record the first error and distinguish server failure from client certificate, LAN, WAN or proxy failure. Do not kill an unrelated process merely because it uses a port.
 
----
+## Controlled restart
 
-## Step 1 — Check the Process
+Use the configured corporate service manager or the installed Trier OS shortcut. For a configured source service in PowerShell:
 
-**Windows (standalone `.exe` deployment):**
-- Open Task Manager → look for `trier-os.exe` or `node.exe`
-- If not running → go to Step 2
-
-**From source:**
-```bash
-# Check if the process is running
-tasklist | findstr node
-# or
-ps aux | grep node
+```powershell
+$env:NODE_ENV = 'production'
+$env:DISABLE_LIVE_STUDIO = 'true'
+npm run start:cluster
 ```
 
----
+For Linux source service startup, use `NODE_ENV=production DISABLE_LIVE_STUDIO=true npm run start:cluster` or the approved service manager. Existing protected secrets/configuration must already be provisioned. Do not use a nonexistent preview script or development mode to bypass production checks.
 
-## Step 2 — Restart the Server
+If a DB is missing/corrupt, stop and use the approved consistent backup/recovery plan. Do not create an empty replacement or delete `trier_auth.db` to regain access. [Deployment and rollback](../Deployment_and_Rollback.md).
 
-**Windows standalone:**
-- Double-click `trier-os.exe` (or the configured startup shortcut)
-- Wait 30 seconds, then check `/api/ping`
+## After recovery
 
-**From source:**
-```bash
-cd "G:\Trier OS"
-npm run preview
-# or for development
-npm run dev
-```
-
-**After restart:** Check `GET /api/health` — all subsystems should show `ok`.
-
----
-
-## Step 3 — Check the Logs
-
-If restart fails or the server crashes again immediately:
-
-**Look for in the console output:**
-- `[BOOT CRASH]` — a startup exception; the message will identify the module
-- `FATAL ERROR: JWT_SECRET` — `.env` file is missing or JWT_SECRET is unset
-- `SQLITE_CANTOPEN` — a database file is missing or permission denied
-- Port already in use — another process is on port 5173
-
----
-
-## Step 4 — Port Conflict
-
-If port 5173 is in use:
-```bash
-# Windows
-netstat -ano | findstr :5173
-# Kill the blocking process (replace <PID> with the process ID from above)
-taskkill /PID <PID> /F
-```
-Then restart the server.
-
----
-
-## Step 5 — Database File Missing
-
-If logs show `SQLITE_CANTOPEN`:
-1. Verify the `data/` directory exists and is not empty
-2. Check that `Plant_1.db`, `trier_logistics.db`, etc. are present
-3. If a plant DB is missing, restore from most recent backup in `data/backups/`
-4. **Do not create a new empty database** — contact Tier 2 (Trier OS Engineering)
-
----
-
-## After Recovery
-
-1. Confirm `GET /api/health` returns `status: "healthy"`
-2. Test login with a known user account
-3. Test one scan event if the scan system was in use
-4. Note the time of outage and recovery in the incident log
-5. If root cause is unknown, contact Trier OS Engineering before the next shift
+Verify readiness, trusted HTTPS, authorized login and the affected operational workflow. Review pending/failed scan and integration items individually; HTTP 200 alone is not acceptance. Record outage/recovery times and root cause. Physical outage/restart and every hub replay path are not fully validated by the existing browser suite; use controlled reconciliation rather than assuming the queue is complete. [Validation limits](../../SECURITY_MAINTENANCE_VALIDATION.md).

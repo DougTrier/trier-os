@@ -1,4 +1,4 @@
-﻿{
+{
   ".aboutManual": "Hakkında ve Kılavuz",
   ".accessThePlatformOperations": "Platform Operasyonel Zeka Kılavuzuna, eğitim senaryolarına ve sistem kredilerine erişin",
   ".action": "Aksiyon",
@@ -184,7 +184,7 @@
   "about.goThere": "Oraya Git",
   "about.goToCode": "Kod'a git",
   "about.industrialEngineering": "Endüstri Mühendisliği",
-  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.1",
+  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.2",
   "about.manualTitle": "Trier OS — Operasyonel Zeka Kılavuzu",
   "about.mobileInfra": "Mobil Altyapı",
   "about.namePlaceholder": "İsim",
@@ -7143,7 +7143,7 @@
   "printEngine.totalOperatingSpend": "Toplam İşletme Harcaması:",
   "printEngine.trierOs": "TRİER işletim sistemi",
   "printEngine.trierOsEnterpriseMaintenancePlatform": "Trier İşletim Sistemi — Kurumsal Bakım Platformu",
-  "printEngine.v1126gold": "v3.7.1",
+  "printEngine.v1126gold": "v3.7.2",
   "printEngine.version": "Sürüm",
   "priority.critical": "Kritik",
   "priority.emergency": "Acil durum",

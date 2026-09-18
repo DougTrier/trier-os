@@ -88,7 +88,7 @@ const skuUpload = multer({
         },
         filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`),
     }),
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 50 * 1024 * 1024 }, // 50 MB
     fileFilter: (req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
         if (['.db', '.sqlite', '.sqlite3'].includes(ext)) cb(null, true);

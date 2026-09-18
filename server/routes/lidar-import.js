@@ -62,7 +62,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
     storage,
-    limits: { fileSize: 200 * 1024 * 1024 }, // 200MB — LiDAR scans can be very large
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 200 * 1024 * 1024 }, // 200MB — LiDAR scans can be very large
     fileFilter: (req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
         if (!['.ply', '.obj'].includes(ext)) {

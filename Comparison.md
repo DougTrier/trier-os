@@ -1,3 +1,5 @@
+> Historical evaluation/design snapshot. Dated versions, counts, cost estimates and comparisons below are not current validated facts or future feature commitments. Trier OS is feature complete and feature frozen; current evidence and limits are in [docs/SECURITY_MAINTENANCE_VALIDATION.md](docs/SECURITY_MAINTENANCE_VALIDATION.md) and the [maintenance policy](docs/MAINTENANCE.md).
+
 # Trier OS — Executive Assessment & Competitive Analysis
 **Prepared for:** C-Suite & Stakeholders  
 **Date:** April 26, 2026  
@@ -89,7 +91,7 @@ Unlike every competitor in this space, Trier OS was designed with the assumption
 2. **LAN Hub (Port 1940)** — Lightweight Electron WebSocket server at each plant; activates automatically when central server is unreachable, keeps all floor devices synchronized in real time
 3. **Ordered Replay** — On reconnect, queued scans drain to the server sorted by `deviceTimestamp`, preserving the correct state machine sequence for work order history
 
-This is not a fallback mode. It is the primary architecture. Plants can operate indefinitely without WAN connectivity, without a cloud subscription, and without any vendor dependency.
+This is not a fallback mode. It is the primary architecture. Supported local queue/cache fallback can help during WAN outages; actual replay, outage/restart and paired-server recovery require deployment-specific validation. Optional external integrations still need their configured connectivity.
 
 ### 3.4 The Integration Model
 
@@ -142,10 +144,10 @@ Trier OS implements a SOC2-aligned security model documented against Trust Servi
 |---|---|
 | **SQL Injection** | `better-sqlite3` prepared statements exclusively; template literal SQL interpolation prohibited by coding rule S-4; dynamic column names require `SAFE_TABLE_NAME` regex whitelist |
 | **Authentication** | bcrypt (10 rounds), JWT (7-day, `tokenVersion` revocation on every request), TOTP 2FA for Creator role |
-| **Session Security** | `httpOnly` cookies (XSS-proof), `Secure` flag (HTTPS), `SameSite=Lax` (CSRF mitigation) |
+| **Session Security** | `HttpOnly` cookies (page-script token-read protection; XSS can still make requests), `Secure` flag (HTTPS), `SameSite=Lax` (CSRF mitigation) |
 | **Multi-Tenant Isolation** | Per-plant SQLite files; `AsyncLocalStorage` enforces plant context before every route handler; client cannot override DB selection |
 | **RBAC** | 8 tiers (Technician → Creator), per-plant role overrides, feature flags per user |
-| **Audit Trail** | Every POST/PUT/PATCH/DELETE guaranteed at least one `AuditLog` record; secondary filesystem write on DB failure — audit is never silently lost |
+| **Audit Trail** | Write-path audit middleware / domain records with filesystem fallback; monitor storage failures and verify coverage |
 | **Rate Limiting** | Login: 8 attempts/5 min/username; Sensors: 1,000/60s/plant; General API: 1,200/60s/user |
 | **Encryption in Transit** | TLS with Let's Encrypt, custom CA, or auto-generated self-signed; HSTS on HTTPS responses |
 | **Encryption at Rest** | TOTP secrets and SMTP credentials stored AES-256-GCM encrypted in SQLite |
@@ -153,8 +155,8 @@ Trier OS implements a SOC2-aligned security model documented against Trust Servi
 
 **Known gaps (documented honestly):**
 - No formal SOC2 Type II audit (controls are equivalent; audit not yet performed)
-- No SAML/OIDC (LDAP covers Active Directory; SAML is a roadmap item)
-- JWT secret rotation requires migration tooling (planned)
+- No SAML/OIDC (LDAP covers Active Directory; SAML is not implemented and is not a current feature commitment)
+- JWT secret rotation requires a tested encrypted-field recovery plan; no tooling addition is promised
 
 ---
 
@@ -195,7 +197,7 @@ The open gaps are documented with exact file locations and line numbers. This le
 | Test Spec Files | 38 |
 | Security Audits | 2 full penetration sweeps (March 24 & March 30, 2026) |
 | Code Efficiency Audit | April 11, 2026 — all critical and high findings resolved |
-| Invariant Report Endpoint | `GET /api/invariants/report` — runtime proof, returns `overallStatus: PASS` |
+| Invariant Report Endpoint | `GET /api/invariants/report` — runtime observations; inspect coverage as well as PASS |
 | Production Dependencies | 34 (all vetted for CVEs and license compliance) |
 
 **Test philosophy:** The industry standard is testing success paths. Trier OS tests failure paths, concurrency races, offline edge cases, and correctness invariants — the scenarios that cause real-world production incidents.
@@ -243,7 +245,7 @@ The open gaps are documented with exact file locations and line numbers. This le
 
 **Partner Ecosystem.** SAP and IBM have global certified implementation partner networks. MaintainX has pre-built integrations with popular SaaS tools (Slack, QuickBooks, etc.). Trier OS has a community model — organizations deploying at scale currently rely on internal resources or the open-source community for implementation support.
 
-**Identity Federation (SSO).** Enterprise organizations using Okta, Azure AD, or other cloud identity providers typically expect SAML 2.0 or OIDC federation for single sign-on. Trier OS ships with full LDAP/Active Directory integration, which covers the majority of enterprise on-premise AD environments without requiring SSO federation. For organizations that have already moved identity to a cloud IdP and require SAML assertions or OIDC tokens, Trier OS will need a middleware layer today. Native SAML/OIDC support is a documented roadmap item.
+**Identity Federation (SSO).** Enterprise organizations using Okta, Azure AD, or other cloud identity providers typically expect SAML 2.0 or OIDC federation for single sign-on. Trier OS ships with full LDAP/Active Directory integration, which covers the majority of enterprise on-premise AD environments without requiring SSO federation. For organizations that have already moved identity to a cloud IdP and require SAML assertions or OIDC tokens, Trier OS will need a middleware layer today. Native SAML/OIDC support is not a maintenance-mode feature commitment.
 
 ---
 

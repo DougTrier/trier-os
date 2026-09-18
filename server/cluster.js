@@ -1,4 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * © 2026 Doug Trier. All Rights Reserved.
@@ -26,6 +28,11 @@ const os = require('os');
 const WORKER_COUNT = parseInt(process.env.WORKERS || '0') || Math.min(os.cpus().length, 8);
 
 if (cluster.isPrimary) {
+    require('dotenv').config();
+    if (process.env.NODE_ENV === 'production') {
+        // Finish the backup before any worker can begin schema initialization.
+        require('./preflight_backup').ensureBackup(require('./resolve_data_dir'));
+    }
     console.log(`
  ╔══════════════════════════════════════════════════╗
  ║         Trier OS — Cluster Mode                  ║

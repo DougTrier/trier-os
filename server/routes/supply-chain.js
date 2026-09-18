@@ -57,7 +57,7 @@ const photoStorage = multer.diskStorage({
 });
 const photoUpload = multer({
     storage: photoStorage,
-    limits: { fileSize: 8 * 1024 * 1024 },
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 8 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (/jpg|jpeg|png|gif|webp/.test(path.extname(file.originalname).toLowerCase())) return cb(null, true);
         cb(new Error('Only image files are allowed'));

@@ -67,6 +67,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { db: logisticsDb } = require('../logistics_db');
+const demoScope = require('../demo_scope');
+const uploadSafety = require('../upload_safety');
 
 const baseUploadDir = path.join(require('../resolve_data_dir'), 'uploads', 'floorplans');
 if (!fs.existsSync(baseUploadDir)) fs.mkdirSync(baseUploadDir, { recursive: true });
@@ -121,7 +123,7 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, tempUploadDir),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_'))
 });
-const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
+const upload = multer({ storage, limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 25 * 1024 * 1024 }, fileFilter: uploadSafety.floorplanFilter });
 
 // Ensure blueprintPath column exists on FloorPlans (alternate view of same plan)
 try {
@@ -169,8 +171,64 @@ function snapshotVersion(planId, changeNote = '', createdBy = 'system') {
     return nextVer;
 }
 
+// Floorplan IDs live in the shared logistics DB, so selecting examples alone
+// is insufficient: a demo caller must not address a foreign plan by its ID.
+router.use((req, res, next) => {
+    if (!demoScope.isDemoUser(req.user)) return next();
+    if (demoScope.hasForeignPlant(req.query) || demoScope.hasForeignPlant(req.body)) {
+        return res.status(403).json({ error: 'Demo accounts are confined to examples.' });
+    }
+    if (req.method === 'GET' && req.path === '/') req.query.plantId = 'examples';
+    next();
+});
+
+// Express decodes parameters before these checks. Use the same bound SQLite
+// lookup as handlers, including numeric aliases, and check a child's actual
+// parent rather than trusting the parent ID supplied in the URL.
+const demoOwnerQueries = {
+    id: 'SELECT plantId FROM FloorPlans WHERE id = ?',
+    planId: 'SELECT plantId FROM FloorPlans WHERE id = ?',
+    pinId: 'SELECT p.plantId FROM FloorPlanPins c JOIN FloorPlans p ON p.id = c.floorPlanId WHERE c.id = ?',
+    annId: 'SELECT p.plantId FROM FloorPlanAnnotations c JOIN FloorPlans p ON p.id = c.floorPlanId WHERE c.id = ?',
+    zoneId: 'SELECT p.plantId FROM FloorPlanZones c JOIN FloorPlans p ON p.id = c.floorPlanId WHERE c.id = ?',
+    sensorId: 'SELECT p.plantId FROM FloorPlanSensors c JOIN FloorPlans p ON p.id = c.floorPlanId WHERE c.id = ?',
+};
+for (const [parameter, query] of Object.entries(demoOwnerQueries)) {
+    router.param(parameter, (req, res, next, value) => {
+        if (!demoScope.isDemoUser(req.user)) return next();
+        const plan = logisticsDb.prepare(query).get(value);
+        if (!plan) return res.status(404).json({ error: 'Floor plan or item not found' });
+        if (plan.plantId !== 'examples') return res.status(403).json({ error: 'Demo accounts are confined to examples.' });
+        next();
+    });
+}
+
+function demoMultipartScope(req, res, next) {
+    if (demoScope.isDemoUser(req.user) && demoScope.hasForeignPlant(req.body)) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(403).json({ error: 'Demo accounts are confined to examples.' });
+    }
+    next();
+}
+
+function validatedUpload(field) {
+    return (req, res, next) => upload.single(field)(req, res, async (error) => {
+        if (error) return res.status(400).json({ error: error.message });
+        demoMultipartScope(req, res, async () => {
+            try {
+                if (req.body.plantId && !/^[a-zA-Z0-9_-]{1,64}$/.test(req.body.plantId)) throw new Error('Invalid plantId.');
+                if (req.file) await uploadSafety.validateFloorplan(req.file);
+                next();
+            } catch (e) {
+                if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+                res.status(400).json({ error: 'Invalid floorplan image or plant selection.' });
+            }
+        });
+    });
+}
+
 // POST /api/floorplans - Upload a floor plan
-router.post('/', upload.single('floorplan'), (req, res) => {
+router.post('/', validatedUpload('floorplan'), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Image file required' });
         const { plantId, name, planType, floorLevel, buildingName } = req.body;
@@ -193,7 +251,7 @@ router.post('/', upload.single('floorplan'), (req, res) => {
 });
 
 // POST /api/floorplans/:id/blueprint - Save blueprint as alternate view on same plan
-router.post('/:id/blueprint', upload.single('blueprint'), (req, res) => {
+router.post('/:id/blueprint', validatedUpload('blueprint'), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Blueprint image file required' });
         const plan = logisticsDb.prepare('SELECT * FROM FloorPlans WHERE id = ?').get(req.params.id);
@@ -358,7 +416,7 @@ router.post('/:id/revert/:versionId', (req, res) => {
 });
 
 // POST /api/floorplans/:id/reupload — Re-upload image (creates version snapshot first)
-router.post('/:id/reupload', upload.single('floorplan'), (req, res) => {
+router.post('/:id/reupload', validatedUpload('floorplan'), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Image file required' });
         const plan = logisticsDb.prepare('SELECT * FROM FloorPlans WHERE id = ?').get(req.params.id);

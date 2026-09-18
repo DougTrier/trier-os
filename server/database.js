@@ -1,10 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
-
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 /**
  * Trier OS - Database Module
  * =====================================
@@ -91,6 +87,11 @@ function validateTableName(tableName, db = null) {
 // In production, missing context is a hard error — a misconfigured route hitting
 // the wrong plant's data with no indication is worse than a visible crash.
 function getDb(requestedPlantId = null) {
+    // A demo route may parse multipart fields after generic authorization.
+    // Explicit selectors still cannot escape the authenticated demo context.
+    if (require('./demo_scope').context.getStore() && requestedPlantId && requestedPlantId !== 'examples') {
+        throw new Error('Demo accounts are confined to examples.');
+    }
     const contextPlantId = asyncLocalStorage.getStore();
     if (!requestedPlantId && !contextPlantId) {
         if (process.env.NODE_ENV === 'production') {
@@ -111,42 +112,19 @@ function getDb(requestedPlantId = null) {
     if (!connections[plantId]) {
         let dbFileName = `${plantId}.db`;
         const dbPath = path.join(dataDir, dbFileName);
-        let isNew = !fs.existsSync(dbPath);
-        let savedLeaders = []; // hoisted so restore block below can access it without global
+        const isNew = !fs.existsSync(dbPath);
         if (!isNew) {
-            const size = fs.statSync(dbPath).size;
-            // Corrupt-DB threshold: legitimate plant DBs are bootstrapped from
-            // schema_template.db (~19MB), so a fresh copy is always >> 32KB.
-            // We compute the floor dynamically so the check stays correct if
-            // the template ever shrinks: cap at 32KB but never exceed half the
-            // template size (a valid fresh copy must be at least that large).
-            let _corruptThreshold = 32768;
+            // File size says nothing about SQLite validity. Inspect before any
+            // writable open; an unreadable/corrupt customer DB stays in place
+            // for recovery and must never enter the new-plant seeding path.
+            let existing;
             try {
-                const tmplSize = fs.statSync(path.join(dataDir, 'schema_template.db')).size;
-                if (tmplSize > 0) _corruptThreshold = Math.min(32768, Math.floor(tmplSize / 2));
-            } catch (_) { /* template missing — keep 32KB default */ }
-            if (size < _corruptThreshold) { // only catch truly truncated/corrupt DBs
-                console.log(`  📂 Site DB [${plantId}] is too small (${size} bytes). Forcing repair...`);
-                // SAFEGUARD: Preserve SiteLeadership contacts before wiping
-                try {
-                    const oldDb = new Database(dbPath, { readonly: true });
-                    const hasTable = oldDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SiteLeadership'").get();
-                    if (hasTable) {
-                        savedLeaders = oldDb.prepare('SELECT Name, Title, Phone, Email FROM SiteLeadership').all();
-                        if (savedLeaders.length > 0) {
-                            console.log(`  💾 Preserved ${savedLeaders.length} contacts for ${plantId} before repair`);
-                        }
-                    }
-                    oldDb.close();
-                } catch (e) { /* DB may be too corrupt to read — that's OK */ }
-
-                try {
-                    fs.unlinkSync(dbPath);
-                    isNew = true;
-                } catch (e) {
-                    console.error(`  ❌ Failed to remove corrupted DB [${plantId}]:`, e.message);
-                }
-            }
+                existing = new Database(dbPath, { readonly: true, fileMustExist: true });
+                const checks = existing.pragma('integrity_check');
+                if (checks.length !== 1 || checks[0].integrity_check !== 'ok') throw new Error('SQLite integrity check failed');
+            } catch (error) {
+                throw new Error(`Database [${plantId}] could not be validated; retained unchanged for recovery: ${error.message}`);
+            } finally { existing?.close(); }
         } else {
             console.log(`  📂 Site DB [${plantId}] is new. Initializing...`);
         }
@@ -523,7 +501,7 @@ function getDb(requestedPlantId = null) {
         if (isNew) {
             try {
                 const blankSlatePreserve = new Set([
-                    'schema_version',
+                    'schema_version', 'migration_history',
                     'WorkType', 'WorkStatuses', 'TaskTypes', 'WorkCode',
                     'PurchaseStatuses', 'PartClasses', 'AdjustmentTypes',
                     'AssetTypes',
@@ -612,20 +590,6 @@ function getDb(requestedPlantId = null) {
         connections[plantId] = { db, lastUsed: Date.now() };
         console.log(`  📦 Database connected for plant [${plantId}]: ${dbFileName}`);
 
-        // RESTORE: If contacts were saved before a repair, write them into the new DB now
-        if (savedLeaders.length > 0) {
-            try {
-                db.prepare('DELETE FROM SiteLeadership').run();
-                const ins = db.prepare('INSERT INTO SiteLeadership (Name, Title, Phone, Email) VALUES (?, ?, ?, ?)');
-                const restoreTx = db.transaction(() => {
-                    for (const l of savedLeaders) ins.run(l.Name, l.Title, l.Phone, l.Email);
-                });
-                restoreTx();
-                console.log(`  ♻️ Restored ${savedLeaders.length} preserved contacts for ${plantId}`);
-            } catch (e) {
-                console.error(`  ❌ Failed to restore contacts for ${plantId}:`, e.message);
-            }
-        }
     }
     connections[plantId].lastUsed = Date.now();
     return connections[plantId].db;

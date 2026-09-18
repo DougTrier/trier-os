@@ -1,4 +1,4 @@
-﻿{
+{
   ".aboutManual": "について & マニュアル",
   ".accessThePlatformOperations": "プラットフォーム オペレーショナル インテリジェンス マニュアル、トレーニング シナリオ、システム クレジットにアクセスします",
   ".action": "アクション",
@@ -184,7 +184,7 @@
   "about.goThere": "そこへ行く",
   "about.goToCode": "コードに移動",
   "about.industrialEngineering": "産業 エンジニアリング",
-  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.1",
+  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.2",
   "about.manualTitle": "Trier OS — オペレーショナル インテリジェンス マニュアル",
   "about.mobileInfra": "モバイルインフラ",
   "about.namePlaceholder": "名前",
@@ -7143,7 +7143,7 @@
   "printEngine.totalOperatingSpend": "総営業支出:",
   "printEngine.trierOs": "トライアOS",
   "printEngine.trierOsEnterpriseMaintenancePlatform": "Trier OS — エンタープライズ メンテナンス プラットフォーム",
-  "printEngine.v1126gold": "v3.7.1",
+  "printEngine.v1126gold": "v3.7.2",
   "printEngine.version": "バージョン",
   "priority.critical": "重大",
   "priority.emergency": "緊急",

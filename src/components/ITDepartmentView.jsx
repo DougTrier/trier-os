@@ -1,15 +1,14 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
-/**
- * Ã‚Â© 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
 /**
  * Trier OS — IT Department Asset Management View
  * =================================================
  * Enterprise IT asset lifecycle dashboard covering Software, Hardware,
  * Infrastructure, and Mobile asset categories. Connects to /api/it endpoints.
+ *
+ * API: POST /api/it/:category/bulk-delete removes selected rows with per-item verification.
  *
  * TABS:
  *   Software        — License registry: seats, expiry dates, renewal costs
@@ -39,10 +38,28 @@ import useHardwareScanner from '../hooks/useHardwareScanner';
 import { printRecord, infoGridHTML, tableHTML } from '../utils/printRecord';
 import { useTranslation } from '../i18n/index.jsx';
 
+import { useITBulkSelection } from './ITBulkSelection';
+
 const API = (path, opts = {}) => fetch(`/api/it${path}`, {
     ...opts,
     headers: { 'Content-Type': 'application/json', 'x-plant-id': localStorage.getItem('selectedPlantId') || 'Demo_Plant_1', ...opts.headers },
 });
+// Single-item mutations also require a semantic acknowledgement. A failed or
+// unverified response must leave the record/editor visible for retry.
+async function deleteConfirmed(path) {
+    try {
+        const response = await API(path, { method: 'DELETE' });
+        const result = await response.json();
+        if (!response.ok || result.success !== true || result.status !== 'DELETED' || Number(result.id) !== Number(path.split('/').pop())) {
+            window.trierToast?.error(result.error || 'Deletion was not confirmed. The record was kept visible.');
+            return false;
+        }
+        return true;
+    } catch {
+        window.trierToast?.error('Deletion could not be confirmed. Refresh before retrying.');
+        return false;
+    }
+}
 const CATALOG_API = (path, opts = {}) => fetch(`/api/it-catalog${path}`, {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...opts.headers },
@@ -615,9 +632,9 @@ export default function ITDepartmentView({ plantId, plantLabel }) {
 
             <div style={{ flex:1, display:'flex' }}>
                 {tab==='software' && <SoftwareTab search={search} isITorCreator={isITorCreator} onRefreshStats={refreshStats} />}
-                {tab==='hardware' && <InventoryTab category="hardware" search={search} isITorCreator={isITorCreator} icon={Monitor} color="#3b82f6" title="Hardware Inventory" types={HW_TYPES} statuses={STATUSES} onRefreshStats={refreshStats} />}
-                {tab==='infrastructure' && <InventoryTab category="infrastructure" search={search} isITorCreator={isITorCreator} icon={Wifi} color="#10b981" title="Infrastructure" types={INFRA_TYPES} statuses={INFRA_STATUSES} onRefreshStats={refreshStats} />}
-                {tab==='mobile' && <InventoryTab category="mobile" search={search} isITorCreator={isITorCreator} icon={Smartphone} color="#f59e0b" title="Mobile Devices" types={MOB_TYPES} statuses={STATUSES} onRefreshStats={refreshStats} />}
+                {tab==='hardware' && <InventoryTab key="hardware" category="hardware" search={search} isITorCreator={isITorCreator} icon={Monitor} color="#3b82f6" title="Hardware Inventory" types={HW_TYPES} statuses={STATUSES} onRefreshStats={refreshStats} />}
+                {tab==='infrastructure' && <InventoryTab key="infrastructure" category="infrastructure" search={search} isITorCreator={isITorCreator} icon={Wifi} color="#10b981" title="Infrastructure" types={INFRA_TYPES} statuses={INFRA_STATUSES} onRefreshStats={refreshStats} />}
+                {tab==='mobile' && <InventoryTab key="mobile" category="mobile" search={search} isITorCreator={isITorCreator} icon={Smartphone} color="#f59e0b" title="Mobile Devices" types={MOB_TYPES} statuses={STATUSES} onRefreshStats={refreshStats} />}
                 {tab==='vendors' && <VendorsTab search={search} isITorCreator={isITorCreator} onRefreshStats={refreshStats} />}
                 {tab==='tracking' && <TrackingTab search={search} />}
             </div>
@@ -649,6 +666,9 @@ function SoftwareTab({ search, isITorCreator, onRefreshStats }) {
         return items.filter(i=>[i.Name,i.Vendor,i.LicenseKey,i.Category,i.Notes].some(x=>(x||'').toLowerCase().includes(s)));
     },[items,search]);
 
+    const bulk = useITBulkSelection({ category: 'software', search, rows: filtered, enabled: isITorCreator,
+        onDeleted: ids => { setItems(previous => previous.filter(row => !ids.has(row.ID))); setDetail(null); setShowAdd(false); onRefreshStats(); } });
+
     const daysUntil = d=>{if(!d)return null;return Math.floor((new Date(d)-new Date())/86400000);};
     const expiryColor = d=>{if(d===null)return'#64748b';if(d<0)return'#ef4444';if(d<=30)return'#f59e0b';return'#10b981';};
 
@@ -661,8 +681,7 @@ function SoftwareTab({ search, isITorCreator, onRefreshStats }) {
 
     const handleDelete = async(id)=>{
         if(!confirm('Delete this software record?')) return;
-        const r=await API(`/software/${id}`,{method:'DELETE'});
-        if(r.ok){setDetail(null);fetch_();onRefreshStats();window.trierToast?.success('Deleted');}
+        if(await deleteConfirmed(`/software/${id}`)){setDetail(null);fetch_();onRefreshStats();window.trierToast?.success('Deleted');}
     };
 
     if(loading) return <div className="glass-card" style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>Loading software inventory...</div>;
@@ -673,10 +692,11 @@ function SoftwareTab({ search, isITorCreator, onRefreshStats }) {
                 <h2 style={{margin:0,display:'flex',alignItems:'center',gap:10}}><Key size={24} color="#8b5cf6"/> Software Licenses ({filtered.length})</h2>
                 {isITorCreator && <button title="Add new software license" className="btn-save" onClick={()=>{setForm({LicenseType:'Subscription',Category:'Other',Status:'Active',Seats:1});setShowAdd(true);}} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> Add Software</button>}
             </div>
+            {bulk.toolbar}
             <div className="table-container" style={{flex:1,overflowY:'auto'}}>
-                <table className="data-table"><thead><tr><th>{t('it.name', 'Name')}</th><th>{t('it.vendor', 'Vendor')}</th><th>{t('it.category', 'Category')}</th><th>{t('it.license', 'License')}</th><th>{t('it.seats', 'Seats')}</th><th>{t('it.expiry', 'Expiry')}</th><th>{t('it.cost', 'Cost')}</th><th>{t('it.status', 'Status')}</th><th>{t('it.actions', 'Actions')}</th></tr></thead>
+                <table className="data-table"><thead><tr>{bulk.header}<th>{t('it.name', 'Name')}</th><th>{t('it.vendor', 'Vendor')}</th><th>{t('it.category', 'Category')}</th><th>{t('it.license', 'License')}</th><th>{t('it.seats', 'Seats')}</th><th>{t('it.expiry', 'Expiry')}</th><th>{t('it.cost', 'Cost')}</th><th>{t('it.status', 'Status')}</th><th>{t('it.actions', 'Actions')}</th></tr></thead>
                 <tbody>{filtered.map(i=>{const days=daysUntil(i.ExpiryDate);return(
-                    <tr key={i.ID}>
+                    <tr key={i.ID}>{bulk.cell(i)}
                         <td style={{fontWeight:600,color:'#8b5cf6'}}>{i.Name}</td>
                         <td>{i.Vendor||'—'}</td>
                         <td><Badge color="#6366f1">{i.Category}</Badge></td>
@@ -690,7 +710,7 @@ function SoftwareTab({ search, isITorCreator, onRefreshStats }) {
                             {isITorCreator && <ActionBtn icon={Pencil} tip="Edit" color="#f59e0b" onClick={()=>{setForm({...i});setShowAdd(true);}}/>}
                         </td>
                     </tr>
-                );})}{filtered.length===0&&<tr><td colSpan={9} className="table-empty">No software licenses found.</td></tr>}</tbody></table>
+                );})}{filtered.length===0&&<tr><td colSpan={isITorCreator ? 10 : 9} className="table-empty">No software licenses found.</td></tr>}</tbody></table>
             </div>
         </div>
 
@@ -766,6 +786,9 @@ function InventoryTab({ category, search, isITorCreator, icon:TabIcon, color, ti
         return items.filter(i=>[i.Name,i.SerialNumber,i.AssetTag,i.BarcodeID,i.Manufacturer,i.Model,i.AssignedTo,i.Notes,i.IPAddress].some(x=>(x||'').toLowerCase().includes(s)));
     },[items,search]);
 
+    const bulk = useITBulkSelection({ category: category, search, rows: filtered, enabled: isITorCreator,
+        onDeleted: ids => { setItems(previous => previous.filter(row => !ids.has(row.ID))); setDetail(null); setShowAdd(false); onRefreshStats(); } });
+
     const resetForm = () => setForm({ Type: types[0], Status: statuses[0], Condition:'New', DepreciationMethod:'Straight-Line', UsefulLifeYears: category==='mobile'?3:category==='infrastructure'?7:5 });
 
     const handleSave = async()=>{
@@ -782,7 +805,7 @@ function InventoryTab({ category, search, isITorCreator, icon:TabIcon, color, ti
 
     const handleDelete = async(id)=>{
         if(!confirm('Delete this asset?')) return;
-        await API(`/${category}/${id}`,{method:'DELETE'});
+        if(!await deleteConfirmed(`/${category}/${id}`)) return;
         setDetail(null);setShowAdd(false);fetch_();onRefreshStats();
     };
 
@@ -826,8 +849,9 @@ function InventoryTab({ category, search, isITorCreator, icon:TabIcon, color, ti
                 <h2 style={{margin:0,display:'flex',alignItems:'center',gap:10}}><TabIcon size={24} color={color}/> {title} ({filtered.length})</h2>
                 {isITorCreator && <button title={`Add new ${title.toLowerCase()} asset`} className="btn-save" onClick={()=>{resetForm();setShowAdd(true);}} style={{height:36,display:'flex',alignItems:'center',gap:8}}><Plus size={16}/> Add {category==='infrastructure'?'Device':category==='mobile'?'Device':'Asset'}</button>}
             </div>
+            {bulk.toolbar}
             <div className="table-container" style={{flex:1,overflowY:'auto'}}>
-                <table className="data-table"><thead><tr>
+                <table className="data-table"><thead><tr>{bulk.header}
                     <th>{t('it.name', 'Name')}</th><th>{t('it.type', 'Type')}</th><th>{t('it.manufacturer', 'Manufacturer')}</th><th>{t('it.serial', 'Serial #')}</th><th>{t('it.assignedTo', 'Assigned To')}</th>
                     {isInfra && <th>{t('it.ipAddress', 'IP Address')}</th>}
                     {isInfra && <th>{t('it.criticality', 'Criticality')}</th>}
@@ -836,7 +860,7 @@ function InventoryTab({ category, search, isITorCreator, icon:TabIcon, color, ti
                     <th>{t('it.status', 'Status')}</th><th>{t('it.warranty', 'Warranty')}</th><th>{t('it.bookValue', 'Book Value')}</th><th>{t('it.actions', 'Actions')}</th>
                 </tr></thead>
                 <tbody>{filtered.map(i=>{const wDays=daysUntil(i.WarrantyExpiry);const isTransit=(i.Status||'').includes('Transit');return(
-                    <tr key={i.ID}>
+                    <tr key={i.ID}>{bulk.cell(i)}
                         <td style={{fontWeight:600,color}}>{i.Name}</td>
                         <td><Badge color={color}>{i.Type}</Badge></td>
                         <td>{[i.Manufacturer,i.Model].filter(Boolean).join(' ')||'—'}</td>
@@ -854,7 +878,7 @@ function InventoryTab({ category, search, isITorCreator, icon:TabIcon, color, ti
                             {isITorCreator && <ActionBtn icon={Pencil} tip="Edit" color="#f59e0b" onClick={()=>{setForm({...i});setShowAdd(true);}}/>}
                         </td>
                     </tr>
-                );})}{filtered.length===0&&<tr><td colSpan={isInfra?12:isMobile?12:10} className="table-empty">No {title.toLowerCase()} assets found.</td></tr>}</tbody></table>
+                );})}{filtered.length===0&&<tr><td colSpan={(isInfra || isMobile ? 11 : 9) + (isITorCreator ? 1 : 0)} className="table-empty">No {title.toLowerCase()} assets found.</td></tr>}</tbody></table>
             </div>
         </div>
 
@@ -1104,8 +1128,7 @@ function VendorsTab({ search, isITorCreator, onRefreshStats }) {
 
     const handleDelete = async(id)=>{
         if(!confirm('Delete this vendor/contract record?')) return;
-        const r=await API(`/vendors/${id}`,{method:'DELETE'});
-        if(r.ok){setDetail(null);setShowAdd(false);fetch_();onRefreshStats();window.trierToast?.success('Deleted');}
+        if(await deleteConfirmed(`/vendors/${id}`)){setDetail(null);setShowAdd(false);fetch_();onRefreshStats();window.trierToast?.success('Deleted');}
     };
 
     if(loading) return <div className="glass-card" style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>Loading vendors & contracts...</div>;
@@ -1716,7 +1739,7 @@ function LinkedAssetsPanel({ category, assetId, assetName }) {
     };
 
     const removeLink = async (linkId) => {
-        await API('/links/software-hardware/' + linkId, { method: 'DELETE' });
+        if(!await deleteConfirmed('/links/software-hardware/' + linkId)) return;
         fetchLinks();
     };
 

@@ -1,14 +1,17 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 /**
  * Spare Parts Inventory Optimization Route
  * Provides reorder recommendations based on current stock, reorder points,
  * historical lead times, and consumption rates.
+ * API routes: GET /api/parts/optimization, /dead-stock, /corporate.
  */
 'use strict';
 
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../database');
+const { getDb, asyncLocalStorage } = require('../database');
 const fs = require('fs');
 const path = require('path');
 const dataDir = require('../resolve_data_dir');
@@ -24,14 +27,16 @@ const NON_PLANT_DBS = new Set([
 function getAllPlantDbs() {
     const dbs = [];
     try {
-        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.db') && !NON_PLANT_DBS.has(f.replace('.db', '')) && !f.startsWith('trier_') && !f.startsWith('logistics'));
-        for (const f of files) {
+        // Auxiliary/customer/archived databases are not production plants.
+        // Use the same registry as corporate asset listings and migrations.
+        const plants = JSON.parse(fs.readFileSync(path.join(dataDir, 'plants.json'), 'utf8'));
+        for (const { id: plantId } of plants) {
+            if (typeof plantId !== 'string' || !SAFE_PLANT_ID.test(plantId) || NON_PLANT_DBS.has(plantId) || !fs.existsSync(path.join(dataDir, plantId + '.db'))) continue;
             try {
-                const plantId = f.replace('.db', '');
-                const db = getDb(plantId);
+                const db = asyncLocalStorage.run(plantId, () => getDb());
                 dbs.push({ plantId, db });
             } catch (e) {
-                console.warn('[SparePartsOpt] Failed to open DB', f, e.message);
+                console.warn('[SparePartsOpt] Failed to open DB', plantId, e.message);
             }
         }
     } catch (e) {

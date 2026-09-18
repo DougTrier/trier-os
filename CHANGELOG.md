@@ -1,9 +1,51 @@
 # Changelog
 
+> Historical release record. Older counts, design claims and feature plans below describe their dated releases, not current assurance. Trier OS 3.7.2 is feature complete and in [maintenance mode](docs/MAINTENANCE.md); see [current validation evidence](docs/SURGICAL_REMEDIATION_AUDIT.md).
+
 All notable changes to Trier OS will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [3.7.2] — 2026-09-17 — Preservation and Security Maintenance
+
+Existing operational workflows and authorized staff cross-plant behavior are preserved.
+
+### Preservation and operational corrections
+
+- Corrected Corporate Office/site reset selection, preview counts and transactional deletion, with verified backups and retained audit/replication history.
+- Added confirmed bulk deletion for IT hardware, software, infrastructure and mobile assets; corrected legacy IT authorization and false-success responses.
+- Normal installer updates, reinstalls and retained-data uninstall/reinstall preserve databases, accounts, password hashes, roles, groups, memberships and permissions. Destructive reset is separate and requires explicit confirmation.
+- Preserved valid small SQLite databases; corrupt files now fail safely instead of being replaced.
+- Corrected TOTP replay tracking, SOP foreign-key compatibility and missing columns required by existing EventLog triggers.
+- Added historical migration compatibility and filename/checksum tracking, including both 017 files and migration 047, with verified pre-migration backups. Historical migrations 001–061 were not rewritten; 062–063 are forward corrections.
+- Kept destructive maintenance requests out of offline replay; corrected work search, site-specific cache results, corporate aggregation and asset-status badges.
+- Preserved hidden helper execution; no command-window flashes were observed during verification.
+
+### Security
+
+- Strengthened server-side public-demo confinement, including shared floorplan/nested ownership.
+- Hardened network configuration authorization, input validation and process invocation.
+- Removed distributed HA trust credentials; explicit per-installation provisioning and rotation are required.
+- Hardened uploaded raster floorplans and active/unknown attachment serving.
+- Restricted pre-2FA tokens to second-factor completion rather than ordinary protected API access.
+
+### Dependencies and documentation
+
+- Targeted security maintenance for ws, multer and sharp; no blanket dependency upgrade.
+- Corrected security, architecture, deployment, testing and MIT/branding documentation; added TRADEMARKS.md.
+- Release packaging excludes host credentials/runtime evidence, retains MIT notices and uses installation-specific provisioning.
+
+### Established validation
+
+- Complete remediation gate: all seven Playwright projects, 1,129 passed, 0 failed, 22 documented conditional skips, 0 not run; no retries or flaky results.
+- All 23 unit-test files, 56 migration starting states, 21 isolated installer scenarios and 11 integration checks passed.
+- SQLite integrity, foreign keys, IT orphan checks, invariants and original-data reconciliation passed. Existing accounts and nonempty group/permission fixtures survived the tested upgrade and reset workflows.
+- Production frontend, EXE and MSI verification builds passed. Final release artifacts are rebuilt from the release commit and receive focused isolated artifact smoke checks before publication.
+
+See [validation evidence and limits](docs/SURGICAL_REMEDIATION_AUDIT.md) and [release notes](docs/RELEASE_NOTES_3.7.2.md).
 
 ---
 

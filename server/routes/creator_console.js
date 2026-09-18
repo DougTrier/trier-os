@@ -1,10 +1,7 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
 /**
  * Trier OS — Creator Console System Administration API
  * =======================================================
@@ -225,10 +222,12 @@ router.post('/settings/totp-verify', (req, res) => {
             return res.status(400).json({ error: 'Invalid code. Make sure your authenticator app clock is synced.' });
         }
 
-        // Move pending to confirmed
-        logDb.prepare("INSERT OR REPLACE INTO creator_settings (Key, Value, UpdatedAt) VALUES ('totp_secret', ?, datetime('now'))").run(pendingRow.Value);
-        logDb.prepare("DELETE FROM creator_settings WHERE Key = 'totp_pending_secret'").run();
-        logDb.prepare("INSERT OR REPLACE INTO creator_settings (Key, Value, UpdatedAt) VALUES ('twofa_enforced', '1', datetime('now'))").run();
+        // Confirm the new secret and retire the old, unbound replay cache together.
+        logDb.transaction(() => {
+            logDb.prepare("INSERT OR REPLACE INTO creator_settings (Key, Value, UpdatedAt) VALUES ('totp_secret', ?, datetime('now'))").run(pendingRow.Value);
+            logDb.prepare("DELETE FROM creator_settings WHERE Key IN ('totp_pending_secret','totp_last_delta')").run();
+            logDb.prepare("INSERT OR REPLACE INTO creator_settings (Key, Value, UpdatedAt) VALUES ('twofa_enforced', '1', datetime('now'))").run();
+        }).immediate();
 
         logAudit('creator', 'TOTP_SETUP_VERIFIED', null, {}, 'INFO', req.ip);
         res.json({ success: true, message: '2FA enabled! You will need your authenticator app on every future login.' });

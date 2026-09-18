@@ -1,170 +1,52 @@
-# Trier OS — Database Schema Reference
+# Trier OS database reference — 3.7.2
 
-## Overview
+Trier OS uses better-sqlite3 with authoritative per-plant files on the single corporate HQ host. Authorized staff cross-plant search is intentional; separate files are not mutually isolated SaaS tenants. This is a selected current schema reference, not a guarantee that every installed DB has identical migration coverage.
 
-Trier OS uses **SQLite** (`better-sqlite3`) with a **multi-tenant sharding model**. Each plant facility has its own isolated `.db` file under the `data/` directory. No plant can access another plant's database.
-
-## Database Files
+## Files and routing
 
 | File | Purpose |
 |---|---|
-| `data/Demo_Plant_1.db` | Fully seeded demo plant (delete when going live) |
-| `data/Plant_2.db` | Second demo plant for multi-site testing |
-| `data/Corporate_Office.db` | Corporate HQ facility database |
-| `data/corporate_master.db` | Read-only aggregate crawled from all plants at boot |
-| `data/examples.db` | Protected reference database — excluded from all math |
-| `data/schema_template.db` | Blank prototype used when provisioning new plants |
-| `data/trier_logistics.db` | Cross-plant logistics and inter-site transfer ledger |
+| `trier_auth.db` | Users, password hashes, UserPlantRoles and TokenVersion |
+| `trier_logistics.db` | Shared operational, safety, audit and floorplan records |
+| `corporate_master.db` | Corporate master/aggregate data; existing crawl/provision/write paths mean it is not universally read-only |
+| Plant `.db` files | Plant-scoped work, assets, parts, schedules, quality and related operational data |
+| `examples.db` | Public demo/reference scope; some actions write demonstration state |
+| `schema_template.db` | Provisioning template, not a promise of empty user tables |
 
-> `auth_db.sqlite` (root level) stores user accounts and JWT session data separately from plant data.
+Paths are relative to the directory selected by `server/resolve_data_dir.js` (normally `data/` for source installations). Demo datasets and their exact file names depend on the installed distribution. `Demo_Plant_1.db`, `Plant_2.db` and `Corporate_Office.db` are sample facility files, not mandatory production names.
 
----
+Authenticated middleware sets validated AsyncLocalStorage context. Ordinary routes use the database helper rather than creating a path from req.body. Internal explicit getDb selectors exist and require validation; the demo-context guard refuses selection outside examples. `all_sites` is virtual: the generic DB handle uses read-only template/fallback data, while corporate/aggregate routes query their appropriate stores.
 
-## Core Plant Tables
+## Selected plant columns
 
-These tables exist in every plant `.db` file.
+The following names/types were checked against the current plant schema without changing it. Use actual PRAGMA/schema coverage for an installation; route APIs may map fields and statuses differently.
 
-### `Work` — Work Orders
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | INTEGER | Primary key, auto-increment |
-| `Description` | TEXT | Work order title |
-| `Status` | TEXT | `OPEN`, `IN_PROGRESS`, `COMPLETE`, `CANCELLED` |
-| `Priority` | TEXT | `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` |
-| `AssetID` | TEXT | FK → `Asset.ID` |
-| `AssignedTo` | TEXT | FK → user identifier |
-| `CreatedBy` | TEXT | Creator user ID |
-| `DeptID` | TEXT | FK → `Departments.id` |
-| `WoTypeID` | TEXT | Corrective, Preventive, Predictive, etc. |
-| `EstDowntime` | INTEGER | Estimated downtime in minutes |
-| `ActDowntime` | INTEGER | Actual downtime in minutes |
-| `LaborCost` | REAL | Calculated from labor entries |
-| `PartCost` | REAL | Calculated from parts used |
-| `CreatedAt` | TEXT | ISO datetime |
-| `UpdatedAt` | TEXT | ISO datetime |
-| `CompletedAt` | TEXT | ISO datetime (null if open) |
-
-### `Asset` — Equipment Registry
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | TEXT | Primary key (e.g. `ASSET-0042`) |
-| `Description` | TEXT | Equipment name |
-| `AssetType` | TEXT | FK → `asset_types` lookup |
-| `LocationID` | TEXT | FK → `Locations.ID` |
-| `DeptID` | TEXT | FK → `Departments.id` |
-| `Status` | TEXT | `ACTIVE`, `INACTIVE`, `DELETED` |
-| `Manufacturer` | TEXT | |
-| `Model` | TEXT | |
-| `SerialNumber` | TEXT | |
-| `PurchaseDate` | TEXT | ISO date |
-| `PurchaseCost` | REAL | Original purchase price |
-| `DepreciationYears` | INTEGER | Useful life for book value calc |
-| `Notes` | TEXT | |
-| `FloorPlanX` | REAL | Pin X coordinate on floor plan |
-| `FloorPlanY` | REAL | Pin Y coordinate on floor plan |
-| `FloorPlanID` | TEXT | FK → `FloorPlans.ID` |
-
-### `Part` — Parts Inventory
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | TEXT | Part number / SKU |
-| `Description` | TEXT | Part name |
-| `Stock` | INTEGER | Quantity on hand |
-| `MinStock` | INTEGER | Reorder point threshold |
-| `MaxStock` | INTEGER | Maximum stocking level |
-| `UnitCost` | REAL | Cost per unit |
-| `LocationBin` | TEXT | Physical bin/shelf location |
-| `VendorID` | TEXT | FK → `Vendors.ID` |
-| `PartNumber` | TEXT | Manufacturer part number |
-| `Barcode` | TEXT | Scannable barcode value |
-| `Notes` | TEXT | |
-
-### `LaborEntry` — Time & Labor Tracking
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | INTEGER | Primary key |
-| `WorkOrderID` | INTEGER | FK → `Work.ID` |
-| `UserID` | TEXT | Technician user ID |
-| `Hours` | REAL | Hours worked |
-| `HourlyRate` | REAL | Rate at time of entry |
-| `WorkDate` | TEXT | ISO date |
-| `Notes` | TEXT | |
-
-### `PartsUsed` — Parts Consumed per Work Order
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | INTEGER | Primary key |
-| `WorkOrderID` | INTEGER | FK → `Work.ID` |
-| `PartID` | TEXT | FK → `Part.ID` |
-| `Quantity` | INTEGER | Units consumed |
-| `UnitCost` | REAL | Cost at time of use |
-| `UsedAt` | TEXT | ISO datetime |
-
----
-
-## Safety & Compliance Tables
-
-### `loto_permits` — Lockout/Tagout
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | INTEGER | Primary key |
-| `PermitNumber` | TEXT | Auto-generated permit ID |
-| `PermitType` | TEXT | LOTO, Hot Work, Confined Space, etc. |
-| `AssetID` | TEXT | FK → `Asset.ID` |
-| `Status` | TEXT | `ACTIVE`, `COMPLETED`, `CANCELLED` |
-| `CreatedBy` | TEXT | Issuing supervisor |
-| `AuthorizedBy` | TEXT | Safety officer sign-off |
-| `StartDate` | TEXT | ISO datetime |
-| `EndDate` | TEXT | ISO datetime |
-| `IsolationPoints` | TEXT | JSON array of energy sources |
-
-### `safety_incidents` — Incident Log
-| Column | Type | Notes |
-|---|---|---|
-| `ID` | INTEGER | Primary key |
-| `Title` | TEXT | Incident description |
-| `Type` | TEXT | Near Miss, Injury, Property Damage, etc. |
-| `Severity` | TEXT | `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` |
-| `Location` | TEXT | Where it occurred |
-| `ReportedBy` | TEXT | |
-| `IncidentDate` | TEXT | ISO datetime |
-| `RootCause` | TEXT | |
-| `CorrectiveAction` | TEXT | |
-
----
-
-## Lookup / Reference Tables
-
-These small tables drive dropdowns across the UI.
-
-| Table | Purpose |
+| Table | Selected actual columns |
 |---|---|
-| `Locations` | Plant zones and physical locations |
-| `Departments` | Organizational departments |
-| `asset_types` | Equipment category classifications |
-| `Vendors` | Supplier and vendor directory |
-| `FailureMode` | RCA failure mode library |
-| `Procedures` | SOP and task procedure records |
-| `Schedule` | Preventative maintenance schedules |
-| `AuditLog` | System-wide change audit trail |
+| `Work` | `ID INTEGER`, `Descript TEXT`, `Description TEXT`, `AstID TEXT`, `StatusID INTEGER`, `Priority INTEGER`, `AddDate TEXT`, `StartDate TEXT`, `CompDate TEXT`, `AssignToID TEXT`, `EstDown REAL`, `ActDown REAL`, `holdReason TEXT`, `needsReview INTEGER`, `reviewReason TEXT` |
+| `Asset` | `ID TEXT`, `Description TEXT`, `AssetType TEXT`, `LocationID TEXT`, `DeptID TEXT`, `Manufacturer TEXT`, `Model TEXT`, `Serial TEXT`, `AssetTag TEXT`, `Active INTEGER`, `IsDeleted INTEGER`, `GpsLat REAL`, `GpsLng REAL` |
+| `Part` | `ID TEXT`, `Descript TEXT`, `Description TEXT`, `Stock INTEGER`, `UnitCost TEXT`, `Location TEXT`, `VendorID TEXT`, `OrdMin REAL`, `OrdMax REAL`, `CriticalSpare INTEGER` |
+| `WorkParts` | `WoID INTEGER`, `PartID TEXT`, `EstQty REAL`, `ActQty REAL`, `UnitCost TEXT`, `qty_returned REAL`, `status TEXT`, `issued_by TEXT`, `returned_by TEXT`, `returned_at TEXT` |
+| `WorkSegments` | `segmentId TEXT`, `woId TEXT`, `userId TEXT`, `startTime TEXT`, `endTime TEXT`, `segmentState TEXT`, `segmentReason TEXT`, `holdReason TEXT` |
+| `ScanAuditLog` | `auditEventId TEXT`, `scanId TEXT`, `woId TEXT`, `assetId TEXT`, `userId TEXT`, `previousState TEXT`, `nextState TEXT`, `deviceTimestamp TEXT`, `serverTimestamp TEXT`, `offlineCaptured INTEGER` |
 
----
+The old `LaborEntry` and `PartsUsed` definitions were not tables in the checked plant schema. Work/labor/parts APIs use their existing operational tables; do not create those obsolete tables to match old prose. Numeric StatusID/work-status lookups are distinct from the scan state graph. Do not infer a DB foreign-key constraint merely from a logical relationship in a route.
 
-## Corporate Master Database
+## Shared schemas
 
-`corporate_master.db` is **read-only and regenerated at every server boot**. It is never written to directly — the Express server crawls all plant databases and assembles an aggregate snapshot for the Corporate Analytics, Underwriter Portal, and Executive Dashboard.
+`server/logistics_db.js` exports an object containing `db`, not a callable logistics DB helper. For example:
 
----
-
-## Adding a New Plant
-
-The easiest way to provision a new plant is through the Admin Console UI (**Settings → Edit Locations → + Add New Plant**). Under the hood, the server copies `data/schema_template.db` and registers the new plant in the routing layer automatically.
-
-To provision manually:
-```bash
-cp data/schema_template.db data/My_New_Plant.db
+```js
+const { db: logisticsDb } = require('../logistics_db');
+const rows = logisticsDb.prepare('SELECT * FROM AuditLog WHERE PlantID = ?').all(plantId);
 ```
-Then add the plant record via the Admin Console or directly via the API:
-```
-POST /api/plants  { "id": "My_New_Plant", "label": "My New Plant" }
-```
+
+`server/routes/loto.js` maintains `LotoPermits`, `LotoIsolationPoints`, `LotoSignatures` and `LotoAuditLog` in logistics storage; the old lowercase `loto_permits` schema was not the current route definition. Shared floorplans and child tables are also logistics data, with plan ownership checked separately from per-plant DB context. See the actual route schema for fields and lifecycle values; safety modules do not all share one generic permit table.
+
+## Provisioning and migrations
+
+Use the existing authorized Settings/Edit Locations workflow to provision plants, rather than an obsolete `/api/plants` example or a manual unregistered file copy. Provisioning copies the schema template, with a demo-baseline fallback if necessary; inspect resulting reference records before real use. Back up existing data before deleting demonstration locations.
+
+Numbered SQL/JavaScript migrations are in `server/migrations/`. Never edit an existing migration; new JavaScript migrations export `.up(db)`. The runner uses number/filename ordering and a filename/checksum ledger while retaining legacy version records. Historical bare-function/path irregularities (including 047 and both 017 files) use a scoped compatibility adapter. Verified backups precede pending upgrades; a failure rolls back that database's pending changes and stops startup. Forward migrations 062 and 063 repair the SOP parent key and missing EventLog prerequisite columns without removing existing rows. See [the remediation audit](SURGICAL_REMEDIATION_AUDIT.md) for reconstructed historical coverage and recovery limits.
+
+SQLite WAL files matter for consistent backup/recovery. Do not copy only a live DB and assume it captures all current writes. [Deployment/rollback](p2/Deployment_and_Rollback.md), [architecture](ARCHITECTURE.md) and [validation limits](SECURITY_MAINTENANCE_VALIDATION.md).

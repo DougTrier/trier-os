@@ -49,7 +49,7 @@ offline-first from the start.
 | Server unreachable | Stop working | Stop working | Stop working | **Queue locally, sync on reconnect** |
 | Network drops mid-scan | Lost | Lost | Lost | **Captured in IndexedDB** |
 | Plant LAN without WAN | Unsupported | Unsupported | Unsupported | **LAN hub serves all devices** |
-| Offline duration | N/A | N/A | N/A | **Indefinite — no data loss** |
+| Offline duration | N/A | N/A | N/A | **Local queue/cache fallback; recovery not fully validated** |
 | Multi-device sync offline | N/A | N/A | N/A | **WebSocket hub, real-time** |
 | Reconnect behavior | Manual | Manual | Partial | **Auto-drain, ordered replay** |
 
@@ -187,3 +187,7 @@ the technician has a keyboard, and the ERP is the source of truth. Trier OS inve
 
 If those assumptions match your plant floor reality, the incumbents may serve you well.
 If they don't, Trier OS was built for exactly that environment.
+
+## Current maintenance and validation limits
+
+Trier OS is feature complete and feature frozen. Existing operational workflows are intentionally preserved. Offline replay/outage/restart, paired-server HA recovery and every integration delivery path are not fully validated by browser regression. Queue/outbox controls support recovery; they are not a universal zero-loss or exactly-once guarantee. [Current evidence](SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](MAINTENANCE.md).

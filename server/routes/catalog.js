@@ -83,7 +83,7 @@ const EXT_MIME = {
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 100 * 1024 * 1024 }, // 100 MB
     fileFilter(req, file, cb) {
         const ext = path.extname(file.originalname).toLowerCase();
         cb(null, ALLOWED_EXT.has(ext));

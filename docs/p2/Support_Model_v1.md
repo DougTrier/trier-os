@@ -1,3 +1,5 @@
+> Historical phase specification/review. Proposed behavior, acceptance boxes and version samples below are design history, not a current implementation guarantee or new feature roadmap. Current prepared 3.7.2 implementation and the established remediation evidence win; see [architecture](../ARCHITECTURE.md), [validation limits](../SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](../MAINTENANCE.md).
+
 # Trier OS — Operational Support Model v1
 > Required before any pilot deployment. Every failure must have a documented response.
 
@@ -42,7 +44,7 @@
 
 During the active pilot window:
 - Daily check-in call: confirm system health via `GET /api/health`, review any overnight flags
-- Trier OS engineering on standby — response SLA: **< 30 min for Sev 1**
+- Trier OS engineering on standby — response targets must be agreed locally; no staffed maintainer SLA is established by this historical template
 - Any Sev 1 event: contact Doug Trier directly before attempting site recovery
 - Log every issue encountered — even minor ones. Pilot feedback is highest-value input.
 

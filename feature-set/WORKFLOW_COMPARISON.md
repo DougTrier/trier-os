@@ -1,3 +1,5 @@
+> Historical evaluation/design snapshot. Dated versions, counts, cost estimates and comparisons below are not current validated facts or future feature commitments. Trier OS is feature complete and feature frozen; current evidence and limits are in [../docs/SECURITY_MAINTENANCE_VALIDATION.md](../docs/SECURITY_MAINTENANCE_VALIDATION.md) and the [maintenance policy](../docs/MAINTENANCE.md).
+
 # Trier OS — Workflow Audit & Industry Comparison Report
 **Version:** 3.4.1  
 **Audited:** April 21, 2026  
@@ -127,7 +129,7 @@ This is Trier OS's most significant workflow advance over any CMMS on the market
 | Immutable audit trail | ❌ | ✅ (basic) | ❌ | ❌ | ✅ |
 | Digital signatures | ⚠️ (add-on) | ❌ | ❌ | ❌ | ✅ |
 
-**Trier OS Advantage:** This workflow has no equivalent in any CMMS at any price. Scan-to-lock point verification is a novel enforcement mechanism that goes beyond the regulatory minimum (OSHA 29 CFR 1910.147) and provides mathematical proof of compliance that paper-based systems cannot.
+**Trier OS Advantage:** This workflow has no equivalent in any CMMS at any price. Scan-to-lock point verification is a novel enforcement mechanism that goes beyond the regulatory minimum (OSHA 29 CFR 1910.147) and provides scenario evidence of compliance that paper-based systems cannot.
 
 ---
 
@@ -352,7 +354,7 @@ In every other CMMS, modifying the system requires:
 - Code change deployed to sandboxed environment
 - Parallel Universe Engine replays historical event data against sandboxed code
 - Side-by-side KPI delta: green = improvement, red = regression
-- Change validated before production — mathematical proof, not guesswork
+- Change validated before production — scenario evidence, not guesswork
 
 **Step 3: Deploy**
 - One-click deploy to production

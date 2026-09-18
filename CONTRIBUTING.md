@@ -2,7 +2,7 @@
 
 124,668 lines of core logic in 33 days. Built fast. We pushed every button, broke things, fixed them faster, and didn't stop until it was right.
 
-That's the standard this codebase was built to. Not perfection on the first try — persistence until it was right. If that sounds like how you build software, you'll fit in here.
+Trier OS 3.7.1 is feature complete and in maintenance mode. Contributions are limited to confirmed break/fix, confirmed security maintenance, necessary compatibility maintenance and truthful documentation. Stability and low cognitive load are intentional. See [maintenance policy](docs/MAINTENANCE.md).
 
 ---
 
@@ -10,7 +10,7 @@ That's the standard this codebase was built to. Not perfection on the first try 
 
 Trier OS runs on real factory floors. Maintenance crews depend on it to manage equipment, track safety, and keep production moving. A bug here isn't a UI glitch — it can mean a missed PM, a failed inspection, or a worker without the right procedure in hand.
 
-That context shapes everything about how this project is maintained. We welcome contributions warmly and review them carefully. Quality over speed doesn't apply here — we do both. But we don't merge anything we haven't tested against a live instance.
+That context shapes everything about how this project is maintained. We welcome contributions warmly and review them carefully. Quality over speed doesn't apply here — we do both. Executable changes require validation appropriate to the affected live-instance paths; documentation-only changes require documentation checks.
 
 If you have a question before diving in, open a **Discussion** rather than an Issue. That's what Discussions are for.
 
@@ -24,7 +24,7 @@ Trier OS enforces a hard **10% minimum Contextual Density Ratio** — every file
 
 ### What the header must contain
 
-1. **Copyright line** — `// Copyright © 2026 Trier OS. All Rights Reserved.`
+1. **Copyright line** — `Copyright © 2026 Doug Trier`, MIT license identification and a reference to root `LICENSE` (as shown below)
 2. **Module title block** — Clear, human-readable module name
 3. **Context paragraph** — 2–3 sentences explaining what the file does and how it fits the platform
 4. **Endpoint or action blocks** — Explicit documentation of exposed API routes or key functions
@@ -32,7 +32,9 @@ Trier OS enforces a hard **10% minimum Contextual Density Ratio** — every file
 ### Correct header — React component
 
 ```jsx
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * FleetView.jsx — Fleet & Truck Shop Module
@@ -59,7 +61,9 @@ import React, { useState, useEffect } from 'react';
 ### Correct header — Express route file
 
 ```js
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * fleet.js — Fleet & Vehicle API Routes
@@ -94,8 +98,8 @@ No copyright. No context. No endpoint documentation. This doesn't meet the stand
 
 Before submitting a PR:
 
-1. Run `npm run build` — zero errors, zero warnings
-2. Test your change against a running Trier OS instance (portable build or from source)
+1. For executable changes, run the relevant build and investigate errors or security-relevant warnings; existing build warnings are not automatically a defect
+2. Test the affected paths against a disposable running Trier OS instance; use targeted regressions for narrow changes and broaden only when risk warrants it. Documentation-only changes need links/commands/facts/diff validation, not a full Playwright rerun
 3. No new `console.error` calls that aren't already handled
 4. If you changed any UI — test it, screenshot it, include it in the PR
 
@@ -103,12 +107,12 @@ Before submitting a PR:
 
 ## 3. Pull Request Process
 
-1. Fork the repository and create a branch — `fix/your-fix` or `feature/your-feature`
+1. Fork the repository and create a branch — `fix/your-fix` or `docs/your-correction`
 2. Follow the documentation standard above
 3. Fill out the PR template completely
 4. Submit to `main`
 
-Every PR is reviewed and tested locally before merge. That's not bureaucracy — that's how a codebase built for factory floors stays reliable. We'll give you honest, direct feedback and work with you to get it across the line.
+Every PR is reviewed and validated locally at a scope appropriate to its risk before merge. That's not bureaucracy — that's how a codebase built for factory floors stays reliable. We'll give you honest, direct feedback and work with you to get it across the line.
 
 ---
 
@@ -158,3 +162,7 @@ If you've worked in manufacturing, maintenance, or industrial operations and som
 ---
 
 *Trier OS is maintained by Doug Trier. All contributions are reviewed before merge.*
+
+## Copyright, license and branding
+
+Doug Trier owns the original Trier OS source, released under [MIT](LICENSE). Preserve its copyright and permission notices. Do not characterize MIT source as proprietary or categorically prohibit copying, distribution or modification. “All Rights Reserved” alone is not a reason to delete attribution. Broad existing source-header cleanup is separate from documentation maintenance; do not rewrite source files blindly. Branding and endorsement follow [TRADEMARKS.md](TRADEMARKS.md).

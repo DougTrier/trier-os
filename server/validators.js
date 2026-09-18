@@ -1,10 +1,7 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
 /**
  * Trier OS - Validator Module
  * =====================================
@@ -18,6 +15,10 @@
  */
 
 const whitelists = {
+    itDelete: ['ID', 'PlantID'],
+    itAssetUpdate: ['Name','Vendor','Version','LicenseKey','LicenseType','Seats','SeatsUsed','ExpiryDate','RenewalCost','Category','Status','AssignedTo','Department','PurchaseDate','PurchaseOrder','Notes','PlantID','CreatedBy','CreatedAt','Type','Manufacturer','Model','SerialNumber','AssetTag','BarcodeID','Location','WarrantyExpiry','PurchaseCost','SalvageValue','UsefulLifeYears','DepreciationMethod','CurrentBookValue','Condition','IPAddress','MACAddress','RackPosition','PortCount','FirmwareVersion','LastFirmwareUpdate','Criticality','IMEI','PhoneNumber','Carrier','PlanType','MonthlyCost','MDMEnrolled','MDMProvider','OSVersion'],
+    itVendorUpdate: ['VendorName','ContactName','ContactEmail','ContactPhone','Website','Address','Category','ContractType','ContractNumber','Description','StartDate','EndDate','RenewalDate','AutoRenew','AnnualCost','PaymentTerms','SLAResponseTime','SLAUptimeGuarantee','Status','Notes','PlantID','CreatedBy','CreatedAt'],
+    itLocationUpdate: ['location','rackPosition','floorPlanId','floorPlanX','floorPlanY'],
     work: [
         'ID', 'WorkOrderNumber', 'Description', 'AddDate', 'SchDate', 'StatusID',
         'AstID', 'Priority', 'AssignToID', 'Comment', 'ProcComment',

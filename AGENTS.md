@@ -1,0 +1,311 @@
+# Trier OS — Codex Guide
+
+This file is the primary reference for AI-assisted development on Trier OS.
+Read this before writing any code. It overrides general defaults.
+
+---
+
+## Maintenance State
+
+Trier OS 3.7.2 is feature complete and feature frozen. Only confirmed break/fix, confirmed security maintenance and necessary compatibility maintenance are in scope. No new feature roadmap or architectural rewrite for modernization. Audit/diagnosis precedes changes; preserve proven behavior and prefer narrow fixes. See [maintenance policy](docs/MAINTENANCE.md).
+
+## What Trier OS Is
+
+Trier OS is an enterprise Industrial Operating System for manufacturing and industrial
+plant operations. It covers work order management, asset management, safety (PTW/MOC/LOTO),
+predictive maintenance, quality control, training, contractor management, energy monitoring,
+compliance, and corporate analytics.
+
+It is not a SaaS product. It is deployed once at corporate headquarters. All plants connect
+to that single instance. Everything is cross-searchable by design.
+
+---
+
+## Deployment Architecture
+
+```
+Corporate HQ
+  └── Trier OS Server (single instance, all plants connect here)
+        ├── trier_logistics.db   (cross-plant: LOTO, safety permits, audit log)
+        ├── trier_auth.db       (user accounts, roles, token versions)
+        ├── corporate_master.db  (corporate-wide master data)
+        ├── Plant_1.db           (Plant 1 scoped data)
+        ├── Plant_2.db           (Plant 2 scoped data)
+        └── schema_template.db   (template for new plant provisioning)
+
+Each Plant (physical location)
+  └── Electron Desktop App (installed on one local server per plant)
+        └── LAN Hub (port 1940, WebSocket)
+              ├── Keeps scan state alive when corporate is unreachable
+              ├── Local plant .db file for offline reads
+              └── Replays queued scans to POST /api/scan/offline-sync on reconnect
+```
+
+**Packaging distinction:** The current Electron launcher starts a full embedded server on its host; it does not automatically connect a plant installation to HQ. The LAN Hub startup currently uses the local API URL. The diagram describes the intended single-HQ model, not automatic configuration of independent plant installations. Verify routing and recovery for the actual deployment; see [architecture](docs/ARCHITECTURE.md).
+
+**Key facts:**
+- One corporate server instance, not per-plant instances
+- Plants do NOT run their own Trier OS server — they connect to corporate
+- The LAN Hub (port 1940) is a lightweight fallback only: scan state + local DB reads
+- HA replication (ha_sync.js) pushes to a secondary; POST /api/ha/promote for failover
+- All cross-plant data (LOTO, safety permits, global audit trail) lives in trier_logistics.db
+
+---
+
+## Database Pattern
+
+Trier OS uses SQLite (better-sqlite3) with a multi-database architecture.
+
+### Per-plant databases
+Routes access the correct plant DB through AsyncLocalStorage context — never hardcode a
+plant DB path or pass plantId directly to getDb() from req.body.
+
+```js
+// Correct — context is set by middleware, getDb() resolves automatically
+const db = require('../database');
+const rows = db().prepare('SELECT * FROM Assets').all();
+
+// Wrong — never do this
+const db = require('better-sqlite3')(`data/${req.body.plantId}.db`);
+```
+
+The db() call resolves to the plant SQLite file for the authenticated user's current plant.
+The `x-plant-id` request header (set by the frontend) is validated by middleware and
+stored in AsyncLocalStorage before any route handler runs.
+
+### Cross-plant database (trier_logistics.db)
+Data that must be visible across all plants uses trier_logistics.db via logistics_db.js.
+Examples: LOTO permits, safety incidents, contractor records, audit trail, API keys.
+
+```js
+const { db: logisticsDb } = require('../logistics_db');
+const auditRows = logisticsDb.prepare('SELECT * FROM AuditLog WHERE PlantID = ?').all(plantId);
+```
+
+### Auth database (trier_auth.db)
+User accounts, roles, and JWT management only. Never mix operational data into the auth DB.
+
+### Migrations
+- All schema changes go through numbered migrations in server/migrations/
+- Never modify an existing migration file — always create a new one
+- Migration files are named NNN_description.js (e.g. 029_add_criticality_score.js)
+- New JavaScript migrations export `.up(db)`. The runner orders by number and filename, tracks both historical 017 files by filename/checksum, and adapts legacy export/path irregularities without editing historical files. Verified backups precede pending upgrades; failures roll back that database and stop startup. See `docs/SURGICAL_REMEDIATION_AUDIT.md` for scope, prerequisites and tested historical coverage.
+
+---
+
+## Security Rules
+
+All security rules are in server/standards.md. The most critical:
+
+- **S-1:** Validate plantId at route boundary with SAFE_PLANT_ID regex before getDb()
+- **S-2:** Use req.user.Username (capital U) — lowercase is always undefined
+- **S-4:** Parameterized queries only — no template literal SQL interpolation
+- **S-11:** Idempotency enforced at DB layer (UNIQUE INDEX), not just app-layer pre-check
+- **S-12:** Collision-resistant identifiers — Date.now() alone is not unique
+
+Read server/standards.md in full before writing any route that touches external input.
+
+---
+
+## File Header Standard
+
+Every .js, .jsx, and .css file must begin with the standard header. No exceptions.
+See CONTRIBUTING.md for the exact format.
+
+Minimum required:
+1. Copyright line: `// Copyright © 2026 Doug Trier`, MIT identification and root `LICENSE` reference
+2. Module title and description
+3. All exposed API routes (for server files) or API dependencies (for client files)
+
+---
+
+## Route Conventions
+
+### Adding a new route file
+1. Create server/routes/your_feature.js with full header
+2. Export a function that receives db: `module.exports = function(db) { ... }`
+3. Mount in server/index.js: `app.use('/api/your-feature', require('./routes/your_feature')(db))`
+4. Add appropriate auth middleware: most routes use `authMiddleware` before the router
+
+### Input validation
+- All req.body fields that go into SQL must pass through validators.js whitelist()
+- plantId from any client source must match SAFE_PLANT_ID = /^[a-zA-Z0-9_-]{1,64}$/
+- userId for audit trails must come from req.user.UserID (JWT), never req.body
+
+### Response format
+Routes return JSON. Errors follow: `{ error: 'Human-readable message' }` with appropriate
+HTTP status. Success responses return the data directly or `{ success: true, ... }`.
+
+---
+
+## The Zero-Keystroke Contract
+
+The scan flow (scan a QR tag on a machine) must require zero keyboard input from the tech.
+This is a core product promise — every scan should resolve to a work order in one tap.
+
+Never add a step to the scan flow that requires the tech to type anything. If a field is
+required, it must be pre-populated from the asset record, the tech's profile, or the
+work order context.
+
+**Files that implement this contract:**
+- server/routes/scan.js — the full scan state machine
+- server/lan_hub.js — offline scan relay
+- server/routes/scan.js POST /offline-sync — replay on reconnect
+
+Do not modify the scan state machine without reading all three files and understanding
+the full state graph (IDLE -> ACTIVE -> WAITING -> CLOSED/AUTO_CLOSED).
+
+---
+
+## Files That Must Not Be Modified Without Full Context
+
+| File | Why |
+|---|---|
+| server/UNTOUCHABLE_dairy_master.js | Canonical dairy industry master data. Changes break master catalog seeding. |
+| server/routes/scan.js (state machine core) | Any change to state transitions must be validated against the full offline + replay + HA path |
+| server/lan_hub.js | Touches concurrent scan state across multiple devices; race conditions are non-obvious |
+| server/ha_sync.js | DB replication; a bug here causes silent primary/secondary divergence |
+| server/migrations/ (existing files) | Never edit. Create a new numbered migration instead. |
+
+---
+
+## Key Patterns in the Codebase
+
+### Soft deletes
+Most tables use an IsDeleted or IsActive flag rather than hard DELETE. Check before adding
+a new DELETE route — the pattern is almost always a soft delete.
+
+### Audit trail
+Write-path operations (create, update, close, approve) must write an audit record.
+The audit log lives in trier_logistics.db (AuditLog table) for cross-plant visibility.
+Use: `who = req.user.Username`, `what = action description`, `when = new Date().toISOString()`
+
+### Plant scoping
+Every query against a per-plant DB is automatically scoped by the AsyncLocalStorage
+context. For cross-plant queries (logistics_db), always filter by PlantID explicitly.
+
+### Batch operations (Rule S-7)
+HTTP 200 from a batch endpoint is a transport ACK, not semantic success.
+Always inspect per-item result status. Only mark items complete if their individual
+result succeeded.
+
+---
+
+## Frontend Architecture
+
+- React (Vite build)
+- Single-page app — all views are top-level components loaded by App.jsx
+- Plant selection drives the x-plant-id header on every API call
+- No Redux — local useState + useEffect patterns throughout
+- Tailwind CSS for utility classes, custom CSS for complex component styles
+- Monaco Editor embedded for Live Studio (disable in production via DISABLE_LIVE_STUDIO)
+
+---
+
+## Testing
+
+- Playwright for E2E tests (tests/e2e/)
+- Test against a running instance — no mocking the database
+- Stop at first failure, fix root cause before re-running the full suite
+- Ghost accounts are seeded in dev/test only; existing accounts are not removed by switching to production
+- Public `demo_*` identities are separate and seeded outside that conditional; server confines them to examples
+- Documentation-only edits use documentation validation. Narrow executable changes use targeted regressions appropriate to risk; the full suite remains a new-release gate
+
+---
+
+## Environment Variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| JWT_SECRET | Yes (prod) | Provision 64+ random hex chars; production rejects missing, <32 chars or recognized default/placeholder values |
+| HUB_TOKEN_SECRET | Yes (prod) | Provision 64+ random hex chars, distinct from JWT_SECRET. Production rejects missing/short/placeholder values; equality is fatal in all modes. Signs LAN hub tokens |
+| NODE_ENV | Yes (prod) | Set to `production` to harden all security paths |
+| HA_SYNC_KEY | If using HA | 64-char hex. Server-to-server replication auth |
+| DISABLE_LIVE_STUDIO | Recommended (prod) | Strips Monaco IDE from API surface |
+| DISABLE_LAN_CORS | Optional | Air-gapped/hardened deployments only |
+| LAN_HUB_ENABLED | Dev/test | Force-start LAN hub outside Electron |
+
+---
+
+## Release Build Process
+
+Run these steps in order for every new version. All three artifacts (exe, msi, zip) plus
+the PDF go into the GitHub release.
+
+### Step 1 — Portable build (no Admin needed)
+```powershell
+powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_portable.ps1" "G:\TrierOS-v{VER}"
+```
+Produces a self-contained folder: bundled `node.exe`, full databases, `Trier OS.bat`.
+
+### Step 2 — Zip the portable folder
+```powershell
+Compress-Archive -Path "G:\TrierOS-v{VER}\*" -DestinationPath "G:\TrierOS-Setup-{VER}.zip" -CompressionLevel Optimal
+```
+Produces `TrierOS-Setup-{VER}.zip` (~700–800 MB compressed).
+
+### Step 3 — Electron installer build (no admin required)
+```powershell
+powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_installer.ps1"
+```
+Reads the version from `package.json`. Produces in `C:\Trier OS\Installers\`:
+- `TrierOS-Setup-{VER}.exe` (NSIS, ~230 MB)
+- `TrierOS-Setup-{VER}.msi` (~220 MB)
+
+### Step 4 — Upload to GitHub release
+```bash
+gh release upload v{VER} \
+  "C:/Trier OS/Installers/TrierOS-Setup-{VER}.exe" \
+  "C:/Trier OS/Installers/TrierOS-Setup-{VER}.msi" \
+  "G:/TrierOS-Setup-{VER}.zip" \
+  "G:/Trier OS/Install Instructions.pdf"
+```
+The `Install Instructions.pdf` lives untracked in the repo root — never commit it, just upload.
+
+### Pre-release checklist
+1. `npm version patch --no-git-tag-version` — bumps package.json + package-lock.json
+2. Update version string in: `src/components/AboutView.jsx`, `AGENTS.md`, `CHANGELOG.md`,
+   `README.md`, `docs/DEMO_SCRIPT.md`, `docs/INSTALL_GUIDE.html`, `docs/THREAT_MODEL.md`,
+   `tests/e2e/qa-scan.spec.js`, all 11 `src/i18n/*.json` files
+3. Run full Playwright suite — must be 0 failures before building
+4. Confirm `/api/invariants/report` returns `overallStatus: PASS`
+5. Update **Current Verified State** block in `README.md` — version, Playwright counts, Last Verified date
+6. Commit + push, then create GitHub release tag `v{VER}`
+6. Run build steps 1–4 above, then upload artifacts to the release
+
+---
+
+## AI Task Gate (MANDATORY)
+
+Before starting any task, you MUST output:
+
+### AGENTS.md Acknowledgement
+- Architecture model understood
+- DB routing pattern confirmed (AsyncLocalStorage only)
+- Security rules acknowledged (S-1, S-4, S-11, S-12)
+- Protected files respected
+- Zero-Keystroke Contract acknowledged
+- Guided Execution invariants acknowledged (if applicable)
+
+If this acknowledgement is not present, the task is invalid.
+
+---
+
+Before completing any task, you MUST output:
+
+### AGENTS.md Compliance Check
+- No direct DB path usage
+- No migration edits
+- No violation of protected files
+- No SQL injection risk introduced
+- No invariant violations
+- No unintended side effects introduced
+
+Status: PASS / FAIL
+
+---
+
+## Current Version
+
+v3.7.2 — See CHANGELOG.md and ROADMAP.md for history.
+Completed roadmaps and task lists archived in References/.

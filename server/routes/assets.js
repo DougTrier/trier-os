@@ -808,7 +808,7 @@ const assetPhotoStorage = multer.diskStorage({
 
 const assetUpload = multer({
     storage: assetPhotoStorage,
-    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 15 * 1024 * 1024 }, // 15MB
     fileFilter: (req, file, cb) => {
         const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'];
         const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];

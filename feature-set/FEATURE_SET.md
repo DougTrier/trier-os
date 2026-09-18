@@ -1,3 +1,5 @@
+> Historical evaluation/design snapshot. Dated versions, counts, cost estimates and comparisons below are not current validated facts or future feature commitments. Trier OS is feature complete and feature frozen; current evidence and limits are in [../docs/SECURITY_MAINTENANCE_VALIDATION.md](../docs/SECURITY_MAINTENANCE_VALIDATION.md) and the [maintenance policy](../docs/MAINTENANCE.md).
+
 # Trier OS — Complete Feature Set Audit
 **Version:** 3.5.1  
 **Audited:** April 22, 2026  
@@ -366,7 +368,7 @@ Tools used by reliability engineers and maintenance leadership.
 - Clones a complete plant database to a sandbox branch
 - Replays historical event logs against sandboxed code changes
 - Delta badge view: side-by-side comparison of live vs. sandboxed KPIs (green = improvement, red = regression)
-- Mathematical proof that a code change is safe before production deployment
+- Scenario evidence that a code change is safe before production deployment
 - Auto-expiry: simulation sessions purge after 30 minutes
 
 ### 47. Frictional Cost Engine (UX Impact Analyzer)
@@ -565,7 +567,7 @@ Tools used by reliability engineers and maintenance leadership.
 
 ### 78. Offline Scan Queue & Silent Auto-Close Engine
 - Scans captured offline are stored in a persistent IndexedDB queue (`sync_queue` store) tied to the plant's origin
-- On device reconnect (`online` event), the queue is drained sequentially — no scans are lost even across full server outages
+- On device reconnect (`online` event), the queue is drained sequentially — outage recovery requires per-item acceptance and deployment-specific validation
 - Duplicate suppression: records already submitted to hub are skipped on drain to prevent double-close
 - Silent Auto-Close Engine (server-side hourly cron): detects `Active` WorkSegments that have exceeded the configurable `autoReviewThresholdHours` threshold (default: 12 h)
 - Exempt hold reasons: segments placed under deliberate holds (e.g., `waiting-for-parts`, `locked-out`) are skipped and never auto-closed
@@ -677,4 +679,3 @@ After full code audit, the following are features that **do not exist** in Trier
 ---
 
 *© 2026 Doug Trier. Internal Engineering Document.*
-

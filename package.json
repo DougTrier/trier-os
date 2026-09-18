@@ -1,6 +1,6 @@
 {
   "name": "trier-os",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "Trier OS — Enterprise Maintenance Management System",
   "main": "electron/main.js",
   "scripts": {
@@ -81,7 +81,7 @@
     "lucide-react": "^0.577.0",
     "mdb-reader": "^3.2.0",
     "mssql": "^12.2.1",
-    "multer": "^2.1.1",
+    "multer": "2.3.0",
     "nats": "^2.29.3",
     "opossum": "^9.0.0",
     "otpauth": "^9.5.0",
@@ -93,11 +93,12 @@
     "react-dom": "^19.2.4",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.1",
+    "sharp": "0.35.4",
     "sqlite-vec": "^0.1.9",
     "tesseract.js": "^7.0.0",
     "three": "^0.183.2",
     "vite-plugin-cesium": "^1.2.23",
-    "ws": "^8.20.0"
+    "ws": "8.21.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -106,7 +107,6 @@
     "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "png-to-ico": "^3.0.1",
-    "sharp": "^0.34.5",
     "vite": "^7.3.1",
     "vite-plugin-mkcert": "^1.17.10"
   },

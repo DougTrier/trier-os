@@ -370,3 +370,7 @@ GET /api/integrations/outbox/history?status=failed&limit=20
 The same key is forwarded in the `X-Idempotency-Key` request header so your ERP endpoint
 can dedup independently — essential when Trier OS retries a delivery that your ERP already
 processed but returned an error for.
+
+## Current maintenance and validation limits
+
+Trier OS is feature complete and feature frozen. Existing operational workflows are intentionally preserved. Offline replay/outage/restart, paired-server HA recovery and every integration delivery path are not fully validated by browser regression. Queue/outbox controls support recovery; they are not a universal zero-loss or exactly-once guarantee. [Current evidence](SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](MAINTENANCE.md).

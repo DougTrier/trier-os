@@ -1,6 +1,6 @@
 # Trier OS — System Topology
 
-One-page map of how the system is structured, followed by three concrete request traces.
+One-page map of the intended single-corporate deployment, followed by illustrative request traces. Optional integrations and fallback require configuration. The default Electron launcher actually starts a full embedded server on its host; it is not automatically an HQ thin client. See [architecture](ARCHITECTURE.md) and [validation limits](SECURITY_MAINTENANCE_VALIDATION.md).
 
 ---
 
@@ -25,11 +25,11 @@ One-page map of how the system is structured, followed by three concrete request
 ║  │  │                   DATABASE LAYER                           │ │    ║
 ║  │  │                                                            │ │    ║
 ║  │  │  trier_logistics.db    corporate_master.db                 │ │    ║
-║  │  │  (auth, LOTO, audit,   (aggregated KPIs, asset index,      │ │    ║
-║  │  │   ERP outbox, NATS)     rebuilt on boot)                   │ │    ║
+║  │  │  (shared LOTO, audit,   (aggregated KPIs, asset index,      │ │    ║
+║  │  │   ERP outbox, NATS)     crawl/write paths)                   │ │    ║
 ║  │  │                                                            │ │    ║
 ║  │  │  Plant_1.db   Plant_2.db   ...Plant_N.db                   │ │    ║
-║  │  │  (one SQLite file per plant, never shared)                 │ │    ║
+║  │  │  (one SQLite file per plant, authorized cross-search)                 │ │    ║
 ║  │  └────────────────────────────────────────────────────────────┘ │    ║
 ║  │                                                                  │    ║
 ║  │  ┌─────────────────────┐  ┌───────────────────────────────────┐ │    ║
@@ -84,9 +84,7 @@ One-page map of how the system is structured, followed by three concrete request
 ╚══════════════════════════╝
 ```
 
-**Key rule:** Plants do not run their own Trier OS server. They connect to corporate.
-The LAN Hub (port 1940) is a lightweight fallback for scan state only — it activates
-automatically when the central server is unreachable and replays queued scans on reconnect.
+**Intended deployment:** Plants connect to the corporate instance. HQ also holds `trier_auth.db` for identities/roles. The optional LAN Hub provides local scan state, queues and cache reads. Current Electron/hub startup uses a local embedded API URL; verify actual routing and recovery rather than assuming remote HQ setup is automatic.
 
 ---
 
@@ -138,48 +136,15 @@ Technician taps → zero keystrokes total
 
 ---
 
-## Request Trace 2 — Offline Scan Queue Replays on Reconnect
+## Request Trace 2 — Offline capture and reconnect
 
-What happens when a technician scans 14 assets during a 40-minute WAN outage.
+PWA IndexedDB and hub-local OfflineScanQueue are separate stores. A valid 24-hour hub token authenticates the WebSocket; it is distinct from the 7-day corporate cookie session. Local capture/replay is intended to preserve scan context during outages.
 
-```
-WAN goes down → PWA detects server unreachable
-        │
-        ▼
-PWA connects to LAN Hub at ws://[plant-lan-ip]:1940
-  → JWT validated on upgrade
-  → Hub sends current WO state from local SQLite cache
-        │
-        ▼
-Technician scans asset (offline)
-  → scan captured in IndexedDB OfflineDB (key: scanId)
-  → HMAC-signed with device-bound 32-byte secret
-  → written to LAN Hub via WebSocket (SCAN message)
-  → Hub stores in OfflineScanQueue with deviceTimestamp
-        │
-        ▼
-  ... (repeat for 13 more assets) ...
-        │
-        ▼
-WAN restored → server sends SERVER_ONLINE broadcast
-        │
-        ▼
-LAN Hub replays OfflineScanQueue to POST /api/scan/offline-sync
-  → sorted by deviceTimestamp (I-03 invariant — ordering preserved)
-  → each scan wrapped with { scanId, deviceTimestamp, assetTag, ... }
-  → server processes each: INSERT OR IGNORE dedup, state machine, audit
-        │
-        ▼
-PWA clients receive WO_STATE_CHANGED broadcast
-  → UI reflects resolved state on all devices simultaneously
-        │
-        ▼
-Hub marks replayed entries DEDUP_CLIENT
-  → PWA replayQueue() skips them (C7 — no double-send)
-```
+On reconnect, the PWA and/or hub attempt replay to `POST /api/scan/offline-sync`. Scan-ID guards and client/hub ownership messages reduce duplicates. Confirm per-item semantic acceptance before clearing pending work; HTTP 200 is only transport acknowledgement. Device timestamps are supplied context, not a guarantee of global causal ordering.
 
-**Files involved:** `server/lan_hub.js`, `src/utils/LanHub.js`,
-`src/utils/offlineDB.js`, `server/routes/scan.js` (offline-sync endpoint)
+Current hub startup uses HUB_TOKEN_SECRET for its HMAC replay argument, while the scan route checks JWT_SECRET, and generic route authentication also matters. Offline authentication/defaults, ACK handling and power-loss/restart recovery remain deferred review items. The authenticated hub PING check and browser tests with mocked/intercepted communication do not prove a real outage queue drain.
+
+**Files involved:** `server/lan_hub.js`, `src/utils/LanHub.js`, `src/utils/offlineDB.js`, `server/routes/scan.js`.
 
 ---
 
@@ -208,7 +173,7 @@ For each expired segment:
         ▼
 Supervisor sees flagged WO in Mission Control review queue
   → resolve: "tech left without scanning out" or "device lost connection"
-  → no ghost records, no silent data loss
+  → flagged work is visible for review; recovery still requires verification
 ```
 
 **Files involved:** `server/silent_close_engine.js`, `server/background_cron.js`,
@@ -216,19 +181,8 @@ Supervisor sees flagged WO in Mission Control review queue
 
 ---
 
-## SQLite Scalability Note
+## Capacity and maintenance limits
 
-A common question for multi-plant deployments: does SQLite scale?
+Per-file WAL/locking and the existing connection pool are design choices, not a certified plant-count or throughput guarantee. Corporate endpoints may query individual plants as well as master data. Measure the intended workload and review SQLite contention, storage and integration limits before deployment; no Postgres/time-series redesign or new capacity feature roadmap is planned.
 
-At current data volumes (50 plants × ~500 assets each, ~200 scans/day/plant):
-- Each plant DB stays under 100 MB
-- `corporate_master.db` aggregates via the crawl engine on boot (~30–60s first boot)
-- No cross-plant queries touch individual plant DBs — they go through `corporate_master`
-- The write bottleneck (SQLite WAL mode) handles concurrent HTTP requests comfortably
-  at the single-server, single-plant-file level
-- Locking is per-file: Plant_1.db writes never block Plant_2.db reads
-
-At 200+ plants or extremely high scan rates (industrial SCADA ingestion), the right path
-is the existing sensor ingest endpoint with a Postgres backend option — not replacing
-the per-plant SQLite model, but adding a separate time-series path for raw sensor data.
-This is a documented roadmap item, not a current constraint.
+Trier OS 3.7.1 is feature complete. [Maintenance policy](MAINTENANCE.md).

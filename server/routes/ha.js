@@ -257,7 +257,7 @@ router.get('/config', (req, res) => {
     const config = getHAConfig();
     const dataDir = require('../resolve_data_dir');
     const syncKeyPath = path.join(dataDir, '.sync_key');
-    const hasPairingKey = fs.existsSync(syncKeyPath) && fs.readFileSync(syncKeyPath, 'utf8').trim().length > 0;
+    const hasPairingKey = Boolean(haSync.getSyncKey());
     
     res.json({
         role: config.role || haSync.SERVER_ROLE,
@@ -283,11 +283,14 @@ router.put('/config', (req, res) => {
 
 // POST generate-key — creates a new pairing key (Primary only)
 router.post('/config/generate-key', (req, res) => {
+    if (process.env.HA_SYNC_KEY !== undefined) {
+        return res.status(409).json({ error: 'HA_SYNC_KEY is managed by the environment. Rotate it on both peers and restart.' });
+    }
     try {
         const key = crypto.randomBytes(32).toString('hex');
         const dataDir = require('../resolve_data_dir');
         const syncKeyPath = path.join(dataDir, '.sync_key');
-        fs.writeFileSync(syncKeyPath, key);
+        fs.writeFileSync(syncKeyPath, key, { mode: 0o600 });
         setHAConfig('pairingKeyCreated', new Date().toISOString());
         console.log('  🔑 [HA] New pairing key generated via admin UI');
         res.json({ success: true, key });
@@ -298,14 +301,17 @@ router.post('/config/generate-key', (req, res) => {
 
 // POST import-key — saves a pairing key received from the master (Secondary only)
 router.post('/config/import-key', (req, res) => {
+    if (process.env.HA_SYNC_KEY !== undefined) {
+        return res.status(409).json({ error: 'HA_SYNC_KEY is managed by the environment. Update it and restart.' });
+    }
     const { key } = req.body;
-    if (!key || typeof key !== 'string' || key.length < 16) {
-        return res.status(400).json({ error: 'Invalid pairing key. Must be at least 16 characters.' });
+    if (typeof key !== 'string' || !require('../ha_key').isAcceptableKey(key.trim())) {
+        return res.status(400).json({ error: 'Pairing key must be a new 64-character hexadecimal secret.' });
     }
     try {
         const dataDir = require('../resolve_data_dir');
         const syncKeyPath = path.join(dataDir, '.sync_key');
-        fs.writeFileSync(syncKeyPath, key.trim());
+        fs.writeFileSync(syncKeyPath, key.trim(), { mode: 0o600 });
         setHAConfig('pairingKeyImported', new Date().toISOString());
         console.log('  🔑 [HA] Pairing key imported from master via admin UI');
         res.json({ success: true, message: 'Pairing key imported successfully' });

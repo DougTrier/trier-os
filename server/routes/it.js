@@ -1,10 +1,7 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
 /**
  * Trier OS — IT Asset Management API
  * =====================================
@@ -14,6 +11,8 @@
  * (cross-plant, corporate-level). Mounted at /api/it in server/index.js.
  *
  * ENDPOINTS:
+ *   POST   /:category/bulk-delete            Delete selected assets with per-item results
+ *
  *   Asset CRUD (category = software | hardware | infrastructure | mobile)
  *   GET    /:category                        List assets in a category (filterable by plant, status)
  *   POST   /:category                        Add a new asset record
@@ -85,6 +84,91 @@ const router = express.Router();
 const { db: logDb } = require('../logistics_db');
 const { calculateDepreciation } = require('../utils/calculateDepreciation');
 const { filterValidColumns } = require('../utils/sql_sanitizer');
+const { whitelist } = require('../validators');
+const { assetCleanupPlan } = require('../it_asset_cleanup');
+
+function requireITAdmin(req, res, next) {
+    if (!['it_admin', 'creator'].includes(req.user?.globalRole)) {
+        return res.status(403).json({ error: 'IT Admin or Creator privileges required.' });
+    }
+    next();
+}
+function requireITRecordMutation(req, res, next) {
+    requireITAdmin(req, res, () => {
+        if (!/^\d+$/.test(req.params.id) || !Number.isSafeInteger(Number(req.params.id)) || Number(req.params.id) <= 0) {
+            return res.status(400).json({ error: 'Invalid record ID.' });
+        }
+        if (req.body?.PlantID !== undefined && req.body.PlantID !== null && req.body.PlantID !== '' && (typeof req.body.PlantID !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(req.body.PlantID))) {
+            return res.status(400).json({ error: 'Invalid plant ID.' });
+        }
+        next();
+    });
+}
+// Shared single/bulk deletion, using authoritative ownership inside the lock.
+function deleteAsset(req, category, ID, expectedPlant) {
+    const table = getTable(category);
+    return logDb.transaction(() => {
+        const asset = expectedPlant === undefined
+            ? logDb.prepare(`SELECT ID,PlantID FROM ${table} WHERE ID=?`).get(ID)
+            : logDb.prepare(`SELECT ID,PlantID FROM ${table} WHERE ID=? AND PlantID IS ?`).get(ID, expectedPlant);
+        if (!asset) return { id: ID, status: 'NOT_FOUND', error: 'Asset no longer exists at the selected site. Refresh the inventory.' };
+        for (const entry of assetCleanupPlan(category, asset.PlantID, ID)) {
+            logDb.prepare(`DELETE FROM ${entry.table} WHERE ${entry.where}`).run(...entry.params);
+            if (logDb.prepare(`SELECT COUNT(*) AS n FROM ${entry.table} WHERE ${entry.where}`).get(...entry.params).n !== 0) throw new Error('Deletion verification failed.');
+        }
+        logDb.prepare(`INSERT INTO AuditLog (UserID, Action, PlantID, Details, Severity, IPAddress)
+            VALUES (?, 'IT_ASSET_DELETE', ?, ?, 'WARNING', ?)`).run(req.user.Username, asset.PlantID,
+            JSON.stringify({ category, assetId: ID, actorUserID: req.user.UserID }), req.ip);
+        return { id: ID, status: 'DELETED' };
+    }).immediate();
+}
+// The related legacy routes had the same zero-row success defect. Keep their
+// SQL operations, but require an existing row and one confirmed mutation.
+function mutateITRecord(req, res, table, operation) {
+    const result = logDb.transaction(() => {
+        const row = logDb.prepare(`SELECT * FROM ${table} WHERE ID=?`).get(req.params.id);
+        if (!row) return null;
+        if (operation(row).changes !== 1) throw new Error('Record mutation verification failed.');
+        if (req.method === 'DELETE' && logDb.prepare(`SELECT ID FROM ${table} WHERE ID=?`).get(req.params.id)) throw new Error('Deletion verification failed.');
+        const parentTable = getTable(row.AssetCategory) || (row.HardwareID ? 'it_hardware' : null);
+        const plant = row.PlantID ?? (parentTable ? logDb.prepare(`SELECT PlantID FROM ${parentTable} WHERE ID=?`).get(row.AssetID ?? row.HardwareID)?.PlantID : null);
+        logDb.prepare('INSERT INTO AuditLog(UserID,Action,PlantID,Details,Severity,IPAddress) VALUES (?,?,?,?,?,?)')
+            .run(req.user.Username, req.method === 'DELETE' ? 'IT_RECORD_DELETE' : 'IT_RECORD_UPDATE', plant ?? null,
+                JSON.stringify({ table, id: Number(req.params.id), actorUserID: req.user.UserID }), 'WARNING', req.ip);
+        return { success: true, status: req.method === 'DELETE' ? 'DELETED' : 'UPDATED', id: Number(req.params.id) };
+    }).immediate();
+    return result ? res.json(result) : res.status(404).json({ error: 'Record not found.', status: 'NOT_FOUND' });
+}
+
+// Bulk selection is enterprise-wide, like the IT inventory. Each selected row
+// carries its observed plant so a transfer cannot silently change deletion scope.
+router.post('/:category(software|hardware|infrastructure|mobile)/bulk-delete', requireITAdmin, (req, res) => {
+    const items = req.body?.items;
+    if (!Array.isArray(items) || items.length === 0 || items.length > 500) {
+        return res.status(400).json({ error: 'Select between 1 and 500 assets per request.' });
+    }
+    const SAFE_PLANT_ID = /^[a-zA-Z0-9_-]{1,64}$/;
+    const seen = new Set();
+    for (const item of items) {
+        if (!item || !Number.isSafeInteger(item.ID) || item.ID <= 0 || seen.has(item.ID) ||
+            !(item.PlantID === null || (typeof item.PlantID === 'string' && (item.PlantID === '' || SAFE_PLANT_ID.test(item.PlantID))))) {
+            return res.status(400).json({ error: 'Each selection needs a unique positive ID and its current PlantID (or null for unassigned assets).' });
+        }
+        seen.add(item.ID);
+    }
+    const category = req.params.category;
+    const results = items.map(input => {
+        const { ID, PlantID } = whitelist(input, 'itDelete');
+        try {
+            return deleteAsset(req, category, ID, PlantID);
+        } catch (error) {
+            console.warn('[IT bulk delete] Asset deletion rolled back:', ID, error.message);
+            return { id: ID, status: 'FAILED', error: 'Deletion failed and was rolled back.' };
+        }
+    });
+    const deletedCount = results.filter(item => item.status === 'DELETED').length;
+    res.json({ success: deletedCount === items.length, deletedCount, results });
+});
 
 // ── Auto-create tables on first load ─────────────────────────────────────
 try {
@@ -398,10 +482,10 @@ router.post('/:category(software|hardware|infrastructure|mobile)', (req, res) =>
 });
 
 // ── PUT /api/it/:category/:id ────────────────────────────────────────────
-router.put('/:category(software|hardware|infrastructure|mobile)/:id', (req, res) => {
+router.put('/:category(software|hardware|infrastructure|mobile)/:id', requireITRecordMutation, (req, res) => {
     try {
         const table = getTable(req.params.category);
-        const data = { ...req.body };
+        const data = whitelist(req.body, 'itAssetUpdate');
         delete data.ID;
         data.UpdatedAt = new Date().toISOString();
 
@@ -410,9 +494,7 @@ router.put('/:category(software|hardware|infrastructure|mobile)/:id', (req, res)
 
         const sets = Object.keys(safeData).map(k => `${k} = ?`).join(', ');
         const values = [...Object.values(safeData), req.params.id];
-        logDb.prepare(`UPDATE ${table} SET ${sets} WHERE ID = ?`).run(...values); /* dynamic col/table - sanitize inputs */
-
-        res.json({ success: true });
+        return mutateITRecord(req, res, table, () => logDb.prepare(`UPDATE ${table} SET ${sets} WHERE ID = ?`).run(...values));
     } catch (err) {
         console.error(`PUT /api/it/${req.params.category}/${req.params.id} error:`, err);
         res.status(500).json({ error: 'An internal server error occurred' });
@@ -420,11 +502,10 @@ router.put('/:category(software|hardware|infrastructure|mobile)/:id', (req, res)
 });
 
 // ── DELETE /api/it/:category/:id ─────────────────────────────────────────
-router.delete('/:category(software|hardware|infrastructure|mobile)/:id', (req, res) => {
+router.delete('/:category(software|hardware|infrastructure|mobile)/:id', requireITRecordMutation, (req, res) => {
     try {
-        const table = getTable(req.params.category);
-        logDb.prepare(`DELETE FROM ${table} WHERE ID = ?`).run(req.params.id); /* dynamic col/table - sanitize inputs */
-        res.json({ success: true });
+        const result = deleteAsset(req, req.params.category, Number(req.params.id));
+        res.status(result.status === 'DELETED' ? 200 : 404).json({ ...result, success: result.status === 'DELETED' });
     } catch (err) {
         console.error(`DELETE /api/it/${req.params.category}/${req.params.id} error:`, err);
         res.status(500).json({ error: 'An internal server error occurred' });
@@ -533,9 +614,9 @@ router.post('/vendors', (req, res) => {
     }
 });
 
-router.put('/vendors/:id', (req, res) => {
+router.put('/vendors/:id', requireITRecordMutation, (req, res) => {
     try {
-        const data = { ...req.body };
+        const data = whitelist(req.body, 'itVendorUpdate');
         delete data.ID;
         data.UpdatedAt = new Date().toISOString();
 
@@ -544,19 +625,16 @@ router.put('/vendors/:id', (req, res) => {
 
         const sets = Object.keys(safeData).map(k => `${k} = ?`).join(', ');
         const values = [...Object.values(safeData), req.params.id];
-        logDb.prepare(`UPDATE it_vendors_contracts SET ${sets} WHERE ID = ?`).run(...values);
-
-        res.json({ success: true });
+        return mutateITRecord(req, res, 'it_vendors_contracts', () => logDb.prepare(`UPDATE it_vendors_contracts SET ${sets} WHERE ID = ?`).run(...values));
     } catch (err) {
         console.error(`PUT /api/it/vendors/${req.params.id} error:`, err);
         res.status(500).json({ error: 'An internal server error occurred' });
     }
 });
 
-router.delete('/vendors/:id', (req, res) => {
+router.delete('/vendors/:id', requireITRecordMutation, (req, res) => {
     try {
-        logDb.prepare('DELETE FROM it_vendors_contracts WHERE ID = ?').run(req.params.id);
-        res.json({ success: true });
+        return mutateITRecord(req, res, 'it_vendors_contracts', () => logDb.prepare('DELETE FROM it_vendors_contracts WHERE ID = ?').run(req.params.id));
     } catch (err) {
         console.error(`DELETE /api/it/vendors/${req.params.id} error:`, err);
         res.status(500).json({ error: 'An internal server error occurred' });
@@ -1401,10 +1479,9 @@ router.post('/links/software-hardware', (req, res) => {
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
-router.delete('/links/software-hardware/:id', (req, res) => {
+router.delete('/links/software-hardware/:id', requireITRecordMutation, (req, res) => {
     try {
-        logDb.prepare('DELETE FROM it_software_hardware_link WHERE ID = ?').run(req.params.id);
-        res.json({ success: true });
+        return mutateITRecord(req, res, 'it_software_hardware_link', () => logDb.prepare('DELETE FROM it_software_hardware_link WHERE ID = ?').run(req.params.id));
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
@@ -1426,10 +1503,9 @@ router.post('/links/workorders', (req, res) => {
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
-router.delete('/links/workorders/:id', (req, res) => {
+router.delete('/links/workorders/:id', requireITRecordMutation, (req, res) => {
     try {
-        logDb.prepare('DELETE FROM it_asset_workorder_link WHERE ID = ?').run(req.params.id);
-        res.json({ success: true });
+        return mutateITRecord(req, res, 'it_asset_workorder_link', () => logDb.prepare('DELETE FROM it_asset_workorder_link WHERE ID = ?').run(req.params.id));
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
@@ -1451,21 +1527,19 @@ router.post('/links/users', (req, res) => {
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
-router.delete('/links/users/:id', (req, res) => {
+router.delete('/links/users/:id', requireITRecordMutation, (req, res) => {
     try {
-        logDb.prepare('DELETE FROM it_asset_user_link WHERE ID = ?').run(req.params.id);
-        res.json({ success: true });
+        return mutateITRecord(req, res, 'it_asset_user_link', () => logDb.prepare('DELETE FROM it_asset_user_link WHERE ID = ?').run(req.params.id));
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 
 // -- Infrastructure ↔ FloorPlan location (stored as metadata in Notes/Location) --
 // FloorPlan integration: update infrastructure asset's Location + rack info
-router.put('/links/infrastructure-location/:id', (req, res) => {
+router.put('/links/infrastructure-location/:id', requireITRecordMutation, (req, res) => {
     try {
-        const { location, rackPosition, floorPlanId, floorPlanX, floorPlanY } = req.body;
+        const { location, rackPosition, floorPlanId, floorPlanX, floorPlanY } = whitelist(req.body, 'itLocationUpdate');
         const notes = floorPlanId ? `FloorPlan:${floorPlanId}@${floorPlanX},${floorPlanY}` : null;
-        logDb.prepare('UPDATE it_infrastructure SET Location = ?, RackPosition = ?, Notes = COALESCE(?, Notes), UpdatedAt = datetime(\'now\') WHERE ID = ?').run(location, rackPosition || null, notes, req.params.id);
-        res.json({ success: true });
+        return mutateITRecord(req, res, 'it_infrastructure', () => logDb.prepare('UPDATE it_infrastructure SET Location = ?, RackPosition = ?, Notes = COALESCE(?, Notes), UpdatedAt = datetime(\'now\') WHERE ID = ?').run(location, rackPosition || null, notes, req.params.id));
     } catch (err) { res.status(500).json({ error: 'An internal server error occurred' }); }
 });
 

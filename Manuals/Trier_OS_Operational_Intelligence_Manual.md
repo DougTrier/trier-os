@@ -2,7 +2,7 @@
 
 <br><br><br>
 
-![Trier OS](/assets/TrierOS_Logo.png)
+![Trier OS](../public/assets/TrierOS_Logo.png)
 
 <br>
 
@@ -34,7 +34,7 @@
 <br><br><br>
 
 *�© 2026 Doug Trier. All Rights Reserved.*
-*Trier OS is proprietary software. Unauthorized copying, distribution, or reverse engineering is strictly prohibited.*
+*Copyright © 2026 Doug Trier. Trier OS source is MIT licensed; use, copying, modification, distribution, sublicensing and sale are permitted subject to retaining the copyright and permission notices. See [LICENSE](../LICENSE). Branding/endorsement rights are separate: [TRADEMARKS.md](../TRADEMARKS.md).*
 
 </div>
 
@@ -353,7 +353,7 @@ The following capabilities are **unique to Trier OS** â��⬝ no competitor
 
 ## Part I: Logging In & First Look
 
-![Trier OS](/assets/TrierOS_Logo.png)
+![Trier OS](../public/assets/TrierOS_Logo.png)
 
 ### 1.1 Accessing the System
 
@@ -441,7 +441,7 @@ Trier OS manages **41 facilities** across 15 U.S. states. The plant dropdown in 
 
 ### 1.5 Session Security
 
-- **Automatic Timeout:** If you are inactive for **15 minutes**, a yellow warning bar appears: *"Session expiring in 60 seconds due to inactivity."* Click **"Stay Logged In"** to continue, or the system logs you out automatically.
+- **Session lifetime:** The browser session JWT has a **7-day absolute expiry** in an HttpOnly cookie. The UI has a 15-minute inactivity timer with a last-minute warning and client logout; this is separate from server JWT expiry. Logout clears the cookie but does not revoke a copied JWT; use browser/OS locking on shared devices. The 24-hour localStorage hub token is separate.
 - **Shift Log Lock:** When you log out (or time out), any open shift log entries you wrote are automatically locked to prevent tampering.
 
 ---
@@ -1036,7 +1036,7 @@ These are real-world walkthroughs that show how multiple features work together 
 | **Scanner won't read barcodes in the cooler** | Wipe the camera lens with a dry cloth. Frost buildup causes focus issues in cold environments. |
 | **App is slow during Wi-Fi handoffs** | Make sure your device is on the "PF-MOBILE" SSID. Guest networks throttle data and block internal ports. |
 | **A part I just added doesn't show in search** | Click the **refresh** icon. Parts are cached for speed and may need a manual sync after bulk changes. |
-| **I got locked out after being idle** | The system auto-logs you out after 15 minutes of inactivity. Log back in â��⬝ your work is saved. |
+| **I got locked out after being idle** | The UI logs out after 15 minutes of inactivity; the separate API JWT has a 7-day absolute expiry. Check session/account and device-lock policy. Log back in â��⬝ your work is saved. |
 | **My work order changes didn't save** | Check the bottom of the screen for error messages. If your network dropped, the Draft Manager may have saved a local copy â��⬝ look for the "Recover Draft" prompt on your next visit. |
 | **I can't edit anything â��⬝ everything is grayed out** | You may be viewing a different plant's data (read-only mode). Check the plant selector dropdown and switch back to your home plant. |
 | **The printer isn't producing output** | Trier OS uses your browser's print function. Press Ctrl+P after clicking the print button. Ensure your printer is on the network. |
@@ -3746,7 +3746,7 @@ From **Mission Control**, click the **Analytics** tile, then navigate to the **O
 
 ### 43.1 Overview
 
-The **Utility Intelligence** module is a premium administrative and engineering suite designed to monitor, track, and optimize facility-wide energy and water consumption. Unlike standard dashboards, this module integrates **Supplier Logistics** (full address/contact data) with **Meter Reading History** and **Cost-Per-Unit Analytics** to provide high-level monetary insights for plant managers and corporate executives.
+The **Utility Intelligence** module is an administrative and engineering suite designed to monitor, track, and optimize facility-wide energy and water consumption. Unlike standard dashboards, this module integrates **Supplier Logistics** (full address/contact data) with **Meter Reading History** and **Cost-Per-Unit Analytics** to provide high-level monetary insights for plant managers and corporate executives.
 
 ### 43.2 Key Monitoring Dimensions
 

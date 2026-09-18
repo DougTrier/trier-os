@@ -1,4 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * electron-builder afterPack hook
@@ -69,6 +71,9 @@ module.exports = async function afterPack(context) {
     } else {
         console.log('  • afterPack: All dependencies present - no fixes needed');
     }
+    // Inventory only distribution files. Uninstall never recursively removes
+    // customer files or follows compatibility junctions into persistent storage.
+    require('./program-inventory').writeInventory(context.appOutDir);
 };
 
 function isNeededByPackaged(pkgName, appNodeModules, sourceNodeModules) {

@@ -85,7 +85,7 @@ const woAttachmentStorage = multer.diskStorage({
 
 const woUpload = multer({
     storage: woAttachmentStorage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB — support video
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 50 * 1024 * 1024 }, // 50MB — support video
     fileFilter: (req, file, cb) => {
         const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'];
         const videoExts = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
@@ -214,7 +214,7 @@ function makeGenericAttachmentRoutes(entityType) {
 
     const upload = multer({
         storage,
-        limits: { fileSize: 50 * 1024 * 1024 },
+        limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 50 * 1024 * 1024 },
         fileFilter: (req, file, cb) => {
             const allowed = ['.jpg','.jpeg','.png','.gif','.webp','.heic','.mp4','.mov','.avi','.webm','.mkv','.pdf','.doc','.docx','.xls','.xlsx','.csv','.txt'];
             const ext = path.extname(file.originalname).toLowerCase();
@@ -332,7 +332,7 @@ const publicUploadStorage = multer.diskStorage({
 
 const publicUpload = multer({
     storage: publicUploadStorage,
-    limits: { fileSize: 10 * 1024 * 1024, files: 3 },
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 10 * 1024 * 1024, files: 3 },
     fileFilter: (req, file, cb) => {
         const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.pdf'];
         const ext = path.extname(file.originalname).toLowerCase();

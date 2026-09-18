@@ -1,4 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * AssetsView.jsx — Asset Management View
@@ -159,7 +161,7 @@ export default function AssetsView({ plantId, plantLabel }) {
     const [rollupData, setRollupData] = useState(null);
 
     // Active work order indicators for asset list rows
-    const [activeWoMap, setActiveWoMap] = useState({}); // { [assetId]: { statusId, woNumber, startedAt } }
+    const [activeWoMap, setActiveWoMap] = useState({}); // { [plantId:assetId]: { statusId, woNumber, startedAt } }
 
 
     const isForeignPlant = !hasFullAdminAccess &&
@@ -227,16 +229,27 @@ export default function AssetsView({ plantId, plantLabel }) {
             setAssets(assetList);
             setMeta(data.pagination || data.meta || { page: 1, limit: 50, total: 0, totalPages: 1 });
 
-            // Fetch active WO status for all visible assets in one batch
+            // The scan status API is plant-scoped. Corporate rows must use their
+            // own site, and identical asset IDs at different sites stay separate.
+            setActiveWoMap({});
             if (assetList.length > 0) {
-                const activePlantForBatch = localStorage.getItem('selectedPlantId') || plantId || 'Demo_Plant_1';
-                fetch('/api/scan/asset-status-batch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-plant-id': activePlantForBatch },
-                    body: JSON.stringify({ assetIds: assetList.map(a => a.ID) }),
-                })
-                    .then(r => r.ok ? r.json() : {})
-                    .then(map => setActiveWoMap(map))
+                const batches = new Map();
+                for (const asset of assetList) {
+                    const site = activePlant === 'all_sites' ? asset.plantId : activePlant;
+                    if (!site || site === 'all_sites') continue;
+                    if (!batches.has(site)) batches.set(site, []);
+                    batches.get(site).push(asset.ID);
+                }
+                Promise.all([...batches].map(async ([site, assetIds]) => {
+                    const response = await fetch('/api/scan/asset-status-batch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-plant-id': site },
+                        body: JSON.stringify({ assetIds }),
+                    });
+                    const map = response.ok ? await response.json() : {};
+                    return Object.entries(map).map(([id, status]) => [site + ':' + id, status]);
+                }))
+                    .then(groups => setActiveWoMap(Object.fromEntries(groups.flat())))
                     .catch(() => {});
             }
         } catch (err) {
@@ -1072,8 +1085,10 @@ export default function AssetsView({ plantId, plantLabel }) {
                                         }}>
                                             {a.OperationalStatus || t('assets.inProduction')}
                                         </span>
-                                        {activeWoMap[a.ID] && (() => {
-                                            const wo = activeWoMap[a.ID];
+                                        {(() => {
+                                            const site = a.plantId || localStorage.getItem('selectedPlantId') || plantId || 'Demo_Plant_1';
+                                            const wo = activeWoMap[site + ':' + a.ID];
+                                            if (!wo) return null;
                                             const startedAt = wo.startedAt ? new Date(wo.startedAt.replace(' ', 'T') + 'Z') : null;
                                             const mins = startedAt ? Math.floor((Date.now() - startedAt.getTime()) / 60000) : null;
                                             const elapsed = mins === null ? '' : mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;

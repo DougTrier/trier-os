@@ -1,4 +1,4 @@
-﻿{
+{
   ".aboutManual": "Acerca de y Manual",
   ".accessThePlatformOperations": "Acceder al Manual de Operaciones, escenarios de capacitación y créditos",
   ".action": "Acción",
@@ -184,7 +184,7 @@
   "about.goThere": "ir allí",
   "about.goToCode": "Ir al código",
   "about.industrialEngineering": "Ingeniería Industrial",
-  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.1",
+  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.2",
   "about.manualTitle": "Trier OS — Manual de inteligencia operativa",
   "about.mobileInfra": "Infraestructura Móvil",
   "about.namePlaceholder": "Nombre",
@@ -7143,7 +7143,7 @@
   "printEngine.totalOperatingSpend": "Gasto operativo total:",
   "printEngine.trierOs": "SO DE PRUEBA",
   "printEngine.trierOsEnterpriseMaintenancePlatform": "Trier OS: plataforma de mantenimiento empresarial",
-  "printEngine.v1126gold": "v3.7.1",
+  "printEngine.v1126gold": "v3.7.2",
   "printEngine.version": "Versión",
   "priority.critical": "Crítico",
   "priority.emergency": "Emergencia",

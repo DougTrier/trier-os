@@ -1,4 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 //
 // ============================================================
 //  TRIER OS — FULL SYSTEM STRESS TEST  (v2)
@@ -6,9 +8,11 @@
 //  Coverage: Auth → Demo RBAC → Mission Control grid →
 //            portal groups → direct modules → IT guards → API
 //  Built from: live LoginView.jsx + MissionControl.jsx source
+//  Quality fixture API: GET/POST/DELETE /api/quality/loss-log
 // ============================================================
 
 import { test, expect } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 
 // ── Credentials ─────────────────────────────────────────────
 const ADMIN = { username: 'ghost_admin', password: 'Trier3652!' };
@@ -797,9 +801,30 @@ test.describe('10 · Quality & Loss Dashboard', () => {
   });
 
   test('Product Loss Log table columns are correct', async ({ page, isMobile }) => {
-    const cols = isMobile ? ['DATE', 'SHIFT'] : ['DATE', 'SHIFT', 'AREA', 'PRODUCT', 'LOSS TYPE', 'QTY', 'VALUE'];
-    for (const col of cols) {
-      await expect(page.locator('th').filter({ hasText: new RegExp(col, 'i') }).first()).toBeVisible({ timeout: 10000 });
+    // The table is intentionally absent when the last-90-days query is empty.
+    // Seed a current event rather than depending on aging distribution records.
+    const endpoint = '/api/quality/loss-log';
+    const headers = { 'x-plant-id': 'examples' };
+    const note = 'PW_QUALITY_' + randomUUID();
+    const created = await page.request.post(endpoint + '?plantId=examples', { headers, data: {
+      LogDate: new Date().toISOString().slice(0, 10), Shift: '1', Area: 'Processing',
+      ProductType: 'Whole Milk', LossType: 'Spill', Quantity: 1, Unit: 'gal', UnitValue: 1, Notes: note,
+    } });
+    expect(created.status()).toBe(200);
+    const { id } = await created.json();
+    expect(id).toBeTruthy();
+    try {
+      await page.reload();
+      const cols = isMobile ? ['DATE', 'SHIFT'] : ['DATE', 'SHIFT', 'AREA', 'PRODUCT', 'LOSS TYPE', 'QTY', 'VALUE'];
+      for (const col of cols) {
+        await expect(page.locator('th').filter({ hasText: new RegExp(col, 'i') }).first()).toBeVisible({ timeout: 10000 });
+      }
+      await expect(page.locator('tbody')).toContainText(note);
+    } finally {
+      expect((await page.request.delete(endpoint + '/' + id + '?plantId=examples', { headers })).status()).toBe(200);
+      const remaining = await page.request.get(endpoint + '?plantId=examples', { headers });
+      expect(remaining.status()).toBe(200);
+      expect((await remaining.json()).rows.some(row => row.ID === id)).toBe(false);
     }
   });
 

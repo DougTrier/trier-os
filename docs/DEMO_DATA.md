@@ -1,6 +1,6 @@
 # Trier OS — Demo Database Guide
 
-When you first launch Trier OS, the **Plant Location Selector** in the top navigation will show five pre-configured locations. This document explains what each one is, why it exists, and when to delete it.
+When you first launch Trier OS, the **Plant Location Selector** in the top navigation can show pre-configured demonstration locations, depending on the installed data. This document explains what each one is, why it exists, and when to delete it.
 
 ---
 
@@ -23,18 +23,18 @@ When you first launch Trier OS, the **Plant Location Selector** in the top navig
 ---
 
 ### 📋 Example Location *(Protected)*
-**Purpose:** A read-only reference database showing exactly how all forms, assets, work orders, parts, and procedures should be filled out correctly.  
-**Important:** This location is intentionally **excluded from all financial and operational calculations**. It does not affect Corporate Analytics totals, risk scores, or any aggregate metrics.  
+**Purpose:** A reference/demo database showing exactly how all forms, assets, work orders, parts, and procedures should be filled out correctly.
+**Important:** Corporate aggregation paths are intended to exclude `examples`; this is not a proof that every route-specific metric excludes all demonstration records. Keep real data out of demo/reference locations.
 **Who uses it:** New administrators learning the system, and operators who need a reference when setting up their real plant data.  
-**Do not delete.** Keep it as a permanent reference. It will never pollute your real data.
+**Do not delete.** Keep it as a permanent reference. Some demo actions intentionally update example state; it is not universally read-only. Public demos cannot select real plant databases.
 
 ---
 
 ### 🏭 Plant 1 & Plant 2
 **Purpose:** Fully seeded demo databases containing realistic assets, work orders, parts inventory, fleet vehicles, safety incidents, quality logs, and staff directories.  
-**Why they exist:** So you can explore every feature of the platform immediately after cloning — no setup required.  
+**Why they exist:** To provide demonstration records in distributions that include those datasets; availability depends on the installed data and enabled integrations.
 **Do not use for production.** These are demonstration datasets only.  
-**Delete when ready:** When you are ready to go live, navigate to **Settings → Edit Locations**, remove Plant 1 and Plant 2, and add your own real facility. Your real plant will start with a clean, empty database.
+**Delete when ready:** When you are ready to go live, navigate to **Settings → Edit Locations**, remove Plant 1 and Plant 2, and add your own real facility. Review the resulting template-derived data before production; provisioning may copy reference/template records.
 
 ---
 
@@ -56,4 +56,8 @@ When you first launch Trier OS, the **Plant Location Selector** in the top navig
 2. Navigate to **Settings → Edit Locations**
 3. Delete **Plant 1** and **Plant 2**
 4. Click **+ Add New Plant** and enter your facility name
-5. Your new plant database is created instantly and ready for data entry
+5. Review the new template-derived plant database, accounts and enabled integrations before production use
+
+## Account and deployment boundary
+
+The four public `demo_*` accounts are distinct from development ghost accounts. Public demo seeding also occurs in production, and switching mode does not clean existing accounts. See [demo credentials](DEMO_CREDENTIALS.md). One corporate HQ instance holds all authoritative plant databases; demo cleanup is data preparation within that instance, not deployment of an independent server per plant. Back up existing data and confirm a dataset is disposable before deleting a location.

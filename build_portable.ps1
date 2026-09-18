@@ -1,9 +1,9 @@
-�# Trier OS � Portable Build Script
-$ErrorActionPreference = "Continue"
+# Trier OS � Portable Build Script
+$ErrorActionPreference = "Stop"
 
-$SOURCE   = "G:\Trier OS"
+$SOURCE   = $PSScriptRoot
 $BUILD    = $args[0]
-if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.4.3" }
+if (-not $BUILD) { $BUILD = ("G:\TrierOS-v" + (Get-Content -Raw -LiteralPath "$SOURCE\package.json" | ConvertFrom-Json).version) }
 $NODE_EXE = (Get-Command node).Source
 
 Write-Host ""
@@ -16,8 +16,8 @@ Write-Host ""
 
 # Step 1: Clean
 Write-Host "[1/7] Preparing build directory..." -ForegroundColor Yellow
-if (Test-Path $BUILD) { Remove-Item -Path $BUILD -Recurse -Force -ErrorAction SilentlyContinue }
-New-Item -Path $BUILD -ItemType Directory -Force | Out-Null
+. "$PSScriptRoot\scripts\build_directory_guard.ps1"
+$BUILD = New-DistributionDirectory $BUILD $SOURCE
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 2: Build frontend
@@ -39,7 +39,7 @@ if (Test-Path $monacoSrc) {
 
 # Step 3: Copy app files
 Write-Host "[3/7] Copying application files..." -ForegroundColor Yellow
-robocopy "$SOURCE\server" "$BUILD\server" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+robocopy "$SOURCE\server" "$BUILD\server" /MIR /XD "$SOURCE\server\data" /XF "*.db" "*.sqlite" "*.sqlite3" "*.key" ".env*" "first_login.txt" ".sync_key" /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 Write-Host "  server/"
 robocopy "$SOURCE\src" "$BUILD\src" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 Write-Host "  src/"
@@ -57,60 +57,28 @@ if (Test-Path "$SOURCE\eng.traineddata") {
 }
 Copy-Item "$SOURCE\package.json" "$BUILD\" -Force
 Copy-Item "$SOURCE\package-lock.json" "$BUILD\" -Force
-# Generate fresh secrets — never ship dev keys or personal API credentials
-$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-$jwtBytes = New-Object byte[] 32
-$hubBytes  = New-Object byte[] 64
-$rng.GetBytes($jwtBytes)
-$rng.GetBytes($hubBytes)
-$jwtSecret = ($jwtBytes | ForEach-Object { $_.ToString('x2') }) -join ''
-$hubSecret  = ($hubBytes | ForEach-Object { $_.ToString('x2') }) -join ''
+# Per-installation secrets are provisioned by the operator, never distributed.
 @"
-JWT_SECRET=$jwtSecret
-HUB_TOKEN_SECRET=$hubSecret
+JWT_SECRET=
+HUB_TOKEN_SECRET=
 PORT=3000
 NODE_ENV=production
+DISABLE_LIVE_STUDIO=true
 ALLOWED_ORIGINS=http://localhost:3000
-"@ | Set-Content -Path "$BUILD\.env" -Encoding UTF8
-Write-Host "  Fresh secrets generated (dev keys excluded)" -ForegroundColor Green
+"@ | Set-Content -LiteralPath "$BUILD\.env.example" -Encoding ASCII
+Copy-Item -LiteralPath "$SOURCE\LICENSE" -Destination "$BUILD\LICENSE" -Force
+Copy-Item -LiteralPath "$SOURCE\TRADEMARKS.md" -Destination "$BUILD\TRADEMARKS.md" -Force
+Write-Host "  Operator provisioning template; no session secrets distributed" -ForegroundColor Green
 Copy-Item "$SOURCE\index.html" "$BUILD\" -Force
 Copy-Item "$SOURCE\vite.config.js" "$BUILD\" -Force
 Write-Host "  config files"
 Write-Host "  OK" -ForegroundColor Green
 
-# Step 4: Copy ALL databases with full data
-Write-Host "[4/7] Copying databases (FULL DATA)..." -ForegroundColor Yellow
-robocopy "$SOURCE\data" "$BUILD\data" /MIR /NFL /NDL /NJH /NJS /NC /NS /XF "*.db-shm" "*.db-wal" "*.IMPORT_SNAP_*" "*.RESET_SNAP_*" "trier_auth.db" | Out-Null
-
-# Verify DBs are not empty
-$dbCount = @(Get-ChildItem "$BUILD\data\*.db" -ErrorAction SilentlyContinue).Count
-Write-Host "  $dbCount databases copied" -ForegroundColor Cyan
-
-# Verify a sample plant DB has data
-$sampleDb = Get-ChildItem "$BUILD\data\Demo_Plant_1.db" -ErrorAction SilentlyContinue
-if ($sampleDb -and $sampleDb.Length -gt 100000) {
-    Write-Host "  Verified: Demo_Plant_1.db has data ($([math]::Round($sampleDb.Length/1024))KB)" -ForegroundColor Green
-} else {
-    Write-Host "  WARNING: Demo_Plant_1.db may be empty!" -ForegroundColor Red
-}
-
-# Verify JSON configs are present
-$jsonFiles = @("plants.json", "branding.json", "corporate_leadership.json")
-foreach ($jf in $jsonFiles) {
-    if (Test-Path "$BUILD\data\$jf") {
-        Write-Host "  Config: $jf OK" -ForegroundColor Green
-    } else {
-        Write-Host "  MISSING: $jf" -ForegroundColor Red
-    }
-}
-
-# Copy secondary data if exists
-if (Test-Path "$SOURCE\data_secondary") {
-    robocopy "$SOURCE\data_secondary" "$BUILD\data_secondary" /MIR /NFL /NDL /NJH /NJS /NC /NS /XF "*.db-shm" "*.db-wal" | Out-Null
-    Write-Host "  data_secondary/"
-}
+# Step 4: Materialize committed demonstration/reference seeds, never live data.
+Write-Host "[4/7] Verifying distribution seeds..." -ForegroundColor Yellow
+& $NODE_EXE "$SOURCE\scripts\prepare_release_data.js" "$BUILD\data"
+if ($LASTEXITCODE -ne 0) { throw "Release seed verification failed." }
 New-Item -Path "$BUILD\snapshots" -ItemType Directory -Force | Out-Null
-Write-Host "  OK" -ForegroundColor Green
 
 # Step 5: Install production deps
 Write-Host "[5/7] Installing production dependencies..." -ForegroundColor Yellow
@@ -119,7 +87,10 @@ Set-Location $BUILD
 Write-Host "  Rebuilding native modules..."
 & npm rebuild better-sqlite3 2>&1 | Select-String "better-sqlite3" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  Installing vite for Live Studio deploy pipeline..."
-& npm install --no-save vite @vitejs/plugin-react 2>&1 | Select-String "added" | ForEach-Object { Write-Host "  $_" }
+$viteVersion = & $NODE_EXE -p "require(process.argv[1]).packages['node_modules/vite'].version" "$SOURCE\package-lock.json"
+$pluginVersion = & $NODE_EXE -p "require(process.argv[1]).packages['node_modules/@vitejs/plugin-react'].version" "$SOURCE\package-lock.json"
+if (-not $viteVersion -or -not $pluginVersion) { throw "Lockfile build-tool versions could not be read." }
+& npm install --no-save "vite@$viteVersion" "@vitejs/plugin-react@$pluginVersion" 2>&1 | Select-String "added" | ForEach-Object { Write-Host "  $_" }
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 6: Bundle Node.js
@@ -131,6 +102,16 @@ Write-Host "  Bundled node.exe $nodeVer" -ForegroundColor Cyan
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 7: Create launchers
+New-Item -ItemType Directory -Path "$BUILD\electron" -Force | Out-Null
+foreach ($file in @('preserve-data.ps1','storage.js','portable-start.js','portable-start.ps1','program-inventory.js')) {
+    Copy-Item -LiteralPath "$SOURCE\electron\$file" -Destination "$BUILD\electron\$file"
+}
+# Distribution seeds have a distinct name; extracting over an old portable
+# installation cannot overwrite its data directory.
+$seedSource = [IO.Path]::GetFullPath("$BUILD\data")
+if (!$seedSource.StartsWith($BUILD+'\',[StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid staging path' }
+Move-Item -LiteralPath $seedSource -Destination "$BUILD\seed-data"
+& "$SOURCE\scripts\package_tls_runtime.ps1" -OutputDirectory $BUILD
 Write-Host "[7/7] Creating launchers..." -ForegroundColor Yellow
 
 $batContent = @'
@@ -146,12 +127,14 @@ echo  Starting server...
 echo.
 cd /d "%~dp0"
 set NODE_ENV=production
-runtime\node.exe server\index.js
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File electron\portable-start.ps1
 echo.
 echo  Server stopped. Press any key to exit.
 pause > nul
 '@
 $batContent | Set-Content -Path (Join-Path $BUILD "Trier OS.bat") -Encoding ASCII
+& $NODE_EXE "$SOURCE\electron\program-inventory.js" $BUILD
+if ($LASTEXITCODE -ne 0) { throw 'Portable inventory failed.' }
 
 Write-Host "  Trier OS.bat created" -ForegroundColor Cyan
 Write-Host "  OK" -ForegroundColor Green

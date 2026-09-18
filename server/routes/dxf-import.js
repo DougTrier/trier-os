@@ -58,7 +58,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
     storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB — CAD files can be large
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 50 * 1024 * 1024 }, // 50MB — CAD files can be large
     fileFilter: (req, file, cb) => {
         if (path.extname(file.originalname).toLowerCase() !== '.dxf') {
             return cb(new Error('Only .dxf files are accepted'));

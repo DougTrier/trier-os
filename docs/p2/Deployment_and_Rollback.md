@@ -1,108 +1,72 @@
-# Deployment and Rollback
-> Trier OS P2 · Version management and recovery procedures
+# Corporate deployment and rollback — 3.7.2
 
----
+Trier OS is feature complete and maintained through confirmed break/fix, security and required compatibility changes. This is an operator procedure, not authorization to deploy the current uncommitted security changes. Existing published 3.7.1 artifacts must not be assumed to include them. See [maintenance policy](../MAINTENANCE.md).
 
-## Versioning Model
+## Topology and packaging
 
-Version format: `MAJOR.MINOR.PATCH` (semver) — defined in `package.json`.
+Deploy one corporate HQ instance; all plants connect there and HQ holds authoritative per-plant databases. Optional plant hub/cache fallback and a paired corporate secondary require separate configuration and recovery validation. The default Electron launcher starts a full local embedded server, not an automatically configured HQ thin client. [Architecture](../ARCHITECTURE.md).
 
-| Increment | When | Examples |
-|---|---|---|
-| PATCH | Bug fixes, minor corrections, no schema changes | 3.3.1 → 3.3.2 |
-| MINOR | New features, additive schema changes | 3.3.x → 3.4.0 |
-| MAJOR | Breaking changes, major architecture shifts | 3.x.x → 4.0.0 |
+Windows EXE/MSI and portable ZIP are separate build/distribution paths. The configured Electron targets are Windows; native Linux/macOS installer support is not established. For an authorized future build, the existing commands are:
 
-Schema migrations are versioned separately in `server/migrations/` and are always additive (no column drops in production).
-
----
-
-## Deployment Types
-
-### Standalone Executable (Windows)
-The primary deployment for pilot plants. A single `.exe` bundles Node.js + all dependencies.
-
-**Build:**
-```bash
-npm run build           # Build React frontend
-npm run package         # Package to .exe (electron-builder or pkg)
+```powershell
+# Windows, using paths appropriate to the checkout and separate output folder
+powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_portable.ps1" "G:\TrierOS-v3.7.2"
+powershell -ExecutionPolicy Bypass -File "G:\Trier OS\build_installer.ps1"
 ```
 
-**Deploy:**
-1. Copy new `.exe` to the server machine
-2. Stop the running instance (Task Manager or service manager)
-3. Rename old `.exe` as backup (`trier-os_v3.3.1.exe.bak`)
-4. Start new `.exe`
-5. Verify: `GET /api/health` returns healthy
-6. Test login + one core workflow
+`npm run electron:build` is the configured frontend/Electron build script; inspect `electron-builder.json` for its targets/output. The installer PowerShell script has its own staging/output handling. `npm run package` and `npm run preview` do not exist. Do not add scripts to reconcile old prose.
 
-**Data directory:** The `data/` folder is separate from the executable and survives updates. Never replace or move `data/` during deployment.
+## Source corporate service
 
----
+Preserve local changes before any authorized update. Install the reviewed lockfile's dependencies with `npm ci` in the intended checkout, build with `npm run build`, and configure protected secrets/environment before service start:
 
-### From Source
-```bash
-git pull origin main
-npm install
-npm run build
-npm run preview    # Production preview mode (Vite)
+```powershell
+# Windows PowerShell
+$env:NODE_ENV = 'production'
+$env:DISABLE_LIVE_STUDIO = 'true'
+npm run start:cluster
 ```
 
----
-
-## Pre-Deployment Checklist
-
-- [ ] `npm run build` — zero errors, zero warnings
-- [ ] Version bumped in `package.json`
-- [ ] Playwright E2E tests pass: `npx playwright test`
-- [ ] Manual smoke test on staging instance (login, scan, WO create/close, asset view)
-- [ ] Database backup taken on target machine before deployment
-- [ ] Rollback plan confirmed (see below)
-
----
-
-## Database Backup (Before Every Deployment)
-
 ```bash
-# On the server machine, copy the data directory
-xcopy "G:\Trier OS\data" "G:\Trier OS\data_backup_v3.3.1" /E /I /H
-
-# Or backup individual plant DBs
-copy "data\Plant_1.db" "data\Plant_1.db.bak_<timestamp>"
-copy "data\trier_logistics.db" "data\trier_logistics.db.bak_<timestamp>"
+# Linux/macOS source-server startup
+NODE_ENV=production DISABLE_LIVE_STUDIO=true npm run start:cluster
 ```
 
----
+The existing `start:prod` npm script uses Windows cmd `set` syntax. `npm start` runs `server/index.js`; `npm run dev:full` is API/Vite development mode, not a production service. `npm run seed` runs an exported seeder module without a seeding CLI; initialization/provisioning is performed by existing application paths.
 
-## Rollback Procedure
+Normal API ports are HTTP 1937 and HTTPS 1938; Vite development UI is 5173, and the portable script can configure HTTP 3000. Confirm the deployment's configured ports. Phones/scanners need trusted HTTPS for camera APIs. `GET /api/ping` includes readiness; a reachable login page alone is not full backend readiness. Review additional authenticated health diagnostics and the affected workflow.
 
-If a deployment causes issues that can't be resolved in < 15 minutes, roll back:
+## Portable first-run provisioning (Windows PowerShell)
 
-### Standalone Executable Rollback
-1. Stop the new `.exe`
-2. Rename new `.exe` to `.broken` for inspection
-3. Restore the `.bak` executable
-4. If schema migrations ran: restore the DB backup taken pre-deployment
-5. Start the old `.exe`
-6. Verify: `GET /api/health`, test login, test affected workflow
+Run from the extracted portable folder. This creates private, independent session/hub secrets on that installation; do not run over an existing .env or print/commit its values. HA is separately provisioned when used.
 
-### From Source Rollback
-```bash
-git log --oneline -10      # Find the commit to roll back to
-git checkout <commit-hash> -- .
-npm install
-npm run build
-npm run preview
+```powershell
+if (Test-Path -LiteralPath '.env') { throw 'Existing configuration: review it instead of replacing secrets.' }
+$installRandom = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$installJwtBytes = New-Object byte[] 32
+$installHubBytes = New-Object byte[] 32
+$installRandom.GetBytes($installJwtBytes)
+$installRandom.GetBytes($installHubBytes)
+$installJwtValue = ($installJwtBytes | ForEach-Object { $_.ToString('x2') }) -join ''
+$installHubValue = ($installHubBytes | ForEach-Object { $_.ToString('x2') }) -join ''
+@("JWT_SECRET=$installJwtValue", "HUB_TOKEN_SECRET=$installHubValue", 'PORT=3000', 'NODE_ENV=production', 'DISABLE_LIVE_STUDIO=true', 'ALLOWED_ORIGINS=http://localhost:3000') | Set-Content -LiteralPath '.env' -Encoding ASCII
+$installRandom.Dispose()
 ```
 
-**Important:** If migrations ran against the production DB, the DB cannot be rolled back without restoring from backup. Always take a DB backup before deploying a version with new migrations.
+Restrict .env access to the service/operator identities. Then double-click `Trier OS.bat` or run `runtime\node.exe server\index.js` from that folder. Review HTTPS certificate trust and production account handling before client use. EXE/MSI first-run session-secret generation is handled by the existing Electron launcher; no host TLS keys or HA credentials are shipped.
 
----
+## Before an authorized deployment
 
-## Staged Deployment (Pilot)
+1. Review the specific risk/defect removed and validate it on separate data. Use targeted regressions appropriate to a narrow change; new releases retain the full release gate. Documentation-only changes do not require executable testing.
+2. Confirm production mode, independent session/hub secrets, disabled Live Studio, trusted TLS, host permissions and account review in [SECURITY.md](../../SECURITY.md).
+3. If using HA, explicitly provision/rotate the paired peer credential using [HA provisioning](../HA_SECRET_PROVISIONING.md). Do not restore a retired distributed credential.
+4. Take a consistent secured backup and validate the intended restore procedure separately. Record executable/source/lockfile version, configuration and migration coverage. Migration 047's export mismatch remains deferred; migrations are not guaranteed merely by numbering.
+5. Plan the corporate maintenance window and rollback. Never replace operational data with packaged demo/reference datasets or overwrite protected local configuration.
 
-For the initial pilot plant:
-1. Deploy to `Demo_Plant_1` first — validate with Doug Trier
-2. If stable for 24 hours → deploy to `Plant_1`
-3. Monitor `GET /api/health` for 48 hours after production deployment
-4. Keep rollback `.exe` on the server for 2 weeks post-deployment
+## Consistent backup and rollback
+
+Do not copy just a live `.db` file while SQLite WAL writes continue. Use an approved SQLite-consistent backup method, or cleanly stop every writer and preserve the complete data directory, including any remaining WAL files, auth/logistics/plant files and upload data. Back up protected environment, certificates and local HA configuration securely and separately from public distribution. Validate a restore using separate paths and restrictive permissions.
+
+For rollback, stop the affected instance, preserve its data/logs for diagnosis, and restore the previously reviewed executable/source plus compatible lockfile/configuration. Do not overwrite a dirty checkout with an unreviewed `git checkout -- .` command. If schema/data changes prevent old code from safely using current data, use the pre-deployment consistent backup under an approved recovery plan; account for records created since that backup. Never claim rollback is lossless without reconciliation.
+
+After restart, check readiness, trusted TLS, authorized login, the affected workflow and pending scan/integration items. HA ordering/deduplication, pooled connections after rollback and paired-server recovery are not fully validated. Escalate unresolved risk to the installation administrator/Doug Trier rather than bypassing authentication or inventing empty replacement databases. See [validation limits](../SECURITY_MAINTENANCE_VALIDATION.md).

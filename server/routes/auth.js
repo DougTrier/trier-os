@@ -1,10 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
-
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 /**
  * Trier OS - Authentication & User Management API
  * ========================================================
@@ -268,7 +264,8 @@ router.post('/verify-2fa', async (req, res) => {
             secret: OTPAuth.Secret.fromBase32(secretBase32)
         });
 
-        const delta = totp.validate({ token: code, window: 1 });
+        const verifiedAt = Date.now();
+        const delta = totp.validate({ token: code, window: 1, timestamp: verifiedAt });
         if (delta === null) {
             // Record the miss against this pre-auth token.
             const rec = preAuth2faAttempts.get(attemptKey) || { attempts: 0, firstSeen: Date.now() };
@@ -279,27 +276,18 @@ router.post('/verify-2fa', async (req, res) => {
             return res.status(401).json({ error: 'Invalid authenticator code. Check your app and try again.' });
         }
 
-        // Audit 47 / M-2: TOTP codes are valid for ~60 s (current window + one
-        // adjacent) and otpauth doesn't track used codes. Without a replay
-        // cache, a captured code could be re-used multiple times inside the
-        // window. Track the last successfully-consumed { delta, at } in
-        // creator_settings; reject the same delta if presented again within
-        // 90 s.
+        // The validation delta is relative, not a code identity. Persist the
+        // absolute consumed counter, bound to this account and secret, atomically.
         try {
-            const lastRow = logDb.prepare("SELECT Value FROM creator_settings WHERE Key = 'totp_last_delta'").get();
-            const last = lastRow?.Value ? JSON.parse(lastRow.Value) : null;
-            if (last && last.delta === delta && (Date.now() - last.at) < 90_000) {
+            const currentCounter = totp.counter({ timestamp: verifiedAt });
+            if (!require('../totp_replay').consumeCounter(logDb, { userId: decoded.UserID, secret: secretBase32,
+                counter: currentCounter + delta, currentCounter, legacyCreator: true })) {
                 logAudit('creator', 'LOGIN_2FA_REPLAY_REJECTED', null, { delta }, 'WARNING', req.ip);
                 return res.status(401).json({ error: 'This code was already used. Wait for the next one in your authenticator app.' });
             }
-            logDb.prepare(
-                "INSERT OR REPLACE INTO creator_settings (Key, Value, UpdatedAt) VALUES ('totp_last_delta', ?, datetime('now'))"
-            ).run(JSON.stringify({ delta, at: Date.now() }));
         } catch (replayErr) {
-            // Replay cache is best-effort — log and continue. A broken cache
-            // reverts to the previous (non-replay-guarded) behavior rather
-            // than locking the creator out.
             console.warn('[2FA] Replay cache update failed:', replayErr.message);
+            return res.status(503).json({ error: 'Unable to verify authenticator replay protection. Try again later.' });
         }
 
         const user = authDb.prepare('SELECT * FROM Users WHERE UserID = ?').get(decoded.UserID);

@@ -136,6 +136,7 @@
 
   @media print {
     .page { padding: 36px 52px; }
+    .section-label, h2, h3 { break-after: avoid; page-break-after: avoid; }
     .cover { min-height: auto; padding: 80px 60px; page-break-after: always; }
     .no-break { page-break-inside: avoid; }
     .page-break { page-break-before: always; padding-top: 48px; }
@@ -294,7 +295,8 @@
     padding: 13px 18px;
     border-radius: 10px;
     margin: 10px 0;
-    white-space: pre;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     overflow-x: auto;
     line-height: 1.6;
   }
@@ -506,13 +508,14 @@
   </div>
 
   <div style="color:rgba(255,255,255,0.4); font-size:13px;">
-    Version 3.7.1 &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; github.com/DougTrier/trier-os
+    Version 3.7.2 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; github.com/DougTrier/trier-os
   </div>
 </div>
 
 
 <!-- ═══════════════════  PAGE 1 — WHICH METHOD?  ═══════════════════ -->
 <div class="page">
+<section class="installation-maintenance"><div class="callout info"><div class="callout-body"><strong>Maintenance release / corporate deployment</strong><p>Trier OS is feature complete and feature frozen. Deploy one corporate HQ instance holding authoritative plant databases. Plants connect to HQ; optional local hub/cache fallback needs deployment-specific routing/recovery validation. The default Electron package starts an embedded full server on its host, not an automatically configured HQ thin client.</p><p>Production requires independent strong JWT_SECRET and HUB_TOKEN_SECRET, NODE_ENV=production, DISABLE_LIVE_STUDIO=true, trusted TLS, account review and secured consistent backups. Windows packages bundle the existing OpenSSL certificate-generation prerequisite with its separate Apache-2.0 notice; each installation generates its own key/certificate. A generated self-signed certificate still requires client trust or replacement with an operator-provisioned trusted certificate. Provision 64+ random hex characters for session/hub secrets; startup checks reject missing/short/recognized placeholders rather than proving entropy. Do not replace real operational data with bundled demo databases during an upgrade.</p><p>Public demo accounts are deliberately confined to examples and can be seeded in production. Ghost test accounts are a separate non-production seeding class; switching mode does not remove existing accounts. Browser sessions use an HttpOnly cookie with 7-day absolute expiry; the React UI separately applies a 15-minute inactivity timer/client logout. The localStorage hub token is separate and expires after 24 hours. Logout clears the cookie without revoking a copied token.</p><p>If using HA, explicitly provision a fresh 64-character hex secret on paired corporate servers, through authenticated HA configuration or protected HA_SYNC_KEY environment. Environment takes precedence over the local resolved-data .sync_key file. Missing/invalid/retired provisioning denies peer auth. Rotate any historically distributed credential, including older portable ZIP copies. Never copy a shipped historical key.</p><p>Floorplans accept validated PNG/JPEG/GIF/WebP; convert SVG to a safe raster before upload. Active/unknown historical attachments download with execution-protection headers. Complete browser regression and later targeted validation are distinct from physical outage/restart and paired-server recovery, which are not fully validated.</p><p>Copyright © 2026 Doug Trier. Source is MIT licensed with required copyright/permission notices; Trier OS™ branding and endorsement rights are separate. See <a href="../LICENSE">LICENSE</a>, <a href="../TRADEMARKS.md">TRADEMARKS.md</a>, <a href="../SECURITY.md">SECURITY.md</a> and <a href="SECURITY_MAINTENANCE_VALIDATION.md">validation evidence</a>.</p></div></div></section>
 
   <div class="section-label">Start Here</div>
   <h2>Which Install Method Is Right for You?</h2>
@@ -524,30 +527,30 @@
       <span class="rec-badge">Most Popular</span>
       <span class="ch-icon">💾</span>
       <h4>EXE Installer</h4>
-      <div class="ch-subtitle">TrierOS-Setup-3.7.1.exe</div>
+      <div class="ch-subtitle">TrierOS-Setup-3.7.2.exe</div>
       <p>Double-click to install. Works exactly like any other Windows program. Creates a Start Menu shortcut. Best for individual users and small teams. <em>Live Studio IDE not included.</em></p>
-      <span class="goto-badge">→ Method A (Page 2)</span>
+      <span class="goto-badge">→ Method A</span>
     </div>
     <div class="choice-card">
       <span class="ch-icon">🏢</span>
       <h4>MSI Installer</h4>
-      <div class="ch-subtitle">TrierOS-Setup-3.7.1.msi</div>
+      <div class="ch-subtitle">TrierOS-Setup-3.7.2.msi</div>
       <p>For IT departments deploying Trier OS across multiple machines. Supports Group Policy, silent install flags, and enterprise deployment tools like SCCM. <em>Live Studio IDE not included.</em></p>
-      <span class="goto-badge">→ Method B (Page 3)</span>
+      <span class="goto-badge">→ Method B</span>
     </div>
     <div class="choice-card">
       <span class="ch-icon">📦</span>
       <h4>ZIP Portable</h4>
-      <div class="ch-subtitle">TrierOS-Setup-3.7.1.zip</div>
+      <div class="ch-subtitle">TrierOS-Setup-3.7.2.zip</div>
       <p>No installer needed. Unzip and run. Great for servers, USB drives, air-gapped machines, or anywhere you can't run an installer. <em>Includes Live Studio IDE.</em></p>
-      <span class="goto-badge">→ Method C (Page 4)</span>
+      <span class="goto-badge">→ Method C</span>
     </div>
     <div class="choice-card">
       <span class="ch-icon">🛠️</span>
       <h4>From Source</h4>
       <div class="ch-subtitle">Clone from GitHub</div>
       <p>For developers, contributors, and Mac/Linux users. Requires Node.js and Git. Full codebase with Live Studio IDE and complete customization capability.</p>
-      <span class="goto-badge">→ Method D (Page 5)</span>
+      <span class="goto-badge">→ Method D</span>
     </div>
   </div>
 
@@ -630,13 +633,13 @@
             <span>File Name</span><span>Use For</span>
           </div>
           <div class="creds-row" style="grid-template-columns: 1fr 1fr;">
-            <span><code>TrierOS-Setup-3.7.1.exe</code></span><span>EXE Installer (Method A)</span>
+            <span><code>TrierOS-Setup-3.7.2.exe</code></span><span>EXE Installer (Method A)</span>
           </div>
           <div class="creds-row" style="grid-template-columns: 1fr 1fr;">
-            <span><code>TrierOS-Setup-3.7.1.msi</code></span><span>MSI Installer (Method B)</span>
+            <span><code>TrierOS-Setup-3.7.2.msi</code></span><span>MSI Installer (Method B)</span>
           </div>
           <div class="creds-row" style="grid-template-columns: 1fr 1fr;">
-            <span><code>TrierOS-Setup-3.7.1.zip</code></span><span>ZIP Portable (Method C)</span>
+            <span><code>TrierOS-Setup-3.7.2.zip</code></span><span>ZIP Portable (Method C)</span>
           </div>
         </div>
         <div class="callout warning" style="margin-top:12px;">
@@ -669,7 +672,7 @@
       <div class="step-num blue">1</div>
       <div class="step-content">
         <h4>Run the installer</h4>
-        <p>Find the downloaded <code>TrierOS-Setup-3.7.1.exe</code> file (usually in your Downloads folder). Double-click it to start the installer.</p>
+        <p>Find the downloaded <code>TrierOS-Setup-3.7.2.exe</code> file (usually in your Downloads folder). Double-click it to start the installer.</p>
         <p>If Windows shows a SmartScreen warning, click <strong>More info</strong> then <strong>Run anyway</strong>.</p>
       </div>
     </div>
@@ -703,7 +706,7 @@
           <div class="callout-icon">✅</div>
           <div class="callout-body">
             <strong>Done!</strong>
-            <p>Skip to the "First Login" section on Page 6 to log in.</p>
+            <p>Skip to the "First Login" section to log in.</p>
           </div>
         </div>
       </div>
@@ -726,7 +729,7 @@
       <div class="step-num green">1</div>
       <div class="step-content">
         <h4>Standard interactive install</h4>
-        <p>Double-click <code>TrierOS-Setup-3.7.1.msi</code> to launch the Windows Installer wizard. Follow the prompts — same as any other MSI package.</p>
+        <p>Double-click <code>TrierOS-Setup-3.7.2.msi</code> to launch the Windows Installer wizard. Follow the prompts — same as any other MSI package.</p>
       </div>
     </div>
 
@@ -736,13 +739,13 @@
         <h4>Silent / automated install (IT use)</h4>
         <p>For scripted deployments, open a Command Prompt as Administrator and run:</p>
         <div class="cmd"><span class="comment"># Silent install — no UI, installs to default location</span>
-<span class="prompt">></span> msiexec /i TrierOS-Setup-3.7.1.msi /quiet /norestart
+<span class="prompt">></span> msiexec /i TrierOS-Setup-3.7.2.msi /quiet /norestart
 
 <span class="comment"># Silent install to a custom folder</span>
-<span class="prompt">></span> msiexec /i TrierOS-Setup-3.7.1.msi /quiet INSTALLDIR="C:\TrierOS"
+<span class="prompt">></span> msiexec /i TrierOS-Setup-3.7.2.msi /quiet APPLICATIONFOLDER="C:\TrierOS"
 
 <span class="comment"># Uninstall silently</span>
-<span class="prompt">></span> msiexec /x TrierOS-Setup-3.7.1.msi /quiet</div>
+<span class="prompt">></span> msiexec /x TrierOS-Setup-3.7.2.msi /quiet</div>
       </div>
     </div>
 
@@ -762,7 +765,7 @@
           <div class="callout-icon">✅</div>
           <div class="callout-body">
             <strong>Done!</strong>
-            <p>Skip to the "First Login" section on Page 6 to log in.</p>
+            <p>Skip to the "First Login" section to log in.</p>
           </div>
         </div>
       </div>
@@ -791,12 +794,22 @@
     </div>
   </div>
 
-  <div class="steps">
+  <div class="callout warning"><div class="callout-body"><strong>ZIP first run: provision this installation's private secrets before launching</strong><p>The release contains a blank .env.example, not shared session secrets or host TLS keys. Open Windows PowerShell in the extracted folder and run:</p><pre class="cmd">if (Test-Path -LiteralPath &#x27;.env&#x27;) { throw &#x27;Existing configuration: review it instead of replacing secrets.&#x27; }
+$installRandom = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$installJwtBytes = New-Object byte[] 32
+$installHubBytes = New-Object byte[] 32
+$installRandom.GetBytes($installJwtBytes)
+$installRandom.GetBytes($installHubBytes)
+$installJwtValue = ($installJwtBytes | ForEach-Object { $_.ToString(&#x27;x2&#x27;) }) -join &#x27;&#x27;
+$installHubValue = ($installHubBytes | ForEach-Object { $_.ToString(&#x27;x2&#x27;) }) -join &#x27;&#x27;
+@(&quot;JWT_SECRET=$installJwtValue&quot;, &quot;HUB_TOKEN_SECRET=$installHubValue&quot;, &#x27;PORT=3000&#x27;, &#x27;NODE_ENV=production&#x27;, &#x27;DISABLE_LIVE_STUDIO=true&#x27;, &#x27;ALLOWED_ORIGINS=http://localhost:3000&#x27;) | Set-Content -LiteralPath &#x27;.env&#x27; -Encoding ASCII
+$installRandom.Dispose()</pre><p>Restrict access to the resulting .env; never publish it. Then start Trier OS.bat. Existing installations retain their own protected configuration; do not replace it during an upgrade. HA needs separate explicit peer provisioning. The first HTTPS certificate must be trusted on clients.</p></div></div>
+<div class="steps">
     <div class="step">
       <div class="step-num amber">1</div>
       <div class="step-content">
         <h4>Unzip the file</h4>
-        <p>Find <code>TrierOS-Setup-3.7.1.zip</code> in your Downloads folder. Right-click it and choose <strong>Extract All</strong>.</p>
+        <p>Find <code>TrierOS-Setup-3.7.2.zip</code> in your Downloads folder. Right-click it and choose <strong>Extract All</strong>.</p>
         <p>Choose a destination folder — for example <code>C:\TrierOS\</code> or a folder on a USB drive. Click <strong>Extract</strong>.</p>
       </div>
     </div>
@@ -805,7 +818,7 @@
       <div class="step-num amber">2</div>
       <div class="step-content">
         <h4>Open the extracted folder</h4>
-        <p>Navigate into the folder that was created. You should see a file called <code>Trier OS.bat</code> along with <code>server/</code>, <code>data/</code>, and <code>runtime/</code> folders.</p>
+        <p>Navigate into the folder that was created. You should see <code>Trier OS.bat</code>, <code>server/</code>, <code>seed-data/</code>, and <code>runtime/</code>. The launcher initializes retained storage once; packaged seeds do not replace an existing live database.</p>
       </div>
     </div>
 
@@ -819,21 +832,21 @@
           <div class="callout-icon">📱</div>
           <div class="callout-body">
             <strong>Accessing from a phone, tablet, or Zebra scanner?</strong>
-            <p>Use <code>https://YOUR-SERVER-IP:1938</code> instead of port 3000. Mobile browsers require HTTPS for camera and barcode scan access. Accept the self-signed certificate warning on first visit. Your server's IP address is shown in the console window.</p>
+            <p>Use <code>https://YOUR-SERVER-IP:1938</code> instead of port 3000. Mobile browsers require HTTPS for camera and barcode scan access. Configure certificate trust on the device; dismissing a development warning does not guarantee camera access in every browser. Your server's IP address is shown in the console window.</p>
           </div>
         </div>
         <div class="callout warning">
           <div class="callout-icon">⚠️</div>
           <div class="callout-body">
             <strong>Don't move individual files out of the folder.</strong>
-            <p>The portable version needs all its files together. You can move the entire folder anywhere, but don't rearrange what's inside it.</p>
+            <p>Keep the application files together. Retain <code>trier-deployment.json</code>, your private configuration and the external storage it identifies. Stop Trier OS before extracting an update into the same application folder; the ZIP contains seed-data rather than replacement live data. Moving an initialized deployment requires preserving its storage locator and access permissions.</p>
           </div>
         </div>
         <div class="callout success">
           <div class="callout-icon">✅</div>
           <div class="callout-body">
             <strong>Done!</strong>
-            <p>Skip to the "First Login" section on Page 6 to log in.</p>
+            <p>Skip to the "First Login" section to log in.</p>
           </div>
         </div>
       </div>
@@ -915,7 +928,7 @@
         <h4>Install dependencies</h4>
         <p>This downloads all required packages. Takes 2–5 minutes.</p>
         <div class="cmd"><span class="prompt">$</span> npm install</div>
-        <p>Yellow warnings are normal. Only red errors need attention.</p>
+        <p>Review errors and security-relevant warnings; do not dismiss them based on color.</p>
       </div>
     </div>
 
@@ -934,9 +947,8 @@
     <div class="step">
       <div class="step-num purple">6</div>
       <div class="step-content">
-        <h4>Set up the database with demo data</h4>
-        <div class="cmd"><span class="prompt">$</span> npm run seed</div>
-        <p>Creates all databases and fills them with sample plants, assets, work orders, and user accounts. Takes about 30–60 seconds.</p>
+        <h4>Review installed demonstration data</h4>
+        <p>Existing application startup/provisioning initializes the databases. Available demo records depend on the distribution. The exported seeder module is not a database-seeding CLI.</p>
       </div>
     </div>
 
@@ -946,7 +958,7 @@
         <h4>Start Trier OS</h4>
         <div class="cmd"><span class="prompt">$</span> npm run dev:full</div>
         <p>Wait for both of these lines to appear:</p>
-        <div class="cmd"><span class="highlight">API</span>  | Trier OS server listening on port 3000
+        <div class="cmd"><span class="highlight">API</span>  | API listening on its configured port (normally 1937; HTTPS 1938)
 <span class="highlight">UI</span>   | Local: http://localhost:5173/</div>
         <p>Then open your browser and go to <strong>http://localhost:5173</strong>.</p>
         <div class="callout info">
@@ -960,7 +972,7 @@
           <div class="callout-icon">📱</div>
           <div class="callout-body">
             <strong>Testing scan from a phone, tablet, or Zebra scanner?</strong>
-            <p>Use <code>https://YOUR-SERVER-IP:1938</code> — not port 5173. Mobile browsers block camera access on plain HTTP. Accept the self-signed certificate warning on first visit. Your server IP is shown in the terminal output when Trier OS starts.</p>
+            <p>Use <code>https://YOUR-SERVER-IP:1938</code> — not port 5173. Mobile browsers block camera access on plain HTTP. Configure certificate trust on the device; dismissing a development warning does not guarantee camera access in every browser. Your server IP is shown in the terminal output when Trier OS starts.</p>
           </div>
         </div>
       </div>
@@ -982,7 +994,7 @@
     <div class="callout-icon">📱</div>
     <div class="callout-body">
       <strong>Plant floor devices (phones, tablets, Zebra scanners) need HTTPS to scan.</strong>
-      <p>Open <code>https://YOUR-SERVER-IP:1938</code> on any device that needs to use the barcode or camera scan features. Plain HTTP blocks camera access in mobile browsers. Accept the self-signed certificate warning on first visit — this is expected for on-premise deployments without a signed TLS certificate.</p>
+      <p>Open <code>https://YOUR-SERVER-IP:1938</code> on any device that needs to use the barcode or camera scan features. Plain HTTP blocks camera access in mobile browsers. Use a certificate trusted by the device; self-signed development certificates may need explicit trust setup.</p>
     </div>
   </div>
 
@@ -999,7 +1011,7 @@
           <div class="callout-icon">⚠️</div>
           <div class="callout-body">
             <strong>Save this password before closing the file.</strong>
-            <p>It will not be shown again. If you lose it, delete <code>data/trier_auth.db</code> and restart — a new password will be generated.</p>
+            <p>Protect it, change your password and securely remove the file. Do not delete the auth database to reset a password: that destroys identities and role assignments. Use an existing authorized administrator and a planned backup/recovery procedure.</p>
           </div>
         </div>
       </div>
@@ -1087,26 +1099,41 @@
   <div class="success-banner">
     <h3>🎉 Trier OS is Running!</h3>
     <p>You're now looking at a fully operational industrial platform with real demo data.<br>Everything is connected — work orders, assets, safety, quality, and analytics.</p>
-    <div class="url-box">http://localhost:5173</div>
+    <div class="url-box">https://localhost:1938</div>
+    <p style="font-size:13px;">EXE/MSI and production ZIP use HTTPS port 1938. Source development uses its Vite UI at http://localhost:5173. Phone/scanner clients need a trusted HTTPS hostname.</p>
     <p style="font-size:13px; margin-top:4px;">Questions? Visit github.com/DougTrier/trier-os</p>
   </div>
 
   <hr class="divider">
 
   <div class="section-label">Reference</div>
+  <h2>Upgrading an Existing Installation</h2>
+  <div class="callout warn"><div class="callout-body">
+    <strong>Normal updates and reinstalls preserve existing data.</strong>
+    <ol>
+      <li>Arrange a maintenance window. Exit Trier OS from the tray and stop its server/service; confirm clients are disconnected.</li>
+      <li>Keep a verified backup of all databases, uploads and private configuration. The installer also verifies a recovery copy before updating. New machine installations retain storage under <code>%ProgramData%\TrierOS</code>; portable storage is under <code>%LOCALAPPDATA%\TrierOS\portable</code>. The deployment locator identifies the actual directory, including a configured external DATA_DIR.</li>
+      <li>Use the same installer format and intended installation path. Existing installations follow Update Existing Installation: program files are updated and initialized data is reused. Legacy install-relative data is adopted before program cleanup. Do not manually replace live databases with seed files.</li>
+      <li>Preserve your installation-specific session secrets and operator-provisioned trusted TLS. Do not restore a historically shipped HA credential or shared package TLS key. Provision a fresh HA secret on both peers; generate or provision installation-specific TLS if needed.</li>
+      <li>Start Trier OS and verify the About version, accounts, plant selection, representative records and a normal scan. Check backups and any HA/offline deployment separately.</li>
+      <li>If validation fails, stop the application and restore the prior application and matching full data/configuration backup together. Do not reset the auth database or overwrite live data while the server is running.</li>
+      <li>Ordinary uninstall retains data, accounts, password hashes, roles, groups, memberships and grants. Reinstall detects retained storage. Destructive reset is a separate explicitly confirmed operation, with a verified backup; it is never the normal update or uninstall path.</li>
+    </ol>
+  </div></div>
+  <div class="section-label">Reference</div>
   <h2>Useful Commands (From-Source Only)</h2>
 
   <div class="cmd-label">Start the app (run this every time)</div>
   <div class="cmd"><span class="prompt">$</span> npm run dev:full</div>
 
-  <div class="cmd-label">Production mode (hardened security)</div>
+  <div class="cmd-label">Production mode — Windows cmd only; protected secrets must be provisioned first</div>
   <div class="cmd"><span class="prompt">$</span> npm run start:prod</div>
 
-  <div class="cmd-label">Get the latest updates</div>
+  <div class="cmd-label">Authorized update only — preserve local work, back up consistent data and validate separately first</div>
   <div class="cmd"><span class="prompt">$</span> git pull origin main &amp;&amp; npm install</div>
 
-  <div class="cmd-label">Reset demo data</div>
-  <div class="cmd"><span class="prompt">$</span> npm run seed</div>
+  <p>Do not use the seeder module as a demo reset CLI. Use the existing authorized location/data workflow after confirming the dataset is disposable and backed up.</p>
+  <p>Linux/macOS production source service: <code>NODE_ENV=production DISABLE_LIVE_STUDIO=true npm run start:cluster</code>. PowerShell: set <code>$env:NODE_ENV = 'production'</code> and <code>$env:DISABLE_LIVE_STUDIO = 'true'</code>, then <code>npm run start:cluster</code>.</p>
 
   <hr class="divider">
 
@@ -1118,14 +1145,14 @@
       <div class="step-num">?</div>
       <div class="step-content">
         <h4>Windows SmartScreen blocked the installer</h4>
-        <p>Click <strong>More info</strong> on the SmartScreen dialog, then click <strong>Run anyway</strong>. This appears because Trier OS is free open-source software without a paid code-signing certificate. It is safe.</p>
+        <p>Click <strong>More info</strong> on the SmartScreen dialog, then click <strong>Run anyway</strong>. Unsigned installers can trigger this warning. Verify the release source and SHA-256 checksum before deciding to proceed; open-source licensing alone is not proof of installer safety.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">?</div>
       <div class="step-content">
         <h4>Login fails — "Invalid credentials"</h4>
-        <p>Make sure you are using the password from <code>first_login.txt</code> — not a password you chose. If the file did not open automatically, look for it in the <code>data/</code> folder inside your install directory. Usernames are all <strong>lowercase</strong>, passwords are case-sensitive.</p>
+        <p>For a fresh creator account, use the private password from <code>first_login.txt</code>; after changing it, use your new password. If the file did not open automatically, look for it in the <code>data/</code> folder inside your install directory. Use the exact configured username; passwords are case-sensitive.</p>
       </div>
     </div>
     <div class="step">
@@ -1139,7 +1166,7 @@
       <div class="step-num">?</div>
       <div class="step-content">
         <h4>"Port already in use" error (From Source only)</h4>
-        <p>Another program is using port 3000 or 5173. Either close that program, or edit your <code>.env</code> file and change <code>PORT=3000</code> to <code>PORT=3001</code>.</p>
+        <p>Check the configured listener: normally API 1937/1938, development UI 5173 or portable HTTP 3000. Identify the owning process before stopping anything. Coordinate any port change with client/proxy configuration.</p>
       </div>
     </div>
     <div class="step">
@@ -1152,7 +1179,7 @@
   </div>
 
   <div class="footer">
-    <span>Trier OS v3.7.1 — Installation Guide</span>
+    <span>Trier OS v3.7.2 — Installation Guide</span>
     <span>Copyright © 2026 Trier OS. All Rights Reserved.</span>
     <span>Free &amp; Open Source &nbsp;·&nbsp; github.com/DougTrier/trier-os</span>
   </div>

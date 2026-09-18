@@ -1,3 +1,5 @@
+> Historical phase specification/review. Proposed behavior, acceptance boxes and version samples below are design history, not a current implementation guarantee or new feature roadmap. Current prepared 3.7.2 implementation and the established remediation evidence win; see [architecture](../ARCHITECTURE.md), [validation limits](../SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](../MAINTENANCE.md).
+
 # Digital Twin Integration — External Platform Sync Spec
 > Trier OS P6 · Two-way sync with external digital twin platforms
 

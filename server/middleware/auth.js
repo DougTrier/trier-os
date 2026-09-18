@@ -20,6 +20,7 @@ const jwt = require('jsonwebtoken');
 const authDb = require('../auth_db');
 const JWT_SECRET = process.env.JWT_SECRET;
 const { isBackupAllowed } = require('../logistics_db');
+const demoScope = require('../demo_scope');
 
 // SECURITY: Hard crash if no JWT secret is configured.
 // A running server without JWT validation is worse than no server at all.
@@ -47,7 +48,8 @@ module.exports = async (req, res, next) => {
     if (req.path.startsWith('/digital-twin/image') && req.method === 'GET') return next(); // Digital Twin schematics rendered in img tags
     // HA sync routes use their own sync-key auth (server-to-server)
     // SECURITY: Validate x-sync-key header securely in the generic middleware.
-    if (req.path.startsWith('/ha/') || req.path.startsWith('/sync/replicate')) {
+    const peerRoutes = new Set(['GET:/ha/health', 'GET:/ha/consistency', 'POST:/sync/replicate']);
+    if (peerRoutes.has(`${req.method}:${req.path}`)) {
         if (req.headers['x-sync-key']) {
             const haSync = require('../ha_sync');
             if (haSync.validateSyncKey(req.headers['x-sync-key'])) {
@@ -76,6 +78,9 @@ module.exports = async (req, res, next) => {
     if (!token) return res.status(401).json({ error: 'Missing authorization token' });
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.pre2fa) {
+            return res.status(401).json({ error: 'Complete two-factor authentication before accessing protected APIs.' });
+        }
 
         // Audit 47 / H-5: in-band session revocation via TokenVersion claim.
         // Password change, admin reset, and role edit bump Users.TokenVersion;
@@ -95,6 +100,17 @@ module.exports = async (req, res, next) => {
         }
 
         req.user = decoded; // Contains parsed { UserID, Username, globalRole, plantRoles, nativePlantId }
+
+        // Published demo credentials cannot inherit staff scanner-read exceptions
+        // or management aggregation. Check every parsed selector, not only header.
+        const isDemo = demoScope.isDemoUser(req.user);
+        if (isDemo) {
+            if ((req.headers['x-plant-id'] && req.headers['x-plant-id'] !== 'examples') ||
+                demoScope.hasForeignPlant(req.query) || demoScope.hasForeignPlant(req.body)) {
+                return res.status(403).json({ error: 'Demo accounts are confined to examples.' });
+            }
+            req.headers['x-plant-id'] = 'examples';
+        }
 
         // Strict Read-Only Mode enforcement across foreign plants
         const activePlant = req.headers['x-plant-id'] || 'Demo_Plant_1';
@@ -173,6 +189,10 @@ module.exports = async (req, res, next) => {
             }
         }
 
+        if (isDemo) {
+            return demoScope.context.run(true, () =>
+                require('../database').asyncLocalStorage.run('examples', next));
+        }
         next();
     } catch (err) {
         console.error(`🔐 [Auth] Token rejected — ${req.path}`);

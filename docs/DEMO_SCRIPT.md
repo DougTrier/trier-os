@@ -16,11 +16,11 @@ questions, you'll land it in 4:30. That's fine — better short than rushed.
 Do this before anyone is in the room.
 
 1. **Server is running.** `node server/index.js` from the project root. Wait for
-   `Trier OS server listening on port 3000` (or your configured port) in the terminal.
+   API readiness on the configured port (normally HTTP 1937 / HTTPS 1938; portable HTTP 3000) in the terminal.
    Leave that terminal visible but minimized — you may want it for step 8.
 
 2. **Plant is seeded.** The Demo Plant 1 database (`data/Demo_Plant_1.db`) must exist and
-   be populated. If the file is missing or empty, run the seed script first.
+   be populated. If the dataset is missing, restore the intended demonstration distribution or use existing application provisioning; the exported seeder module is not a seeding CLI.
 
 3. **Browser is clean.** Open a fresh browser window (or incognito) pointed at the app.
    You do not want to start the demo already logged in as someone else.
@@ -297,4 +297,6 @@ It is MIT-licensed and free to deploy. The only cost is the hardware it runs on.
 
 ---
 
-*Trier OS v3.7.1 — docs/DEMO_SCRIPT.md*
+*Trier OS v3.7.2 — docs/DEMO_SCRIPT.md*
+
+This facilitator walkthrough uses a private privileged account only in a disposable demo deployment. Public demo identities stay in examples. Live Studio demonstration is development-only; disable it in production. Simulation replay supplies scenario evidence, not proof of every future state.

@@ -1,4 +1,4 @@
-﻿{
+{
   ".aboutManual": "حول & الدليل",
   ".accessThePlatformOperations": "قم بالوصول إلى دليل الاستخبارات التشغيلية للمنصة وسيناريوهات التدريب وأرصدة النظام",
   ".action": "إجراء",
@@ -184,7 +184,7 @@
   "about.goThere": "اذهب إلى هناك",
   "about.goToCode": "اذهب إلى الكود",
   "about.industrialEngineering": "صناعي الهندسة",
-  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.1",
+  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.2",
   "about.manualTitle": "نظام التشغيل Trier - دليل الاستخبارات التشغيلية",
   "about.mobileInfra": "الأشعة تحت الحمراء المتنقلة",
   "about.namePlaceholder": "اسم",
@@ -7143,7 +7143,7 @@
   "printEngine.totalOperatingSpend": "إجمالي الإنفاق التشغيلي:",
   "printEngine.trierOs": "نظام تشغيل ترير",
   "printEngine.trierOsEnterpriseMaintenancePlatform": "نظام التشغيل Trier - منصة صيانة المؤسسة",
-  "printEngine.v1126gold": "v3.7.1",
+  "printEngine.v1126gold": "v3.7.2",
   "printEngine.version": "إصدار",
   "priority.critical": "حرج",
   "priority.emergency": "طوارئ",

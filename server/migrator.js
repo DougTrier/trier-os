@@ -1,133 +1,95 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
-
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 /**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
+ * Schema migration runner. Number/filename ordering preserves both historical
+ * 017 files. Each database owns its filename ledger and atomic upgrade.
+ * Verified backup precedes writes; a failed upgrade stops startup. No routes.
  */
-/**
- * Trier OS - Schema Migration Engine
- * =============================================
- * Versioned migration system that runs on every server boot.
- *
- * HOW IT WORKS:
- *   1. Reads all .sql and .js files from server/migrations/, sorted by number prefix.
- *   2. For each plant database (excluding auth, chat, logistics, corporate_master),
- *      checks the schema_version table to see which migrations have been applied.
- *   3. Applies any new migrations in a transaction. If a migration fails,
- *      the server exits immediately (process.exit(1)) to prevent data corruption.
- *
- * MIGRATION FORMAT:
- *   SQL: Raw SQL executed via db.exec()
- *   JS:  Module exporting an up(db) function for complex data transformations
- */
+'use strict';
 const Database = require('better-sqlite3');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const compat = require('./migration_compat');
+const hasTable = (db, table) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
+const hasColumn = (db, table, column) => db.prepare('SELECT name FROM pragma_table_info(?) WHERE name=?').get(table, column);
+const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
-const dataDir = require('./resolve_data_dir');
-const migrationsDir = path.join(__dirname, 'migrations');
-
-function runMigrations() {
-    console.log('\n🔄 Schema Migration Engine Starting...');
-
-    if (!fs.existsSync(migrationsDir)) {
-        // In pkg mode, migrations are baked into the snapshot — if dir doesn't exist, skip
-        if (typeof process.pkg !== 'undefined') {
-            console.log('✅ No migrations directory in pkg build — skipping.\n');
-            return;
-        }
-        fs.mkdirSync(migrationsDir, { recursive: true });
+function alreadyApplied(db, file) {
+    const n = parseInt(file, 10);
+    if (hasTable(db, 'migration_history') && db.prepare('SELECT 1 FROM migration_history WHERE filename=?').get(file)) return 'recorded';
+    if (hasTable(db, 'schema_version') && db.prepare('SELECT 1 FROM schema_version WHERE filename=?').get(file)) {
+        // 022 swallowed a connection/path TypeError; check its actual column.
+        if (n !== 22 || hasColumn(db, 'Asset', 'PartNumber')) return 'legacy ledger';
     }
-
-    let allFiles;
-    try {
-        allFiles = fs.readdirSync(migrationsDir);
-    } catch (err) {
-        // In pkg mode, readdir on snapshot may fail
-        if (typeof process.pkg !== 'undefined') {
-            console.log('✅ Migrations not readable in pkg build — skipping.\n');
-            return;
-        }
-        throw err;
-    }
-
-    const migrationFiles = allFiles
-        .filter(f => f.endsWith('.sql') || f.endsWith('.js'))
-        .sort((a, b) => {
-            const numA = parseInt(a.split('_')[0], 10);
-            const numB = parseInt(b.split('_')[0], 10);
-            return numA - numB;
-        });
-
-    if (migrationFiles.length === 0) {
-        console.log('✅ No migration files found.\n');
-        return;
-    }
-
-    const excludeList = ['trier_chat.db', 'trier_auth.db', 'trier_logistics.db', 'schema_template.db', 'corporate_master.db'];
-    const dbFiles = fs.readdirSync(dataDir)
-        .filter(f => f.endsWith('.db') && !excludeList.includes(f));
-
-    let totalApplied = 0;
-
-    for (const dbFile of dbFiles) {
-        const dbPath = path.join(dataDir, dbFile);
-        let db;
-
-        try {
-            db = new Database(dbPath);
-            db.pragma('journal_mode = WAL');
-
-            db.exec(`
-                CREATE TABLE IF NOT EXISTS schema_version (
-                    version INTEGER PRIMARY KEY,
-                    filename TEXT NOT NULL,
-                    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-
-            const currentVersionRow = db.prepare('SELECT MAX(version) as v FROM schema_version').get();
-            const currentVersion = currentVersionRow.v || 0;
-
-            for (const file of migrationFiles) {
-                const version = parseInt(file.split('_')[0], 10);
-                if (version > currentVersion) {
-                    const filePath = path.join(migrationsDir, file);
-
-                    try {
-                        if (file.endsWith('.js')) {
-                            // JavaScript migration
-                            const migration = require(filePath);
-                            db.transaction(() => {
-                                migration.up(db);
-                                db.prepare('INSERT INTO schema_version (version, filename) VALUES (?, ?)').run(version, file);
-                            })();
-                        } else {
-                            // SQL migration
-                            const sql = fs.readFileSync(filePath, 'utf8');
-                            db.transaction(() => {
-                                db.exec(sql);
-                                db.prepare('INSERT INTO schema_version (version, filename) VALUES (?, ?)').run(version, file);
-                            })();
-                        }
-                        totalApplied++;
-                        console.log(`   [${dbFile}] Applied ${file}`);
-                    } catch (err) {
-                        console.warn(`   ⚠️ [${dbFile}] Skipped ${file}: ${err.message}`);
-                        // Don't crash — skip failed migrations on satellite DBs
-                        break; // Stop trying further migrations on this DB
-                    }
-                }
-            }
-            db.close();
-        } catch (err) {
-            console.error(`❌ Could not open database ${dbFile}:`, err.message);
-            if (db) db.close();
-        }
-    }
-
-    console.log(`✅ Schema Migration Engine check complete. ${totalApplied} applied.\n`);
+    return null;
 }
 
+function runMigrations(options = {}) {
+    const dataDir = path.resolve(options.dataDir || require('./resolve_data_dir'));
+    const migrationsDir = options.migrationsDir || path.join(__dirname, 'migrations');
+    const files = fs.readdirSync(migrationsDir).filter(f => /^\d+_.+\.(js|sql)$/.test(f))
+        .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b));
+    const registryPath = path.join(dataDir, 'plants.json');
+    const registered = fs.existsSync(registryPath) ? new Set(JSON.parse(fs.readFileSync(registryPath, 'utf8')).map(plant => plant.id + '.db')) : null;
+    const plans = [];
+    for (const filename of fs.readdirSync(dataDir).filter(f => f.endsWith('.db')).sort()) {
+        if (['corporate_master.db', 'trier_chat.db'].includes(filename) || /backup|snapshot|\.old\./i.test(filename)) continue;
+        const db = new Database(path.join(dataDir, filename), { readonly: true, fileMustExist: true });
+        try {
+            const scope = filename === 'mfg_master.db' ? 'catalog' : filename === 'trier_logistics.db' ? 'logistics' : filename === 'trier_auth.db' ? 'auth' :
+                ((!registered || registered.has(filename) || filename === 'schema_template.db') && hasTable(db, 'Asset') && hasTable(db, 'Part') && hasTable(db, 'Work') ? 'plant' : null);
+            if (!scope) continue;
+            if (scope === 'catalog') require('sqlite-vec').load(db);
+            if (db.pragma('integrity_check', { simple: true }) !== 'ok') throw new Error('SQLite integrity check failed');
+            const steps = files.filter(f => compat.scopes(f).includes(scope)).map(file => {
+                const checksum = digest(fs.readFileSync(path.join(migrationsDir, file)));
+                const reason = alreadyApplied(db, file);
+                if (reason === 'recorded' && db.prepare('SELECT checksum FROM migration_history WHERE filename=?').get(file).checksum !== checksum) throw new Error(`Applied migration changed: ${file}`);
+                return { file, checksum, reason };
+            });
+            if (steps.some(step => step.reason !== 'recorded')) plans.push({ filename, scope, steps });
+        } finally { db.close(); }
+    }
+    // Auth data is intentionally absent from distribution seeds. Historically
+    // 041 initialized its group table through auth_db; retain that fresh-install
+    // behavior without running account seed code during migration planning.
+    if (!fs.existsSync(path.join(dataDir, 'trier_auth.db')) && (registered || fs.existsSync(path.join(dataDir, 'schema_template.db')))) {
+        plans.push({ filename: 'trier_auth.db', scope: 'auth', steps: files.filter(f => compat.scopes(f).includes('auth'))
+            .map(file => ({ file, checksum: digest(fs.readFileSync(path.join(migrationsDir, file))), reason: null })) });
+    }
+    if (!plans.length) return { applied: 0, databases: [] };
+    require('./preflight_backup').ensureBackup(dataDir, 'migration-' + digest(JSON.stringify(plans)));
+    const report = { applied: 0, databases: [] };
+    for (const plan of plans) {
+        const db = new Database(path.join(dataDir, plan.filename), { fileMustExist: plan.filename !== 'trier_auth.db' });
+        try {
+            if (plan.scope === 'catalog') require('sqlite-vec').load(db);
+            db.pragma('journal_mode = WAL');
+            db.pragma('foreign_keys = ON');
+            const completed = [];
+            db.transaction(() => {
+                db.exec('CREATE TABLE IF NOT EXISTS schema_version(version INTEGER PRIMARY KEY, filename TEXT NOT NULL, applied_at DATETIME DEFAULT CURRENT_TIMESTAMP); CREATE TABLE IF NOT EXISTS migration_history(filename TEXT PRIMARY KEY, checksum TEXT NOT NULL, disposition TEXT NOT NULL, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);');
+                for (const step of plan.steps) {
+                    if (step.reason === 'recorded') continue;
+                    if (!step.reason) {
+                        compat.apply(path.join(migrationsDir, step.file), db, plan.scope, dataDir);
+                        completed.push(step.file);
+                    }
+                    db.prepare('INSERT INTO migration_history(filename,checksum,disposition) VALUES (?,?,?)').run(step.file, step.checksum, step.reason || 'applied');
+                    db.prepare('INSERT OR IGNORE INTO schema_version(version,filename) VALUES (?,?)').run(parseInt(step.file, 10), step.file);
+                }
+                if (db.pragma('integrity_check', { simple: true }) !== 'ok') throw new Error('Post-migration integrity check failed');
+                if (db.pragma('foreign_key_check').length) throw new Error('Post-migration foreign-key violations; upgrade rolled back without deleting rows');
+            }).immediate();
+            report.applied += completed.length;
+            report.databases.push({ database: plan.filename, applied: completed });
+            console.log(`[Migrations] ${plan.filename}: ${completed.length} applied; preservation checks passed.`);
+        } catch (error) {
+            throw new Error(`Migration failed for ${plan.filename}; startup stopped, verified backup retained: ${error.message}`, { cause: error });
+        } finally { db.close(); }
+    }
+    return report;
+}
 module.exports = runMigrations;

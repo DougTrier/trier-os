@@ -73,6 +73,7 @@ export default defineConfig({
         '**/gatekeeper-g7.spec.js',
         '**/gatekeeper-g8.spec.js',
         '**/rbac.spec.js',
+        '**/security-remediation.spec.js',
         '**/operator-trust.spec.js',
         '**/login.spec.js',
         '**/accessibility.spec.js',

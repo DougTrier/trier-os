@@ -504,24 +504,11 @@ const SYNC_KEY_FILE = path.join(
 );
 
 function getSyncKey() {
-    try {
-        if (fs.existsSync(SYNC_KEY_FILE)) {
-            return fs.readFileSync(SYNC_KEY_FILE, 'utf8').trim();
-        }
-        // Generate a new sync key
-        const crypto = require('crypto');
-        const key = crypto.randomBytes(32).toString('hex');
-        fs.writeFileSync(SYNC_KEY_FILE, key);
-        return key;
-    } catch (err) {
-        console.error('❌ [HA] Failed to manage sync key:', err.message);
-        return 'trier-ha-default-key';
-    }
+    return require('./ha_key').getSyncKey();
 }
 
 function validateSyncKey(providedKey) {
-    const expected = getSyncKey();
-    return providedKey === expected;
+    return require('./ha_key').validateSyncKey(providedKey);
 }
 
 // ── Health Check & Status ───────────────────────────────────────────────

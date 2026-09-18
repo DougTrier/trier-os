@@ -1,4 +1,4 @@
-﻿{
+{
   ".aboutManual": "के बारे में & मैनुअल",
   ".accessThePlatformOperations": "प्लेटफ़ॉर्म ऑपरेशनल इंटेलिजेंस मैनुअल, प्रशिक्षण परिदृश्य और सिस्टम क्रेडिट तक पहुंचें",
   ".action": "कार्रवाई",
@@ -184,7 +184,7 @@
   "about.goThere": "वहाँ जाएँ",
   "about.goToCode": "कोड पर जाएँ",
   "about.industrialEngineering": "औद्योगिक इंजीनियरिंग",
-  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.1",
+  "about.manualSubtitle": "Built on 33 Years of Operational Knowledge • Version 3.7.2",
   "about.manualTitle": "ट्रायर ओएस - ऑपरेशनल इंटेलिजेंस मैनुअल",
   "about.mobileInfra": "मोबाइल इन्फ्रा",
   "about.namePlaceholder": "नाम",
@@ -7143,7 +7143,7 @@
   "printEngine.totalOperatingSpend": "कुल परिचालन व्यय:",
   "printEngine.trierOs": "ट्रायर ओएस",
   "printEngine.trierOsEnterpriseMaintenancePlatform": "ट्रायर ओएस - एंटरप्राइज़ रखरखाव प्लेटफ़ॉर्म",
-  "printEngine.v1126gold": "v3.7.1",
+  "printEngine.v1126gold": "v3.7.2",
   "printEngine.version": "संस्करण",
   "priority.critical": "गंभीर",
   "priority.emergency": "आपातकालीन",

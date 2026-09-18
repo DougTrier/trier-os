@@ -1,0 +1,106 @@
+{
+  "format": 1,
+  "version": "3.7.2",
+  "description": "Committed demonstration seeds and unchanged required manufacturing reference catalog. Never use these archives to replace initialized data.",
+  "files": [
+    {
+      "name": "Corporate_Office.db",
+      "archive": "Corporate_Office.db.gz",
+      "bytes": 1708032,
+      "sha256": "82f6b8ca4986c24951c171eea947e9d4e2458c629462e2387d0b7763cb28564c",
+      "archiveBytes": 115404,
+      "archiveSha256": "390e286d2e9c50439c674d3f0d619594c8799595c44d1a894b56600a62d9019f",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "Demo_Plant_1.db",
+      "archive": "Demo_Plant_1.db.gz",
+      "bytes": 27095040,
+      "sha256": "edd404acde91e0071f0e85e8928cbb6ee92546fa29c6041b657041711b0ca027",
+      "archiveBytes": 1860143,
+      "archiveSha256": "48d5f120ea822f3387100a1aebf0150afdb7ce64509fa72233383006cdd5c9dd",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "Demo_Plant_2.db",
+      "archive": "Demo_Plant_2.db.gz",
+      "bytes": 20324352,
+      "sha256": "0d2ba77abb57b2ad19efeec563c6537eba7c5873bd2ce9204a2ed227997b0cb8",
+      "archiveBytes": 1396642,
+      "archiveSha256": "1c60b6a92be50858a1fdcea8c652607758b03086698ad63c93b6127dbb7d4d92",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "Location_1.db",
+      "archive": "Location_1.db.gz",
+      "bytes": 991232,
+      "sha256": "6d5b0eb81c20e22ca6d1118b081dd317302da25590977e0577c9d1257ae302cf",
+      "archiveBytes": 24162,
+      "archiveSha256": "b3c8593d731ed1de1044acc6f3e5b7da68202318342b8067a8db9fbceefdca96",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "Plant_1.db",
+      "archive": "Plant_1.db.gz",
+      "bytes": 23822336,
+      "sha256": "da6417265941be076081c035bba2e4a00f45f2f037507143b33ad1426df3cc0b",
+      "archiveBytes": 1812140,
+      "archiveSha256": "f456676144c0bc1071dad43c3da811cdda9906ee945d4239f725fdf2055b13e0",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "Plant_2.db",
+      "archive": "Plant_2.db.gz",
+      "bytes": 24076288,
+      "sha256": "c068b9a18433ca64f239f0b0fa0fa42671d341ca64963e03657a3a0f8923a2a4",
+      "archiveBytes": 1865472,
+      "archiveSha256": "2d08cdad2c0c9011947a1e7049d9a0e76e1939cea019a66c81da3b53844742ec",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "corporate_master.db",
+      "archive": "corporate_master.db.gz",
+      "bytes": 270336,
+      "sha256": "3ff2de2766badfbb4bc3014df87e0d24efec55152d8c86cefb8cbb3f0100d2f8",
+      "archiveBytes": 41099,
+      "archiveSha256": "b5a89d2cdfd86fa7a47aa30cfb0d12c4580711ae580bd1c2a7d4b4ca58f208cb",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "examples.db",
+      "archive": "examples.db.gz",
+      "bytes": 23089152,
+      "sha256": "ff8673e206e65f859a4a7af1c318f3a238c6336f667d78cc24922d841e2035ec",
+      "archiveBytes": 1605048,
+      "archiveSha256": "a5955e1b60dc39c9df3bbf3fc779f198c31139b404af04e64242429ce14ca125",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "mfg_master.db",
+      "archive": "mfg_master.db.gz",
+      "bytes": 136409088,
+      "sha256": "1210e3e3f0991a00f33188ee6ddc4d74fca9f0d596e66ba628906a54c917f40b",
+      "archiveBytes": 26184173,
+      "archiveSha256": "b70ed9b810c67fc178c7bf4da7a11e0885e118376e764f56b4f0b4e9a4d6f098",
+      "purpose": "manufacturing reference catalog"
+    },
+    {
+      "name": "schema_template.db",
+      "archive": "schema_template.db.gz",
+      "bytes": 20094976,
+      "sha256": "d575f292077b6d2b3ab738c3b4349b7233b3f1ae3ab76ccac5f2a028dc2d862a",
+      "archiveBytes": 1383564,
+      "archiveSha256": "82fb48bc825c646d43c0b795f2ebf4dd466bdf0f2444b79935718b1683f768a3",
+      "purpose": "demonstration seed"
+    },
+    {
+      "name": "trier_logistics.db",
+      "archive": "trier_logistics.db.gz",
+      "bytes": 44023808,
+      "sha256": "1ace7a54287efdf103010fb9fe66d6cb6d3435d06baf59eed802e656ede29a2c",
+      "archiveBytes": 4798266,
+      "archiveSha256": "b6f250b4b97a84e09a1f51d4d6c8808985e2fd987ea5c05253d1157bc0344d8b",
+      "purpose": "demonstration seed"
+    }
+  ]
+}

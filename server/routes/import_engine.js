@@ -258,7 +258,7 @@ const dbUpload = multer({
             cb(new Error('Only .mdb and .accdb files are allowed'));
         }
     },
-    limits: { fileSize: 500 * 1024 * 1024 } // 500 MB max
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 500 * 1024 * 1024 } // 500 MB max
 });
 
 router.post('/upload-access', dbUpload.single('database'), (req, res) => {

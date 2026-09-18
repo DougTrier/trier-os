@@ -1,10 +1,7 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
 /**
  * Trier OS - Application Entry Point
  * ==================================================
@@ -304,11 +301,17 @@ window.fetch = async (...args) => {
         const isPing = urlStr === '/api/ping';
         const isAuth = urlStr.startsWith('/api/auth');
         const isTranslate = urlStr.startsWith('/api/translate');
+        // Destructive maintenance must wait for the verified server result.
+        // Its backups can exceed the offline queue's three-second timeout, and
+        // replaying a reset/delete later could affect newly created records.
+        const apiPath = urlStr.split('?')[0];
+        const requiresOnlineConfirmation = apiPath === '/api/database/reset-plant' ||
+            (apiPath.startsWith('/api/it/') && (method === 'DELETE' || apiPath.endsWith('/bulk-delete')));
 
         // ── Offline Write Queue ──────────────────────────────────────
         // For write operations (POST/PUT/DELETE), if the network fails,
         // queue the write to IndexedDB and return a synthetic success.
-        if (isWrite && !isAuth && !isPing && !isTranslate) {
+        if (isWrite && !isAuth && !isPing && !isTranslate && !requiresOnlineConfirmation) {
             try {
                 // Try with a 3-second timeout
                 const controller = new AbortController();

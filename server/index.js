@@ -1,9 +1,10 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
- * Â© 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
+ * Trier OS server bootstrap and HTTP API registration.
+ * Direct routes include /api/search; module routes are listed below.
  */
 // â”€â”€ Boot Diagnostics (catches crashes during require phase) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 console.log('[BOOT] server/index.js executing...');
@@ -142,6 +143,11 @@ const cookieParser = require('cookie-parser'); // Task 1.2: httpOnly cookie auth
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 console.log('[BOOT] Stage 2: Loading database...');
+// Gate every production code change before auth/schema initialization can write.
+// A failed backup aborts startup; distribution seeds never replace a live DB.
+if (process.env.NODE_ENV === 'production') {
+    require('./preflight_backup').ensureBackup(require('./resolve_data_dir'));
+}
 const db = require('./database');
 console.log('[BOOT] Stage 3: Database loaded OK');
 const runMigrations = require('./migrator'); // Import built schema engine
@@ -389,7 +395,9 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cookieParser()); // Task 1.2: must be before auth middleware so req.cookies.authToken is readable
 const _resolvedDataDir = require('./resolve_data_dir');
-app.use('/uploads', express.static(path.join(_resolvedDataDir, 'uploads')));
+app.use('/uploads', express.static(path.join(_resolvedDataDir, 'uploads'), {
+    setHeaders: require('./upload_safety').uploadHeaders,
+}));
 
 // Serve static frontend files (use exe directory when packaged with pkg)
 const _isPkg = typeof process.pkg !== 'undefined';
@@ -774,41 +782,22 @@ app.delete('/api/network-info/override', (req, res) => {
 // Applies static IP or DHCP to a named network adapter using OS commands.
 // Windows: netsh   |   Linux: nmcli   |   Requires admin/root privileges.
 app.put('/api/network-config/static-ip', (req, res) => {
+    const localRole = req.user?.plantRoles?.[req.headers['x-plant-id']];
+    if (!['it_admin', 'creator'].includes(req.user?.globalRole) && localRole !== 'it_admin') {
+        return res.status(403).json({ error: 'Administrative access required.' });
+    }
     const { interface: iface, mode, ip, subnet, gateway, dns1, dns2 } = req.body || {};
     if (!iface) return res.status(400).json({ error: 'interface is required' });
     if (mode !== 'dhcp' && mode !== 'static') return res.status(400).json({ error: 'mode must be dhcp or static' });
     if (mode === 'static' && (!ip || !subnet)) return res.status(400).json({ error: 'ip and subnet are required for static mode' });
 
-    const { execSync } = require('child_process');
-    const platform = process.platform;
-
     try {
-        if (platform === 'win32') {
-            if (mode === 'dhcp') {
-                execSync(`netsh interface ip set address “${iface}” dhcp`, { timeout: 10000 });
-                execSync(`netsh interface ip set dns “${iface}” dhcp`, { timeout: 10000 });
-            } else {
-                const gwPart = gateway ? ` ${gateway}` : '';
-                execSync(`netsh interface ip set address “${iface}” static ${ip} ${subnet}${gwPart}`, { timeout: 10000 });
-                if (dns1) execSync(`netsh interface ip set dns “${iface}” static ${dns1}`, { timeout: 10000 });
-                if (dns2) execSync(`netsh interface ip add dns “${iface}” ${dns2} index=2`, { timeout: 10000 });
-            }
-        } else if (platform === 'linux') {
-            if (mode === 'dhcp') {
-                execSync(`nmcli con mod “${iface}” ipv4.method auto && nmcli con up “${iface}”`, { timeout: 15000 });
-            } else {
-                const prefix = subnet ? `/${_subnetToPrefix(subnet)}` : '/24';
-                const gwArg = gateway ? `ipv4.gateway ${gateway}` : '';
-                const dnsArg = [dns1, dns2].filter(Boolean).join(',');
-                execSync(`nmcli con mod “${iface}” ipv4.method manual ipv4.addresses ${ip}${prefix} ${gwArg} ${dnsArg ? 'ipv4.dns ' + dnsArg : ''} && nmcli con up “${iface}”`, { timeout: 15000 });
-            }
-        } else {
-            return res.status(501).json({ error: `Static IP configuration not supported on platform: ${platform}` });
-        }
+        require('./network_config').applyNetworkConfig(req.body);
 
         console.log(`[+] [Network] ${mode.toUpperCase()} applied to interface “${iface}”`);
         res.json({ success: true, message: `${mode === 'dhcp' ? 'DHCP' : `Static IP ${ip}`} applied to ${iface}. If using static, reconnect at ${ip}:${PORT}.` });
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
         const msg = err.stderr?.toString() || err.message || 'Command failed';
         console.error('[Network] Static IP error:', msg);
         res.status(500).json({ error: `Failed to apply network config: ${msg}. Ensure the server is running as Administrator (Windows) or root (Linux).` });
@@ -1848,7 +1837,8 @@ app.get('/api/search', async (req, res) => {
             return res.json({ results: [] });
         }
 
-        const cacheKey = `search_${q.trim().toLowerCase()}_${all}`;
+        const activePlant = req.headers['x-plant-id'] || 'Demo_Plant_1';
+        const cacheKey = `search_${activePlant}_${q.trim().toLowerCase()}_${all}`;
         const cachedResults = searchCache.get(cacheKey);
         if (cachedResults) {
             console.log(`âš¡ [Cache Hit] Serving search results for: ${q}`);
@@ -1861,8 +1851,6 @@ app.get('/api/search', async (req, res) => {
         const searchConditions = tokens.map(() => `(ID LIKE ? OR Description LIKE ?)`).join(' AND ');
         const searchParams = [];
         tokens.forEach(t => searchParams.push(`%${t}%`, `%${t}%`));
-
-        const activePlant = req.headers['x-plant-id'] || 'Demo_Plant_1';
 
         // Cross-site search
         if (all === 'true' || activePlant === 'all_sites') {
@@ -1929,7 +1917,7 @@ app.get('/api/search', async (req, res) => {
             const hasTbl = (tbl) => db.getDb().prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(tbl);
 
             if (hasTbl('Work')) {
-                const woSearch = tokens.map(() => `(WorkOrderNumber LIKE ? OR Description LIKE ?)`).join(' AND ');
+                const woSearch = tokens.map(() => `(w.WorkOrderNumber LIKE ? OR w.Description LIKE ?)`).join(' AND ');
                 localResults.push(...db.queryAll(`
                     SELECT 
                         w.WorkOrderNumber as id, 

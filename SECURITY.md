@@ -1,78 +1,67 @@
-# Security Policy
+# Trier OS security policy
 
-## Supported Versions
-Security updates are strictly provided for the latest major version of Trier OS.
+Copyright © 2026 Doug Trier. Source code is licensed under [MIT](LICENSE); [branding rights](TRADEMARKS.md) are separate.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 3.5.x   | :white_check_mark: |
-| 3.4.x   | :white_check_mark: |
-| < 3.4.0 | :x:                |
+## Maintained version
 
-## Reporting a Vulnerability
+**3.7.2** is the prepared current maintenance candidate; it is not yet published. It is the feature-complete maintained release. Security maintenance is provided for the current maintained release unless Doug Trier explicitly documents otherwise. No support promise is made for older 3.4.x or 3.5.x releases. See the [maintenance policy](docs/MAINTENANCE.md).
 
-**DO NOT OPEN A PUBLIC ISSUE FOR A SECURITY VULNERABILITY.**
+The validated security changes currently in the working tree have not been committed or published. A previously downloaded 3.7.1 installer or ZIP is not evidence that it contains those changes.
 
-Trier OS is an enterprise-grade Industrial Operating System governing physical manufacturing assets. Public disclosure of a zero-day exploit places real-world industrial infrastructure at immediate risk of failure or attack.
+## Private reporting
 
-If you discover a vulnerability, please adhere strictly to the following protocol:
+Do not publish vulnerability details in a public issue. Submit a [private security advisory](https://github.com/DougTrier/trier-os/security/advisories/new) with the affected version, deployment configuration, reproducible steps in a disposable copy, impact and any proposed narrow mitigation. Repository maintainers triage reports; this policy does not promise a staffed response SLA. Do not include real credentials or production data.
 
-1. **Open a Private Advisory:** Go to [https://github.com/DougTrier/trier-os/security/advisories/new](https://github.com/DougTrier/trier-os/security/advisories/new) and submit a private security advisory. Only you and the reporter can see it.
-2. **Details Required:** Please provide explicitly detailed steps to reproduce the exploit within the Trier OS Sandbox (`npm run dev:full`), the specific file path of the vulnerability, and (if applicable) a suggested architectural mitigation.
-3. **Response SLA:** The Core Engineering Team will acknowledge receipt of your vulnerability report within 48 hours and outline an expected timeline for deploying a patch.
+## Authentication and authorization
 
-We take the security of manufacturing networks seriously and appreciate your responsible disclosure to keep the industrial sector safe.
+Browser login issues a signed JWT in an **HttpOnly `authToken` cookie**, with `SameSite=Lax`, path `/`, `Secure` when `req.secure` is true, and a **7-day absolute expiry**. The session JWT is not stored in browser localStorage. Protected APIs also accept an appropriate valid `Authorization: Bearer` session JWT for integrations; browser login does not return that session JWT in JSON. HA peers use a separate credential and API-key integrations have their own route controls.
 
----
+`GET /api/auth/me` checks the session. Middleware validates signatures, expiry, the current user and `TokenVersion`, then applies route and plant permissions. Password/reset and relevant account changes can advance `TokenVersion`. **Logout clears the browser cookie; it does not revoke a separately copied JWT.** Such a token remains usable until expiry or an applicable account/version/signing-key change. Shared devices need browser/OS locking and account controls in addition to logout.
 
-## Authentication Architecture
+Creator TOTP is optional and applies when enrolled/enforced. Its password stage issues a 5-minute `pre2fa` challenge; generic protected API authentication rejects it. Dedicated `POST /api/auth/verify-2fa` checks the challenge and TOTP before issuing the full cookie session. This does not claim that every enrollment/configuration failure path has been formally verified.
 
-Trier OS uses httpOnly cookie-based authentication for browser sessions.
+The returned **hubToken** is separate: localStorage is used so the PWA can authenticate a LAN WebSocket connection. It expires after 24 hours and is signed by `HUB_TOKEN_SECRET`, not `JWT_SECRET`. Hub-token possession does not grant a corporate session. Endpoint compromise or XSS can still access this local token and make requests using an existing browser session.
 
-| Property | Value |
+Plants are scopes within one organization, not mutually isolated SaaS tenants. AsyncLocalStorage routes ordinary plant queries; authorized staff cross-plant reads/search remain intentional. Cross-plant logistics/floorplan data also requires route-level authorization and ownership checks.
+
+## Public demo boundary
+
+`demo_tech`, `demo_operator`, `demo_maint_mgr` and `demo_plant_mgr` intentionally use the public password `TrierDemo2026!`. They are low-trust identities confined by the **server** to `examples`. Foreign or `all_sites` selectors in headers, parsed query/body fields and explicit demo-context DB selection are rejected. Shared floorplan IDs are validated after decoding, and nested pins, annotations, zones and sensors are checked against their actual owning plan. UI visibility is not the security boundary. Authorized staff retain intended cross-plant behavior.
+
+Public demo accounts are seeded outside the production-mode conditional; `NODE_ENV=production` does not remove them. Ghost accounts (`ghost_tech`, `ghost_admin`, `ghost_exec`) are only seeded outside production, but an existing account is not removed merely by changing mode. Review and remove/disable public or test identities as appropriate for the installation, and check subsequent startup behavior. See [demo credentials](docs/DEMO_CREDENTIALS.md).
+
+## Production provisioning
+
+| Setting / action | Operator requirement and actual behavior |
 |---|---|
-| Token type | Signed JWT |
-| Storage | `httpOnly` cookie — invisible to JavaScript |
-| Cookie flags | `HttpOnly`, `SameSite: Lax`, `Secure` (on HTTPS), `Path: /` |
-| Session check | `GET /api/auth/me` on page load |
-| Logout | `POST /api/auth/logout` — clears cookie server-side |
-| CSRF | `SameSite: Lax` blocks cross-origin POST/PATCH/DELETE; sufficient for private intranet deployment |
+| `NODE_ENV=production` | Enables production startup checks and suppresses new ghost-account seeding. It does not clean existing accounts. |
+| `JWT_SECRET` | Provision at least 64 cryptographically random hex characters. Production rejects missing values, values shorter than 32 characters, a known default and recognized placeholders. The code does not enforce a 64-hex entropy guarantee. |
+| `HUB_TOKEN_SECRET` | Independently provision at least 64 random hex characters. Production rejects missing, short or recognized placeholder values; equality with JWT_SECRET is fatal in every mode. |
+| `DISABLE_LIVE_STUDIO=true` | Disable the optional development IDE API in production; Electron sets this flag. Source/ZIP packaging alone does not guarantee it. |
+| TLS and HTTP exposure | Trust certificates on clients, restrict plaintext port 1937, and use HTTPS port 1938 or correctly configured TLS termination. Verify proxy handling of `req.secure` and cookie flags rather than assuming them. |
+| Account review | Remove/disable existing ghost identities and review intentionally public demos; protect and remove first-login credential files after use. |
+| Login limiter | Keep the normal 8 attempts / 5 minutes / username policy. Do not carry test-only elevated `RATE_LIMIT_LOGIN_MAX` into production. |
+| Host / backups | Restrict DB, .env, certificate/private-key and local HA-key access to the service/operator identities; use consistent encrypted backups and verify restore on separate data. |
+| Optional integrations | Enable only configured LDAP, SMTP, sensors, ERP, AI and other required integrations; review credentials, destinations and plant/role access. |
 
-**Why httpOnly cookies?**
-Tokens in `localStorage` are readable by any JavaScript on the page (XSS, browser extensions, DevTools on shared plant-floor machines). An httpOnly cookie is never exposed to JavaScript — it cannot be read, copied, or exfiltrated by a script.
+`SameSite=Lax` mitigates some **cross-site** cookie requests; it is not a blanket block on all cross-origin requests, nor proof that CSRF is impossible. HttpOnly prevents ordinary page JavaScript from reading the cookie; it does not prevent an XSS payload from making authenticated requests or a privileged host user from obtaining a token.
 
-**API integrations** (Power BI, http-edge-agent, HA sync agents) are not browser sessions and cannot use cookies. They pass the JWT as a `Bearer` token in the `Authorization` header. The auth middleware accepts both paths and falls back gracefully.
+By default CORS accepts built-in local/desktop origins and RFC1918 host origins, with configured `ALLOWED_ORIGINS` additions. Set `DISABLE_LAN_CORS=1` to disable the broad LAN allowance and explicitly configure required origins. No-Origin clients have separate handling. CORS is a browser response-access policy, not authentication, a firewall or host trust.
 
----
+## Network, HA and uploads
 
-## Production Deployment Hardening
+Static-IP changes require global IT Admin/Creator or IT Admin in the selected plant. Adapter names are checked against the host inventory, mode/address inputs are validated, and fixed executables receive argument arrays without shell interpolation. OS privilege and deployment connectivity still matter; tests do not reconfigure a real host.
 
-Before going live, verify each item below:
+HA uses explicit fresh **64-character hexadecimal** provisioning on the paired corporate servers, with environment precedence over the resolved data directory's `.sync_key`. Missing, unreadable, invalid or retired provisioning denies peer authentication. The current reviewed source ships no active HA key. Rotate any historically distributed credential; earlier published portable ZIPs may retain it. Only three peer paths accept the HA key; administration still requires session authorization. See [HA provisioning and rotation](docs/HA_SECRET_PROVISIONING.md).
 
-| Item | Action |
-|---|---|
-| `NODE_ENV=production` | Set in `.env`. Enables JWT fail-fast, suppresses ghost account seeding, and hardens the DB context fallback. |
-| `JWT_SECRET` | Must be 64+ random hex characters. Server exits on boot if missing or weak in production. |
-| Ghost test accounts | Set `NODE_ENV=production` — `ghost_tech`, `ghost_admin`, and `ghost_exec` are **not seeded** in production. If upgrading an existing install, delete these accounts manually via Settings → Accounts & Permissions. |
-| Demo accounts | `demo_tech`, `demo_operator`, `demo_maint_mgr`, `demo_plant_mgr` use a public password (`TrierDemo2026!`) and are bound to the `examples` plant only. They cannot access real plant data but should be removed from customer-facing deployments. |
-| Login rate limiter | Default is 8 attempts per 5 minutes per username. For parallel E2E environments only, set `RATE_LIMIT_LOGIN_MAX=500` in `.env`. Never set this in production. |
-| `DISABLE_LIVE_STUDIO` | Set `DISABLE_LIVE_STUDIO=true` in production builds to strip the Monaco IDE from the API surface. |
-| `HUB_TOKEN_SECRET` | Must be 64+ random hex characters, distinct from `JWT_SECRET`. Server exits on boot if missing, weak, or equal to `JWT_SECRET`. Signs the LAN-hub WebSocket token so a localStorage leak cannot be replayed against the main API. |
-| `DISABLE_LAN_CORS` | Set `DISABLE_LAN_CORS=1` for air-gapped or hardened deployments. See the CORS trust-boundary section below. |
+Floorplans accept actual **PNG, JPEG, GIF and WebP** signatures with pixel decoding. HTML, JavaScript, SVG and disguised active files are rejected; convert an SVG plan to a safe raster image before upload. Existing active/unknown shared attachments are download responses with octet-stream, attachment disposition, `nosniff` and a sandbox policy, limiting same-origin execution. Normal allowed raster/PDF/media serving remains inline. These controls are not a new blanket access-control policy for attachment URLs.
 
----
+## Maintenance and validation limits
 
-## CORS Trust Boundary
+Dependency maintenance uses targeted compatible patches, runtime reachability review and regressions for affected paths. Remaining dependency advisories are inventory, not demonstrated exploits. No blanket forced upgrades are authorized.
 
-By default Trier OS accepts CORS requests from any origin whose hostname is an RFC1918 private address — `192.168.*.*`, `10.*.*.*`, and `172.16–31.*.*`. This is a deliberate trust-boundary decision to support the factory deployment model:
+Offline replay/restart recovery, HA ordering/deduplication and rollback connection lifecycle, migration 047 behavior, zero-coverage invariant PASS, and copied-token logout semantics remain limitations or deferred review items. Physical outage/restart and paired-server recovery are not fully validated by browser tests. This does not invalidate Doug's established functional scanner/phone validation. See [current validation evidence and limits](docs/SECURITY_MAINTENANCE_VALIDATION.md), [threat model](docs/THREAT_MODEL.md) and [control inventory](docs/SECURITY_CONTROLS.md). No formal SOC2 or ISO security certification is claimed.
 
-- Plant-floor mobile scanners connect from phones/tablets whose IP changes with the DHCP lease.
-- Per-device origin registration would be operationally impossible at scale.
-- Cookies still use `SameSite=Lax`, which blocks cross-origin POST/PATCH/DELETE even with a permissive CORS policy.
+## Browser inactivity behavior
 
-**When to disable LAN CORS:** set `DISABLE_LAN_CORS=1` in `.env` for:
-
-- Air-gapped or PCI/HIPAA-scoped installs where the intranet is not trusted.
-- Deployments where all legitimate origins are known at install time and can be listed in `ALLOWED_ORIGINS`.
-
-With the flag set, any origin not explicitly on the `ALLOWED_ORIGINS` list (plus built-in localhost + desktop wrappers) is rejected with `CORS Error: Unauthorized Origin`.
+The React App implements a 15-minute inactivity timer, a warning during the last minute, and client logout. Client logout makes a best-effort shift-log lock request before clearing the cookie/local session state. This UI timer is separate from the server JWT's 7-day absolute expiry and does not revoke a copied token. Browser sleep, closed clients and failed requests are not a server-enforced inactivity/revocation guarantee.

@@ -1,3 +1,5 @@
+> Historical evaluation/design snapshot. Dated versions, counts, cost estimates and comparisons below are not current validated facts or future feature commitments. Trier OS is feature complete and feature frozen; current evidence and limits are in [../docs/SECURITY_MAINTENANCE_VALIDATION.md](../docs/SECURITY_MAINTENANCE_VALIDATION.md) and the [maintenance policy](../docs/MAINTENANCE.md).
+
 # Trier OS — Executive Brief
 ### The Multi-Plant Operational Savings Case
 

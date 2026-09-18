@@ -5,6 +5,10 @@ Read this before writing any code. It overrides general defaults.
 
 ---
 
+## Maintenance State
+
+Trier OS 3.7.2 is feature complete and feature frozen. Only confirmed break/fix, confirmed security maintenance and necessary compatibility maintenance are in scope. No new feature roadmap or architectural rewrite for modernization. Audit/diagnosis precedes changes; preserve proven behavior and prefer narrow fixes. See [maintenance policy](docs/MAINTENANCE.md).
+
 ## What Trier OS Is
 
 Trier OS is an enterprise Industrial Operating System for manufacturing and industrial
@@ -22,7 +26,8 @@ to that single instance. Everything is cross-searchable by design.
 ```
 Corporate HQ
   └── Trier OS Server (single instance, all plants connect here)
-        ├── trier_logistics.db   (cross-plant: auth, LOTO, safety permits, audit log)
+        ├── trier_logistics.db   (cross-plant: LOTO, safety permits, audit log)
+        ├── trier_auth.db       (user accounts, roles, token versions)
         ├── corporate_master.db  (corporate-wide master data)
         ├── Plant_1.db           (Plant 1 scoped data)
         ├── Plant_2.db           (Plant 2 scoped data)
@@ -35,6 +40,8 @@ Each Plant (physical location)
               ├── Local plant .db file for offline reads
               └── Replays queued scans to POST /api/scan/offline-sync on reconnect
 ```
+
+**Packaging distinction:** The current Electron launcher starts a full embedded server on its host; it does not automatically connect a plant installation to HQ. The LAN Hub startup currently uses the local API URL. The diagram describes the intended single-HQ model, not automatic configuration of independent plant installations. Verify routing and recovery for the actual deployment; see [architecture](docs/ARCHITECTURE.md).
 
 **Key facts:**
 - One corporate server instance, not per-plant instances
@@ -71,18 +78,18 @@ Data that must be visible across all plants uses trier_logistics.db via logistic
 Examples: LOTO permits, safety incidents, contractor records, audit trail, API keys.
 
 ```js
-const logisticsDb = require('../logistics_db');
-const permits = logisticsDb().prepare('SELECT * FROM SafetyPermits WHERE PlantID = ?').all(plantId);
+const { db: logisticsDb } = require('../logistics_db');
+const auditRows = logisticsDb.prepare('SELECT * FROM AuditLog WHERE PlantID = ?').all(plantId);
 ```
 
-### Auth database (auth_db.sqlite)
-User accounts, roles, and JWT management only. Never mix operational data into auth_db.
+### Auth database (trier_auth.db)
+User accounts, roles, and JWT management only. Never mix operational data into the auth DB.
 
 ### Migrations
 - All schema changes go through numbered migrations in server/migrations/
 - Never modify an existing migration file — always create a new one
 - Migration files are named NNN_description.js (e.g. 029_add_criticality_score.js)
-- The migrator runs all pending migrations in numeric order on startup
+- The migrator attempts pending migrations in numeric order on startup. JavaScript migrations must export `.up(db)`; migration 047 currently has an export-shape mismatch and failures may stop further migration attempts for that DB. Do not assume numbering proves complete coverage
 
 ---
 
@@ -106,7 +113,7 @@ Every .js, .jsx, and .css file must begin with the standard header. No exception
 See CONTRIBUTING.md for the exact format.
 
 Minimum required:
-1. Copyright line: `// Copyright © 2026 Trier OS. All Rights Reserved.`
+1. Copyright line: `// Copyright © 2026 Doug Trier`, MIT identification and root `LICENSE` reference
 2. Module title and description
 3. All exposed API routes (for server files) or API dependencies (for client files)
 
@@ -155,7 +162,7 @@ the full state graph (IDLE -> ACTIVE -> WAITING -> CLOSED/AUTO_CLOSED).
 | File | Why |
 |---|---|
 | server/UNTOUCHABLE_dairy_master.js | Canonical dairy industry master data. Changes break master catalog seeding. |
-| server/scan.js (state machine core) | Any change to state transitions must be validated against the full offline + replay + HA path |
+| server/routes/scan.js (state machine core) | Any change to state transitions must be validated against the full offline + replay + HA path |
 | server/lan_hub.js | Touches concurrent scan state across multiple devices; race conditions are non-obvious |
 | server/ha_sync.js | DB replication; a bug here causes silent primary/secondary divergence |
 | server/migrations/ (existing files) | Never edit. Create a new numbered migration instead. |
@@ -200,7 +207,9 @@ result succeeded.
 - Playwright for E2E tests (tests/e2e/)
 - Test against a running instance — no mocking the database
 - Stop at first failure, fix root cause before re-running the full suite
-- Ghost test accounts (ghost_tech, ghost_admin, ghost_exec) are available in dev only
+- Ghost accounts are seeded in dev/test only; existing accounts are not removed by switching to production
+- Public `demo_*` identities are separate and seeded outside that conditional; server confines them to examples
+- Documentation-only edits use documentation validation. Narrow executable changes use targeted regressions appropriate to risk; the full suite remains a new-release gate
 
 ---
 
@@ -208,8 +217,8 @@ result succeeded.
 
 | Variable | Required | Purpose |
 |---|---|---|
-| JWT_SECRET | Yes (prod) | 64+ hex chars. Server exits if missing/weak in production |
-| HUB_TOKEN_SECRET | Yes (prod) | 64+ hex chars, must differ from JWT_SECRET. Signs LAN hub tokens |
+| JWT_SECRET | Yes (prod) | Provision 64+ random hex chars; production rejects missing, <32 chars or recognized default/placeholder values |
+| HUB_TOKEN_SECRET | Yes (prod) | Provision 64+ random hex chars, distinct from JWT_SECRET. Production rejects missing/short/placeholder values; equality is fatal in all modes. Signs LAN hub tokens |
 | NODE_ENV | Yes (prod) | Set to `production` to harden all security paths |
 | HA_SYNC_KEY | If using HA | 64-char hex. Server-to-server replication auth |
 | DISABLE_LIVE_STUDIO | Recommended (prod) | Strips Monaco IDE from API surface |
@@ -298,5 +307,5 @@ Status: PASS / FAIL
 
 ## Current Version
 
-v3.7.1 — See CHANGELOG.md and ROADMAP.md for history.
+v3.7.2 — See CHANGELOG.md and ROADMAP.md for history.
 Completed roadmaps and task lists archived in References/.

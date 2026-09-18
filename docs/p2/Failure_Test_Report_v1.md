@@ -1,3 +1,5 @@
+> Historical phase specification/review. Proposed behavior, acceptance boxes and version samples below are design history, not a current implementation guarantee or new feature roadmap. Current prepared 3.7.2 implementation and the established remediation evidence win; see [architecture](../ARCHITECTURE.md), [validation limits](../SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](../MAINTENANCE.md).
+
 # Failure Injection Test Report v1
 > Trier OS P2 · Validates failure domain isolation guarantees
 

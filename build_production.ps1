@@ -1,9 +1,9 @@
 ﻿�# Trier OS � Production Build Script (Clean Databases)
 # Creates a deployable build with empty plant databases + preserved catalogs
 # ======================================================================
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 
-$SOURCE   = "G:\Trier OS"
+$SOURCE   = $PSScriptRoot
 $BUILD    = $args[0]
 if (-not $BUILD) { $BUILD = "G:\TrierOS-v3.4.3-production" }
 $NODE_EXE = (Get-Command node).Source
@@ -18,8 +18,8 @@ Write-Host ""
 
 # Step 1: Clean
 Write-Host "[1/8] Preparing build directory..." -ForegroundColor Yellow
-if (Test-Path $BUILD) { Remove-Item -Path $BUILD -Recurse -Force -ErrorAction SilentlyContinue }
-New-Item -Path $BUILD -ItemType Directory -Force | Out-Null
+. "$PSScriptRoot\scripts\build_directory_guard.ps1"
+$BUILD = New-DistributionDirectory $BUILD $SOURCE
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 2: Build frontend
@@ -57,7 +57,7 @@ if (Test-Path "$SOURCE\eng.traineddata") {
 }
 Copy-Item "$SOURCE\package.json" "$BUILD\" -Force
 Copy-Item "$SOURCE\package-lock.json" "$BUILD\" -Force
-Copy-Item "$SOURCE\.env" "$BUILD\" -Force
+# Deployment secrets are provisioned locally, never copied into distributions.
 Copy-Item "$SOURCE\index.html" "$BUILD\" -Force
 Copy-Item "$SOURCE\vite.config.js" "$BUILD\" -Force
 # NOTE: keygen.js is NOT copied � it stays on Doug's machine only
@@ -267,12 +267,26 @@ echo  Starting server...
 echo.
 cd /d "%~dp0"
 set NODE_ENV=production
-runtime\node.exe server\index.js
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File electron\portable-start.ps1
 echo.
 echo  Server stopped. Press any key to exit.
 pause > nul
 '@
 $batContent | Set-Content -Path (Join-Path $BUILD "Trier OS.bat") -Encoding ASCII
+New-Item -ItemType Directory -Path "$BUILD\electron" -Force | Out-Null
+foreach ($file in @('preserve-data.ps1','storage.js','portable-start.js','portable-start.ps1','program-inventory.js')) {
+    Copy-Item -LiteralPath "$SOURCE\electron\$file" -Destination "$BUILD\electron\$file"
+}
+$stagedData = [IO.Path]::GetFullPath("$BUILD\data")
+if (!$stagedData.StartsWith($BUILD+'\',[StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid staging path' }
+# Never distribute an existing user's identity or password hash as a fresh seed.
+foreach ($identityFile in @('trier_auth.db','trier_auth.db-wal','trier_auth.db-shm')) {
+    $identityPath = Join-Path $stagedData $identityFile
+    if (Test-Path -LiteralPath $identityPath) { Remove-Item -LiteralPath $identityPath -Force }
+}
+Move-Item -LiteralPath $stagedData -Destination "$BUILD\seed-data"
+& $NODE_EXE "$SOURCE\electron\program-inventory.js" $BUILD
+if ($LASTEXITCODE -ne 0) { throw 'Portable inventory failed.' }
 
 Write-Host "  Trier OS.bat created" -ForegroundColor Cyan
 Write-Host "  OK" -ForegroundColor Green
@@ -280,7 +294,7 @@ Write-Host "  OK" -ForegroundColor Green
 # Summary
 $totalSize = [math]::Round((Get-ChildItem $BUILD -Recurse -File | Measure-Object -Property Length -Sum).Sum / 1048576, 0)
 $fileCount = (Get-ChildItem $BUILD -Recurse -File).Count
-$dbCount = @(Get-ChildItem "$BUILD\data\*.db" -ErrorAction SilentlyContinue).Count
+$dbCount = @(Get-ChildItem "$BUILD\seed-data\*.db" -ErrorAction SilentlyContinue).Count
 
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Green

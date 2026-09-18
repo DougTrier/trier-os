@@ -70,7 +70,7 @@ module.exports = function(db) {
             cb(null, `twin_${Date.now()}${ext}`);
         }
     });
-    const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB
+    const upload = multer({ storage, limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 20 * 1024 * 1024 } }); // 20MB
 
     // ── GET /api/digital-twin/:assetId — Get schematics + pins ──
     router.get('/:assetId', (req, res) => {

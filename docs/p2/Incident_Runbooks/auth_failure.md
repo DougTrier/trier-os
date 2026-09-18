@@ -18,18 +18,18 @@
 
 **Immediate check:**
 1. Confirm the server is running: `GET /api/ping`
-2. Try the default admin account (see `docs/DEMO_CREDENTIALS.md` for pilot credentials)
+2. Try an existing authorized local administrator. There is no shared default creator password; public demos are not recovery administrators
 
-**If default admin also fails:**
+**If authorized local administrator also fails:**
 1. Check the `.env` file — `JWT_SECRET` must be set
    - If `JWT_SECRET` changed since users logged in, all existing tokens are invalid → users must log in again (not a lockout — just re-authentication required)
-2. Check `auth_db` is accessible:
-   - Server logs will show `auth_db` errors on startup if the auth database is missing or corrupt
+2. Check `trier_auth.db` is accessible:
+   - Server logs will show `trier_auth.db` errors on startup if the auth database is missing or corrupt
 
 **Resolution:**
 - If JWT_SECRET was accidentally changed: restore to previous value (requires server restart)
-- If auth_db is missing: restore from `data/backups/`
-- **Contact Trier OS Engineering before attempting any auth_db repair**
+- If trier_auth.db is missing: restore from `data/backups/`
+- **Contact Trier OS Engineering before attempting any trier_auth.db repair**
 
 ---
 

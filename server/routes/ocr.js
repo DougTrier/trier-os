@@ -61,7 +61,7 @@ if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
 const upload = multer({
     dest: tmpDir,
-    limits: { fileSize: 15 * 1024 * 1024 },
+    limits: { fieldArrayIndexLimit: 1000, fieldNestingDepth: 16, fileSize: 15 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) cb(null, true);
         else cb(new Error('Only image files are accepted'));

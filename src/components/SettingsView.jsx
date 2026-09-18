@@ -1,10 +1,7 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
-/**
- * © 2026 Doug Trier. All Rights Reserved.
- * Trier OS is proprietary software. Unauthorized copying,
- * distribution, or reverse engineering is strictly prohibited.
- */
 /**
  * Trier OS — System Settings & Configuration
  * =============================================
@@ -25,11 +22,23 @@
  *
  * Each section is a self-contained sub-component. This parent manages
  * tab routing and passes shared auth context as props.
+ *
+ * API DEPENDENCIES (subpanels document their own additional APIs):
+ *   /api/desktop/status, /api/desktop/download/:os
+ *   /api/network-info, /api/network-info/override, /api/network-config/static-ip
+ *   /api/branding, /api/branding/logo/:type
+ *   /api/maintenance/reindex, /api/maintenance/vacuum
+ *   /api/database/export, /api/database/backup, /api/database/reset-plant
+ *   /api/integrations/webhooks, /api/integrations/webhooks/:id, /:id/test
+ *   /api/procedures/ai-config, /api/procedures/ai-test, /api/bi/:type
+ *   /api/ha/config, /api/ha/status, /api/ha/config/generate-key, /api/ha/config/import-key
+ *   /api/ha/secondary-health, /api/ha/sync-now, /api/ha/promote
  */
 import React, { useState, useEffect } from 'react';
 import { Settings, Database as DatabaseIcon, Download, Shield, Globe, RefreshCw, ClipboardList, Monitor, Trash2, Zap, Wind, Bell, Send, ToggleLeft, ToggleRight, Plus, X, Lock, Users, Key, Copy, Save, Wifi, Check, ImageIcon, Server } from 'lucide-react';
 import PasswordChangeView from './PasswordChangeView';
 import ImportWizard from './ImportWizard';
+import PlantResetPanel from './PlantResetPanel';
 import UserAccountsView from './UserAccountsView';
 import SnapshotRollbackView from './SnapshotRollbackView';
 import SAPIntegrationView from './SAPIntegrationView';
@@ -53,139 +62,6 @@ import { useTranslation } from '../i18n/index.jsx';
 import { TakeTourButton } from './ContextualTour';
 import { formatDate } from '../utils/formatDate';
 import LoadingSpinner from './LoadingSpinner';
-
-// ── Phase 2 Task 2.3: Plant Data Reset Panel ──
-function PlantResetPanel({ currentPlant, exportPlant, userRole }) {
-    const { t } = useTranslation();
-    const [showReset, setShowReset] = useState(false);
-    const [resetConfirmName, setResetConfirmName] = useState('');
-    const [resetConfirmCode, setResetConfirmCode] = useState('');
-    const [isResetting, setIsResetting] = useState(false);
-    const [resetResult, setResetResult] = useState(null);
-
-    const targetPlantId = exportPlant && exportPlant !== 'all_sites' ? exportPlant : currentPlant?.id;
-
-    const executeReset = async () => {
-        setIsResetting(true);
-        setResetResult(null);
-        try {
-            const res = await fetch('/api/database/reset-plant', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-plant-id': targetPlantId || localStorage.getItem('selectedPlantId') || 'Demo_Plant_1',
-                    'x-user-role': userRole,
-                    'x-is-creator': localStorage.getItem('PF_USER_IS_CREATOR')
-                },
-                body: JSON.stringify({
-                    confirmPlantName: resetConfirmName
-                })
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-                setResetResult({ success: true, message: `${t('settings.plantResetSuccess', 'Plant')} "${targetPlantId}" ${t('settings.plantResetSuccessMsg', 'reset successfully. Snapshot saved:')} ${data.snapshotFile}` });
-                setResetConfirmName('');
-                setResetConfirmCode('');
-            } else {
-                setResetResult({ success: false, message: data.error || t('settings.resetFailed', 'Reset failed') });
-            }
-        } catch (err) {
-            setResetResult({ success: false, message: t('settings.requestFailed', 'Request failed') + ': ' + err.message });
-        }
-        setIsResetting(false);
-    };
-
-    // Normalize smart quotes and curly apostrophes for comparison
-    const normalize = (s) => (s || '').replace(/[\u2018\u2019\u201C\u201D]/g, "'").trim();
-    const canReset = (normalize(resetConfirmName) === normalize(currentPlant?.label) || resetConfirmName === currentPlant?.id) && resetConfirmCode === t('settings.resetconfirmed');
-
-    if (!showReset) {
-        return (
-            <div className="panel-box" style={{ background: 'rgba(239,68,68,0.03)', padding: '20px', borderRadius: '12px', border: '1px dashed rgba(239,68,68,0.3)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <h3 style={{ fontSize: '1.1rem', margin: '0 0 5px 0', display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444' }}>
-                            <Trash2 size={18} /> {t('settings.dangerZone')}
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                            {t('settings.resetAllDataDesc', 'Reset all data for a plant node. This clears all work orders, assets, parts, and vendors.')}
-                        </p>
-                    </div>
-                    <button 
-                        onClick={() => setShowReset(true)}
-                        className="btn-primary"
-                        style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
-                        title={t('settings.showTheDestructivePlantDataTip')}
-                    >
-                        {t('settings.showResetOptions')}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="panel-box" style={{ background: 'rgba(239,68,68,0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.4)' }}>
-            <h3 style={{ fontSize: '1.1rem', margin: '0 0 15px 0', display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444' }}>
-                <Trash2 size={18} /> {t('settings.plantDataResetDanger')}
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px', lineHeight: 1.5 }}>
-                {t('settings.thisWill')} <strong>{t('settings.permanentlyDeleteAllData')}</strong> {t('settings.for')} <strong>{currentPlant?.label}</strong> and replace it with a fresh schema.
-                {t('settings.snapshotCreatedBeforeReset', 'A snapshot will be created automatically before the reset.')}
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                        {t('settings.type')} <strong>"{currentPlant?.label}"</strong> {t('settings.toConfirm', 'to confirm')}
-                    </label>
-                    <input
-                        type="text"
-                        value={resetConfirmName}
-                        onChange={e => setResetConfirmName(e.target.value)}
-                        placeholder={currentPlant?.label}
-                        style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#fff' }}
-                        title={t('settings.typeTheExactPlantNameTip')}
-                    />
-                </div>
-                <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                        {t('settings.type')} <strong>"RESET-CONFIRMED"</strong> {t('settings.toProceed', 'to proceed')}
-                    </label>
-                    <input
-                        type="text"
-                        value={resetConfirmCode}
-                        onChange={e => setResetConfirmCode(e.target.value)}
-                        placeholder={t('settings.resetconfirmed')}
-                        style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#fff' }}
-                        title={t('settings.typeResetconfirmedToEnableTheTip')}
-                    />
-                </div>
-            </div>
-
-            {resetResult && (
-                <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', background: resetResult.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', fontSize: '0.85rem', color: resetResult.success ? '#10b981' : '#f87171' }}>
-                    {resetResult.message}
-                </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                <button onClick={() => { setShowReset(false); setResetConfirmName(''); setResetConfirmCode(''); }} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.8rem' }} title={t('settings.cancelAndHideResetOptionsTip')}>
-                    {t('settings.cancel')}
-                </button>
-                <button
-                    onClick={executeReset}
-                    disabled={!canReset || isResetting}
-                    className="btn-primary"
-                    style={{ padding: '8px 20px', fontSize: '0.85rem', background: canReset ? '#ef4444' : 'var(--glass-border)', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    title={t('settings.permanentlyDeleteAllDataForTip')}
-                >
-                    {isResetting ? <><RefreshCw size={14} className="spinning" /> {t('settings.resetting')}</> : <><Trash2 size={14} /> {t('settings.executeReset')}</>}
-                </button>
-            </div>
-        </div>
-    );
-}
 
 // ── Desktop Download Section (end-user friendly) ──
 function DesktopDownloadSection({ platform }) {

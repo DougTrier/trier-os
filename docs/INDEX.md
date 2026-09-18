@@ -1,6 +1,6 @@
 # Trier OS — Documentation Index
 
-All docs are in `docs/`. This index groups them by purpose.
+This index groups current documentation and historical design material. Trier OS 3.7.2 is feature complete and in [maintenance mode](MAINTENANCE.md). Root policies and contributor documents are linked below.
 
 ---
 
@@ -8,9 +8,9 @@ All docs are in `docs/`. This index groups them by purpose.
 
 | Document | What it covers |
 |---|---|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System topology, multi-tenancy, DB routing, key patterns |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Single corporate deployment, DB routing, key patterns |
 | [SYSTEM_TOPOLOGY.md](./SYSTEM_TOPOLOGY.md) | One-page map: device → LAN hub → server → DB → engines. Three concrete request traces. |
-| [ARCHITECTURE_INVARIANTS.md](./ARCHITECTURE_INVARIANTS.md) | 11 correctness invariants: what they are, how they're enforced, runtime proof via `/api/invariants/report` |
+| [ARCHITECTURE_INVARIANTS.md](./ARCHITECTURE_INVARIANTS.md) | 11 correctness invariants: what they are, how they're enforced, runtime observations and coverage limits via `/api/invariants/report` |
 | [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | Table definitions, relationships, migration history |
 | [SECURITY_CONTROLS.md](./SECURITY_CONTROLS.md) | SOC2-aligned inventory of all security controls with file paths and honest gaps |
 | [THREAT_MODEL.md](./THREAT_MODEL.md) | Trust boundaries, attack surface, in-scope vs out-of-scope threats |
@@ -31,7 +31,7 @@ All docs are in `docs/`. This index groups them by purpose.
 | Document | What it covers |
 |---|---|
 | [INSTALL_GUIDE.html](./INSTALL_GUIDE.html) | Step-by-step installation guide (Windows installer + from source) |
-| [DEMO_CREDENTIALS.md](./DEMO_CREDENTIALS.md) | Ghost accounts and demo login details for development |
+| [DEMO_CREDENTIALS.md](./DEMO_CREDENTIALS.md) | Public demo identities, private first login and distinct development ghost fixtures |
 | [DEMO_DATA.md](./DEMO_DATA.md) | What demo data is seeded and why |
 | [QUICK_FACTS.md](./QUICK_FACTS.md) | Port numbers, default paths, environment variables at a glance |
 
@@ -52,8 +52,9 @@ All docs are in `docs/`. This index groups them by purpose.
 | Document | What it covers |
 |---|---|
 | [ARCHITECTURE_INVARIANTS.md](./ARCHITECTURE_INVARIANTS.md) | Invariant definitions and enforcement evidence |
-| `tests/e2e/` | Playwright E2E suite — 38 spec files, 1463 tests, run against live instance |
-| [Playwright Results PDF](./Playwrite%20Report%20Desktop%20and%20Mobile%204-25-2026.pdf) | Full test run results from v3.6.1 pre-release verification |
+| [`tests/e2e/`](../tests/e2e/) | Live-instance Playwright specs; current collection is 1,139 instances in 42 specs |
+| [SECURITY_MAINTENANCE_VALIDATION.md](SECURITY_MAINTENANCE_VALIDATION.md) | Complete 1,137-instance gate and later targeted runs, timing distinction and coverage limits |
+| [HA_SECRET_PROVISIONING.md](HA_SECRET_PROVISIONING.md) | Explicit installation peer secrets and historical credential rotation |
 
 ---
 
@@ -64,7 +65,8 @@ All docs are in `docs/`. This index groups them by purpose.
 | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Coding standards, header format, PR requirements, 10% density rule |
 | [`CLAUDE.md`](../CLAUDE.md) | AI-assisted development guide — patterns, security rules, release checklist |
 | [CONTRIBUTOR_MAP.md](./CONTRIBUTOR_MAP.md) | Invariant governance lifecycle: identify → enforce → observe → prove → gate |
-| [followups.yaml](./followups.yaml) | Machine-checkable deferred item registry with trigger gates and decision log |
+| [MAINTENANCE.md](MAINTENANCE.md) | Feature freeze, narrow risk-based maintenance and appropriate validation |
+| [LICENSE](../LICENSE) / [TRADEMARKS.md](../TRADEMARKS.md) | Doug Trier copyright, MIT permissions and separate branding policy |
 
 ---
 
@@ -72,7 +74,6 @@ All docs are in `docs/`. This index groups them by purpose.
 
 | Document | What it covers |
 |---|---|
-| [`ROADMAP.md`](../ROADMAP.md) | Current and planned work |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Full version history with specific fixes and feature additions |
 
 ---

@@ -1,4 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * © 2026 Doug Trier. All Rights Reserved.
@@ -16,7 +18,7 @@
  *
  * DESIGN DECISIONS:
  *   - Inline ALTER TABLE migrations use try/catch to be idempotent (safe to re-run).
- *   - creator@trieros is always elevated to 'creator' role with full privileges.
+ *   - Existing identities, permissions and group assignments survive every boot.
  *   - creator account is seeded on first boot if not present.
  *   - Legacy auth.json is automatically migrated and renamed to .bak on first run.
  *
@@ -36,6 +38,7 @@ const dbPath = path.join(dataDir, 'trier_auth.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 5000'); // Wait up to 5s on lock contention instead of throwing immediately
+const initializingIdentityStore = !db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='Users'").get();
 
 // Seed schema for RBAC Security Model
 db.exec(`
@@ -82,43 +85,15 @@ try { db.exec("ALTER TABLE Users ADD COLUMN CanViewAnalytics INTEGER DEFAULT 0;"
 // us in-band session revocation for compromised or demoted accounts.
 try { db.exec("ALTER TABLE Users ADD COLUMN TokenVersion INTEGER DEFAULT 0;"); } catch(e){}
 
-// Ensure creator@trieros has the formal 'creator' role and IT Admin is fully empowered
-db.prepare(`
-    UPDATE Users 
-    SET DefaultRole = 'creator', CanAccessDashboard = 1, GlobalAccess = 1, CanImport = 1, CanSAP = 1,
-        CanSensorConfig = 1, CanSensorThresholds = 1, CanSensorView = 1, CanViewAnalytics = 1
-    WHERE Username = 'creator@trieros'
-`).run();
-
-db.prepare(`
-    UPDATE Users 
-    SET CanAccessDashboard = 1, GlobalAccess = 1, CanImport = 1, CanSAP = 1,
-        CanSensorConfig = 1, CanSensorThresholds = 1, CanSensorView = 1, CanViewAnalytics = 1
-    WHERE DefaultRole IN ('creator', 'it_admin')
-`).run();
-
-// Auto-grant analytics access for management roles
-db.prepare(`
-    UPDATE Users SET CanViewAnalytics = 1
-    WHERE DefaultRole IN ('general_manager', 'plant_manager', 'maintenance_manager')
-`).run();
-
-// Seed creator@trieros's contact info if he exists
-db.prepare(`
-    UPDATE Users 
-    SET DisplayName = 'creator@trieros', 
-        Title = 'System Creator', 
-        Email = 'creator@trieros', 
-        Phone = '555-0000' 
-    WHERE Username = 'creator@trieros'
-`).run();
+// Startup must not reset an administrator's saved roles, grants or profile.
+// Defaults belong in INSERTs below, never in blanket UPDATEs of existing users.
 
 // NOTE: it_admin is no longer auto-seeded. Administrators are created manually
 // via Settings → Accounts & Permissions after first login as 'creator'.
 
 // Seed 'creator' system admin account — separate identity for administrative access
 const creatorAcctExists = db.prepare("SELECT 1 FROM Users WHERE Username = 'creator'").get();
-if (!creatorAcctExists) {
+if (initializingIdentityStore && !creatorAcctExists) {
     // SECURITY: Generate unique random password per deployment.
     // Audit 47 / L-7: 16 bytes (128 bits) replaces the previous 10 bytes.
     // Base64url encoding yields ~22 characters — still copy-pastable and
@@ -166,14 +141,6 @@ if (!creatorAcctExists) {
     }
 }
 
-// Ensure creator account always has full permissions
-db.prepare(`
-    UPDATE Users
-    SET DefaultRole = 'creator', CanAccessDashboard = 1, GlobalAccess = 1, CanImport = 1, CanSAP = 1,
-        CanSensorConfig = 1, CanSensorThresholds = 1, CanSensorView = 1, CanViewAnalytics = 1
-    WHERE Username = 'creator'
-`).run();
-
 // --- OPEN SOURCE DEMO ACCOUNTS (Task 0.6) ---
 // These accounts are strictly hardcoded to 'examples' bridging them off from real production data.
 const demoAccounts = [
@@ -187,7 +154,7 @@ const demoPasswordHash = bcrypt.hashSync('TrierDemo2026!', 10);
 
 demoAccounts.forEach(acc => {
     const exists = db.prepare("SELECT 1 FROM Users WHERE Username = ?").get(acc.user);
-    if (!exists) {
+    if (initializingIdentityStore && !exists) {
         // Create user
         const result = db.prepare(`
             INSERT INTO Users (Username, PasswordHash, DefaultRole, MustChangePassword, DisplayName, Title, CanAccessDashboard, CanViewAnalytics)
@@ -260,9 +227,13 @@ if (fs.existsSync(authJsonPath)) {
     try {
         const authData = JSON.parse(fs.readFileSync(authJsonPath, 'utf8'));
 
-        // Ensure master password from old structure aligns with it_admin
-        if (authData.master) {
-            db.prepare("UPDATE Users SET PasswordHash = ? WHERE Username = 'it_admin'").run(authData.master);
+        // Import only missing identities; a stale auth.json must never overwrite
+        // a password or a membership saved in the newer authentication database.
+        if (authData.master && !db.prepare("SELECT 1 FROM Users WHERE Username = 'it_admin'").get()) {
+            db.transaction(() => {
+                const user = db.prepare("INSERT INTO Users (Username, PasswordHash, DefaultRole) VALUES ('it_admin', ?, 'it_admin')").run(authData.master);
+                db.prepare("INSERT INTO UserPlantRoles (UserID, PlantID, RoleLevel) VALUES (?, 'all_sites', 'it_admin')").run(user.lastInsertRowid);
+            })();
         }
 
         if (authData.plants) {
@@ -285,18 +256,6 @@ if (fs.existsSync(authJsonPath)) {
     }
 }
 
-// ── PERMANENT ACCOUNT PURGE ──────────────────────────────────────────────────
-// it_admin is a legacy account from the pre-RBAC era; remove it so users create
-// a named admin via Settings → Accounts & Permissions instead.
-const purgeAccounts = ['it_admin'];
-purgeAccounts.forEach(username => {
-    const u = db.prepare('SELECT UserID FROM Users WHERE Username = ?').get(username);
-    if (u) {
-        db.prepare('DELETE FROM UserPlantRoles WHERE UserID = ?').run(u.UserID);
-        db.prepare('DELETE FROM Users WHERE UserID = ?').run(u.UserID);
-        console.log(`[Auth] Purged retired account: ${username}`);
-    }
-});
-// ─────────────────────────────────────────────────────────────────────────────
+// Account retirement is an explicit administrator action, never startup cleanup.
 
 module.exports = db;

@@ -11,8 +11,8 @@ dist/
 data/*-wal
 data/*-shm
 
-# ALL plant databases (uncomment if you want to block DBs)
-# data/*.db
+# Live databases are never release inputs; verified seeds live in release-data/.
+data/*.db
 
 # SQLite database files at project root
 *.sqlite
@@ -156,3 +156,13 @@ scripts/*.sql
 
 # Catalog extraction prompt batches and LLM results
 scripts/Catalogs/
+
+# Local independent security audit (no application changes)
+/Recomendations.md
+/docs/audit/BASELINE_2026-09-16.md
+/docs/audit/FINDINGS_2026-09-16.md
+# Keep audit evidence local if copied into this repository
+/TrierOS-revalidation-20260916/
+/PRE_FIX_SNAPSHOT.md
+/SECURITY_REMEDIATION_REPORT_*.md
+/data/.sync_key

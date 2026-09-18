@@ -96,3 +96,7 @@ The system is free and open source. There is no license fee, no per-seat charge,
 Open an issue on GitHub: [github.com/DougTrier/trier-os/issues](https://github.com/DougTrier/trier-os/issues)
 
 If you have a question, someone else probably has the same one. Ask publicly so the answer is there for the next plant manager who finds this.
+
+## Current maintenance and validation limits
+
+Trier OS is feature complete and feature frozen. Existing operational workflows are intentionally preserved. Offline replay/outage/restart, paired-server HA recovery and every integration delivery path are not fully validated by browser regression. Queue/outbox controls support recovery; they are not a universal zero-loss or exactly-once guarantee. [Current evidence](SECURITY_MAINTENANCE_VALIDATION.md) and [maintenance policy](MAINTENANCE.md).

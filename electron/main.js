@@ -1,4 +1,6 @@
-// Copyright © 2026 Trier OS. All Rights Reserved.
+// Copyright © 2026 Doug Trier
+// SPDX-License-Identifier: MIT
+// Licensed under the MIT License. See LICENSE in the repository root.
 
 /**
  * Trier OS � Electron Main Process (Fully Embedded Server)
@@ -58,8 +60,7 @@ function getAppRoot() {
 
 function getDataDir() {
     if (isPackaged()) {
-        // Packaged: databases are in resources/data/ (from extraResources)
-        return path.join(process.resourcesPath, 'data');
+        return require('./storage').resolveDeployment(path.dirname(process.resourcesPath));
     }
     // Development: data/ is at project root
     return path.join(__dirname, '..', 'data');
