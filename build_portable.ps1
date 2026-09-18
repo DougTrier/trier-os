@@ -23,7 +23,8 @@ Write-Host "  OK" -ForegroundColor Green
 # Step 2: Build frontend
 Write-Host "[2/7] Building production frontend..." -ForegroundColor Yellow
 Set-Location $SOURCE
-& npx vite build 2>&1 | Select-String "built in" | ForEach-Object { Write-Host "  $_" }
+& cmd /c "npx vite build 2>&1" | Select-String "built in" | ForEach-Object { Write-Host "  $_" }
+if ($LASTEXITCODE -ne 0) { throw 'Production frontend build failed.' }
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 2b: Bundle Monaco editor for self-hosted IDE (no CDN, works air-gapped)
@@ -83,14 +84,17 @@ New-Item -Path "$BUILD\snapshots" -ItemType Directory -Force | Out-Null
 # Step 5: Install production deps
 Write-Host "[5/7] Installing production dependencies..." -ForegroundColor Yellow
 Set-Location $BUILD
-& npm install --production --ignore-scripts 2>&1 | Select-String "added" | ForEach-Object { Write-Host "  $_" }
+& cmd /c "npm install --production --ignore-scripts 2>&1" | Select-String "added" | ForEach-Object { Write-Host "  $_" }
+if ($LASTEXITCODE -ne 0) { throw 'Portable dependency installation failed.' }
 Write-Host "  Rebuilding native modules..."
-& npm rebuild better-sqlite3 2>&1 | Select-String "better-sqlite3" | ForEach-Object { Write-Host "  $_" }
+& cmd /c "npm rebuild better-sqlite3 2>&1" | Select-String "better-sqlite3" | ForEach-Object { Write-Host "  $_" }
+if ($LASTEXITCODE -ne 0) { throw 'Portable native module rebuild failed.' }
 Write-Host "  Installing vite for Live Studio deploy pipeline..."
 $viteVersion = & $NODE_EXE -p "require(process.argv[1]).packages['node_modules/vite'].version" "$SOURCE\package-lock.json"
 $pluginVersion = & $NODE_EXE -p "require(process.argv[1]).packages['node_modules/@vitejs/plugin-react'].version" "$SOURCE\package-lock.json"
 if (-not $viteVersion -or -not $pluginVersion) { throw "Lockfile build-tool versions could not be read." }
-& npm install --no-save "vite@$viteVersion" "@vitejs/plugin-react@$pluginVersion" 2>&1 | Select-String "added" | ForEach-Object { Write-Host "  $_" }
+& cmd /c "npm install --no-save vite@$viteVersion @vitejs/plugin-react@$pluginVersion 2>&1" | Select-String "added" | ForEach-Object { Write-Host "  $_" }
+if ($LASTEXITCODE -ne 0) { throw 'Portable build-tool installation failed.' }
 Write-Host "  OK" -ForegroundColor Green
 
 # Step 6: Bundle Node.js

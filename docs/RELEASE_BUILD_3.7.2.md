@@ -14,6 +14,8 @@ There are 11 committed database seed/reference archives. The old 16-file verific
 
 `tests/unit/release_packaging.test.js` passed: real archive/hash verification, required catalog inclusion, no distributed credential/test-grant rows, retained demo assets, refusal to overwrite existing/source directories and corrupt-archive rejection. This packaging-specific test supplements the completed 23-file application unit baseline; it does not replace or weaken any application assertion.
 
+The first committed-source portable build also reproduced a PowerShell packaging failure: a normal Vite diagnostic on stderr became a terminating `NativeCommandError` under `ErrorActionPreference=Stop`. The portable builder now uses the same native-output capture pattern as the installer builder and checks each native command's actual exit code. Warnings no longer abort a successful build, while real Vite/npm/native-rebuild failures stop packaging. Application code and dependencies were not changed for this correction; final artifacts are rebuilt from the subsequent commit.
+
 ## Reproducible release inputs
 
 Build from a clean checkout of the release commit, with the committed lockfile dependencies and the existing Windows Node/Electron build toolchain. Use fresh destinations through the existing build-directory guards:
