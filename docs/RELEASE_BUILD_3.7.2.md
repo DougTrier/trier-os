@@ -1,6 +1,6 @@
 # Trier OS 3.7.2 release preparation
 
-Application behavior is frozen at the completed surgical-remediation baseline. Release preparation changes documentation and packaging inputs only. The owner explicitly authorized commit, tag, push and publication,.
+Application behavior is frozen at the completed surgical-remediation baseline. Release preparation changes documentation and packaging inputs only. The owner explicitly authorized commit, tag, push and publication.
 
 ## Packaging defect and correction
 

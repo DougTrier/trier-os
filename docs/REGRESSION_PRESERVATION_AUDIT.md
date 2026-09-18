@@ -146,7 +146,7 @@ Nine current IT orphan checks (assignment/depreciation in four categories plus s
 | Bulk deletion | Global IT/creator gate, whitelisted selectors, parameterized values, per-item immediate transactions, dependency cleanup, audit, explicit NOT_FOUND/FAILED results; UI clears only verified deleted IDs |
 | Startup identity handling | Recent change removes unconditional deletion/re-grant/profile overwrite; existing account/group/grant rows retained in tested fixtures |
 | Installer/updater/uninstall | External retained store, manifest/backup verification, fail-closed locked DBs and unknown links, seed-only-on-new-store, conservative inventory removal, retained locator, same-version behavior verified in isolated packages |
-| Backup/rollback boundaries | SQLite backup includes committed WAL; installer offline copies are hash-verified. Cross-file WAL commits are not power-loss atomic. Production elevation and power-loss VM validation remain required |
+| Backup/rollback boundaries | SQLite backup includes committed WAL; installer offline copies are hash-verified. Cross-file WAL commits are not power-loss atomic. |
 | Security maintenance changes | Reviewed demo ALS guard, multipart bounds, image decoding/static headers, exact HA peer routes, pre-2FA rejection and array-based network command execution; unit regressions pass |
 | Existing migration/protected files | No migration file differs from HEAD. `server/ha_sync.js` already differed before this pass; this pass did not modify it or other protected scan/master/hub files |
 | Other prior work | Version/i18n/doc maintenance and untracked catalog/guide utilities recorded separately; manual catalog tools were not executed against source data |
