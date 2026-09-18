@@ -1,6 +1,6 @@
 # Site reset and IT bulk deletion
 
-**Current release decision:** release 3.7.2 is authorized after final committed-source artifact checks. Earlier blocked/no-publication wording below records the pre-release audit decision; see [current release notes](RELEASE_NOTES_3.7.2.md).
+**Current release status:** [Trier OS v3.7.2 is published](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). The documented code-correctable defects were fixed and regression-verified, and final committed-source artifact checks completed before publication. Earlier audit results below retain their historical scope; see [current release notes](RELEASE_NOTES_3.7.2.md).
 
 Copyright © 2026 Doug Trier. Licensed under the [MIT License](../LICENSE).
 
@@ -57,9 +57,10 @@ a running shared database or use the plant-only restore UI on that snapshot.
 Recovery must account for newer records at every site. Backups precede execution,
 and concurrent activity can change preview counts. Perform administrative resets
 during a maintenance window. No installer or release artifacts were built by this
-regression, and the full release test suite remains a separate gate.
+component regression. The full release test suite was subsequently completed in
+the [surgical follow-up](SURGICAL_REMEDIATION_AUDIT.md).
 
-## Full application regression follow-up — 2026-09-17
+## Historical full application regression follow-up — 2026-09-17
 
 The later [preservation regression audit](REGRESSION_PRESERVATION_AUDIT.md)
 extends the component harness above with eight tests using the real built SPA and
@@ -73,6 +74,8 @@ verification failure or erased retained history/replication tombstones. The rese
 plan now retains both; the API/UI describe this, and a trigger-based database
 regression verifies it. No existing migration or HA module was changed by this fix.
 
-Production-size EXE/MSI verification artifacts were built in the later pass and
-remain unpublished. See the linked audit for the complete browser-suite outcome,
-source-data reconciliation. Current completed results are in the surgical follow-up.
+Production-size EXE/MSI verification artifacts were built in that intermediate
+pass and remain unpublished. See the linked audit for its historical browser-suite
+outcome and source-data reconciliation. The subsequent completed results are in
+the surgical follow-up; v3.7.2 was published from separately rebuilt and verified
+release artifacts.

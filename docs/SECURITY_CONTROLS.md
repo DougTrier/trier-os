@@ -1,6 +1,6 @@
 # Trier OS security control inventory — 3.7.2
 
-This source-based inventory uses SOC2-style categories for reviewer navigation. It is **not** SOC2 certification, an equivalence assessment or proof that every route/failure path satisfies a control. Current reviewed security maintenance is not yet committed/published. See [SECURITY.md](../SECURITY.md) for deployment policy.
+This source-based inventory uses SOC2-style categories for reviewer navigation. It is **not** SOC2 certification, an equivalence assessment or proof that every route/failure path satisfies a control. The verified security maintenance was committed and included in [the published v3.7.2 release](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). See [SECURITY.md](../SECURITY.md) for deployment policy.
 
 ## Logical access and authentication
 

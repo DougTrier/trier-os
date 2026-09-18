@@ -1,4 +1,6 @@
-# Security maintenance validation (v3.7.2 candidate)
+# Historical security maintenance validation (v3.7.2 candidate)
+
+**Current release status:** [Trier OS v3.7.2 is published](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). This document retains the earlier candidate-stage evidence and validation scope. The documented code-correctable defects were subsequently fixed and regression-verified in [the surgical follow-up](SURGICAL_REMEDIATION_AUDIT.md), followed by completed artifact verification and publication. Candidate-stage approval and hold-point wording below records that earlier scope, not a pending v3.7.2 release gate.
 
 Copyright © 2026 Doug Trier. Trier OS source remains MIT licensed; branding and trademark notices remain separate.
 
@@ -31,7 +33,7 @@ Standalone checks include the existing `tests/unit/*.test.js`, new boundary regr
 
 ## Completed security-maintenance evidence — 2026-09-17
 
-These results describe the current reviewed working tree, not a newly published release. The remediation was tested as 3.7.1; release metadata is now prepared as 3.7.2. Packaging validation is reported separately.
+These results describe the reviewed working tree at that intermediate stage, before publication. The remediation was tested as 3.7.1; release metadata was then prepared as 3.7.2. Subsequent completed regression and packaging verification are recorded in [the surgical follow-up](SURGICAL_REMEDIATION_AUDIT.md) and [release build record](RELEASE_BUILD_3.7.2.md).
 
 | Validation stage | Observed result |
 |---|---|
@@ -44,7 +46,7 @@ The final case adds two configured-project instances. Those were validated throu
 
 The projects are Desktop Chrome and six Mobile Chrome batches using Playwright's Pixel 5 emulation. This is not physical Zebra/phone testing. Doug's prior hands-on scanners and phones remain a separate functional baseline. Some scanner/offline/guided-flow tests mock or intercept communication. Real authenticated LAN WebSocket transport checks do not prove queue drain, power-loss/restart recovery or paired-corporate-server failover.
 
-### Remaining limits
+### Limits recorded at the candidate stage
 
 - Offline queue/replay authentication, reconnect defaults, per-item ACK handling and restart recovery are not fully validated (deferred OPS-01 / OPS-06).
 - HA event ordering/idempotency and rollback pooled-connection lifecycle remain deferred (OPS-02 / OPS-04); paired-server recovery needs deployment-specific validation.

@@ -1,6 +1,8 @@
-# Trier OS 3.7.2 release preparation
+# Trier OS 3.7.2 release build record
 
-Application behavior is frozen at the completed surgical-remediation baseline. Release preparation changes documentation and packaging inputs only. The owner explicitly authorized commit, tag, push and publication.
+**Completed release:** [Trier OS v3.7.2 is published](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2) from commit `c33167dee4e444e0b193129aef7b6bfd9eedbe43`, following final artifact verification. This document records the completed packaging corrections and release-input procedure.
+
+Application behavior was frozen at the completed surgical-remediation baseline. Release preparation changed documentation and packaging inputs only. The owner explicitly authorized commit, tag, push and publication.
 
 ## Packaging defect and correction
 
@@ -10,13 +12,13 @@ The corrected EXE/MSI and portable build scripts materialize committed, hash-ver
 
 Distribution-only sanitization removed populated invite codes, creator/email settings, vendor access records, ERP connectors, digital-twin sync configuration/logs, test role grants, Gatekeeper audit fixtures, instance configuration, edge fixture state, proof receipts, deployment/settings rows and the known dummy artifact. Empty credential tables remain empty. Sanitization operated on copies of the old Git seed blobs; no original operational database was changed. Existing trigger definitions were retained, including immutable-ledger protections. The manufacturing catalog archive expands byte-for-byte to the original required reference catalog; it was not sanitized, reseeded or modified.
 
-There are 11 committed database seed/reference archives. The old 16-file verification payload additionally included local auxiliary stores; those untracked runtime copies are not release inputs. Missing operational stores are created through existing application startup paths. Final isolated artifact startup verifies that the committed seeds support normal initialization.
+There are 11 committed database seed/reference archives. The old 16-file verification payload additionally included local auxiliary stores; those untracked runtime copies are not release inputs. Missing operational stores are created through existing application startup paths. Final isolated artifact startup verified that the committed seeds support normal initialization.
 
 `tests/unit/release_packaging.test.js` passed: real archive/hash verification, required catalog inclusion, no distributed credential/test-grant rows, retained demo assets, refusal to overwrite existing/source directories and corrupt-archive rejection. This packaging-specific test supplements the completed 23-file application unit baseline; it does not replace or weaken any application assertion.
 
-The first committed-source portable build also reproduced a PowerShell packaging failure: a normal Vite diagnostic on stderr became a terminating `NativeCommandError` under `ErrorActionPreference=Stop`. The portable builder now uses the same native-output capture pattern as the installer builder and checks each native command's actual exit code. Warnings no longer abort a successful build, while real Vite/npm/native-rebuild failures stop packaging. Application code and dependencies were not changed for this correction; final artifacts are rebuilt from the subsequent commit.
+The first committed-source portable build also reproduced a PowerShell packaging failure: a normal Vite diagnostic on stderr became a terminating `NativeCommandError` under `ErrorActionPreference=Stop`. The portable builder now uses the same native-output capture pattern as the installer builder and checks each native command's actual exit code. Warnings no longer abort a successful build, while real Vite/npm/native-rebuild failures stop packaging. Application code and dependencies were not changed for this correction; final artifacts were rebuilt from the subsequent commit.
 
-Payload inspection also identified two standalone development probes under `server/`: `test_db.js` hardcodes a development database path, and `test-integrations.js` creates an integration test fixture. Neither is an application dependency. Both are now excluded from EXE/MSI and portable payloads; they remain in source for development. Final package inspection verifies their absence.
+Payload inspection also identified two standalone development probes under `server/`: `test_db.js` hardcodes a development database path, and `test-integrations.js` creates an integration test fixture. Neither is an application dependency. Both are now excluded from EXE/MSI and portable payloads; they remain in source for development. Final package inspection verified their absence.
 
 ## Reproducible release inputs
 

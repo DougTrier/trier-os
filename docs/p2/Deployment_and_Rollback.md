@@ -1,6 +1,6 @@
 # Corporate deployment and rollback — 3.7.2
 
-Trier OS is feature complete and maintained through confirmed break/fix, security and required compatibility changes. This is an operator procedure, not authorization to deploy the current uncommitted security changes. Existing published 3.7.1 artifacts must not be assumed to include them. See [maintenance policy](../MAINTENANCE.md).
+Trier OS is feature complete and maintained through confirmed break/fix, security and required compatibility changes. The verified security changes were committed and included in [the published v3.7.2 release](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). Existing published 3.7.1 artifacts must not be assumed to include them. See [maintenance policy](../MAINTENANCE.md).
 
 ## Topology and packaging
 

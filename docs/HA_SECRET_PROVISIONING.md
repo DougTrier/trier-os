@@ -1,6 +1,6 @@
 # HA secret provisioning and rotation
 
-The current reviewed working tree prepared as 3.7.2 removes the repository-shipped HA credential. These security changes have not been committed or published; do not assume an existing 3.7.1 download includes them.
+The [published v3.7.2 release](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2) removes the repository-shipped HA credential. These security changes were committed and verified before publication; do not assume an existing 3.7.1 download includes them.
 Existing installations using that credential must rotate it; deleting the current
 source file does not revoke copies in Git history or published portable archives.
 The audited published v3.7.1 ZIP contains it. The v3.7.1 EXE/MSI file inventories

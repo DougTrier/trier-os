@@ -4,9 +4,9 @@ Copyright © 2026 Doug Trier. Source code is licensed under [MIT](LICENSE); [bra
 
 ## Maintained version
 
-**3.7.2** is the prepared current maintenance candidate; it is not yet published. It is the feature-complete maintained release. Security maintenance is provided for the current maintained release unless Doug Trier explicitly documents otherwise. No support promise is made for older 3.4.x or 3.5.x releases. See the [maintenance policy](docs/MAINTENANCE.md).
+**[3.7.2](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2)** is the published, feature-complete maintained release. Security maintenance is provided for the current maintained release unless Doug Trier explicitly documents otherwise. No support promise is made for older 3.4.x or 3.5.x releases. See the [maintenance policy](docs/MAINTENANCE.md).
 
-The validated security changes currently in the working tree have not been committed or published. A previously downloaded 3.7.1 installer or ZIP is not evidence that it contains those changes.
+The validated security changes were committed and published in v3.7.2. A previously downloaded 3.7.1 installer or ZIP is not evidence that it contains those changes.
 
 ## Private reporting
 

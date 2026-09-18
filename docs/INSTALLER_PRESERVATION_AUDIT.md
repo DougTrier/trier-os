@@ -1,23 +1,24 @@
 # Installer data preservation audit — 2026-09-17
 
-**Current release decision:** release 3.7.2 is authorized after final committed-source artifact verification. Historical no-publication wording below records the earlier audit decision. Completed evidence remains unchanged; see [release notes](RELEASE_NOTES_3.7.2.md) and the final package manifest.
+**Current release status:** [Trier OS v3.7.2 is published](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). The documented code-correctable defects were fixed and regression-verified, and final committed-source artifact verification completed before publication. Historical no-publication wording below records the earlier audit stages. See [release notes](RELEASE_NOTES_3.7.2.md) and the [published package manifest](https://github.com/DougTrier/trier-os/releases/download/v3.7.2/release-manifest.json).
 
 Copyright © 2026 Doug Trier. Licensed under the [MIT License](../LICENSE).
 
 **Completed September 17–18 surgical follow-up:** see [SURGICAL_REMEDIATION_AUDIT.md](SURGICAL_REMEDIATION_AUDIT.md) for implemented and regression-verified database/migration/authentication fixes. All **21 isolated installer scenarios passed again**, including populated upgrade, same-version repair, retained-data uninstall/reinstall, backup verification and failed/interrupted upgrade recovery. Exact existing accounts, password hashes, roles, groups and grants survived. The complete browser run finished with **1,129 passed, 0 failed, 22 documented skips, 0 not run**; all 23 unit-test files, 56 migration prefixes, 11 integration checks, invariant and final data reconciliation passed.
 
-Current final verification packages are in `C:\TM-20260917\artifacts-verified`; production frontend, EXE and MSI builds passed. The MSI contains 16 seed databases, no managed live-data payload, and validated preservation/rollback action ordering. The final packaged runtime passed fresh startup and same-version restart with populated account/group retention. These artifacts supersede earlier verification builds in this historical report:
+Pre-publication remediation verification packages are in `C:\TM-20260917\artifacts-verified`; production frontend, EXE and MSI builds passed. That MSI contains 16 seed databases, no managed live-data payload, and validated preservation/rollback action ordering. That packaged runtime passed fresh startup and same-version restart with populated account/group retention. These unpublished artifacts superseded earlier verification builds in this historical report; the published release used separately rebuilt artifacts identified in the manifest above:
 
-| Final artifact | SHA-256 |
+| Historical verification artifact (unpublished) | SHA-256 |
 |---|---|
 | `TrierOS-Setup-3.7.2.exe` | `8F3255BC17EBC97166C49A987A0DB96B7810C33C8CCAD3272A820066501A3EAF` |
 | `TrierOS-Setup-3.7.2.msi` | `5818928B328EBE2694330236BAFFB7FF9F2EADD54502DA20F451FDF7E6786119` |
 
-Final evidence: `G:\TrierOS-Remediation-20260917-185156`, including `installer-lifecycle-results.json`, `source-reconciliation.json`, `postflight.json`, `playwright-summary.json` and build logs. All 127 original files are unchanged; original packages in `C:\Trier OS\Installers` remain untouched. Isolated installer registrations were removed after testing. Historical FAIL/NOT RUN entries below describe the earlier audit unless explicitly carried forward as remaining risks.
+Final remediation evidence: `G:\TrierOS-Remediation-20260917-185156`, including `installer-lifecycle-results.json`, `source-reconciliation.json`, `postflight.json`, `playwright-summary.json` and build logs. All 127 original files were unchanged; original packages in `C:\Trier OS\Installers` remained untouched during that remediation. Isolated installer registrations were removed after testing. Historical FAIL/NOT RUN entries below describe the earlier audit unless explicitly carried forward as remaining risks.
 
-**Remediation implemented; isolated preservation tests pass. Final publication requires committed-source artifact verification.**
-The original 3.7.2 release packages described below remain unsafe and were not
-modified. New local verification artifacts are not a published release.
+**Remediation and isolated preservation tests completed. Final committed-source artifact verification subsequently completed, and v3.7.2 was published.**
+The original pre-fix local 3.7.2 packages described below were unsafe and were not
+modified by this audit or published. The later release used separately rebuilt
+artifacts, not those original packages or the intermediate verification builds.
 
 This document records both the original failure and the implemented repair.
 Testing used generated temporary installations, databases and unique per-user
@@ -260,7 +261,7 @@ the recovery helper separately before uninstall if planning offline recovery.
 
 ## Remaining risks and release disposition
 
-1. Final publication uses newly rebuilt artifacts and isolated package validation.
+1. The published release used newly rebuilt artifacts and completed isolated package validation.
 2. **Resolved in the surgical follow-up:** historical migration 047 and other entry
    forms now execute through the tested compatibility adapter. Filename/checksum
    tracking distinguishes both 017 migrations. All 56 reconstructed ordered
@@ -282,7 +283,10 @@ the recovery helper separately before uninstall if planning offline recovery.
    not automatically merge customer edits to packaged application source into a
    new version. Persistent data in the documented mappings is reused directly.
 
-## Independent regression follow-up — 2026-09-17
+## Historical intermediate regression follow-up — 2026-09-17
+
+This section retains the intermediate audit state before the completed surgical
+remediation and v3.7.2 publication described above.
 
 The [full preservation regression audit](REGRESSION_PRESERVATION_AUDIT.md) records
 a fresh application/repository review and isolated lifecycle retest. All 21 named
@@ -290,7 +294,8 @@ helper/package scenarios passed, including exact existing user accounts, group
 memberships, role assignments and permission grants. All 17 unit files and the
 11-check integration gate passed. New production-size EXE/MSI artifacts compiled
 under `C:\TR-c53fcc7b\artifacts`; the compiled MSI gate passed with 16 seed DBs.
-These are unpublished verification builds, not replacements for the old packages.
+These historical verification builds remain unpublished; the later release used
+separately rebuilt artifacts.
 
 All 127 protected source-data/configuration files were compared against verified
 offline backups and remained byte-identical. Eight real-SPA reset/bulk/sentinel
@@ -301,13 +306,16 @@ The fresh audit also reproduced a historical startup path that replaces a valid
 small SQLite plant database based on file size, and a legacy single-item IT delete
 authorization/false-success defect. Those paths predate the preservation changes;
 they were documented without broadening this regression pass into historical
-repairs. Existing FK schema errors and migration-chain issues remain unresolved.
-Consequently these passing isolated tests do not remove the release block.
+repairs. Existing FK schema errors and migration-chain issues remained unresolved
+at that stage. Consequently those passing isolated tests did not remove the
+intermediate release block; the subsequent surgical remediation resolved it.
 
-The full browser gate remains incomplete: the latest full attempt stopped after
+The full browser gate was incomplete at that stage: the latest full attempt stopped after
 479 passes at an invalid sandbox HA-key fixture (corrected), and the focused
 security rerun then reproduced the unchanged TOTP replay-cache defect after 32
 passes. Historical repairs were not authorized in that regression scope. The
 final source/raw-backup hash check passed, isolated IT orphan checks were zero,
 and the console observer recorded zero visible console events. See the linked
-report for failed/skipped/not-run counts and the next required scope.
+report for failed/skipped/not-run counts and the follow-up scope, subsequently
+completed in [the surgical remediation](SURGICAL_REMEDIATION_AUDIT.md) before
+v3.7.2 publication.

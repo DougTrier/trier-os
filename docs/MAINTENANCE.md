@@ -13,3 +13,10 @@ Documentation-only changes require documentation validation, including links, co
 Only the current maintained release receives security maintenance unless Doug Trier explicitly documents additional supported releases. See [SECURITY.md](../SECURITY.md) and [validation evidence and limits](SECURITY_MAINTENANCE_VALIDATION.md).
 
 Older phase specifications and completed roadmaps describe design history, not commitments to add functionality. Unvalidated recovery scenarios remain engineering limits to assess against deployment needs, not grounds for speculative rewrites.
+
+## Optional cosmetics for a future release
+
+The following packaging-source observations can be corrected when artifacts are next rebuilt for a future patch or release. They do not change the published v3.7.2 status or require rebuilding it:
+
+- `build_portable.ps1`: the final summary references undefined `$dbCount` and labels the value `(FULL DATA)` although packaging uses seed data.
+- `electron-builder.json`: the copyright character is mangled as `Â©`.

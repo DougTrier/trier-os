@@ -1,6 +1,6 @@
 # Trier OS threat model — 3.7.2
 
-This describes the current reviewed implementation and deployment assumptions, not formal certification or an exhaustive proof of exploit absence. The security maintenance in the working tree is not yet published. See [security policy](../SECURITY.md) and [maintenance policy](MAINTENANCE.md).
+This describes the current reviewed implementation and deployment assumptions, not formal certification or an exhaustive proof of exploit absence. The verified security maintenance was included in [the published v3.7.2 release](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). See [security policy](../SECURITY.md) and [maintenance policy](MAINTENANCE.md).
 
 ## Assets and trust boundaries
 

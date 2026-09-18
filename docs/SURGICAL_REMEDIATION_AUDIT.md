@@ -2,7 +2,7 @@
 
 Copyright © 2026 Doug Trier. Licensed under the [MIT License](../LICENSE).
 
-**Remediation and available regression gates completed. Release 3.7.2 publication is now explicitly authorized, subject to final committed-source packaging checks.** All original code-correctable defects A–E are **FIXED + VERIFIED**, including legacy single-delete false success, migration 047 and both 017 files. This follow-up supersedes their historical FAIL findings in [REGRESSION_PRESERVATION_AUDIT.md](REGRESSION_PRESERVATION_AUDIT.md). See [release notes](RELEASE_NOTES_3.7.2.md).
+**Current release status: [Trier OS v3.7.2 is published](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2), following completed remediation, regression verification and final committed-source packaging checks.** All original code-correctable defects A–E are **FIXED + VERIFIED**, including legacy single-delete false success, migration 047 and both 017 files. This follow-up supersedes their historical FAIL findings in [REGRESSION_PRESERVATION_AUDIT.md](REGRESSION_PRESERVATION_AUDIT.md). See [release notes](RELEASE_NOTES_3.7.2.md).
 
 Comparison commit: `2fa52f1487a6bf4443f9aa96a23b38e2f550db73`. The pre-existing dirty working tree was inventoried separately; it was not reverted. Evidence: `G:\TrierOS-Remediation-20260917-185156`. Initial backup: 127 files, 40 database/SQLite files, with SHA-256 verification and integrity checks on separate analysis copies. All 38 nonempty source databases passed physical integrity; two pre-existing empty placeholder files remain recorded as such. Interim reconciliation found all 127 originals byte-identical.
 
@@ -68,13 +68,13 @@ This task additionally protects `G:\Trier OS\data`, `G:\Trier OS\server\data`, `
 | Isolated installer lifecycles | All 21 passed again after the final corporate/search fixes. Final evidence: `C:\Users\Doug\AppData\Local\Temp\trier-preservation-9AE3C8`; result list retained in `installer-lifecycle-results.json`. |
 | Production frontend | Build passed; existing large-chunk warning remains. |
 | Complete Playwright, all seven projects | **1,129 passed, 0 failed, 22 skipped, 0 not run**, no retries/flaky results. Unfiltered run completed in 56.4 minutes; `full-playwright-final.log`, `playwright-summary.json`. |
-| Production EXE/MSI verification builds | Final rebuild including all corporate/search fixes passed in `C:\TM-20260917\artifacts-verified`. Read-only MSI inspection passed: 16 seed databases, no managed live-data files, backup/rollback action ordering verified. No package is published. An interrupted earlier build left a partial NSIS archive; rebuilding in a fresh output directory resolved that tooling failure. |
+| Production EXE/MSI verification builds | Final remediation rebuild including all corporate/search fixes passed in `C:\TM-20260917\artifacts-verified`. Read-only MSI inspection passed: 16 seed databases, no managed live-data files, backup/rollback action ordering verified. These were unpublished remediation verification builds; the later release used separately rebuilt artifacts. An interrupted earlier build left a partial NSIS archive; rebuilding in a fresh output directory resolved that tooling failure. |
 | Populated real development copy upgrade | All 22 DB files reconciled with no lost/changed original rows, except controlled 017 work-order-number backfills (1,200 examples, 73 Plant 1, 794 Plant 2). Added actual account/role/group/grant, four IT-category, SOP/procedure, custom-table and history sentinels remain. `copied-upgrade-preservation.json`. |
 | Separate `C:\Trier OS\Data` copy upgrade | PASS on an isolated copy, including both corrected FK databases and EventLog write compilation; original directory unchanged. `separate-data-final.json`. |
 | Packaged production runtime | Final runtime including corporate/search fixes passed fresh startup and same-version restart with exact account, role and group membership preservation. `packaged-smoke-final.log`, isolated `packaged-fresh-final-p4SDSW` evidence. |
 | Final DB/orphan/fixture/invariant/source reconciliation | PASS: 41 active test DBs have no physical/FK issues; nine IT orphan checks remain zero; dedicated fixtures removed and history retained. Invariant API HTTP 200, `overallStatus: PASS`. All 127 original files and 4,340 table digests in 40 source DB files reconcile unchanged. Details below. |
 
-The complete suite finished with zero failures and zero unrun cases. Existing conditional skips are enumerated below and are not counted as passes. No overall release PASS is asserted.
+The complete suite finished with zero failures and zero unrun cases. Existing conditional skips are enumerated below and are not counted as passes. At the time this regression run completed, publication still required final committed-source artifact verification. Those packaging checks were subsequently completed and v3.7.2 was published.
 
 Three earlier broad browser attempts are explicitly incomplete: the first was stopped for the EventLog trigger-schema defect, the second after server-log audit found the search/corporate errors even though browser assertions had not failed, and the third stopped at the aging Quality-data fixture failure. None is a full PASS. The final unfiltered run includes the four new corporate regressions and the repaired Quality fixture. These tests use actual SQLite records and HTTP responses; they do not replace API responses with mocks.
 
@@ -119,7 +119,7 @@ The following pre-existing source conditions account for every skip. These tests
 
 ### Remaining risks and disposition
 
-Historical-prefix fixtures demonstrate the supported shipped migration chain; they cannot establish compatibility with every unknown customer-modified schema. Unsupported/corrupt layouts fail safely with recovery evidence. Cross-database rollback and installer registration limits remain as described above and in the installer audit. Existing conditional browser skips remain coverage limitations. No verified code-correctable defect from this remediation remains failing. Final publication requires the separately authorized committed-source artifact checks.
+Historical-prefix fixtures demonstrate the supported shipped migration chain; they cannot establish compatibility with every unknown customer-modified schema. Unsupported/corrupt layouts fail safely with recovery evidence. Cross-database rollback and installer registration limits remain as described above and in the installer audit. Existing conditional browser skips remain coverage limitations. No verified code-correctable defect from this remediation remains failing. Final committed-source artifact checks were subsequently completed before v3.7.2 publication.
 
 ### AGENTS.md Compliance Check
 
@@ -131,7 +131,7 @@ Historical-prefix fixtures demonstrate the supported shipped migration chain; th
 - Persistent-data invariants: PASS; originals unchanged; tested accounts, memberships, permissions, sites, IT records, history and recovery copies preserved as documented.
 - Unintended side effects: none detected by the completed tests, source reconciliation and scoped audit. Existing conditional skips are explicitly recorded.
 
-**Compliance status: PASS. Publication authorized after final artifact verification.**
+**Compliance status: PASS. Final artifact verification completed; v3.7.2 is published.**
 
 ## Exact remediation files
 
@@ -154,7 +154,7 @@ The installer/updater/uninstaller implementation already present at the initial 
 
 The fresh inventory identifies 35 files changed during this task: 17 production files, 12 test files, and six documentation files. Changed executable files pass syntax/header checks and targeted whitespace validation. Manual review covers bound SQL values, static identifier selection, the retained IT role boundary, absolute TOTP counters, migration backup/rollback, preserved reset metadata, and site-scoped corporate queries. The 17 production files and all 534 production frontend files match between source, the browser sandbox, and the packaged application (`tested-code-consistency.json`). This is a scoped remediation audit, not a claim that syntax checks prove the entire historical application secure.
 
-Final unpublished package SHA-256 values (`C:\TM-20260917\artifacts-verified`):
+Historical remediation verification package SHA-256 values (unpublished, `C:\TM-20260917\artifacts-verified`):
 
 - EXE: `8F3255BC17EBC97166C49A987A0DB96B7810C33C8CCAD3272A820066501A3EAF`
 - MSI: `5818928B328EBE2694330236BAFFB7FF9F2EADD54502DA20F451FDF7E6786119`

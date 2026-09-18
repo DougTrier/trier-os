@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.7.2] — 2026-09-17 — Preservation and Security Maintenance
 
+[Published release](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2): documented code-correctable defects were fixed and regression-verified before publication.
+
 Existing operational workflows and authorized staff cross-plant behavior are preserved.
 
 ### Preservation and operational corrections
@@ -43,7 +45,7 @@ Existing operational workflows and authorized staff cross-plant behavior are pre
 - Complete remediation gate: all seven Playwright projects, 1,129 passed, 0 failed, 22 documented conditional skips, 0 not run; no retries or flaky results.
 - All 23 unit-test files, 56 migration starting states, 21 isolated installer scenarios and 11 integration checks passed.
 - SQLite integrity, foreign keys, IT orphan checks, invariants and original-data reconciliation passed. Existing accounts and nonempty group/permission fixtures survived the tested upgrade and reset workflows.
-- Production frontend, EXE and MSI verification builds passed. Final release artifacts are rebuilt from the release commit and receive focused isolated artifact smoke checks before publication.
+- Production frontend, EXE and MSI verification builds passed. Final release artifacts were rebuilt from the release commit and passed focused isolated artifact smoke checks before publication.
 
 See [validation evidence and limits](docs/SURGICAL_REMEDIATION_AUDIT.md) and [release notes](docs/RELEASE_NOTES_3.7.2.md).
 

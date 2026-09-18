@@ -1,16 +1,16 @@
 # Preservation regression and repository audit — 2026-09-17
 
-**Current release decision:** release 3.7.2 is explicitly authorized after final committed-source artifact verification. Historical FAIL/BLOCKED/no-publication statements below describe the original audit. Code-correctable defects were subsequently fixed and verified in [the surgical audit](SURGICAL_REMEDIATION_AUDIT.md). See [current release notes](RELEASE_NOTES_3.7.2.md).
+**Current release status:** [Trier OS v3.7.2 is published](https://github.com/DougTrier/trier-os/releases/tag/v3.7.2). The documented code-correctable defects were fixed and regression-verified before publication, and final committed-source artifact verification completed. Historical FAIL/BLOCKED/no-publication statements below describe the original audit, superseded by [the surgical audit](SURGICAL_REMEDIATION_AUDIT.md) and [current release notes](RELEASE_NOTES_3.7.2.md).
 
 Copyright © 2026 Doug Trier. Licensed under the [MIT License](../LICENSE).
 
 **Completed follow-up:** [SURGICAL_REMEDIATION_AUDIT.md](SURGICAL_REMEDIATION_AUDIT.md) supersedes the historical FAIL findings below. Small-database preservation, legacy IT authorization/false success, TOTP replay, SOP foreign keys, migration 047 and duplicate 017 handling are all **FIXED + VERIFIED**. The complete seven-project run finished with **1,129 passed, 0 failed, 22 documented skips, 0 not run**. All 23 unit-test files, 56 migration prefixes, 21 installer scenarios and 11 integration checks passed; production frontend/EXE/MSI verification builds passed. Final active-DB integrity/FK, invariant and original-source reconciliation passed. Accounts, roles, group membership and grants are preserved. This document retains the original before-fix findings.
 
-**Release blocked. This document records verified results and unresolved gates; it is not a release approval.**
+**Historical audit disposition at the time of this run: release was blocked pending remediation. This disposition was later superseded by the completed surgical remediation and v3.7.2 release.**
 
-## Build and evidence
+## Historical audit run — build and evidence
 
-Comparison commit: `2fa52f1487a6bf4443f9aa96a23b38e2f550db73`. Tested application version: **3.7.2**, with the existing uncommitted working tree plus the corrections below. The comparison commit is an identifiable baseline, not a newly certified good release. No version bump, commit, tag, upload, or publication was performed.
+Comparison commit: `2fa52f1487a6bf4443f9aa96a23b38e2f550db73`. Tested application version: **3.7.2**, with the existing uncommitted working tree plus the corrections below. The comparison commit is an identifiable baseline, not a newly certified good release. No version bump, commit, tag, upload, or publication was performed during this audit run. The following findings, tables and recommendations retain that intermediate run's evidence and scope.
 
 Local evidence root: `G:\TrierOS-Regression-20260917-174558`. It contains the original working-tree status/diff, file hashes, verified offline backups, SQLite/table inventories, test logs, screenshots, fixture reconciliation, and build hashes. Evidence containing configuration or identity data is restricted to the current operator, Administrators, and SYSTEM; it must not be published.
 
@@ -89,7 +89,7 @@ Sentinels include `preservation_test`, `PRESERVATION-GROUP`, actual `UserADGroup
 
 Final standalone targeted run: **8 passed**, `targeted-playwright-final.log`. Initial harness issues (sandbox identity guard, Windows ACL module/restoration compatibility, and restart process ownership) were corrected before this result; they are not counted as application passes. Generated target DBs and snapshots remain outside live data as recovery evidence after their registrations are removed.
 
-## Existing suites, installers and builds
+## Historical results — existing suites, installers and builds
 
 | Verification | Result/evidence |
 |---|---|
@@ -107,10 +107,10 @@ Final standalone targeted run: **8 passed**, `targeted-playwright-final.log`. In
 | Focused desktop/mobile security verification after HA fixture correction | FAIL — 32 passed, 1 historical TOTP replay failure, 1 not run; valid HA peer check passed |
 | Final API invariant report | PASS within the endpoint's stated coverage; HTTP 200, overallStatus PASS; `final-invariants.json` |
 | Final isolated DB/IT-reference inspection | Physical integrity PASS; existing FK schema defects FAIL; zero current IT orphans or leftover active sentinel references |
-| Historical migration-chain release gate | BLOCKED — known legacy export/ordering issues remain |
+| Historical migration-chain release gate | BLOCKED at this intermediate stage — known legacy export/ordering issues remained unresolved |
 | Live development uninstall/upgrade/restore or release publication | NOT TESTED / intentionally not performed |
 
-Unpublished build outputs are `C:\TR-c53fcc7b\artifacts\TrierOS-Setup-3.7.2.exe` and `.msi`. The EXE is unsigned. They were built with current server/electron/frontend code and the previously staged compatible Electron runtime/dependencies; this is not a fresh dependency-download reproducibility claim. SHA-256:
+Historical unpublished verification build outputs are `C:\TR-c53fcc7b\artifacts\TrierOS-Setup-3.7.2.exe` and `.msi`. The EXE is unsigned. They were built with the then-current server/electron/frontend code and the previously staged compatible Electron runtime/dependencies; this is not a fresh dependency-download reproducibility claim. SHA-256:
 
 - EXE: `3e71e3cc996f0ff71af2c96d7788bf1f26b018a0235d3492e54ba8a5238890ad`
 - MSI: `e95fc5c471f2ea7e776487c17be841c5671db5fb6c0f2cc43f2ae0b9ad2ac305`
@@ -126,7 +126,7 @@ The full browser run includes all seven configured projects (desktop plus six mo
 | Latest full run (`full-playwright-final.log`) | 479 | 13 | 1 | 654 | Sandbox generated a 96-character HA key; application requires exactly 64. Corrected generator to 32 random bytes and added fail-fast validity checks to both runners |
 | Focused security rerun (`security-configuration-verification.log`) | 32 | 0 | 1 | 1 | Valid HA peer route passed. Second TOTP completion rejected by the historical replay cache; source/HEAD equality and audit event confirm the cause |
 
-No application authentication check was weakened to accommodate the fixture errors. The dedicated preservation suite passed both standalone and within the latest full run. The later security failure is an actual historical defect, not another environment omission. Under the user's no-historical-fixes scope and the stop-at-first-failure rule, the full suite was not restarted to seek a green run. **The full Playwright completion criterion remains unmet.** Its unexecuted tests, including most mobile coverage, are not certified by the targeted passes. Earlier attempt logs are retained; Playwright's additional stop-limit error is not counted as a second application defect.
+No application authentication check was weakened to accommodate the fixture errors. The dedicated preservation suite passed both standalone and within the latest full run. The later security failure is an actual historical defect, not another environment omission. Under the user's no-historical-fixes scope and the stop-at-first-failure rule, the full suite was not restarted to seek a green run. **The full Playwright completion criterion was unmet at this intermediate audit stage; the subsequent complete run is recorded in the surgical follow-up.** This attempt's unexecuted tests, including most mobile coverage, were not certified by the targeted passes. Earlier attempt logs are retained; Playwright's additional stop-limit error is not counted as a second application defect.
 
 ### Final database and cleanup reconciliation
 
@@ -154,6 +154,8 @@ Nine current IT orphan checks (assignment/depreciation in four categories plus s
 
 ### Historical issues confirmed or retained
 
+These pre-remediation findings and recommendations describe the original audit scope. Their code-correctable defects were subsequently fixed and verified in [the surgical follow-up](SURGICAL_REMEDIATION_AUDIT.md).
+
 1. **FAIL — destructive small-file repair:** an isolated valid 8,192-byte SQLite plant DB passed integrity, then `database.getDb()` replaced it because it was under the size threshold; its sentinel table disappeared. The replacement path predates these changes. Evidence: `small-valid-database-probe.json`. Stop using file size as permission to destroy a DB in a separately scoped historical fix; never test that fix on live data.
 2. **FAIL — existing FK schema mismatch:** listed above, present before the regression pass.
 3. **BLOCKED — migration history:** migration 047 exports a bare function while the migrator calls `.up`; duplicate numbered migration 017 and historical schema coverage still need their separate release gate. Existing migrations remain immutable.
@@ -173,9 +175,9 @@ No unrelated historical implementation was rewritten to force the audit green.
 - `tests/console-window-monitor.ps1`: read-only visible console WinEvent observation.
 - This report and follow-up entries in the reset/bulk and installer audit documents. Product correction files are listed above; earlier dirty workspace changes remain separately inventoried.
 
-## AGENTS.md compliance and next action
+## Historical AGENTS.md compliance and disposition
 
-For this pass's changes: route plant routing remains AsyncLocalStorage-based; direct SQLite paths are confined to isolated test/backup inspection tools. No existing migration, protected scanner/hub/master/HA file or Zero-Keystroke flow was changed. SQL values remain parameterized; fixture-only identifiers are internally generated. Original dirty workspace files were not reverted. No release was published.
+For this pass's changes: route plant routing remains AsyncLocalStorage-based; direct SQLite paths are confined to isolated test/backup inspection tools. No existing migration, protected scanner/hub/master/HA file or Zero-Keystroke flow was changed. SQL values remain parameterized; fixture-only identifiers are internally generated. Original dirty workspace files were not reverted. No release was published during this audit run.
 
 ### AGENTS.md Compliance Check
 
@@ -183,9 +185,9 @@ For this pass's changes: route plant routing remains AsyncLocalStorage-based; di
 - **No migration edits — PASS.** Existing numbered migrations remain unchanged.
 - **No violation of protected files — PASS for this pass.** Earlier `ha_sync.js` changes are inventoried separately and were not edited here.
 - **No SQL injection risk introduced — PASS.** SQL values remain bound; identifiers come from fixed/internal validated sources.
-- **No invariant violations introduced — PASS for the correction.** Targeted rollback/history/scope checks pass; historical integrity/authentication defects remain explicitly failed findings.
-- **No unintended side effects introduced — PASS on the verified environment.** Source files and raw backups are unchanged; generated test services are stopped; nothing was published.
+- **No invariant violations introduced — PASS for the correction.** Targeted rollback/history/scope checks passed; integrity/authentication defects were explicitly failed findings at this intermediate stage.
+- **No unintended side effects introduced — PASS on the verified environment.** Source files and raw backups were unchanged; generated test services were stopped; nothing was published during this audit run.
 
-**Change-level compliance status: PASS. Overall regression/release status: FAIL / BLOCKED, not PASS.**
+**Historical change-level compliance status: PASS. Historical regression/release disposition at this intermediate run: FAIL / BLOCKED. This disposition was superseded by completed surgical remediation and the published v3.7.2 release.**
 
-The requested complete trusted baseline has **not** been achieved: the full browser suite is incomplete, historical integrity/authentication/data-loss defects remain, and migration gates were unresolved. Next scope should address the historical TOTP cache, small-database replacement and legacy IT authorization/FK defects, then rerun the complete suite with migration-chain verification. Do not upload these packages as a release.
+At the end of this intermediate run, the requested complete trusted baseline had **not** been achieved: the full browser suite was incomplete, integrity/authentication/data-loss defects remained, and migration gates were unresolved. The next scope was to address the historical TOTP cache, small-database replacement and legacy IT authorization/FK defects, then rerun the complete suite with migration-chain verification. That work was subsequently completed in [the surgical follow-up](SURGICAL_REMEDIATION_AUDIT.md), followed by final artifact verification and v3.7.2 publication. The historical verification packages listed above were not published; the release used separately rebuilt artifacts.
