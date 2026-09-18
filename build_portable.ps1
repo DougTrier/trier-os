@@ -40,7 +40,7 @@ if (Test-Path $monacoSrc) {
 
 # Step 3: Copy app files
 Write-Host "[3/7] Copying application files..." -ForegroundColor Yellow
-robocopy "$SOURCE\server" "$BUILD\server" /MIR /XD "$SOURCE\server\data" /XF "*.db" "*.sqlite" "*.sqlite3" "*.key" ".env*" "first_login.txt" ".sync_key" /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+robocopy "$SOURCE\server" "$BUILD\server" /MIR /XD "$SOURCE\server\data" /XF "*.db" "*.sqlite" "*.sqlite3" "*.key" ".env*" "first_login.txt" ".sync_key" "test_db.js" "test-integrations.js" /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 Write-Host "  server/"
 robocopy "$SOURCE\src" "$BUILD\src" /MIR /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 Write-Host "  src/"

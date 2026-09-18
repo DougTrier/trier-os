@@ -27,6 +27,8 @@
     "!node_modules/.cache/**/*",
     "!node_modules/.package-lock.json",
     "!server/data/**/*",
+    "!server/test_db.js",
+    "!server/test-integrations.js",
     "!server/*.db",
     "!server/*.sqlite",
     "!server/*.sqlite3",

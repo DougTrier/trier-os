@@ -16,6 +16,8 @@ There are 11 committed database seed/reference archives. The old 16-file verific
 
 The first committed-source portable build also reproduced a PowerShell packaging failure: a normal Vite diagnostic on stderr became a terminating `NativeCommandError` under `ErrorActionPreference=Stop`. The portable builder now uses the same native-output capture pattern as the installer builder and checks each native command's actual exit code. Warnings no longer abort a successful build, while real Vite/npm/native-rebuild failures stop packaging. Application code and dependencies were not changed for this correction; final artifacts are rebuilt from the subsequent commit.
 
+Payload inspection also identified two standalone development probes under `server/`: `test_db.js` hardcodes a development database path, and `test-integrations.js` creates an integration test fixture. Neither is an application dependency. Both are now excluded from EXE/MSI and portable payloads; they remain in source for development. Final package inspection verifies their absence.
+
 ## Reproducible release inputs
 
 Build from a clean checkout of the release commit, with the committed lockfile dependencies and the existing Windows Node/Electron build toolchain. Use fresh destinations through the existing build-directory guards:
